@@ -1,0 +1,1736 @@
+WEEK 1 ROADMAP: Foundation & Core Infrastructure
+Overview
+Week 1 is all about setting up your development environment, database foundation, and authentication system. This week sets the stage for everything else.
+
+Day 1 (Monday): Project Setup & Environment
+Morning (4 hours):
+
+ Initialize Next.js 14+ project with TypeScript
+ Set up Tailwind CSS + shadcn/ui component library
+ Configure ESLint, Prettier, and TypeScript strict mode
+ Create GitHub repository with .gitignore and README
+ Set up environment variables structure (.env.local)
+
+Afternoon (4 hours):
+
+ Set up PostgreSQL database (local or Supabase)
+ Install and configure Prisma ORM
+ Create initial database connection
+ Set up Zustand for state management
+ Install TanStack Query (React Query) for API calls
+
+Deliverable: Working Next.js app that connects to PostgreSQL
+
+Day 2 (Tuesday): Database Schema - Core Tables
+Morning (4 hours):
+
+ Design and create users table schema
+
+user_id, email, password_hash, role, location_id
+first_name, last_name, active status
+created_at, updated_at
+
+
+ Design and create locations table
+
+location_id, name (Downtown, Westside)
+address, phone, timezone
+
+
+ Design and create insurance_carriers table
+
+carrier_id, name (VSP, EyeMed, Spectera)
+active status, configuration JSON
+
+
+
+Afternoon (4 hours):
+
+ Design and create product_categories table
+
+Frames, Lenses, Coatings, Add-ons, Contacts
+
+
+ Design and create products table
+
+product_id, name, SKU, category_id
+base_price, tier_vsp, tier_eyemed, tier_spectera
+active status, created_at
+
+
+ Run Prisma migrations
+ Seed database with test locations and carriers
+
+Deliverable: Complete database schema for core entities
+
+Day 3 (Wednesday): Authentication System
+Morning (4 hours):
+
+ Install NextAuth.js (or Auth.js)
+ Configure credentials provider
+ Create bcrypt password hashing utility
+ Build login API route (/api/auth/[...nextauth])
+ Create session management middleware
+
+Afternoon (4 hours):
+
+ Build login page UI with shadcn/ui components
+
+Email and password fields
+Location selector dropdown
+"Remember me" checkbox
+Error messaging
+
+
+ Implement form validation with Zod
+ Test login flow with mock user
+ Create protected route wrapper
+
+Deliverable: Working login system with session persistence
+
+Day 4 (Thursday): User Management & Authorization
+Morning (4 hours):
+
+ Create role-based access control (RBAC) system
+
+Roles: Admin, Manager, Sales Associate
+Permission levels stored in database
+
+
+ Build user management API routes
+
+GET /api/users (list all users)
+POST /api/users (create new user)
+PATCH /api/users/:id (update user)
+DELETE /api/users/:id (deactivate user)
+
+
+
+Afternoon (4 hours):
+
+ Build admin user management UI
+
+User list table with sorting
+Add/edit user modal
+Role assignment dropdown
+Location assignment
+
+
+ Implement permission checks on routes
+ Create middleware for role verification
+ Seed database with test users (1 admin, 2 associates)
+
+Deliverable: Complete user management system with RBAC
+
+Day 5 (Friday): Product Formulary Foundation
+Morning (4 hours):
+
+ Design product tier assignment schema
+
+VSP tiers (Standard, Premium, Ultra, Platinum, Ultimate)
+EyeMed tiers (Tier 1-4)
+Spectera tiers (Category 1-3)
+
+
+ Create product_pricing table
+
+Links products to locations with specific prices
+Allows per-location price overrides
+
+
+ Build product API routes
+
+GET /api/products (with filters by category/tier)
+POST /api/products (admin only)
+PATCH /api/products/:id (admin only)
+
+
+
+Afternoon (4 hours):
+
+ Create product list view UI
+
+Filter by category
+Search by name/SKU
+Display tier badges
+Sort by name/price
+
+
+ Build "Add Product" form (simple version)
+
+Name, SKU, category dropdown
+Base price input
+Tier selector for each carrier
+Active/inactive toggle
+
+
+ Seed 20-30 test products across categories
+
+Deliverable: Product formulary with CRUD operations
+
+Weekend (Optional): Buffer & Polish
+If you have extra time:
+
+ Add loading states and error boundaries
+ Create a simple dashboard landing page after login
+ Add toast notifications for success/error messages
+ Write basic unit tests for auth functions
+ Document your API routes in a README
+ Create a component library starter (button, input, modal)
+
+
+Week 1 Success Criteria
+By end of Week 1, you should have:
+✅ Working app infrastructure
+
+Next.js project with TypeScript running
+PostgreSQL database connected via Prisma
+Environment variables configured
+
+✅ Authentication working
+
+Users can log in with email/password
+Session persists across page refreshes
+Protected routes redirect to login
+
+✅ User management functional
+
+Admins can create/edit users
+Role-based access control working
+Location assignment functional
+
+✅ Product foundation ready
+
+Product database schema complete
+20-30 test products loaded
+Basic CRUD UI for products
+
+
+Development Tips for Solo Dev with AI
+Best Practices:
+
+Commit often - Commit after each feature works, even if small
+Use AI for boilerplate - Let Sonnet generate form components, API routes, Prisma schemas
+Test incrementally - Don't move to Day 2 until Day 1 fully works
+Document as you go - Keep a CHANGELOG.md of what you built each day
+Use shadcn/ui heavily - Don't build components from scratch
+
+Time Management:
+
+8 hours/day = 40 hours for Week 1
+Each task is scoped to 2-4 hours
+Build buffer time for debugging
+Friday afternoon is "catch-up" if you're behind
+
+AI Pairing Strategy:
+
+Design phase: You specify what you need
+Code phase: AI generates initial version
+Review phase: You test, identify issues
+Iterate phase: AI fixes based on your feedback
+
+
+Next Steps After Week 1
+Once Week 1 is complete, you'll be ready for Week 2: Insurance Schema & Pricing Engine, where you'll:
+
+Import VSP/EyeMed/Spectera dynamic schemas
+Build the real-time pricing calculation engine
+Create insurance benefit models
+Test pricing accuracy against real examples
+
+
+WEEK 2 ROADMAP: Insurance Schema & Pricing Engine
+Overview
+Week 2 is about implementing the core intelligence of your system - the insurance pricing schemas and calculation engine. This is the heart of your POS system. By end of week, you'll have accurate pricing calculations for all three carriers.
+
+Day 1 (Monday): Insurance Schema Database Design
+Morning (4 hours):
+
+ Create insurance benefit structure tables
+
+insurance_plans - Plan metadata (VSP Signature, EyeMed Insight, etc.)
+plan_copays - Dynamic copay amounts per plan
+plan_allowances - Frame/contact lens allowances
+plan_special_rules - EasyOptions, age-based rules, etc.
+
+
+ Create product tier mapping tables
+
+vsp_progressive_tiers - K, J, F, O, N classifications
+eyemed_progressive_tiers - Tier 1-5 classifications
+spectera_progressive_tiers - Category 1-3 classifications
+ar_coating_tiers - Per carrier tier assignments
+
+
+
+Afternoon (4 hours):
+
+ Read VSP dynamic schema document thoroughly
+ Create VSP-specific tables:
+
+vsp_signature_pricing
+vsp_choice_pricing
+vsp_advantage_pricing
+vsp_enhanced_advantage_pricing
+
+
+ Create VSP lens code hierarchy tables
+
+Base codes (AA, BA, DA, FA, JA, KA, NA, OA)
+Material modifiers (B, H, J, D, P)
+Feature modifiers (R for photochromic, etc.)
+
+
+
+Deliverable: Complete insurance schema database structure
+
+Day 2 (Tuesday): Product Formulary Data Entry
+Morning (4 hours):
+
+ VSP Progressive Products - Import from /mnt/project/VSP_All_Manuals_and_Tiers_Consolidated.txt
+
+Map 100+ products to K/J/F/O/N tiers
+Assign base lens codes
+Create lookup table for quick tier determination
+
+
+ VSP AR Coating Products
+
+Map coatings to QM/QT/QV/QS tiers
+Link to lens material compatibility
+
+
+
+Afternoon (4 hours):
+
+ EyeMed Progressive Products - Import from /mnt/project/Eyemed__tiers_manual_consolidated_.txt
+
+Map products to Tier 1-5 classifications
+Mark "premium" vs "standard" status
+Create EyeMed product lookup
+
+
+ EyeMed AR Coating Products
+
+Map to Tier 1-3 (Basic/Better/Best)
+Mark anti-fog, blue light filter options
+
+
+
+Deliverable: 200+ products mapped to insurance tiers
+
+Day 3 (Wednesday): Spectera Schema & Pricing Tables
+Morning (4 hours):
+
+ Read Spectera dynamic schema document thoroughly
+ Create Spectera-specific tables:
+
+spectera_category_pricing - Category 1/2/3 for progressives
+spectera_ar_pricing - Tier 1-4 for AR coatings
+spectera_enhancement_pricing - Photochromic, polarized, etc.
+
+
+ Spectera Progressive Products - Import from /mnt/project/Spectera_Consolidated_Tiers_and_Manual2025.txt
+
+Map to Category 1/2/3 tiers
+
+
+
+Afternoon (4 hours):
+
+ Spectera AR Coating Products
+
+Map to Tier 1-4 classifications
+
+
+ Seed test insurance plans (3-5 plans per carrier)
+
+VSP Signature (example copays)
+EyeMed Insight (example copays)
+Spectera Standard (example copays)
+
+
+ Create plan benefits JSON structure for dynamic storage
+
+Deliverable: All three carriers with formulary data loaded
+
+Day 4 (Thursday): Pricing Calculation Engine - Part 1
+Morning (4 hours):
+
+ Build VSP pricing calculator class/module
+
+calculateVSPQuote(plan, products, patientAge)
+Implement 4-tier pricing rules:
+
+Signature: Lower of copay or U&C
+Choice: Lower of copay or 80% U&C
+Advantage: 80% U&C for most items
+Enhanced Advantage: Lower of copay or 80% U&C
+
+
+Handle lens code stacking (Base + Material + Feature)
+Apply child polycarbonate rule (age ≤18 = $0)
+
+
+
+Afternoon (4 hours):
+
+ Build EyeMed pricing calculator
+
+calculateEyeMedQuote(plan, products, patientAge)
+Implement tier-based pricing
+Calculate frame overage with 20% discount
+Apply materials copay
+Handle age-based polycarbonate rule
+Validate enhancement compatibility
+
+
+
+Deliverable: Working VSP and EyeMed calculators
+
+Day 5 (Friday): Pricing Calculation Engine - Part 2
+Morning (4 hours):
+
+ Build Spectera pricing calculator
+
+calculateSpecteraQuote(plan, products, patientAge)
+Implement category-based pricing (1/2/3)
+Calculate frame overage (70% patient responsibility)
+Handle combined vs separate copays
+Apply enhancement pricing
+
+
+ Create unified pricing interface
+
+calculateQuote(carrier, plan, products, patientAge)
+Routes to appropriate carrier calculator
+Returns standardized quote object
+
+
+
+Afternoon (4 hours):
+
+ Critical Testing Phase
+
+Create 10 test cases per carrier (30 total)
+Test edge cases:
+
+Frame exactly at allowance
+Frame $100 over allowance
+Child patient (free polycarbonate)
+Multiple enhancements stacking
+Premium progressive + premium AR
+
+
+Validate calculations against manual calculations
+Fix any discrepancies
+
+
+
+Deliverable: Fully tested pricing engine with 100% accuracy
+
+Weekend (Optional): Advanced Pricing Features
+If you have extra time:
+
+ Build U&C price management system
+
+Store practice's U&C prices per product
+Update interface for admin
+Integrate into VSP 80% U&C calculations
+
+
+ Create pricing validation warnings
+
+"Frame overage exceeds typical range"
+"Total cost unusually high - verify plan details"
+
+
+ Add pricing explanation feature
+
+Show breakdown: "Progressive Tier 2: $85 copay + Frame overage $40 (20% discount applied) = $125"
+
+
+ Build pricing comparison tool
+
+Show patient cost across all 3 carriers
+Highlight best option
+
+
+
+
+Week 2 Success Criteria
+By end of Week 2, you should have:
+✅ Complete insurance data structure
+
+All 3 carrier schemas in database
+200+ products mapped to tiers
+Test plans loaded with sample benefits
+
+✅ Working pricing engine
+
+Accurate calculations for VSP (4 tiers)
+Accurate calculations for EyeMed (tier-based)
+Accurate calculations for Spectera (category-based)
+
+✅ Validated accuracy
+
+30 test cases passing
+Edge cases handled correctly
+Age-based rules working
+Enhancement compatibility enforced
+
+✅ API endpoints ready
+
+GET /api/insurance/plans (list available plans)
+GET /api/products/by-tier (get products by tier/carrier)
+POST /api/pricing/calculate (calculate quote)
+GET /api/products/formulary/:carrier (get full formulary)
+
+
+Development Strategy for Week 2
+Day-by-Day Focus:
+Monday = Data Modeling
+
+Design schema to handle all 3 carriers
+Think through flexibility (new plans, price changes)
+Use JSONB for dynamic plan benefits
+
+Tuesday = Data Entry
+
+Use AI to help parse text files into structured data
+Create seed scripts for bulk import
+Validate tier assignments against source documents
+
+Wednesday = Spectera + Testing Data
+
+Complete the third carrier
+Create comprehensive test plan data
+Set up test fixtures
+
+Thursday = Core Math
+
+Focus on getting calculations perfect
+Start with simplest case, add complexity
+Unit test each calculation function
+
+Friday = Integration + Validation
+
+Bring all calculators together
+End-to-end testing
+Document any assumptions made
+
+AI Pairing Tips for Week 2:
+
+For schema design: Ask AI to convert text documents into structured SQL
+
+"Read VSP_All_Manuals file and create a SQL schema for progressive tiers"
+
+
+For data entry: Use AI to parse and structure data
+
+"Extract all Varilux progressive products and their tier assignments from this text"
+
+
+For calculations: Have AI implement the complex math logic
+
+"Write a function that calculates VSP Advantage pricing using 80% U&C rule"
+
+
+For testing: Generate comprehensive test cases
+
+"Create 10 test cases for EyeMed pricing with various plan types and products"
+
+
+
+
+Key Files to Reference This Week
+You'll be working heavily with these project files:
+
+/mnt/project/vsp_dynamic_schema_v1.md
+
+VSP pricing tier structure
+Lens code hierarchy
+4-tier pricing rules
+
+
+/mnt/project/eyemed_dynamic_schema_v1.md
+
+EyeMed tier structure (1-5)
+Frame overage calculations
+Materials copay handling
+
+
+/mnt/project/spectera_dynamic_schema_v3.md
+
+Spectera category system (1/2/3)
+AR coating tier structure (1-4)
+Enhancement pricing
+
+
+Source data files:
+
+VSP_All_Manuals_and_Tiers_Consolidated.txt
+Eyemed__tiers_manual_consolidated_.txt
+Spectera_Consolidated_Tiers_and_Manual2025.txt
+
+
+
+
+Common Pitfalls to Avoid
+
+Don't hardcode copay amounts - Use dynamic plan data
+Don't skip validation - Test every calculation thoroughly
+Don't ignore age-based rules - Child polycarbonate is critical
+Don't forget U&C prices - VSP needs these for 80% calculations
+Watch for enhancement conflicts - Photochromic + Polarized = invalid
+
+
+Next Steps After Week 2
+Once Week 2 is complete, you'll move to Week 3: Quote Builder UI, where you'll:
+
+Build the 3-layer quote interface (Exam → Frame/Lens → Contacts)
+Integrate pricing engine into frontend
+Create package template system
+Add real-time price updates as user selects products
+
+
+WEEK 3 ROADMAP: Quote Builder UI - Layer 1 (Exam)
+Overview
+Week 3 begins the user-facing application. You'll build the quote builder interface starting with Layer 1 (Exam services). This week focuses on creating a clean, intuitive UI that integrates with your pricing engine from Week 2.
+
+Day 1 (Monday): Quote Builder Foundation & Navigation
+Morning (4 hours):
+
+ Design quote builder layout structure
+
+Left panel: 3-layer navigation (Exam → Frame/Lens → Contacts)
+Center panel: Active layer content
+Right sidebar: Live pricing summary
+
+
+ Create quote builder page route (/quotes/new)
+ Build layer navigation component
+
+Visual indicators (active/completed/locked states)
+Click to switch between layers
+Progress indicator
+
+
+ Set up quote state management (Zustand store)
+
+Current layer
+Selected products per layer
+Patient info
+Insurance details
+
+
+
+Afternoon (4 hours):
+
+ Create right sidebar pricing component
+
+Real-time total display
+Itemized breakdown (collapsible)
+Insurance applied section
+Patient responsibility highlight
+
+
+ Build quote header component
+
+Patient name field
+Insurance carrier selector (VSP/EyeMed/Spectera)
+Plan name/number field
+Location selector
+Save draft button
+
+
+ Implement auto-save functionality
+
+Save to database every 30 seconds
+Draft state indicator
+Last saved timestamp
+
+
+
+Deliverable: Quote builder shell with navigation and live pricing sidebar
+
+Day 2 (Tuesday): Layer 1 - Exam Services UI
+Morning (4 hours):
+
+ Create exam selection interface
+
+Comprehensive exam checkbox (default selected)
+Contact lens fitting checkbox
+Exam copay display (from insurance plan)
+
+
+ Build exam add-ons section
+
+iWellness checkbox with pricing
+OptoMap checkbox with pricing
+Visual emphasis on these options (they're revenue drivers)
+Hover tooltips explaining benefits
+
+
+ Implement medical diagnosis picker (optional)
+
+Common diagnoses dropdown
+Custom diagnosis text field
+Note: "For billing department use only"
+
+
+
+Afternoon (4 hours):
+
+ Build exam services pricing logic
+
+Connect to pricing engine from Week 2
+Calculate exam copay based on insurance
+Add iWellness ($49 typical)
+Add OptoMap ($39 typical)
+Handle contact lens fitting fee
+
+
+ Create visual selection feedback
+
+Selected items highlighted
+Checkboxes with smooth animations
+Price updates in sidebar as selections change
+
+
+ Add validation for Layer 1
+
+At least exam or contact lens fitting required
+"Continue to Frame/Lens" button enabled when valid
+
+
+
+Deliverable: Complete Layer 1 (Exam) with live pricing
+
+Day 3 (Wednesday): Layer 2 - Frame Selection UI
+Morning (4 hours):
+
+ Design frame selection interface
+
+Retail frame option (default)
+
+Frame search/filter component
+Frame price input
+Brand/model fields
+Display insurance allowance
+Show overage calculation automatically
+
+
+Patient-owned frame (POF) option
+
+Radio button to switch modes
+POF $45 fee display
+Frame detail fields (brand, model, condition)
+
+
+
+
+ Build frame search functionality
+
+Search by brand, model, SKU
+Filter by price range
+Filter by in-stock (if inventory enabled)
+Display frame cards with images (if available)
+
+
+
+Afternoon (4 hours):
+
+ Implement frame pricing logic
+
+Fetch insurance frame allowance
+Calculate overage (frame price - allowance)
+Apply carrier-specific overage discount
+
+VSP: varies by network
+EyeMed: 20% discount typically
+Spectera: 70% patient pays typically
+
+
+Update sidebar with frame cost breakdown
+
+
+ Build POF liability workflow
+
+Staff warning checkbox: "I have explained POF risks"
+Staff initials field
+Patient signature required flag (for later step)
+Warning message display
+
+
+
+Deliverable: Frame selection with insurance calculations working
+
+Day 4 (Thursday): Layer 2 - Lens Configuration UI Part 1
+Morning (4 hours):
+
+ Design lens configuration interface
+
+Lens type selector (Single Vision / Progressive / Bifocal)
+Vision type (Distance / Near / Both eyes different)
+Progressive product selector
+
+Tier badges (VSP: K/J/F/O/N, EyeMed: 1-5, Spectera: 1-3)
+Display products filtered by selected insurance tier
+Search/filter by brand name
+Show copay per product
+
+
+
+
+ Build lens type selection logic
+
+Single Vision = simpler options
+Progressive = show tier selector
+Bifocal = specific products
+
+
+
+Afternoon (4 hours):
+
+ Create lens material selector
+
+Plastic (standard)
+Polycarbonate (safety, child)
+Trivex
+Hi-Index 1.67
+Hi-Index 1.74
+Display pricing per material
+Show age-based rule: "Age ≤18: Polycarbonate $0"
+
+
+ Build lens material pricing logic
+
+Connect to carrier-specific material copays
+Handle VSP code stacking (base + material modifier)
+Apply child polycarbonate rule
+Update sidebar with lens costs
+
+
+
+Deliverable: Lens type and material selection working
+
+Day 5 (Friday): Layer 2 - Lens Configuration UI Part 2
+Morning (4 hours):
+
+ Create AR coating selector
+
+Display tiers per carrier (EyeMed: 1-3, Spectera: 1-4)
+Filter products by insurance tier
+Show brand names (Crizal, Kodak, etc.)
+Display copay per coating
+"No AR coating" option
+
+
+ Build lens enhancement selector
+
+Photochromic checkbox (Transitions)
+Polarized checkbox (sunglasses)
+Blue light filter checkbox
+Tint options (solid, gradient, mirror)
+Enhancement compatibility validation
+
+Block photochromic + polarized simultaneously
+Allow blue light + AR stacking
+
+
+
+
+
+Afternoon (4 hours):
+
+ Implement AR coating and enhancement pricing
+
+Fetch tier-specific copays
+Calculate enhancement costs
+Handle VSP feature modifiers (PR for photochromic)
+Validate incompatible combinations with error messages
+
+
+ Add lens summary display
+
+Show selected lens configuration in plain English
+Example: "Varilux X (Tier 2) Progressive, 1.67 Hi-Index, Crizal Sapphire (Tier 3 AR), Transitions"
+
+
+ Test complete Layer 2 flow
+
+Frame + Lens + AR + Enhancements all calculating correctly
+Sidebar updates in real-time
+Validation prevents impossible combinations
+
+
+
+Deliverable: Complete Layer 2 (Frame/Lens) with full pricing integration
+
+Weekend (Optional): Polish Layer 1 & 2
+If you have extra time:
+
+ Add product images (frames, lenses)
+ Create better visual hierarchy with spacing and typography
+ Add loading states during price calculations
+ Implement keyboard shortcuts (Tab navigation, Enter to continue)
+ Add "Reset Layer" button for each layer
+ Create tooltip help for complex options
+ Build mobile-responsive layout
+ Add animation transitions between layers
+
+
+Week 3 Success Criteria
+By end of Week 3, you should have:
+✅ Quote builder interface live
+
+Clean, professional layout
+3-layer navigation working
+Live pricing sidebar updating in real-time
+
+✅ Layer 1 (Exam) complete
+
+Exam and CL fitting selection
+iWellness/OptoMap add-ons
+Medical diagnosis picker (optional)
+Accurate pricing calculations
+
+✅ Layer 2 (Frame/Lens) complete
+
+Frame selection with overage calculations
+Patient-owned frame workflow
+Lens type, material, progressive tier selection
+AR coating and enhancement selection
+Full pricing integration
+Compatibility validation working
+
+✅ Pricing engine integrated
+
+Real-time calculations as user makes selections
+Insurance benefits applied correctly
+Itemized breakdown displays properly
+All 3 carriers (VSP/EyeMed/Spectera) calculating accurately
+
+
+Component Architecture for Week 3
+Key Components to Build:
+/components/quote-builder/
+  ├── QuoteBuilderLayout.tsx          # Main layout wrapper
+  ├── LayerNavigation.tsx             # 3-layer tabs
+  ├── PricingSidebar.tsx              # Live pricing display
+  ├── QuoteHeader.tsx                 # Patient info, insurance
+  │
+  ├── /layer1-exam/
+  │   ├── ExamSelection.tsx           # Exam checkboxes
+  │   ├── ExamAddons.tsx              # iWellness, OptoMap
+  │   └── DiagnosisPicker.tsx         # Medical diagnoses
+  │
+  ├── /layer2-frame-lens/
+  │   ├── FrameSelector.tsx           # Frame search/selection
+  │   ├── POFWorkflow.tsx             # Patient-owned frame
+  │   ├── LensTypeSelector.tsx        # SV, Progressive, Bifocal
+  │   ├── ProgressiveSelector.tsx     # Tier-based progressive picker
+  │   ├── LensMaterialSelector.tsx    # Material selection
+  │   ├── ARCoatingSelector.tsx       # AR coating picker
+  │   └── LensEnhancements.tsx        # Photo, polar, blue light
+  │
+  └── /shared/
+      ├── ProductCard.tsx             # Reusable product display
+      ├── TierBadge.tsx               # Tier indicator (K/J/F, 1-5)
+      ├── PriceDisplay.tsx            # Formatted price
+      └── ValidationMessage.tsx       # Error/warning display
+
+State Management Structure
+Zustand Store (quoteStore.ts):
+typescriptinterface QuoteState {
+  // Quote metadata
+  quoteId: string | null;
+  status: 'building' | 'draft' | 'presented';
+  patientName: string;
+  
+  // Insurance info
+  insuranceCarrier: 'vsp' | 'eyemed' | 'spectera' | null;
+  planId: string | null;
+  planDetails: InsurancePlan | null;
+  
+  // Layer 1: Exam
+  exam: {
+    comprehensive: boolean;
+    contactLensFitting: boolean;
+    iWellness: boolean;
+    optoMap: boolean;
+    diagnosisCode: string | null;
+  };
+  
+  // Layer 2: Frame/Lens
+  frameLens: {
+    frameType: 'retail' | 'pof' | null;
+    frame: SelectedFrame | null;
+    lensType: 'sv' | 'progressive' | 'bifocal' | null;
+    progressive: SelectedProgressive | null;
+    material: string | null;
+    arCoating: SelectedARCoating | null;
+    enhancements: {
+      photochromic: boolean;
+      polarized: boolean;
+      blueLight: boolean;
+      tint: string | null;
+    };
+  };
+  
+  // Layer 3: Contacts (Week 4)
+  contacts: ContactsSelection | null;
+  
+  // Calculated pricing
+  pricing: {
+    examTotal: number;
+    frameLensTotal: number;
+    contactsTotal: number;
+    grandTotal: number;
+    itemizedBreakdown: LineItem[];
+  };
+  
+  // Actions
+  updateExam: (exam: Partial<ExamSelection>) => void;
+  updateFrameLens: (frameLens: Partial<FrameLensSelection>) => void;
+  calculatePricing: () => Promise<void>;
+  saveDraft: () => Promise<void>;
+}
+
+Development Tips for Week 3
+UI/UX Best Practices:
+
+Progressive disclosure - Don't show all options at once
+
+Start with lens type → Then material → Then coatings → Then enhancements
+
+
+Visual feedback - Make selections obvious
+
+Selected items: bold border, background highlight
+Hover states: subtle background change
+Disabled items: grayed out with explanation
+
+
+Real-time validation - Prevent errors before they happen
+
+Photochromic + Polarized selected → Show warning immediately
+No frame selected → Disable "Continue" button
+
+
+Smart defaults - Pre-select common options
+
+Comprehensive exam = checked by default
+Retail frame = selected by default
+Material = Polycarbonate if age ≤18
+
+
+
+Performance Considerations:
+
+Debounce price calculations - Don't recalculate on every keystroke
+
+Use 300ms debounce on frame price input
+Recalculate immediately on checkbox changes
+
+
+Lazy load product lists - Don't load all 800+ progressives at once
+
+Filter by carrier/tier first
+Then load only relevant products
+Implement virtual scrolling if needed
+
+
+Optimize sidebar updates - Don't re-render entire tree
+
+Use React.memo for pricing components
+Only update changed line items
+
+
+
+AI Pairing Strategy for Week 3:
+
+For component structure: Ask AI to generate shadcn/ui components
+
+"Create a radio group component for lens type selection with icons"
+
+
+For pricing integration: Let AI connect frontend to backend
+
+"Write a React hook that fetches pricing when user selects a progressive lens"
+
+
+For validation: Have AI implement complex business rules
+
+"Write a validation function that prevents photochromic + polarized selection"
+
+
+For state management: Generate Zustand actions
+
+"Create Zustand actions for updating exam selections and triggering price recalculation"
+
+
+
+
+Common Pitfalls to Avoid
+
+Don't block the UI during price calculations - Show loading spinner in sidebar only
+Don't lose user selections when switching layers - Persist in state
+Don't allow invalid configurations - Validate before enabling "Continue"
+Don't forget mobile responsiveness - Sidebar might need to collapse on mobile
+Don't show raw copay amounts without insurance selected - Show "Select insurance first"
+
+
+Testing Checklist for Week 3
+Layer 1 (Exam) Tests:
+
+ Selecting exam updates sidebar price
+ iWellness adds $49 to total
+ OptoMap adds $39 to total
+ Can proceed to Layer 2 with at least exam or CL fitting selected
+
+Layer 2 (Frame/Lens) Tests:
+
+ Frame overage calculates correctly for all 3 carriers
+ POF mode shows $45 fee instead of retail calculation
+ Child polycarbonate rule makes polycarbonate $0 when age ≤18
+ Progressive tier filter shows only relevant products
+ AR coating copays match insurance plan
+ Photochromic + Polarized shows error message
+ Sidebar updates in real-time as selections change
+ All 3 carriers calculate different totals correctly
+
+
+Next Steps After Week 3
+Once Week 3 is complete, you'll move to Week 4: Contact Lenses & Package Templates, where you'll:
+
+Build Layer 3 (Contact lens selection)
+Implement contact lens rebate calculations
+Create package template system (Top-Tier, Computer, Sunglass, Budget)
+Add "Apply Package" functionality that auto-selects all products
+
+WEEK 4 ROADMAP: Layer 3 (Contacts) & Package Templates
+Overview
+Week 4 completes the quote builder with Layer 3 (Contact Lenses) and adds the powerful package template system. By end of week, staff can generate complete quotes for all three sale types with one-click package shortcuts.
+
+Day 1 (Monday): Contact Lens Database & Product Catalog
+Morning (4 hours):
+
+ Create contact lens database tables
+
+contact_lens_products - Brand, manufacturer, modality
+contact_lens_pricing - Price per box by location
+contact_lens_rebates - Manufacturer rebate programs
+contact_lens_parameters - Available powers, BC, diameter
+
+
+ Define wear cycle types (enums)
+
+Daily disposable
+Bi-weekly disposable
+Monthly disposable
+Quarterly disposable
+Annual (conventional)
+
+
+
+Afternoon (4 hours):
+
+ Populate contact lens catalog (50+ popular brands)
+
+Daily: Dailies Total1, Acuvue Oasys 1-Day, MyDay
+Bi-weekly: Acuvue Oasys, Biofinity
+Monthly: Air Optix, Ultra, Clariti
+Include: Sphere, Toric, Multifocal variants
+
+
+ Set up rebate programs
+
+Example: Alcon - $100 rebate for 12-month supply
+Example: CooperVision - $80 rebate for annual supply
+Link rebates to specific products
+
+
+ Create annual supply threshold table
+
+Monthly: 2 boxes per eye minimum
+Bi-weekly: 2 twelve-packs per eye
+Daily: 4 ninety-packs per eye
+
+
+
+Deliverable: Complete contact lens database with 50+ products
+
+Day 2 (Tuesday): Layer 3 - Contact Lens Selection UI
+Morning (4 hours):
+
+ Build Layer 3 contact lens interface layout
+
+Brand selector (grid of popular brands)
+Search/filter functionality
+Wear cycle filter buttons
+"Different lenses per eye" toggle
+
+
+ Create brand selection component
+
+Visual brand cards with logos (if available)
+Display: Brand name, wear cycle, price per box
+Filter by: Sphere/Toric/Multifocal
+Sort by: Popularity, Price, Alphabetical
+
+
+
+Afternoon (4 hours):
+
+ Build contact lens parameter selectors
+
+Single eye mode (default):
+
+Brand selector
+Power (prescription) input
+Base curve selector
+Diameter selector
+Number of boxes input
+
+
+Different per eye mode:
+
+Split interface: OD (right) / OS (left)
+Independent brand selection per eye
+Independent parameters per eye
+Boxes per eye
+
+
+
+
+
+Deliverable: Complete Layer 3 UI with single/dual eye modes
+
+Day 3 (Wednesday): Contact Lens Pricing Logic
+Morning (4 hours):
+
+ Build contact lens pricing calculator
+
+Base calculation: boxes × price per box
+Apply additional savings input (manual discount)
+Apply insurance benefit allowance
+Calculate in-office total
+Apply manufacturer rebates
+Calculate after-rebate cost
+
+
+ Implement annual supply discount logic
+
+Detect if boxes meet threshold
+Daily disposables: Apply $30 discount
+Other modalities: Apply $10 discount
+One discount per patient purchase (not per eye)
+
+
+
+Afternoon (4 hours):
+
+ Build rebate detection system
+
+Auto-detect eligible rebates based on brand + quantity
+Display available rebates to staff
+Show rebate amount and requirements
+Add checkbox: "Apply rebate" (checked by default)
+Show clear breakdown: Cost before/after rebate
+
+
+ Implement insurance benefit application
+
+Fetch contact lens allowance from plan
+Apply to total cost (after discounts, before rebates)
+Handle allowance insufficient scenarios
+Update sidebar with itemized breakdown
+
+
+
+Deliverable: Complete contact lens pricing with all discounts/rebates
+
+Day 4 (Thursday): Package Templates System - Backend
+Morning (4 hours):
+
+ Design package templates database schema
+
+package_templates table
+
+package_id, name, description
+icon/image, active status
+created_by, location_id (or "all")
+
+
+package_items table (items in each package)
+
+Links to products
+Layer (exam/frame-lens/contacts)
+Auto-select rules
+
+
+
+
+ Create default package templates
+
+Package 1: Top-Tier Progressive
+
+Best progressive (Tier 5/N/Category 3)
+Best AR coating (Tier 3/QV/Tier 4)
+Photochromic upgrade
+1.67 Hi-Index material
+
+
+Package 2: Computer Glasses
+
+Mid-tier progressive or Single Vision
+Blue light filter
+Mid-tier AR coating
+Standard material
+
+
+
+
+
+Afternoon (4 hours):
+
+ Create more package templates
+
+Package 3: Sunglass Package
+
+Polarized lenses
+Tint (solid dark)
+Mid-tier AR coating
+Standard or polycarbonate
+
+
+Package 4: Budget Progressive
+
+Entry-level progressive (Tier 1/K/Category 1)
+Basic AR coating or no coating
+Standard material
+No enhancements
+
+
+
+
+ Build package template API endpoints
+
+GET /api/packages (list all packages)
+GET /api/packages/:id (get package details)
+POST /api/packages (admin: create package)
+PATCH /api/packages/:id (admin: update package)
+POST /api/quotes/apply-package (apply to active quote)
+
+
+
+Deliverable: Package template backend with 4 default packages
+
+Day 5 (Friday): Package Templates UI & Integration
+Morning (4 hours):
+
+ Build package selection interface
+
+Display at top of quote builder (above Layer 1)
+4 package cards in horizontal row
+Each card shows:
+
+Package name and icon
+Brief description
+"Apply Package" button
+
+
+
+
+ Implement "Apply Package" functionality
+
+Click package → System auto-populates:
+
+Layer 1: Pre-selects exam + recommended add-ons
+Layer 2: Auto-selects frame type, lens, material, AR, enhancements
+Layer 3: Optional (packages typically for eyeglasses)
+
+
+Show confirmation: "Top-Tier Progressive Package applied"
+All selections are editable after application
+
+
+
+Afternoon (4 hours):
+
+ Add package tracking to analytics
+
+Log which package was applied to each quote
+Track if staff modified after applying
+Analytics: Package usage by staff member
+Show conversion rates per package
+
+
+ Build "Reset to Package" button
+
+Appears after package applied and modifications made
+One-click restore to original package selections
+Confirmation dialog before resetting
+
+
+ Test complete quote builder flow
+
+Test all 3 layers work together
+Test package application
+Test pricing updates across all layers
+Test saving/loading quotes
+
+
+
+Deliverable: Complete quote builder with package templates working
+
+Weekend (Optional): Quote Builder Polish & Edge Cases
+If you have extra time:
+
+ Add quote comparison feature
+
+Show side-by-side: Package A vs Package B
+Highlight price differences
+
+
+ Build "Copy Quote" functionality
+
+Duplicate existing quote
+Change patient name
+Keep all product selections
+
+
+ Add keyboard shortcuts
+
+Ctrl+S = Save draft
+Ctrl+P = Apply package
+Arrow keys = Navigate layers
+
+
+ Implement quote validation warnings
+
+"No AR coating selected - patient may experience glare"
+"Frame overage is unusually high ($200+)"
+
+
+ Add hover previews
+
+Hover over product → See larger image + details
+
+
+ Create mobile layout improvements
+
+Collapsible sidebar on mobile
+Touch-friendly contact lens selectors
+
+
+
+
+Week 4 Success Criteria
+By end of Week 4, you should have:
+✅ Complete 3-layer quote builder
+
+Layer 1 (Exam) fully functional
+Layer 2 (Frame/Lens) fully functional
+Layer 3 (Contacts) fully functional
+All layers integrated with pricing engine
+
+✅ Contact lens system working
+
+50+ contact lens brands in catalog
+Single eye and different-per-eye modes
+Annual supply discount applying correctly
+Manufacturer rebates calculating
+Insurance allowance applying properly
+
+✅ Package template system live
+
+4 default packages created
+One-click package application
+All selections editable after application
+Package usage tracked in analytics
+
+✅ End-to-end quote creation
+
+Staff can create complete quotes in <2 minutes
+Pricing accurate across all 3 carriers
+Real-time updates working perfectly
+Draft auto-save functional
+
+
+Contact Lens Pricing Flow (Critical Logic)
+Calculation Steps:
+1. BASE COST
+   = Boxes × Price per Box
+
+2. ANNUAL SUPPLY DISCOUNT (if applicable)
+   IF boxes ≥ annual threshold:
+     - Daily disposables: -$30
+     - Other modalities: -$10
+   
+3. ADDITIONAL SAVINGS (manual)
+   = Staff enters promotional discount
+
+4. SUBTOTAL
+   = Base Cost - Annual Discount - Additional Savings
+
+5. INSURANCE BENEFIT
+   = Plan's contact lens allowance (e.g., $150)
+   
+6. IN-OFFICE TOTAL
+   = Subtotal - Insurance Benefit
+
+7. MANUFACTURER REBATE (post-purchase)
+   = Rebate amount (e.g., $100 for 12-month supply)
+   
+8. AFTER REBATE COST
+   = In-Office Total - Rebate
+
+9. FINAL COST PER BOX
+   = After Rebate Cost ÷ Total Boxes
+```
+
+### **Example Calculation:**
+```
+Patient: Jane Doe, Age 32
+Brand: Acuvue Oasys (Bi-weekly)
+Boxes: 8 (12-month supply for both eyes)
+Price per Box: $45
+
+1. Base Cost: 8 × $45 = $360.00
+
+2. Annual Supply Discount:
+   8 boxes ≥ 4 threshold → -$10.00
+
+3. Additional Savings: -$0.00
+
+4. Subtotal: $360 - $10 = $350.00
+
+5. Insurance Benefit: -$150.00
+   (VSP Choice plan allowance)
+
+6. In-Office Total: $200.00
+   (Patient pays this today)
+
+7. Manufacturer Rebate: -$80.00
+   (J&J rebate for 12-month supply)
+
+8. After Rebate Cost: $120.00
+   (Net cost after rebate received)
+
+9. Final Cost per Box: $120 ÷ 8 = $15.00
+
+Package Template Configuration
+Top-Tier Progressive Package:
+json{
+  "package_id": "top-tier-progressive",
+  "name": "Top-Tier Progressive",
+  "description": "Premium progressive lenses with best coatings",
+  "icon": "crown",
+  "items": {
+    "exam": {
+      "comprehensive": true,
+      "iWellness": true,
+      "optoMap": true
+    },
+    "frameLens": {
+      "lensType": "progressive",
+      "progressive_tier_rule": "highest", // Auto-select Tier 5/N/Cat 3
+      "material": "hi-index-1.67",
+      "ar_coating_tier_rule": "highest", // Auto-select Tier 3/QV/Tier 4
+      "enhancements": {
+        "photochromic": true,
+        "blueLight": true
+      }
+    }
+  },
+  "target_price_range": "$400-600"
+}
+Computer Glasses Package:
+json{
+  "package_id": "computer-glasses",
+  "name": "Computer Glasses",
+  "description": "Optimized for digital screen use",
+  "icon": "monitor",
+  "items": {
+    "exam": {
+      "comprehensive": true
+    },
+    "frameLens": {
+      "lensType": "progressive", // Or single vision near
+      "progressive_tier_rule": "mid", // Tier 2-3
+      "material": "polycarbonate",
+      "ar_coating_tier_rule": "mid",
+      "enhancements": {
+        "blueLight": true
+      }
+    }
+  },
+  "target_price_range": "$200-350"
+}
+```
+
+---
+
+## **Component Architecture for Week 4**
+
+### **New Components:**
+```
+/components/quote-builder/
+  ├── /layer3-contacts/
+  │   ├── ContactLensSelector.tsx      # Brand grid
+  │   ├── ContactLensParameters.tsx    # Power, BC, diameter
+  │   ├── DifferentPerEyeToggle.tsx    # Split OD/OS
+  │   ├── ContactLensPricing.tsx       # Pricing breakdown
+  │   ├── RebateDisplay.tsx            # Show available rebates
+  │   └── AnnualSupplyBadge.tsx        # "Qualifies for $30 discount"
+  │
+  ├── /packages/
+  │   ├── PackageSelector.tsx          # 4 package cards
+  │   ├── PackageCard.tsx              # Individual package
+  │   ├── ApplyPackageButton.tsx       # Apply action
+  │   ├── ResetToPackageButton.tsx     # Reset to original
+  │   └── PackageModifiedBanner.tsx    # "You modified this package"
+  │
+  └── /shared/
+      ├── WearCycleBadge.tsx           # Daily/Monthly/etc
+      ├── RebateBadge.tsx              # Rebate indicator
+      └── InsuranceAllowanceBar.tsx    # Visual allowance meter
+
+State Management Updates
+Add to Zustand Store:
+typescriptinterface QuoteState {
+  // ... previous state
+  
+  // Layer 3: Contacts
+  contacts: {
+    differentPerEye: boolean;
+    singleEye: ContactLensSelection | null;
+    rightEye: ContactLensSelection | null;
+    leftEye: ContactLensSelection | null;
+    insuranceAllowance: number;
+    manufacturerRebate: number;
+  };
+  
+  // Package template tracking
+  appliedPackage: {
+    packageId: string | null;
+    packageName: string | null;
+    appliedAt: Date | null;
+    modified: boolean;
+  };
+  
+  // Actions
+  updateContacts: (contacts: Partial<ContactsSelection>) => void;
+  applyPackageTemplate: (packageId: string) => Promise<void>;
+  resetToPackage: () => void;
+  toggleDifferentPerEye: () => void;
+}
+```
+
+---
+
+## **Development Tips for Week 4**
+
+### **Contact Lens Pricing Complexity:**
+
+1. **Annual supply discount is tricky:**
+   - Must calculate per eye, then aggregate
+   - Only one $30 or $10 discount per purchase (not per eye)
+   - Threshold varies by wear cycle
+
+2. **Rebates are post-purchase:**
+   - Don't subtract from in-office total
+   - Show as separate line: "After rebate received"
+   - Make it clear patient submits rebate form
+
+3. **Different per eye adds complexity:**
+   - Two different brands = two potential rebates
+   - Insurance applies to combined total
+   - Annual discount applies once to whole purchase
+
+### **Package Template Best Practices:**
+
+1. **Make packages aspirational:**
+   - Top-Tier should feel premium
+   - Budget should feel like "smart value"
+   - Computer/Sunglass should feel specialized
+
+2. **Allow full customization:**
+   - Package is just a starting point
+   - Staff can change anything
+   - Track modifications for analytics
+
+3. **Visual feedback:**
+   - Show "Package Applied" banner
+   - Highlight package card with green border
+   - Show "Modified" badge if staff changed selections
+
+### **Testing Checklist:**
+
+**Contact Lens Tests:**
+- [ ] Single eye mode calculates correctly
+- [ ] Different per eye mode totals correctly
+- [ ] Annual supply discount applies at threshold
+- [ ] Daily disposables get $30, others get $10
+- [ ] Rebates display for qualifying brands/quantities
+- [ ] Insurance allowance applies to total
+- [ ] Final cost per box calculation accurate
+
+**Package Template Tests:**
+- [ ] All 4 packages apply successfully
+- [ ] Each layer populates correctly
+- [ ] Pricing updates after package applied
+- [ ] Can modify selections after applying
+- [ ] "Reset to Package" restores original
+- [ ] Package usage logged in database
+
+---
+
+## **Common Pitfalls to Avoid**
+
+1. **Don't apply annual supply discount multiple times** - Once per purchase only
+2. **Don't subtract rebates from in-office total** - They're post-purchase
+3. **Don't forget to show cost per box** - Helps patient understand value
+4. **Don't lock selections after applying package** - Must remain fully editable
+5. **Don't hide which package was applied** - Show package name in sidebar
+
+---
+
+## **API Endpoints to Build**
+
+### **Contact Lenses:**
+```
+GET  /api/contact-lenses             # List all brands
+GET  /api/contact-lenses/:id         # Get brand details
+GET  /api/contact-lenses/rebates     # Get active rebates
+POST /api/quotes/contacts            # Add contacts to quote
+```
+
+### **Package Templates:**
+```
+GET  /api/packages                   # List packages
+GET  /api/packages/:id               # Get package details
+POST /api/packages                   # Admin: Create package
+POST /api/quotes/apply-package       # Apply package to quote
+GET  /api/analytics/package-usage    # Package usage stats
+
+Next Steps After Week 4
+Once Week 4 is complete, you'll have a fully functional quote builder that can handle:
+
+Comprehensive exams with add-ons
+Eyeglass prescriptions (frame/lens)
+Contact lens prescriptions
+Package templates for quick quotes
+Real-time pricing across all 3 carriers
+
+Week 5 and beyond will focus on:
+
+Second pair discount system
+Quote output (print/email)
+Signature capture workflow
+Quote state management (Draft → Presented → Signed → Completed)
+Analytics dashboard
+Admin tools
