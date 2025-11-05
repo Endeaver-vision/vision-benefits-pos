@@ -57,8 +57,8 @@ const initialFilters: TransactionFilters = {
   endDate: '',
   locationId: '',
   userId: '',
-  status: '',
-  insuranceCarrier: '',
+  status: 'all',
+  insuranceCarrier: 'all',
   minAmount: '',
   maxAmount: '',
   page: 1,
@@ -263,7 +263,7 @@ export default function TransactionReportsPage() {
                     <SelectValue placeholder="All statuses" />
                   </SelectTrigger>
                   <SelectContent>
-                    <SelectItem value="">All statuses</SelectItem>
+                    <SelectItem value="all">All statuses</SelectItem>
                     <SelectItem value="COMPLETED">Completed</SelectItem>
                     <SelectItem value="PENDING">Pending</SelectItem>
                     <SelectItem value="CANCELLED">Cancelled</SelectItem>
@@ -278,7 +278,7 @@ export default function TransactionReportsPage() {
                     <SelectValue placeholder="All carriers" />
                   </SelectTrigger>
                   <SelectContent>
-                    <SelectItem value="">All carriers</SelectItem>
+                    <SelectItem value="all">All carriers</SelectItem>
                     <SelectItem value="VSP">VSP</SelectItem>
                     <SelectItem value="EyeMed">EyeMed</SelectItem>
                     <SelectItem value="Spectera">Spectera</SelectItem>

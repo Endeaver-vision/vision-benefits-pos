@@ -120,12 +120,24 @@ export default function DashboardPage() {
             <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
               <Card className="cursor-pointer hover:shadow-md transition-shadow">
                 <CardHeader>
-                  <CardTitle className="text-lg">New Sale</CardTitle>
+                  <CardTitle className="text-lg">New Quote</CardTitle>
                 </CardHeader>
                 <CardContent>
-                  <p className="text-sm text-gray-600 mb-4">Start a new customer transaction</p>
+                  <p className="text-sm text-gray-600 mb-4">Start a new eyeglasses quote with comprehensive selection</p>
                   <Button className="w-full" asChild>
-                    <a href="/pos">Start Sale</a>
+                    <a href="/quote-builder">Start Quote</a>
+                  </Button>
+                </CardContent>
+              </Card>
+
+              <Card className="cursor-pointer hover:shadow-md transition-shadow">
+                <CardHeader>
+                  <CardTitle className="text-lg">Quick POS</CardTitle>
+                </CardHeader>
+                <CardContent>
+                  <p className="text-sm text-gray-600 mb-4">Quick product sales and accessories</p>
+                  <Button variant="outline" className="w-full" asChild>
+                    <a href="/pos">Quick Sale</a>
                   </Button>
                 </CardContent>
               </Card>

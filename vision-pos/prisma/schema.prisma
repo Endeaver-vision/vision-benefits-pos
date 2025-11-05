@@ -144,30 +144,423 @@ model Customer {
   email           String?
   phone           String?
   dateOfBirth     DateTime?
+  gender          Gender?
   
-  // Insurance Information
-  insuranceCarrier String? // "VSP", "EyeMed", "Spectera"
-  memberId        String?
-  groupNumber     String?
-  eligibilityDate DateTime?
+  // Legacy fields for migration compatibility
+  address         String?  // Will be migrated to CustomerAddress
+  city            String?  // Will be migrated to CustomerAddress  
+  state           String?  // Will be migrated to CustomerAddress
+  zipCode         String?  // Will be migrated to CustomerAddress
+  insuranceCarrier String? // Will be migrated to CustomerInsurance
+  memberId        String? // Will be migrated to CustomerInsurance
+  groupNumber     String? // Will be migrated to CustomerInsurance
+  eligibilityDate DateTime? // Will be migrated to CustomerInsurance
+  active          Boolean  @default(true) // Will be migrated to accountStatus
   
-  // Address Information
-  address         String?
-  city            String?
-  state           String?
-  zipCode         String?
+  // New account information
+  customerNumber  String?  @unique // Made optional for migration
+  accountStatus   AccountStatus @default(ACTIVE)
+  registrationDate DateTime @default(now())
+  lastVisit       DateTime?
   
-  // Customer Notes
+  // Analytics fields
+  totalSpent      Float    @default(0)
+  averageOrderValue Float  @default(0)
+  customerLifetimeValue Float @default(0)
+  lastPurchaseDate DateTime?
+  isHighValueCustomer Boolean @default(false)
+  isFrequentCustomer Boolean @default(false)
+  riskLevel       RiskLevel @default(LOW)
+  
+  // Marketing and communication
+  marketingConsent Boolean @default(false)
   notes           String?
   
-  active          Boolean  @default(true)
+  createdAt       DateTime @default(now())
+  updatedAt       DateTime @updatedAt
+  createdBy       String?
+  updatedBy       String?
+  
+  // Relations
+  addresses       CustomerAddress[]
+  insuranceInfo   CustomerInsurance[]
+  preferences     CustomerPreferences?
+  eyewearPreferences EyewearPreferences?
+  communicationPreferences CommunicationPreferences?
+  relationships   CustomerRelationship[] @relation("PrimaryCustomer")
+  relatedTo       CustomerRelationship[] @relation("RelatedCustomer")
+  purchaseHistory CustomerPurchaseHistory[]
+  visitHistory    CustomerVisit[]
+  prescriptions   EyePrescription[]
+  tags            CustomerTagAssignment[]
+  transactions    Transaction[]
+  
+  @@map("customers")
+}
+
+enum Gender {
+  MALE
+  FEMALE
+  OTHER
+  PREFER_NOT_TO_SAY
+}
+
+enum AccountStatus {
+  ACTIVE
+  INACTIVE
+  SUSPENDED
+}
+
+enum RiskLevel {
+  LOW
+  MEDIUM
+  HIGH
+}
+
+model CustomerAddress {
+  id          String   @id @default(cuid())
+  customerId  String
+  type        AddressType
+  street      String
+  street2     String?
+  city        String
+  state       String
+  zipCode     String
+  country     String   @default("USA")
+  isPrimary   Boolean  @default(false)
+  isActive    Boolean  @default(true)
+  
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+  
+  // Relations
+  customer    Customer @relation(fields: [customerId], references: [id])
+  
+  @@map("customer_addresses")
+}
+
+enum AddressType {
+  HOME
+  WORK
+  BILLING
+  SHIPPING
+  OTHER
+}
+
+model CustomerInsurance {
+  id              String   @id @default(cuid())
+  customerId      String
+  carrier         String
+  planName        String?
+  planType        InsurancePlanType
+  memberId        String
+  groupNumber     String?
+  effectiveDate   DateTime
+  expirationDate  DateTime?
+  copayAmount     Float?
+  deductible      Float?
+  isPrimary       Boolean  @default(false)
+  isActive        Boolean  @default(true)
+  
+  // Dependent information
+  subscriberName  String?
+  relationshipToSubscriber RelationshipType?
+  
+  // Coverage details stored as JSON
+  coverageDetails Json
+  
   createdAt       DateTime @default(now())
   updatedAt       DateTime @updatedAt
   
   // Relations
-  transactions    Transaction[]
+  customer        Customer @relation(fields: [customerId], references: [id])
   
-  @@map("customers")
+  @@map("customer_insurance")
+}
+
+enum InsurancePlanType {
+  VISION
+  MEDICAL
+  BOTH
+}
+
+enum RelationshipType {
+  SELF
+  SPOUSE
+  CHILD
+  DEPENDENT
+  OTHER
+}
+
+model CustomerPreferences {
+  id              String   @id @default(cuid())
+  customerId      String   @unique
+  
+  preferredContactMethod ContactMethod @default(EMAIL)
+  appointmentReminders Boolean @default(true)
+  promotionalEmails Boolean @default(false)
+  language        String   @default("en")
+  timezone        String   @default("America/New_York")
+  
+  // Shopping preferences stored as JSON
+  preferredBrands Json     @default("[]")
+  budgetRange     Json?
+  
+  // Accessibility needs
+  largeFont       Boolean  @default(false)
+  audioAssistance Boolean  @default(false)
+  wheelchairAccessible Boolean @default(false)
+  
+  // Visit preferences stored as JSON
+  preferredProviders Json   @default("[]")
+  preferredAppointmentTimes Json @default("[]")
+  specialInstructions String?
+  
+  createdAt       DateTime @default(now())
+  updatedAt       DateTime @updatedAt
+  
+  // Relations
+  customer        Customer @relation(fields: [customerId], references: [id])
+  
+  @@map("customer_preferences")
+}
+
+enum ContactMethod {
+  EMAIL
+  PHONE
+  SMS
+  MAIL
+}
+
+model EyewearPreferences {
+  id              String   @id @default(cuid())
+  customerId      String   @unique
+  
+  // Preferences stored as JSON arrays
+  frameStyles     Json     @default("[]")
+  frameMaterials  Json     @default("[]")
+  frameColors     Json     @default("[]")
+  lensTypes       Json     @default("[]")
+  lensCoatings    Json     @default("[]")
+  contactLensBrands Json   @default("[]")
+  contactLensTypes Json    @default("[]")
+  
+  // Budget preferences
+  framesBudget    Float?
+  contactsBudget  Float?
+  
+  // Special needs
+  safetyRequirements Boolean @default(false)
+  computerGlasses Boolean  @default(false)
+  sportsEyewear   Boolean  @default(false)
+  fashionPriority Priority @default(MEDIUM)
+  comfortPriority Priority @default(HIGH)
+  
+  createdAt       DateTime @default(now())
+  updatedAt       DateTime @updatedAt
+  
+  // Relations
+  customer        Customer @relation(fields: [customerId], references: [id])
+  
+  @@map("eyewear_preferences")
+}
+
+enum Priority {
+  HIGH
+  MEDIUM
+  LOW
+}
+
+model CommunicationPreferences {
+  id            String   @id @default(cuid())
+  customerId    String   @unique
+  
+  // Email preferences as individual boolean fields for SQLite compatibility
+  emailAppointments    Boolean @default(true)
+  emailPromotions      Boolean @default(false) 
+  emailReminders       Boolean @default(true)
+  emailNewsletters     Boolean @default(false)
+  
+  // SMS preferences
+  smsAppointments      Boolean @default(true)
+  smsPickupReady       Boolean @default(true)
+  smsPromotions        Boolean @default(false)
+  
+  // Phone preferences
+  phoneAppointments    Boolean @default(false)
+  phoneFollowUp        Boolean @default(false)
+  phoneEmergencyContact Boolean @default(true)
+  
+  // Mailing preferences
+  mailingStatements    Boolean @default(true)
+  mailingPromotions    Boolean @default(false)
+  mailingCatalogs      Boolean @default(false)
+  
+  createdAt     DateTime @default(now())
+  updatedAt     DateTime @updatedAt
+  
+  // Relations
+  customer      Customer @relation(fields: [customerId], references: [id], onDelete: Restrict)
+  
+  @@map("communication_preferences")
+}
+
+model CustomerRelationship {
+  id              String   @id @default(cuid())
+  primaryCustomerId String
+  relatedCustomerId String
+  relationshipType CustomerRelationshipType
+  isActive        Boolean  @default(true)
+  notes           String?
+  
+  createdAt       DateTime @default(now())
+  
+  // Relations
+  primaryCustomer Customer @relation("PrimaryCustomer", fields: [primaryCustomerId], references: [id])
+  relatedCustomer Customer @relation("RelatedCustomer", fields: [relatedCustomerId], references: [id])
+  
+  @@unique([primaryCustomerId, relatedCustomerId])
+  @@map("customer_relationships")
+}
+
+enum CustomerRelationshipType {
+  SPOUSE
+  CHILD
+  PARENT
+  SIBLING
+  GUARDIAN
+  DEPENDENT
+  OTHER
+}
+
+model CustomerPurchaseHistory {
+  id              String   @id @default(cuid())
+  customerId      String
+  transactionId   String
+  orderDate       DateTime
+  totalAmount     Float
+  paymentMethod   String
+  
+  // Eye care specific
+  prescriptionUsed String?
+  providerId      String?
+  
+  // Items stored as JSON text for SQLite compatibility
+  itemsJson       String   @default("[]")
+  
+  createdAt       DateTime @default(now())
+  
+  // Relations
+  customer        Customer @relation(fields: [customerId], references: [id])
+  
+  @@map("customer_purchase_history")
+}
+
+model CustomerVisit {
+  id              String   @id @default(cuid())
+  customerId      String
+  visitDate       DateTime
+  visitType       VisitType
+  providerId      String?
+  providerName    String?
+  duration        Int?     // minutes
+  notes           String?
+  outcome         String?
+  nextAppointmentRecommended Boolean @default(false)
+  
+  createdAt       DateTime @default(now())
+  
+  // Relations
+  customer        Customer @relation(fields: [customerId], references: [id])
+  
+  @@map("customer_visits")
+}
+
+enum VisitType {
+  EXAM
+  FITTING
+  PICKUP
+  ADJUSTMENT
+  CONSULTATION
+  FOLLOW_UP
+}
+
+model EyePrescription {
+  id              String   @id @default(cuid())
+  customerId      String
+  prescriptionDate DateTime
+  providerId      String?
+  providerName    String?
+  
+  // Eye measurements stored as JSON text for SQLite
+  rightEyeJson    String   @default("{}")
+  leftEyeJson     String   @default("{}")
+  
+  // Additional measurements
+  pupillaryDistance Float?
+  bifocalHeight   Float?
+  
+  // Prescription details
+  prescriptionType PrescriptionType
+  notes           String?
+  
+  // Validity
+  expirationDate  DateTime?
+  isActive        Boolean  @default(true)
+  
+  createdAt       DateTime @default(now())
+  updatedAt       DateTime @updatedAt
+  
+  // Relations
+  customer        Customer @relation(fields: [customerId], references: [id])
+  
+  @@map("eye_prescriptions")
+}
+
+enum PrescriptionType {
+  DISTANCE
+  READING
+  BIFOCAL
+  PROGRESSIVE
+  COMPUTER
+}
+
+model CustomerTag {
+  id              String   @id @default(cuid())
+  name            String   @unique
+  color           String?
+  category        TagCategory?
+  
+  createdAt       DateTime @default(now())
+  updatedAt       DateTime @updatedAt
+  
+  // Relations
+  assignments     CustomerTagAssignment[]
+  
+  @@map("customer_tags")
+}
+
+enum TagCategory {
+  PREFERENCE
+  MEDICAL
+  BUSINESS
+  BEHAVIOR
+  OTHER
+}
+
+model CustomerTagAssignment {
+  id              String   @id @default(cuid())
+  customerId      String
+  tagId           String
+  
+  createdAt       DateTime @default(now())
+  
+  // Relations
+  customer        Customer    @relation(fields: [customerId], references: [id])
+  tag             CustomerTag @relation(fields: [tagId], references: [id])
+  
+  @@unique([customerId, tagId])
+  @@map("customer_tag_assignments")
 }
 
 model Transaction {

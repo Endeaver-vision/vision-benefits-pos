@@ -67,7 +67,7 @@ export default function POSPage() {
   
   const [productSearch, setProductSearch] = useState('')
   const [productResults, setProductResults] = useState<Product[]>([])
-  const [selectedCategory, setSelectedCategory] = useState('')
+  const [selectedCategory, setSelectedCategory] = useState('all')
   
   const [cart, setCart] = useState<CartItem[]>([])
   const [loading, setLoading] = useState(false)
@@ -104,7 +104,7 @@ export default function POSPage() {
     try {
       const params = new URLSearchParams()
       if (productSearch) params.append('search', productSearch)
-      if (selectedCategory) params.append('category', selectedCategory)
+      if (selectedCategory && selectedCategory !== 'all') params.append('category', selectedCategory)
       params.append('limit', '20')
 
       const response = await fetch(`/api/products?${params}`)
@@ -305,7 +305,10 @@ export default function POSPage() {
                         <div
                           key={customer.id}
                           className="p-3 border rounded-lg cursor-pointer hover:bg-gray-50"
-                          onClick={() => {
+                          onClick={(e) => {
+                            console.log('Customer clicked:', customer)
+                            e.preventDefault()
+                            e.stopPropagation()
                             setSelectedCustomer(customer)
                             setShowCustomerSearch(false)
                             setCustomerSearch('')
@@ -371,7 +374,7 @@ export default function POSPage() {
                         <SelectValue placeholder="All" />
                       </SelectTrigger>
                       <SelectContent>
-                        <SelectItem value="">All Categories</SelectItem>
+                        <SelectItem value="all">All Categories</SelectItem>
                         <SelectItem value="frames">Frames</SelectItem>
                         <SelectItem value="lenses">Lenses</SelectItem>
                         <SelectItem value="coatings">Coatings</SelectItem>

@@ -1,66 +1,73 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { prisma } from '@/lib/prisma'
 
-// GET /api/customers - Search customers
+// GET /api/customers - Simple customer search with pagination
 export async function GET(request: NextRequest) {
   try {
     const { searchParams } = new URL(request.url)
-    const search = searchParams.get('search')
-    const limit = parseInt(searchParams.get('limit') || '20')
-    const offset = parseInt(searchParams.get('offset') || '0')
+    
+    const search = searchParams.get('search') || ''
+    const page = Math.max(1, parseInt(searchParams.get('page') || '1'))
+    const limit = Math.min(parseInt(searchParams.get('limit') || '20'), 100)
+    const skip = (page - 1) * limit
 
-    const whereClause = search
-      ? {
-          AND: [
-            { active: true },
-            {
-              OR: [
-                { firstName: { contains: search, mode: 'insensitive' } },
-                { lastName: { contains: search, mode: 'insensitive' } },
-                { email: { contains: search, mode: 'insensitive' } },
-                { phone: { contains: search, mode: 'insensitive' } },
-                { memberId: { contains: search, mode: 'insensitive' } },
-              ]
-            }
-          ]
-        }
-      : { active: true }
+    let whereClause
+    if (search.trim()) {
+      whereClause = {
+        AND: [
+          { active: true },
+          {
+            OR: [
+              { firstName: { contains: search } },
+              { lastName: { contains: search } },
+              { email: { contains: search } },
+              { phone: { contains: search } },
+              { insuranceCarrier: { contains: search } },
+              { memberId: { contains: search } }
+            ]
+          }
+        ]
+      }
+    } else {
+      whereClause = { active: true }
+    }
 
+    // Execute queries
     const [customers, total] = await Promise.all([
       prisma.customer.findMany({
         where: whereClause,
         take: limit,
-        skip: offset,
+        skip: skip,
         orderBy: [
           { lastName: 'asc' },
           { firstName: 'asc' }
-        ],
-        include: {
-          _count: {
-            select: {
-              transactions: true
-            }
-          }
-        }
+        ]
       }),
       prisma.customer.count({ where: whereClause })
     ])
+
+    // Calculate pagination info
+    const totalPages = Math.ceil(total / limit)
+    const hasNextPage = page < totalPages
+    const hasPreviousPage = page > 1
 
     return NextResponse.json({
       success: true,
       data: customers,
       pagination: {
         total,
+        page,
         limit,
-        offset,
-        hasMore: offset + limit < total
+        totalPages,
+        hasNextPage,
+        hasPreviousPage
       }
     })
   } catch (error) {
     console.error('Customers API error:', error)
     return NextResponse.json({
       success: false,
-      error: error instanceof Error ? error.message : 'Unknown error'
+      error: error instanceof Error ? error.message : 'Unknown error occurred'
     }, { status: 500 })
   }
 }
@@ -75,16 +82,12 @@ export async function POST(request: NextRequest) {
       lastName,
       email,
       phone,
-      dateOfBirth,
       insuranceCarrier,
       memberId,
-      groupNumber,
-      eligibilityDate,
       address,
       city,
       state,
-      zipCode,
-      notes
+      zipCode
     } = body
 
     // Validate required fields
@@ -92,6 +95,14 @@ export async function POST(request: NextRequest) {
       return NextResponse.json({
         success: false,
         error: 'First name and last name are required'
+      }, { status: 400 })
+    }
+
+    // Validate email format if provided
+    if (email && !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email)) {
+      return NextResponse.json({
+        success: false,
+        error: 'Invalid email format'
       }, { status: 400 })
     }
 
@@ -112,22 +123,20 @@ export async function POST(request: NextRequest) {
       }
     }
 
+    // Create customer using current schema
     const customer = await prisma.customer.create({
       data: {
         firstName,
         lastName,
         email,
         phone,
-        dateOfBirth: dateOfBirth ? new Date(dateOfBirth) : null,
         insuranceCarrier,
         memberId,
-        groupNumber,
-        eligibilityDate: eligibilityDate ? new Date(eligibilityDate) : null,
         address,
         city,
         state,
         zipCode,
-        notes
+        active: true
       }
     })
 
@@ -139,7 +148,7 @@ export async function POST(request: NextRequest) {
     console.error('Create customer error:', error)
     return NextResponse.json({
       success: false,
-      error: error instanceof Error ? error.message : 'Unknown error'
+      error: error instanceof Error ? error.message : 'Failed to create customer'
     }, { status: 500 })
   }
 }

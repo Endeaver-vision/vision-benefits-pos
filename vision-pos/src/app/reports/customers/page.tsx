@@ -31,7 +31,7 @@ const initialFilters: CustomerAnalyticsFilters = {
   startDate: '',
   endDate: '',
   locationId: '',
-  insuranceCarrier: '',
+  insuranceCarrier: 'all',
   minTransactions: 0,
   minSpent: 0,
   limit: 100,
@@ -239,7 +239,7 @@ export default function CustomerAnalyticsPage() {
                     <SelectValue placeholder="All carriers" />
                   </SelectTrigger>
                   <SelectContent>
-                    <SelectItem value="">All carriers</SelectItem>
+                    <SelectItem value="all">All carriers</SelectItem>
                     <SelectItem value="VSP">VSP</SelectItem>
                     <SelectItem value="EyeMed">EyeMed</SelectItem>
                     <SelectItem value="Spectera">Spectera</SelectItem>

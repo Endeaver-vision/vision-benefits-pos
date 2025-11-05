@@ -199,7 +199,7 @@ export default function InventoryAnalytics() {
                     <SelectValue placeholder="All categories" />
                   </SelectTrigger>
                   <SelectContent>
-                    <SelectItem value="">All categories</SelectItem>
+                    <SelectItem value="all">All categories</SelectItem>
                     <SelectItem value="frames">Frames</SelectItem>
                     <SelectItem value="lenses">Lenses</SelectItem>
                     <SelectItem value="coatings">Coatings</SelectItem>
@@ -214,7 +214,7 @@ export default function InventoryAnalytics() {
                     <SelectValue placeholder="All locations" />
                   </SelectTrigger>
                   <SelectContent>
-                    <SelectItem value="">All locations</SelectItem>
+                    <SelectItem value="all">All locations</SelectItem>
                     <SelectItem value="downtown">Downtown</SelectItem>
                     <SelectItem value="westside">Westside</SelectItem>
                   </SelectContent>
@@ -227,7 +227,7 @@ export default function InventoryAnalytics() {
                     <SelectValue placeholder="All stock levels" />
                   </SelectTrigger>
                   <SelectContent>
-                    <SelectItem value="">All stock levels</SelectItem>
+                    <SelectItem value="all">All stock levels</SelectItem>
                     <SelectItem value="true">Low stock only</SelectItem>
                   </SelectContent>
                 </Select>
