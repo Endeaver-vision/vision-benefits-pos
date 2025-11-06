@@ -4,8 +4,8 @@ import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
 import { LayerNavigation } from '@/components/quote-builder/layer-navigation'
 import { PricingSidebar } from '@/components/quote-builder/pricing-sidebar'
 import { QuoteHeader } from '@/components/quote-builder/quote-header'
-import { ExamServicesLayer } from '@/components/quote-builder/layers/exam-services-layer'
-import { EyeglassesLayer } from '@/components/quote-builder/layers/eyeglasses-layer'
+import ExamServicesLayer from '@/components/quote-builder/layers/exam-services-layer'
+import EyeglassesLayer from '@/components/quote-builder/layers/eyeglasses-layer'
 import { useQuoteStore, useQuoteSelectors } from '../../../store/quote-store'
 import { LayerDefinition, LayerId } from '../../../types/quote-builder'
 import { 
@@ -55,10 +55,15 @@ export default function NewQuotePage() {
   const renderLayerContent = () => {
     switch (currentLayer) {
       case 'exam':
-        return <ExamServicesLayer />
+        return <ExamServicesLayer 
+          onNext={() => setCurrentLayer('eyeglasses')}
+        />
       
       case 'eyeglasses':
-        return <EyeglassesLayer />
+        return <EyeglassesLayer 
+          onNext={() => setCurrentLayer('contacts')}
+          onBack={() => setCurrentLayer('exam')}
+        />
       
       case 'contacts':
         return (

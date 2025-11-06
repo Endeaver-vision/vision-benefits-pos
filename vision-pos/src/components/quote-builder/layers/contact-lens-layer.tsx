@@ -1,729 +1,424 @@
 'use client'
 
-import { useState } from 'react'
-import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
-import { Button } from '@/components/ui/button'
-import { Input } from '@/components/ui/input'
-import { Label } from '@/components/ui/label'
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select'
-import { Badge } from '@/components/ui/badge'
-import { Separator } from '@/components/ui/separator'
-import { Alert, AlertDescription } from '@/components/ui/alert'
-import { Checkbox } from '@/components/ui/checkbox'
+import { useState, useMemo, useEffect, useCallback } from 'react'
+import { NavigationFooter } from '@/components/quote-builder/layout/navigation-footer'
 import { 
-  Eye, 
-  Calculator, 
-  CheckCircle,
-  AlertCircle,
-  Percent
-} from 'lucide-react'
+  VSPCategorySection, 
+  VSPSelectionButton, 
+  VSPGrid3
+} from '@/components/ui/vsp-components'
+import { Label } from '@/components/ui/label'
+import { Input } from '@/components/ui/input'
+import { useQuoteStore } from '@/store/quote-store'
 
-interface ContactLensParameters {
-  rightEye: {
-    power: string
-    baseCurve: string
-    diameter: string
-  }
-  leftEye: {
-    power: string
-    baseCurve: string
-    diameter: string
-  }
+interface ContactBrand {
+  id: string
+  name: string
+  manufacturer: string
+  description: string
+  rebateAmount: number
+  insuranceCovered: boolean
+  copay?: number
 }
 
-interface ContactLensSelection {
-  brand: string
-  product: string
-  type: 'daily' | 'weekly' | 'monthly' | 'extended' | ''
-  parameters: ContactLensParameters
-  quantity: number
-  annualSupply: boolean
-  rebateApplied: boolean
-  fittingRequired: boolean
+interface LensType {
+  id: string
+  name: string
+  subtitle: string
+  price: number
+  replacementSchedule: string
+  insuranceCovered: boolean
+  copay?: number
 }
 
-// Mock contact lens brands and products
-const contactLensBrands = [
-  {
-    id: 'acuvue',
-    name: 'ACUVUE',
-    manufacturer: 'Johnson & Johnson',
-    products: {
-      daily: ['ACUVUE OASYS 1-Day', 'ACUVUE MOIST 1-Day', 'ACUVUE TruEye 1-Day'],
-      weekly: ['ACUVUE OASYS', 'ACUVUE VITA'],
-      monthly: ['ACUVUE OASYS', 'ACUVUE 2'],
-      extended: ['ACUVUE OASYS for Astigmatism']
-    },
-    rebate: {
-      annual: 100,
-      description: '$100 rebate on annual supply'
-    }
-  },
-  {
-    id: 'biofinity',
-    name: 'Biofinity',
-    manufacturer: 'CooperVision',
-    products: {
-      daily: ['MyDay Daily Disposable', 'clariti 1 day'],
-      weekly: ['Biofinity'],
-      monthly: ['Biofinity', 'Avaira Vitality'],
-      extended: ['Biofinity Toric', 'Biofinity Multifocal']
-    },
-    rebate: {
-      annual: 80,
-      description: '$80 rebate on annual supply'
-    }
-  },
-  {
-    id: 'dailies',
-    name: 'DAILIES',
-    manufacturer: 'Alcon',
-    products: {
-      daily: ['DAILIES TOTAL1', 'DAILIES AquaComfort Plus', 'DAILIES All Day Comfort'],
-      weekly: ['AIR OPTIX AQUA'],
-      monthly: ['AIR OPTIX plus HydraGlyde', 'AIR OPTIX AQUA'],
-      extended: ['AIR OPTIX for Astigmatism']
-    },
-    rebate: {
-      annual: 120,
-      description: '$120 rebate on annual supply'
-    }
-  },
-  {
-    id: 'bausch',
-    name: 'Bausch + Lomb',
-    manufacturer: 'Bausch + Lomb',
-    products: {
-      daily: ['Biotrue ONEday', 'SofLens daily disposable'],
-      weekly: ['Biotrue ONEday for Presbyopia'],
-      monthly: ['ULTRA', 'PureVision2'],
-      extended: ['ULTRA for Astigmatism']
-    },
-    rebate: {
-      annual: 90,
-      description: '$90 rebate on annual supply'
-    }
-  }
+interface ContactPricingCalculator {
+  pricePerBox: number            // Data entry
+  numberOfBoxes: number          // Data entry  
+  totalCostOfCLs: number          // Calculated: pricePerBox × numberOfBoxes
+  additionalSavings: number       // Data entry
+  insuranceBenefit: number        // Data entry
+  inOfficeTotal: number           // Calculated: totalCostOfCLs - additionalSavings - insuranceBenefit
+  manufacturerRebate: number      // Data entry
+  afterRebateTotal: number        // Calculated: inOfficeTotal - manufacturerRebate
+  finalCostPerBox: number         // Calculated: afterRebateTotal ÷ numberOfBoxes
+}
+
+interface ContactLensLayerProps {
+  onNext: () => void
+  onBack?: () => void
+}
+
+// Updated contact lens brands from attachment
+const contactBrands: ContactBrand[] = [
+  { id: 'acuvue-oasys', name: 'Acuvue Oasys', manufacturer: 'Johnson & Johnson', description: 'Bi-weekly silicone hydrogel', rebateAmount: 100, insuranceCovered: true, copay: 25 },
+  { id: 'biofinity', name: 'Biofinity', manufacturer: 'CooperVision', description: 'Monthly silicone hydrogel', rebateAmount: 80, insuranceCovered: true, copay: 30 },
+  { id: 'air-optix', name: 'Air Optix', manufacturer: 'Alcon', description: 'Monthly breathable lenses', rebateAmount: 120, insuranceCovered: true, copay: 20 },
+  { id: 'dailies-total1', name: 'Dailies Total1', manufacturer: 'Alcon', description: 'Premium daily disposable', rebateAmount: 90, insuranceCovered: true, copay: 35 },
+  { id: 'ultra', name: 'Ultra', manufacturer: 'Bausch + Lomb', description: 'Monthly moisture seal', rebateAmount: 75, insuranceCovered: true, copay: 25 },
+  { id: 'clariti', name: 'Clariti', manufacturer: 'CooperVision', description: 'Daily silicone hydrogel', rebateAmount: 110, insuranceCovered: true, copay: 40 },
+  { id: 'precision1', name: 'Precision1', manufacturer: 'Alcon', description: 'Daily with smart surface', rebateAmount: 95, insuranceCovered: true, copay: 30 }
 ]
 
-export function ContactLensLayer() {
-  const [selection, setSelection] = useState<ContactLensSelection>({
-    brand: '',
-    product: '',
-    type: '',
-    parameters: {
-      rightEye: { power: '', baseCurve: '', diameter: '' },
-      leftEye: { power: '', baseCurve: '', diameter: '' }
-    },
-    quantity: 0,
-    annualSupply: false,
-    rebateApplied: false,
-    fittingRequired: true
+const lensTypes: LensType[] = [
+  { id: 'daily', name: 'Daily Disposable', subtitle: 'New pair every day', price: 35, replacementSchedule: 'Daily', insuranceCovered: true, copay: 15 },
+  { id: 'weekly', name: 'Weekly Disposable', subtitle: '1-2 week replacement', price: 25, replacementSchedule: 'Weekly', insuranceCovered: true, copay: 10 },
+  { id: 'monthly', name: 'Monthly Disposable', subtitle: '30 day replacement', price: 30, replacementSchedule: 'Monthly', insuranceCovered: true, copay: 12 },
+  { id: 'toric', name: 'Toric (Astigmatism)', subtitle: 'For astigmatism correction', price: 45, replacementSchedule: 'Monthly', insuranceCovered: true, copay: 20 },
+  { id: 'multifocal', name: 'Multifocal', subtitle: 'Progressive vision', price: 55, replacementSchedule: 'Monthly', insuranceCovered: true, copay: 25 },
+  { id: 'colored', name: 'Colored/Cosmetic', subtitle: 'Enhancement lenses', price: 40, replacementSchedule: 'Monthly', insuranceCovered: false }
+]
+
+export default function ContactLensLayer({ onNext, onBack }: ContactLensLayerProps) {
+  const { updateContacts, updatePricing, saveQuote, quote } = useQuoteStore()
+  
+  // Initialize contact lens state from store
+  const [selectedBrand, setSelectedBrand] = useState<string>(() => 
+    quote.contacts.brand || ''
+  )
+  const [selectedLensType, setSelectedLensType] = useState<string>(() => 
+    quote.contacts.type || ''
+  )
+  
+  // Contact Lens Pricing Calculator - 9 fields with string inputs for better UX
+  const [pricing, setPricing] = useState<ContactPricingCalculator>({
+    pricePerBox: 0,
+    numberOfBoxes: 0,
+    totalCostOfCLs: 0,
+    additionalSavings: 0,
+    insuranceBenefit: 0,
+    inOfficeTotal: 0,
+    manufacturerRebate: 0,
+    afterRebateTotal: 0,
+    finalCostPerBox: 0
   })
 
-  const [currentStep, setCurrentStep] = useState<'brand' | 'type' | 'product' | 'parameters' | 'quantity'>('brand')
-  const [validation, setValidation] = useState<string[]>([])
+  // String values for input fields to prevent formatting interference
+  const [inputValues, setInputValues] = useState({
+    pricePerBox: '',
+    additionalSavings: '',
+    insuranceBenefit: '',
+    manufacturerRebate: ''
+  })
 
-  // Get selected brand data
-  const selectedBrand = contactLensBrands.find(b => b.id === selection.brand)
-  
-  // Get available products for selected type
-  const availableProducts = selectedBrand && selection.type 
-    ? selectedBrand.products[selection.type] || []
-    : []
+  // Calculate dependent fields using useMemo
+  const calculatedPricing = useMemo(() => {
+    const totalCost = pricing.pricePerBox * pricing.numberOfBoxes
+    const inOfficeTotal = Math.max(0, totalCost - pricing.additionalSavings - pricing.insuranceBenefit)
+    const afterRebateTotal = Math.max(0, inOfficeTotal - pricing.manufacturerRebate)
+    const finalCostPerBox = pricing.numberOfBoxes > 0 ? afterRebateTotal / pricing.numberOfBoxes : 0
 
-  // Calculate pricing
-  const basePrice = getBasePrice(selection.brand, selection.product, selection.type)
-  const annualQuantity = getAnnualQuantity(selection.type)
-  const totalPrice = selection.annualSupply ? basePrice * annualQuantity : basePrice * selection.quantity
-  const rebateAmount = selection.annualSupply && selection.rebateApplied && selectedBrand ? selectedBrand.rebate.annual : 0
-  const fittingFee = selection.fittingRequired ? 75 : 0
-  const finalPrice = totalPrice - rebateAmount + fittingFee
-
-  function getBasePrice(brand: string, product: string, type: string): number {
-    // Mock pricing based on brand and type
-    const basePrices: Record<string, Record<string, number>> = {
-      acuvue: { daily: 35, weekly: 45, monthly: 55, extended: 65 },
-      biofinity: { daily: 32, weekly: 42, monthly: 52, extended: 62 },
-      dailies: { daily: 38, weekly: 48, monthly: 58, extended: 68 },
-      bausch: { daily: 30, weekly: 40, monthly: 50, extended: 60 }
+    return {
+      ...pricing,
+      totalCostOfCLs: totalCost,
+      inOfficeTotal,
+      afterRebateTotal,
+      finalCostPerBox: Math.max(0, finalCostPerBox)
     }
-    return basePrices[brand]?.[type] || 0
-  }
+  }, [pricing])
 
-  function getAnnualQuantity(type: string): number {
-    const quantities: Record<string, number> = {
-      daily: 8, // 8 boxes for annual supply
-      weekly: 4, // 4 boxes for annual supply
-      monthly: 4, // 4 boxes for annual supply
-      extended: 2 // 2 boxes for annual supply
+  const saveContactsData = useCallback(async () => {
+    try {
+      updateContacts({
+        brand: selectedBrand,
+        type: selectedLensType as 'daily' | 'weekly' | 'monthly' | 'extended',
+        parameters: {
+          rightEye: {
+            power: -2.50 // Simplified default power
+          },
+          leftEye: {
+            power: -2.75 // Simplified default power
+          }
+        },
+        quantity: calculatedPricing.numberOfBoxes,
+        annualSupply: true, // Simplified to always include annual supply
+        rebate: selectedBrand ? {
+          amount: contactBrands.find(b => b.id === selectedBrand)?.rebateAmount || 0,
+          manufacturer: contactBrands.find(b => b.id === selectedBrand)?.manufacturer || ''
+        } : undefined
+      })
+      
+      // Trigger auto-save
+      await saveQuote()
+    } catch (error) {
+      console.error('Failed to save contacts data:', error)
     }
-    return quantities[type] || 0
-  }
+  }, [selectedBrand, selectedLensType, calculatedPricing.numberOfBoxes, updateContacts, saveQuote])
 
-  function validateStep(): string[] {
-    const errors: string[] = []
-    
-    switch (currentStep) {
-      case 'brand':
-        if (!selection.brand) errors.push('Please select a contact lens brand')
-        break
-      case 'type':
-        if (!selection.type) errors.push('Please select a lens type')
-        break
-      case 'product':
-        if (!selection.product) errors.push('Please select a specific product')
-        break
-      case 'parameters':
-        if (!selection.parameters.rightEye.power) errors.push('Right eye power is required')
-        if (!selection.parameters.leftEye.power) errors.push('Left eye power is required')
-        if (!selection.parameters.rightEye.baseCurve) errors.push('Right eye base curve is required')
-        if (!selection.parameters.leftEye.baseCurve) errors.push('Left eye base curve is required')
-        break
-      case 'quantity':
-        if (!selection.annualSupply && selection.quantity < 1) errors.push('Please specify quantity or select annual supply')
-        break
+  // Real-time pricing updates for the sidebar
+  useEffect(() => {
+    if (calculatedPricing.totalCostOfCLs > 0) {
+      updatePricing({
+        contacts: {
+          product: calculatedPricing.afterRebateTotal,
+          fitting: 0, // Contact fitting is handled in exam services
+          total: calculatedPricing.afterRebateTotal
+        }
+      })
     }
-    
-    return errors
-  }
+  }, [calculatedPricing.totalCostOfCLs, calculatedPricing.afterRebateTotal, updatePricing])
 
-  function handleNext() {
-    const errors = validateStep()
-    setValidation(errors)
-    
-    if (errors.length === 0) {
-      const steps = ['brand', 'type', 'product', 'parameters', 'quantity'] as const
-      const currentIndex = steps.indexOf(currentStep)
-      if (currentIndex < steps.length - 1) {
-        setCurrentStep(steps[currentIndex + 1])
-      }
-    }
-  }
-
-  function handleBack() {
-    const steps = ['brand', 'type', 'product', 'parameters', 'quantity'] as const
-    const currentIndex = steps.indexOf(currentStep)
-    if (currentIndex > 0) {
-      setCurrentStep(steps[currentIndex - 1])
+  const handleBrandSelect = (brandId: string) => {
+    setSelectedBrand(brandId)
+    const brand = contactBrands.find(b => b.id === brandId)
+    if (brand) {
+      // Auto-populate manufacturer rebate when brand is selected
+      const rebateAmount = brand.rebateAmount.toString()
+      setInputValues(prev => ({
+        ...prev,
+        manufacturerRebate: rebateAmount
+      }))
+      setPricing(prev => ({
+        ...prev,
+        manufacturerRebate: brand.rebateAmount
+      }))
     }
   }
 
-  function copyRightToLeft() {
-    setSelection(prev => ({
-      ...prev,
-      parameters: {
-        ...prev.parameters,
-        leftEye: { ...prev.parameters.rightEye }
-      }
-    }))
+  const handleLensTypeSelect = (lensTypeId: string) => {
+    setSelectedLensType(lensTypeId)
+  }
+
+  const handlePricingChange = (field: keyof ContactPricingCalculator, value: string | number) => {
+    if (field === 'pricePerBox' || field === 'additionalSavings' || field === 'insuranceBenefit' || field === 'manufacturerRebate') {
+      // Update string input value
+      setInputValues(prev => ({
+        ...prev,
+        [field]: value as string
+      }))
+      // Update numeric value for calculations
+      setPricing(prev => ({
+        ...prev,
+        [field]: parseFloat(value as string) || 0
+      }))
+    } else {
+      setPricing(prev => ({
+        ...prev,
+        [field]: value as number
+      }))
+    }
+  }
+
+  const formatPrice = (price: number) => `$${price.toFixed(2)}`
+
+  const canProceed = () => {
+    return Boolean(selectedBrand && selectedLensType && calculatedPricing.numberOfBoxes > 0)
+  }
+
+  const handleNext = async () => {
+    if (canProceed()) {
+      // Save current data before proceeding
+      await saveContactsData()
+      onNext()
+    }
+  }
+
+  const handleBack = async () => {
+    // Save current data before going back
+    if (selectedBrand || selectedLensType || calculatedPricing.numberOfBoxes > 0) {
+      await saveContactsData()
+    }
+    if (onBack) {
+      onBack()
+    }
   }
 
   return (
-    <div className="space-y-6">
+    <div className="space-y-8 bg-neutral-50 min-h-screen p-6">
+      
       {/* Header */}
-      <Card>
-        <CardHeader>
-          <CardTitle className="flex items-center gap-2">
-            <Eye className="h-5 w-5" />
-            Contact Lens Selection
-          </CardTitle>
-        </CardHeader>
-        <CardContent>
-          <div className="flex items-center gap-4">
-            {['brand', 'type', 'product', 'parameters', 'quantity'].map((step, index) => (
-              <div key={step} className="flex items-center gap-2">
-                <div className={`w-8 h-8 rounded-full flex items-center justify-center text-sm font-medium ${
-                  currentStep === step 
-                    ? 'bg-blue-600 text-white' 
-                    : index < ['brand', 'type', 'product', 'parameters', 'quantity'].indexOf(currentStep)
-                    ? 'bg-green-600 text-white'
-                    : 'bg-gray-200 text-gray-600'
-                }`}>
-                  {index < ['brand', 'type', 'product', 'parameters', 'quantity'].indexOf(currentStep) ? 
-                    <CheckCircle className="h-4 w-4" /> : 
-                    index + 1
-                  }
-                </div>
-                <span className="text-sm capitalize font-medium">{step}</span>
-                {index < 4 && <div className="w-8 h-0.5 bg-gray-200" />}
-              </div>
-            ))}
-          </div>
-        </CardContent>
-      </Card>
-
-      {/* Validation Errors */}
-      {validation.length > 0 && (
-        <Alert variant="destructive">
-          <AlertCircle className="h-4 w-4" />
-          <AlertDescription>
-            <ul className="list-disc list-inside">
-              {validation.map((error, index) => (
-                <li key={index}>{error}</li>
-              ))}
-            </ul>
-          </AlertDescription>
-        </Alert>
-      )}
-
-      {/* Brand Selection */}
-      {currentStep === 'brand' && (
-        <Card>
-          <CardHeader>
-            <CardTitle>Select Contact Lens Brand</CardTitle>
-          </CardHeader>
-          <CardContent>
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-              {contactLensBrands.map((brand) => (
-                <div
-                  key={brand.id}
-                  className={`p-4 border rounded-lg cursor-pointer transition-colors ${
-                    selection.brand === brand.id 
-                      ? 'border-blue-500 bg-blue-50' 
-                      : 'border-gray-200 hover:border-gray-300'
-                  }`}
-                  onClick={() => setSelection(prev => ({ 
-                    ...prev, 
-                    brand: brand.id, 
-                    product: '', 
-                    type: '' 
-                  }))}
-                >
-                  <div className="flex items-center justify-between mb-2">
-                    <h3 className="font-semibold text-lg">{brand.name}</h3>
-                    {selection.brand === brand.id && (
-                      <CheckCircle className="h-5 w-5 text-blue-600" />
-                    )}
-                  </div>
-                  <p className="text-sm text-gray-600 mb-3">{brand.manufacturer}</p>
-                  <div className="space-y-2">
-                    <Badge variant="outline" className="text-xs">
-                      <Percent className="h-3 w-3 mr-1" />
-                      {brand.rebate.description}
-                    </Badge>
-                  </div>
-                </div>
-              ))}
-            </div>
-          </CardContent>
-        </Card>
-      )}
-
-      {/* Lens Type Selection */}
-      {currentStep === 'type' && selectedBrand && (
-        <Card>
-          <CardHeader>
-            <CardTitle>Select Lens Type</CardTitle>
-          </CardHeader>
-          <CardContent>
-            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
-              {['daily', 'weekly', 'monthly', 'extended'].map((type) => (
-                <div
-                  key={type}
-                  className={`p-4 border rounded-lg cursor-pointer transition-colors ${
-                    selection.type === type 
-                      ? 'border-blue-500 bg-blue-50' 
-                      : 'border-gray-200 hover:border-gray-300'
-                  }`}
-                  onClick={() => setSelection(prev => ({ 
-                    ...prev, 
-                    type: type as 'daily' | 'weekly' | 'monthly' | 'extended', 
-                    product: '' 
-                  }))}
-                >
-                  <div className="text-center">
-                    <div className="flex items-center justify-center mb-2">
-                      {selection.type === type && (
-                        <CheckCircle className="h-5 w-5 text-blue-600" />
-                      )}
-                    </div>
-                    <h3 className="font-semibold capitalize">{type} Disposable</h3>
-                    <p className="text-sm text-gray-600 mt-1">
-                      {type === 'daily' && 'New pair every day'}
-                      {type === 'weekly' && 'Replace every 1-2 weeks'}
-                      {type === 'monthly' && 'Replace every month'}
-                      {type === 'extended' && 'Extended wear options'}
-                    </p>
-                    <div className="mt-2">
-                      <Badge variant="secondary" className="text-xs">
-                        ${getBasePrice(selection.brand, '', type)} per box
-                      </Badge>
-                    </div>
-                  </div>
-                </div>
-              ))}
-            </div>
-          </CardContent>
-        </Card>
-      )}
-
-      {/* Product Selection */}
-      {currentStep === 'product' && availableProducts.length > 0 && (
-        <Card>
-          <CardHeader>
-            <CardTitle>Select Specific Product</CardTitle>
-          </CardHeader>
-          <CardContent>
-            <div className="space-y-3">
-              {availableProducts.map((product) => (
-                <div
-                  key={product}
-                  className={`p-4 border rounded-lg cursor-pointer transition-colors ${
-                    selection.product === product 
-                      ? 'border-blue-500 bg-blue-50' 
-                      : 'border-gray-200 hover:border-gray-300'
-                  }`}
-                  onClick={() => setSelection(prev => ({ ...prev, product }))}
-                >
-                  <div className="flex items-center justify-between">
-                    <div>
-                      <h3 className="font-semibold">{product}</h3>
-                      <p className="text-sm text-gray-600">
-                        {selectedBrand?.name} • {selection.type} disposable
-                      </p>
-                    </div>
-                    {selection.product === product && (
-                      <CheckCircle className="h-5 w-5 text-blue-600" />
-                    )}
-                  </div>
-                </div>
-              ))}
-            </div>
-          </CardContent>
-        </Card>
-      )}
-
-      {/* Parameters */}
-      {currentStep === 'parameters' && (
-        <Card>
-          <CardHeader>
-            <CardTitle>Contact Lens Parameters</CardTitle>
-          </CardHeader>
-          <CardContent>
-            <div className="space-y-6">
-              {/* Right Eye */}
-              <div>
-                <h3 className="font-semibold mb-4 flex items-center gap-2">
-                  <Eye className="h-4 w-4" />
-                  Right Eye (OD)
-                </h3>
-                <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-                  <div>
-                    <Label htmlFor="right-power">Power (Sphere)</Label>
-                    <Select
-                      value={selection.parameters.rightEye.power}
-                      onValueChange={(value) => setSelection(prev => ({
-                        ...prev,
-                        parameters: {
-                          ...prev.parameters,
-                          rightEye: { ...prev.parameters.rightEye, power: value }
-                        }
-                      }))}
-                    >
-                      <SelectTrigger>
-                        <SelectValue placeholder="Select power" />
-                      </SelectTrigger>
-                      <SelectContent>
-                        {Array.from({ length: 21 }, (_, i) => {
-                          const power = (i - 10) * 0.25
-                          return (
-                            <SelectItem key={power} value={power.toFixed(2)}>
-                              {power > 0 ? '+' : ''}{power.toFixed(2)}
-                            </SelectItem>
-                          )
-                        })}
-                      </SelectContent>
-                    </Select>
-                  </div>
-                  <div>
-                    <Label htmlFor="right-bc">Base Curve</Label>
-                    <Select
-                      value={selection.parameters.rightEye.baseCurve}
-                      onValueChange={(value) => setSelection(prev => ({
-                        ...prev,
-                        parameters: {
-                          ...prev.parameters,
-                          rightEye: { ...prev.parameters.rightEye, baseCurve: value }
-                        }
-                      }))}
-                    >
-                      <SelectTrigger>
-                        <SelectValue placeholder="Select BC" />
-                      </SelectTrigger>
-                      <SelectContent>
-                        {['8.4', '8.5', '8.6', '8.7', '8.8', '9.0'].map(bc => (
-                          <SelectItem key={bc} value={bc}>{bc}mm</SelectItem>
-                        ))}
-                      </SelectContent>
-                    </Select>
-                  </div>
-                  <div>
-                    <Label htmlFor="right-dia">Diameter</Label>
-                    <Select
-                      value={selection.parameters.rightEye.diameter}
-                      onValueChange={(value) => setSelection(prev => ({
-                        ...prev,
-                        parameters: {
-                          ...prev.parameters,
-                          rightEye: { ...prev.parameters.rightEye, diameter: value }
-                        }
-                      }))}
-                    >
-                      <SelectTrigger>
-                        <SelectValue placeholder="Select DIA" />
-                      </SelectTrigger>
-                      <SelectContent>
-                        {['13.8', '14.0', '14.2', '14.5'].map(dia => (
-                          <SelectItem key={dia} value={dia}>{dia}mm</SelectItem>
-                        ))}
-                      </SelectContent>
-                    </Select>
-                  </div>
-                </div>
-              </div>
-
-              <Separator />
-
-              {/* Left Eye */}
-              <div>
-                <div className="flex items-center justify-between mb-4">
-                  <h3 className="font-semibold flex items-center gap-2">
-                    <Eye className="h-4 w-4" />
-                    Left Eye (OS)
-                  </h3>
-                  <Button 
-                    variant="outline" 
-                    size="sm"
-                    onClick={copyRightToLeft}
-                    disabled={!selection.parameters.rightEye.power}
-                  >
-                    Copy from Right Eye
-                  </Button>
-                </div>
-                <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-                  <div>
-                    <Label htmlFor="left-power">Power (Sphere)</Label>
-                    <Select
-                      value={selection.parameters.leftEye.power}
-                      onValueChange={(value) => setSelection(prev => ({
-                        ...prev,
-                        parameters: {
-                          ...prev.parameters,
-                          leftEye: { ...prev.parameters.leftEye, power: value }
-                        }
-                      }))}
-                    >
-                      <SelectTrigger>
-                        <SelectValue placeholder="Select power" />
-                      </SelectTrigger>
-                      <SelectContent>
-                        {Array.from({ length: 21 }, (_, i) => {
-                          const power = (i - 10) * 0.25
-                          return (
-                            <SelectItem key={power} value={power.toFixed(2)}>
-                              {power > 0 ? '+' : ''}{power.toFixed(2)}
-                            </SelectItem>
-                          )
-                        })}
-                      </SelectContent>
-                    </Select>
-                  </div>
-                  <div>
-                    <Label htmlFor="left-bc">Base Curve</Label>
-                    <Select
-                      value={selection.parameters.leftEye.baseCurve}
-                      onValueChange={(value) => setSelection(prev => ({
-                        ...prev,
-                        parameters: {
-                          ...prev.parameters,
-                          leftEye: { ...prev.parameters.leftEye, baseCurve: value }
-                        }
-                      }))}
-                    >
-                      <SelectTrigger>
-                        <SelectValue placeholder="Select BC" />
-                      </SelectTrigger>
-                      <SelectContent>
-                        {['8.4', '8.5', '8.6', '8.7', '8.8', '9.0'].map(bc => (
-                          <SelectItem key={bc} value={bc}>{bc}mm</SelectItem>
-                        ))}
-                      </SelectContent>
-                    </Select>
-                  </div>
-                  <div>
-                    <Label htmlFor="left-dia">Diameter</Label>
-                    <Select
-                      value={selection.parameters.leftEye.diameter}
-                      onValueChange={(value) => setSelection(prev => ({
-                        ...prev,
-                        parameters: {
-                          ...prev.parameters,
-                          leftEye: { ...prev.parameters.leftEye, diameter: value }
-                        }
-                      }))}
-                    >
-                      <SelectTrigger>
-                        <SelectValue placeholder="Select DIA" />
-                      </SelectTrigger>
-                      <SelectContent>
-                        {['13.8', '14.0', '14.2', '14.5'].map(dia => (
-                          <SelectItem key={dia} value={dia}>{dia}mm</SelectItem>
-                        ))}
-                      </SelectContent>
-                    </Select>
-                  </div>
-                </div>
-              </div>
-
-              {/* Contact Fitting */}
-              <div className="p-4 bg-blue-50 rounded-lg">
-                <div className="flex items-center space-x-2">
-                  <Checkbox
-                    id="fitting"
-                    checked={selection.fittingRequired}
-                    onCheckedChange={(checked) => setSelection(prev => ({
-                      ...prev,
-                      fittingRequired: checked as boolean
-                    }))}
-                  />
-                  <Label htmlFor="fitting" className="text-sm font-medium">
-                    Contact lens fitting required (+$75)
-                  </Label>
-                </div>
-                <p className="text-xs text-gray-600 mt-1">
-                  First-time contact lens wearers or new prescription changes require a fitting appointment
-                </p>
-              </div>
-            </div>
-          </CardContent>
-        </Card>
-      )}
-
-      {/* Quantity and Annual Supply */}
-      {currentStep === 'quantity' && (
-        <Card>
-          <CardHeader>
-            <CardTitle>Quantity and Supply Options</CardTitle>
-          </CardHeader>
-          <CardContent>
-            <div className="space-y-6">
-              {/* Annual Supply Option */}
-              <div className="p-4 border rounded-lg">
-                <div className="flex items-center space-x-2 mb-3">
-                  <Checkbox
-                    id="annual"
-                    checked={selection.annualSupply}
-                    onCheckedChange={(checked) => setSelection(prev => ({
-                      ...prev,
-                      annualSupply: checked as boolean,
-                      quantity: checked ? getAnnualQuantity(selection.type) : 0
-                    }))}
-                  />
-                  <Label htmlFor="annual" className="text-sm font-medium">
-                    Annual Supply ({getAnnualQuantity(selection.type)} boxes)
-                  </Label>
-                </div>
-                <p className="text-sm text-gray-600">
-                  Get the best value with an annual supply and qualify for manufacturer rebates
-                </p>
-                {selection.annualSupply && selectedBrand && (
-                  <div className="mt-3">
-                    <div className="flex items-center space-x-2">
-                      <Checkbox
-                        id="rebate"
-                        checked={selection.rebateApplied}
-                        onCheckedChange={(checked) => setSelection(prev => ({
-                          ...prev,
-                          rebateApplied: checked as boolean
-                        }))}
-                      />
-                      <Label htmlFor="rebate" className="text-sm">
-                        Apply {selectedBrand.rebate.description}
-                      </Label>
-                    </div>
-                  </div>
-                )}
-              </div>
-
-              {/* Manual Quantity */}
-              {!selection.annualSupply && (
-                <div>
-                  <Label htmlFor="quantity">Number of Boxes</Label>
-                  <Input
-                    id="quantity"
-                    type="number"
-                    min="1"
-                    max="12"
-                    value={selection.quantity}
-                    onChange={(e) => setSelection(prev => ({
-                      ...prev,
-                      quantity: parseInt(e.target.value) || 0
-                    }))}
-                    className="mt-1"
-                  />
-                  <p className="text-sm text-gray-600 mt-1">
-                    Each box typically contains 30 lenses (daily) or 6 lenses (weekly/monthly)
-                  </p>
-                </div>
-              )}
-
-              {/* Pricing Summary */}
-              <div className="p-4 bg-gray-50 rounded-lg">
-                <h4 className="font-semibold mb-3 flex items-center gap-2">
-                  <Calculator className="h-4 w-4" />
-                  Pricing Summary
-                </h4>
-                <div className="space-y-2 text-sm">
-                  <div className="flex justify-between">
-                    <span>Base Price ({selection.annualSupply ? getAnnualQuantity(selection.type) : selection.quantity} boxes):</span>
-                    <span>${totalPrice.toFixed(2)}</span>
-                  </div>
-                  {selection.fittingRequired && (
-                    <div className="flex justify-between">
-                      <span>Contact Fitting Fee:</span>
-                      <span>${fittingFee.toFixed(2)}</span>
-                    </div>
-                  )}
-                  {rebateAmount > 0 && (
-                    <div className="flex justify-between text-green-600">
-                      <span>Manufacturer Rebate:</span>
-                      <span>-${rebateAmount.toFixed(2)}</span>
-                    </div>
-                  )}
-                  <Separator />
-                  <div className="flex justify-between font-semibold">
-                    <span>Total:</span>
-                    <span>${finalPrice.toFixed(2)}</span>
-                  </div>
-                </div>
-              </div>
-            </div>
-          </CardContent>
-        </Card>
-      )}
-
-      {/* Navigation */}
-      <div className="flex justify-between">
-        <Button 
-          variant="outline" 
-          onClick={handleBack}
-          disabled={currentStep === 'brand'}
-        >
-          Back
-        </Button>
-        <div className="flex gap-2">
-          {currentStep !== 'quantity' ? (
-            <Button onClick={handleNext}>
-              Next
-            </Button>
-          ) : (
-            <Button onClick={() => console.log('Contact lens selection complete', selection)}>
-              Add to Quote
-            </Button>
-          )}
-        </div>
+      <div className="text-center">
+        <h2 className="text-3xl font-bold text-blue-900 mb-2">Contact Lenses</h2>
+        <p className="text-neutral-600">Select contact lens brand, type, and configure pricing.</p>
       </div>
+
+      {/* 1. Brand Selection */}
+      <VSPCategorySection number={1} title="Contact Lens Brand">
+        <VSPGrid3>
+          {contactBrands.map(brand => (
+            <VSPSelectionButton
+              key={brand.id}
+              selected={selectedBrand === brand.id}
+              onClick={() => handleBrandSelect(brand.id)}
+              subtitle={brand.manufacturer}
+              price={`$${brand.rebateAmount} rebate`}
+            >
+              {brand.name}
+            </VSPSelectionButton>
+          ))}
+        </VSPGrid3>
+      </VSPCategorySection>
+
+      {/* 2. Lens Type */}
+      <VSPCategorySection number={2} title="Lens Type">
+        <VSPGrid3>
+          {lensTypes.map(lensType => (
+            <VSPSelectionButton
+              key={lensType.id}
+              selected={selectedLensType === lensType.id}
+              onClick={() => handleLensTypeSelect(lensType.id)}
+              subtitle={lensType.subtitle}
+              price={lensType.insuranceCovered ? `$${lensType.copay} copay` : formatPrice(lensType.price)}
+            >
+              {lensType.name}
+            </VSPSelectionButton>
+          ))}
+        </VSPGrid3>
+      </VSPCategorySection>
+
+      {/* 3. Contact Lens Pricing Calculator */}
+      <VSPCategorySection number={3} title="Contact Lens Pricing Calculator">
+        <div className="bg-white p-6 rounded-lg border border-neutral-200">
+          <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
+            
+            {/* Data Entry Fields */}
+            <div className="space-y-4">
+              <h4 className="font-semibold text-blue-900 mb-4">Data Entry</h4>
+              
+              <div>
+                <Label htmlFor="pricePerBox">Price per Box</Label>
+                <Input
+                  id="pricePerBox"
+                  type="number"
+                  value={inputValues.pricePerBox}
+                  onChange={(e) => handlePricingChange('pricePerBox', e.target.value)}
+                  placeholder="0.00"
+                  min="0"
+                  step="0.01"
+                />
+              </div>
+
+              <div>
+                <Label htmlFor="numberOfBoxes">Number of Boxes</Label>
+                <Input
+                  id="numberOfBoxes"
+                  type="number"
+                  value={pricing.numberOfBoxes}
+                  onChange={(e) => handlePricingChange('numberOfBoxes', parseInt(e.target.value) || 0)}
+                  placeholder="0"
+                  min="0"
+                  step="1"
+                />
+              </div>
+
+              <div>
+                <Label htmlFor="additionalSavings">Additional Savings</Label>
+                <Input
+                  id="additionalSavings"
+                  type="number"
+                  value={inputValues.additionalSavings}
+                  onChange={(e) => handlePricingChange('additionalSavings', e.target.value)}
+                  placeholder="0.00"
+                  min="0"
+                  step="0.01"
+                />
+              </div>
+
+              <div>
+                <Label htmlFor="insuranceBenefit">Insurance Benefit</Label>
+                <Input
+                  id="insuranceBenefit"
+                  type="number"
+                  value={inputValues.insuranceBenefit}
+                  onChange={(e) => handlePricingChange('insuranceBenefit', e.target.value)}
+                  placeholder="0.00"
+                  min="0"
+                  step="0.01"
+                />
+              </div>
+
+              <div>
+                <Label htmlFor="manufacturerRebate">Manufacturer Rebate</Label>
+                <Input
+                  id="manufacturerRebate"
+                  type="number"
+                  value={inputValues.manufacturerRebate}
+                  onChange={(e) => handlePricingChange('manufacturerRebate', e.target.value)}
+                  placeholder="0.00"
+                  min="0"
+                  step="0.01"
+                />
+              </div>
+            </div>
+
+            {/* Calculated Fields */}
+            <div className="space-y-4">
+              <h4 className="font-semibold text-blue-900 mb-4">Calculated Fields</h4>
+              
+              <div>
+                <Label>Total Cost of CLs</Label>
+                <div className="bg-neutral-100 p-3 rounded-md text-lg font-semibold">
+                  {formatPrice(calculatedPricing.totalCostOfCLs)}
+                </div>
+                <p className="text-xs text-neutral-500 mt-1">Price per Box × Number of Boxes</p>
+              </div>
+
+              <div>
+                <Label>In-Office Total</Label>
+                <div className="bg-neutral-100 p-3 rounded-md text-lg font-semibold">
+                  {formatPrice(calculatedPricing.inOfficeTotal)}
+                </div>
+                <p className="text-xs text-neutral-500 mt-1">Total Cost - Additional Savings - Insurance Benefit</p>
+              </div>
+
+              <div>
+                <Label>After Rebate Total</Label>
+                <div className="bg-neutral-100 p-3 rounded-md text-lg font-semibold">
+                  {formatPrice(calculatedPricing.afterRebateTotal)}
+                </div>
+                <p className="text-xs text-neutral-500 mt-1">In-Office Total - Manufacturer Rebate</p>
+              </div>
+
+              <div>
+                <Label>Final Cost per Box</Label>
+                <div className="bg-blue-100 p-3 rounded-md text-lg font-bold text-blue-900">
+                  {formatPrice(calculatedPricing.finalCostPerBox)}
+                </div>
+                <p className="text-xs text-neutral-500 mt-1">After Rebate Total ÷ Number of Boxes</p>
+              </div>
+            </div>
+
+            {/* Summary */}
+            <div className="space-y-4">
+              <h4 className="font-semibold text-blue-900 mb-4">Pricing Summary</h4>
+              
+              <div className="bg-blue-50 p-4 rounded-lg space-y-3">
+                <div className="flex justify-between">
+                  <span>Original Price:</span>
+                  <span className="font-semibold">{formatPrice(calculatedPricing.totalCostOfCLs)}</span>
+                </div>
+                <div className="flex justify-between text-green-600">
+                  <span>Total Savings:</span>
+                  <span className="font-semibold">
+                    -{formatPrice(pricing.additionalSavings + pricing.insuranceBenefit + pricing.manufacturerRebate)}
+                  </span>
+                </div>
+                <hr className="border-blue-200" />
+                <div className="flex justify-between text-sm text-neutral-600">
+                  <span>Patient Pays:</span>
+                  <span className="font-medium">{formatPrice(calculatedPricing.afterRebateTotal)}</span>
+                </div>
+                <div className="flex justify-between text-2xl font-bold text-blue-900 bg-yellow-100 p-3 rounded-lg border-2 border-yellow-300 mt-3">
+                  <span>Final Cost per Box:</span>
+                  <span className="text-3xl">{formatPrice(calculatedPricing.finalCostPerBox)}</span>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+      </VSPCategorySection>
+
+      {/* Navigation Footer */}
+      <NavigationFooter
+        currentStep={3}
+        totalSteps={3}
+        onNext={handleNext}
+        onBack={handleBack}
+        canProceed={canProceed()}
+        validationErrors={[]}
+        validationWarnings={[]}
+        nextLabel="Complete Quote"
+        backLabel="Back to Eyeglasses"
+      />
     </div>
   )
 }

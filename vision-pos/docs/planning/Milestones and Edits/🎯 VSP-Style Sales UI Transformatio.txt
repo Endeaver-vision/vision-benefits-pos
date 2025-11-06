@@ -1,0 +1,84 @@
+🎯 VSP-Style Sales UI Transformation Plan
+Phase 1: Visual Foundation & Color System
+Duration: 1-2 hours
+
+1.1 Update CSS Variables & Design Tokens
+Transform current brand colors to VSP-inspired blue gradient system
+Create new selection states: selected-purple, unselected-white, hover-states
+Add VSP-style card shadows, borders, and spacing tokens
+Update button styles to match VSP's clean, rounded aesthetic
+1.2 Create VSP-Style Base Components
+SelectionButton Component: Purple selected state, white unselected, clean typography
+CategorySection Component: Clean headers with proper spacing
+PricingCard Component: Compact, organized breakdown like VSP sidebar
+ToggleSection Component: For contact lens fitting options
+Phase 2: Exam Services Layer Redesign
+Duration: 2-3 hours
+
+2.1 Static Display Structure
+2.2 Visual Implementation
+Clean white cards with VSP-style shadows
+Purple highlights for selected items
+Toggle switch for "Contact Lens Exam" section
+Real-time pricing updates on each selection
+Phase 3: Glasses/Eyewear Layer Redesign
+Duration: 3-4 hours
+
+3.1 Progressive Unlock Flow
+3.2 Visual Persistence System
+Selected items remain visually highlighted
+Breadcrumb-style selection summary at top
+Each category unlocks only after previous selection
+VSP-style compact cards with clear typography
+Phase 4: Contact Lens Layer Redesign
+Duration: 4-5 hours
+
+4.1 Progressive Selection Flow
+4.2 Complex Calculator Integration
+VSP-style pricing breakdown sidebar
+Real-time calculations
+Insurance benefit display
+Rebate calculations
+Clean, organized final pricing
+Phase 5: Pricing Sidebar Enhancement
+Duration: 1-2 hours
+
+5.1 VSP-Style Pricing Display
+Compact, organized breakdown
+Real-time updates
+Clear typography hierarchy
+Total prominently displayed
+Insurance calculations clearly shown
+Phase 6: Integration & Polish
+Duration: 2-3 hours
+
+6.1 Cross-Layer Consistency
+Ensure all layers use same visual language
+Consistent spacing, colors, typography
+Smooth transitions between layers
+Unified selection persistence
+6.2 Navigation & State Management
+Update NavigationFooter to match new aesthetic
+Ensure proper state persistence across layers
+Clean transitions and animations
+📋 Technical Implementation Details
+New Components to Create:
+VSPSelectionButton - Purple/white selection states
+VSPCategorySection - Clean category headers
+VSPPricingBreakdown - Compact sidebar pricing
+VSPToggleSection - Collapsible sections
+VSPProgressiveFlow - Unlock-next-step functionality
+Files to Transform:
+exam-services-layer.tsx - Complete redesign
+eyeglasses-layer.tsx - Progressive flow implementation
+contact-lens-layer.tsx - Calculator integration
+pricing-sidebar.tsx - VSP-style breakdown
+globals.css - New color system and design tokens
+Key Features:
+✅ Static display for exam options (contact lens toggle hidden)
+✅ Progressive unlock system for glasses/contacts
+✅ Visual persistence of selections
+✅ Real-time pricing updates
+✅ Purple selected / white unselected states
+✅ VSP blue gradient aesthetic
+✅ Compact, organized pricing breakdown

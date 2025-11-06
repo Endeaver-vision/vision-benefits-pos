@@ -3,14 +3,13 @@
 import React, { useState } from 'react';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
-import { Badge } from '@/components/ui/badge';
 import { Input } from '@/components/ui/input';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
+import { SelectionCard } from '@/components/ui/selection-card';
 import { 
   Search,
   Filter,
   Glasses,
-  Star,
   ShoppingCart
 } from 'lucide-react';
 import { useQuoteStore } from '@/store/quote-store';
@@ -198,14 +197,6 @@ export function FrameSelection({ className }: FrameSelectionProps) {
     }
   });
 
-  const getCategoryBadgeColor = (category: Frame['category']) => {
-    switch (category) {
-      case 'value': return 'bg-green-100 text-green-800';
-      case 'designer': return 'bg-blue-100 text-blue-800';
-      case 'premium': return 'bg-purple-100 text-purple-800';
-    }
-  };
-
   const formatPrice = (price: number) => {
     return new Intl.NumberFormat('en-US', {
       style: 'currency',
@@ -216,123 +207,42 @@ export function FrameSelection({ className }: FrameSelectionProps) {
   const renderFrameCard = (frame: Frame) => {
     const isSelected = selectedFrame?.id === frame.id;
     
+    // Prepare features for display
+    const features = [
+      `${frame.style.replace('-', ' ')}`,
+      `${frame.material.replace('-', ' ')}`,
+      ...frame.features
+    ];
+    
+    // Create tags for additional info
+    const tags = [
+      `${frame.colors.length} colors`,
+      `${frame.sizes.length} sizes`,
+      `⭐ ${frame.rating} (${frame.reviews} reviews)`
+    ];
+    
     return (
-      <Card 
+      <SelectionCard
         key={frame.id}
-        className={`cursor-pointer transition-all duration-200 hover:shadow-lg ${
-          isSelected ? 'ring-2 ring-primary bg-primary/5' : ''
-        } ${!frame.inStock ? 'opacity-60' : ''}`}
-        onClick={() => frame.inStock && handleFrameSelect(frame)}
-      >
-        <CardContent className="p-4">
-          {/* Frame Image */}
-          <div className="relative mb-4">
-            <div className="aspect-[3/2] bg-gray-100 rounded-lg flex items-center justify-center">
-              <Glasses className="h-12 w-12 text-gray-400" />
-              {/* In real app, this would be: <img src={frame.image} alt={frame.model} /> */}
-            </div>
-            
-            {/* Category Badge */}
-            <Badge 
-              className={`absolute top-2 left-2 text-xs ${getCategoryBadgeColor(frame.category)}`}
-            >
-              {frame.category.charAt(0).toUpperCase() + frame.category.slice(1)}
-            </Badge>
-            
-            {/* Stock Status */}
-            {!frame.inStock && (
-              <Badge variant="destructive" className="absolute top-2 right-2 text-xs">
-                Out of Stock
-              </Badge>
-            )}
-            
-            {/* Selection Indicator */}
-            {isSelected && (
-              <div className="absolute inset-0 bg-primary/10 rounded-lg flex items-center justify-center">
-                <ShoppingCart className="h-8 w-8 text-primary" />
-              </div>
-            )}
-          </div>
-
-          {/* Frame Info */}
-          <div className="space-y-2">
-            <div>
-              <h4 className="font-semibold text-sm">{frame.brand}</h4>
-              <p className="text-xs text-muted-foreground">{frame.model}</p>
-            </div>
-            
-            <p className="text-xs text-muted-foreground leading-relaxed">
-              {frame.description}
-            </p>
-            
-            {/* Rating */}
-            <div className="flex items-center space-x-1">
-              <div className="flex">
-                {[...Array(5)].map((_, i) => (
-                  <Star 
-                    key={i} 
-                    className={`h-3 w-3 ${
-                      i < Math.floor(frame.rating) ? 'text-yellow-400 fill-current' : 'text-gray-300'
-                    }`} 
-                  />
-                ))}
-              </div>
-              <span className="text-xs text-muted-foreground">
-                {frame.rating} ({frame.reviews})
-              </span>
-            </div>
-
-            {/* Features */}
-            <div className="space-y-1">
-              <div className="flex items-center justify-between text-xs">
-                <span className="text-muted-foreground">Style:</span>
-                <span className="capitalize">{frame.style.replace('-', ' ')}</span>
-              </div>
-              <div className="flex items-center justify-between text-xs">
-                <span className="text-muted-foreground">Material:</span>
-                <span className="capitalize">{frame.material.replace('-', ' ')}</span>
-              </div>
-            </div>
-
-            {/* Colors */}
-            <div>
-              <p className="text-xs text-muted-foreground mb-1">Colors available:</p>
-              <div className="flex space-x-1">
-                {frame.colors.slice(0, 3).map((color, index) => (
-                  <div 
-                    key={index}
-                    className="w-4 h-4 rounded-full border border-gray-300 bg-gray-200"
-                    title={color}
-                  />
-                ))}
-                {frame.colors.length > 3 && (
-                  <span className="text-xs text-muted-foreground ml-1">
-                    +{frame.colors.length - 3}
-                  </span>
-                )}
-              </div>
-            </div>
-
-            {/* Price */}
-            <div className="flex items-center justify-between pt-2 border-t">
-              <span className="font-semibold text-lg">{formatPrice(frame.price)}</span>
-              {frame.inStock ? (
-                <Button 
-                  size="sm" 
-                  variant={isSelected ? "default" : "outline"}
-                  className="text-xs"
-                >
-                  {isSelected ? 'Selected' : 'Select'}
-                </Button>
-              ) : (
-                <Button size="sm" disabled className="text-xs">
-                  Unavailable
-                </Button>
-              )}
-            </div>
-          </div>
-        </CardContent>
-      </Card>
+        title={`${frame.brand} ${frame.model}`}
+        description={frame.description}
+        price={frame.price}
+        priceLabel=""
+        icon={Glasses}
+        image={frame.image}
+        badge={{
+          text: frame.category.charAt(0).toUpperCase() + frame.category.slice(1),
+          variant: frame.category === 'designer' ? 'default' : 
+                   frame.category === 'premium' ? 'destructive' : 'secondary'
+        }}
+        features={features}
+        tags={tags}
+        isSelected={isSelected}
+        isDisabled={!frame.inStock}
+        onSelect={() => frame.inStock && handleFrameSelect(frame)}
+        variant="detailed"
+        className={!frame.inStock ? 'opacity-60' : ''}
+      />
     );
   };
 
@@ -341,8 +251,8 @@ export function FrameSelection({ className }: FrameSelectionProps) {
       
       {/* Header */}
       <div className="flex items-center space-x-3">
-        <div className="flex items-center justify-center w-10 h-10 rounded-full bg-primary/10">
-          <Glasses className="h-5 w-5 text-primary" />
+        <div className="flex items-center justify-center w-10 h-10 rounded-full bg-brand-purple/10">
+          <Glasses className="h-5 w-5 text-brand-purple" />
         </div>
         <div>
           <h2 className="text-xl font-bold">Frame Selection</h2>
@@ -476,15 +386,15 @@ export function FrameSelection({ className }: FrameSelectionProps) {
 
       {/* Selected Frame Summary */}
       {selectedFrame && (
-        <Card className="border-green-200 bg-green-50">
+        <Card className="border-brand-teal/30 bg-brand-teal/5">
           <CardContent className="p-4">
             <div className="flex items-center space-x-3">
-              <ShoppingCart className="h-5 w-5 text-green-600" />
+              <ShoppingCart className="h-5 w-5 text-brand-teal" />
               <div>
-                <h4 className="font-medium text-green-900">
+                <h4 className="font-medium text-brand-teal">
                   Selected: {selectedFrame.brand} {selectedFrame.model}
                 </h4>
-                <p className="text-sm text-green-700">
+                <p className="text-sm text-brand-teal/80">
                   {selectedFrame.price ? formatPrice(selectedFrame.price) : 'Price TBD'} • {selectedFrame.category} category • {selectedFrame.style}
                 </p>
               </div>

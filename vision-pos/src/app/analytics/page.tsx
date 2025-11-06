@@ -23,7 +23,8 @@ import {
   Package,
   BarChart3,
   PieChart,
-  Activity
+  Activity,
+  ArrowLeft
 } from 'lucide-react'
 
 interface SalesMetrics {
@@ -202,11 +203,23 @@ export default function SalesAnalyticsPage() {
       <header className="bg-white border-b border-gray-200">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
           <div className="flex justify-between items-center py-4">
-            <div>
-              <h1 className="text-2xl font-bold text-gray-900">Sales Analytics</h1>
-              <p className="text-sm text-gray-600">
-                Performance insights and sales trends for {getPeriodLabel(selectedPeriod).toLowerCase()}
-              </p>
+            <div className="flex items-center space-x-4">
+              <Button 
+                variant="ghost" 
+                size="sm"
+                onClick={() => router.push('/dashboard')}
+                className="text-neutral-600 hover:text-brand-purple"
+              >
+                <ArrowLeft className="h-4 w-4 mr-2" />
+                Back to Dashboard
+              </Button>
+              <div className="h-6 w-px bg-neutral-300" />
+              <div>
+                <h1 className="text-2xl font-bold text-gray-900">Sales Analytics</h1>
+                <p className="text-sm text-gray-600">
+                  Performance insights and sales trends for {getPeriodLabel(selectedPeriod).toLowerCase()}
+                </p>
+              </div>
             </div>
             <div className="flex items-center space-x-4">
               <Button asChild>

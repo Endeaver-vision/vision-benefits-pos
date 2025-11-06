@@ -1,0 +1,29 @@
+Execution Plan:
+Phase 1: Contact Lens Fitting (Exam Menu)
+Find contact lens fitting service in exam menu
+Change from toggle to direct panel open
+Maintain existing contact lens exam options
+Phase 2: Frame Selection UX (Eyeglasses Menu)
+Create collapsible frame selector component
+Default state: "Select Frame Brand" button
+Open state: Show all 40+ brands in grid
+Selected state: Show selected brand only + change button
+Apply same pattern to lens types and enhancements
+Phase 3: Auto-Save Implementation
+Add real-time save on selection changes
+Ensure save-before-navigation on all "Next" buttons
+Add visual save indicators
+Phase 4: Review Tab Cleanup
+Remove duplicate customer displays
+Consolidate to single pricing section
+Remove redundant price summary
+Clean layout with exam/eyeglasses/contacts totals
+Phase 5: Contact Lens Simplification
+Remove prescription parameters section entirely
+Remove specialty options section entirely
+Simplify lens types to names only
+Remove duplicate contact lens fitting fee
+Phase 6: Testing & Polish
+Verify auto-save works across all menus
+Test navigation flow
+Confirm pricing calculations remain accurate

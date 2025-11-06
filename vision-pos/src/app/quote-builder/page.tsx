@@ -10,34 +10,28 @@ import { Separator } from '@/components/ui/separator'
 import { 
   User, 
   ArrowLeft,
-  Clock,
-  CheckCircle,
-  Eye,
-  Glasses
+  Clock
 } from 'lucide-react'
+
+// Import the new layout components - Master Plan Design System
+import { QuoteNavPanel, QuoteLayer, LayerStatus } from '@/components/quote-builder/layout/quote-nav-panel'
+import { CustomerInfoHeader, Customer } from '@/components/quote-builder/layout/customer-info-header'
+import { PricingSidebar } from '@/components/quote-builder/layout/pricing-sidebar'
+
+// Import the store for saving
+import { useQuoteStore } from '@/store/quote-store'
 
 // Import the layer components
 import ExamServicesLayer from '@/components/quote-builder/layers/exam-services-layer'
-import { EyeglassesLayer } from '@/components/quote-builder/layers/eyeglasses-layer'
-import { ContactLensLayer } from '@/components/quote-builder/layers/contact-lens-layer'
+import EyeglassesLayer from '@/components/quote-builder/layers/eyeglasses-layer'
+import ContactLensLayer from '@/components/quote-builder/layers/contact-lens-layer'
 import { QuoteReviewLayer } from '@/components/quote-builder/layers/quote-review-layer'
 import { QuoteFinalizationLayer } from '@/components/quote-builder/layers/quote-finalization-layer'
-
-interface Customer {
-  id: string
-  firstName: string
-  lastName: string
-  email?: string
-  phone?: string
-  insuranceCarrier?: string
-  memberId?: string
-}
-
-type QuoteLayer = 'customer' | 'exam-services' | 'eyeglasses' | 'contacts' | 'review' | 'finalize'
 
 export default function QuoteBuilderPage() {
   const { data: session, status } = useSession()
   const router = useRouter()
+  const { saveQuote } = useQuoteStore()
   
   // State management
   const [currentLayer, setCurrentLayer] = useState<QuoteLayer>('customer')
@@ -99,8 +93,8 @@ export default function QuoteBuilderPage() {
     setCustomerResults([])
   }
 
-  // Handle layer navigation
-  const handleLayerChange = (layer: QuoteLayer) => {
+  // Handle layer navigation with saving
+  const handleLayerChange = async (layer: QuoteLayer) => {
     // Only allow navigation if previous layers are complete
     if ((layer === 'exam-services' || layer === 'eyeglasses') && !selectedCustomer) return
     
@@ -111,11 +105,20 @@ export default function QuoteBuilderPage() {
       return
     }
     
+    // Save current layer data before changing layers
+    try {
+      await saveQuote()
+      console.log('Data saved before layer change from', currentLayer, 'to', layer)
+    } catch (error) {
+      console.error('Failed to save data before layer change:', error)
+      // Continue navigation even if save fails to prevent blocking UX
+    }
+    
     setCurrentLayer(layer)
   }
 
   // Get layer status for navigation
-  const getLayerStatus = (layer: QuoteLayer) => {
+  const getLayerStatus = (layer: QuoteLayer): LayerStatus => {
     switch (layer) {
       case 'customer':
         return selectedCustomer ? 'complete' : 'current'
@@ -143,31 +146,32 @@ export default function QuoteBuilderPage() {
   }
 
   return (
-    <div className="min-h-screen bg-gray-50">
-      {/* Header */}
-      <div className="bg-white border-b">
+    <div className="min-h-screen bg-neutral-50">
+      {/* Header - Master Plan Design System */}
+      <div className="bg-white border-b border-neutral-200">
         <div className="container mx-auto px-6 py-4">
           <div className="flex items-center justify-between">
-            <div className="flex items-center gap-4">
+            <div className="flex items-center space-x-4">
               <Button 
                 variant="ghost" 
                 size="sm"
                 onClick={() => router.push('/dashboard')}
+                className="text-neutral-600 hover:text-brand-purple"
               >
                 <ArrowLeft className="h-4 w-4 mr-2" />
                 Back to Dashboard
               </Button>
               <Separator orientation="vertical" className="h-6" />
               <div>
-                <h1 className="text-2xl font-bold text-gray-900">Quote Builder</h1>
-                <p className="text-gray-600">Create comprehensive eyewear quotes</p>
+                <h1 className="text-2xl font-bold text-brand-purple">Quote Builder</h1>
+                <p className="text-neutral-600">Create comprehensive eyewear quotes</p>
               </div>
             </div>
-            <div className="flex items-center gap-4">
-              <Badge variant="outline" className="px-3 py-1">
+            <div className="flex items-center space-x-4">
+              <Badge variant="outline" className="px-3 py-1 border-brand-purple/30 text-brand-purple">
                 {session.user.locationName}
               </Badge>
-              <Badge variant="secondary" className="px-3 py-1">
+              <Badge variant="secondary" className="px-3 py-1 bg-brand-purple/10 text-brand-purple">
                 {session.user.name}
               </Badge>
             </div>
@@ -175,197 +179,41 @@ export default function QuoteBuilderPage() {
         </div>
       </div>
 
-      <div className="container mx-auto px-6 py-6">
-        <div className="grid grid-cols-1 lg:grid-cols-4 gap-6">
-          {/* Left Column - Step Navigation */}
-          <div className="lg:col-span-1">
-            <Card>
-              <CardHeader>
-                <CardTitle className="text-lg">Quote Steps</CardTitle>
-              </CardHeader>
-              <CardContent className="space-y-3">
-                {/* Customer Step */}
-                <div 
-                  className={`p-3 rounded-lg border cursor-pointer transition-colors ${
-                    currentLayer === 'customer' 
-                      ? 'bg-blue-50 border-blue-200' 
-                      : getLayerStatus('customer') === 'complete'
-                      ? 'bg-green-50 border-green-200'
-                      : 'bg-gray-50 border-gray-200'
-                  }`}
-                  onClick={() => handleLayerChange('customer')}
-                >
-                  <div className="flex items-center gap-3">
-                    {getLayerStatus('customer') === 'complete' ? (
-                      <CheckCircle className="h-5 w-5 text-green-600" />
-                    ) : (
-                      <User className="h-5 w-5 text-gray-600" />
-                    )}
-                    <div>
-                      <div className="font-medium">Customer</div>
-                      <div className="text-xs text-gray-600">Select or add customer</div>
-                    </div>
-                  </div>
-                </div>
-
-                {/* Exam Services Step */}
-                <div 
-                  className={`p-3 rounded-lg border transition-colors ${
-                    getLayerStatus('exam-services') === 'locked'
-                      ? 'bg-gray-100 border-gray-200 cursor-not-allowed opacity-60'
-                      : currentLayer === 'exam-services'
-                      ? 'bg-blue-50 border-blue-200 cursor-pointer'
-                      : 'bg-gray-50 border-gray-200 cursor-pointer'
-                  }`}
-                  onClick={() => getLayerStatus('exam-services') !== 'locked' && handleLayerChange('exam-services')}
-                >
-                  <div className="flex items-center gap-3">
-                    <Eye className="h-5 w-5 text-gray-600" />
-                    <div>
-                      <div className="font-medium">Exam Services</div>
-                      <div className="text-xs text-gray-600">Eye exams & diagnostics</div>
-                    </div>
-                  </div>
-                </div>
-
-                {/* Eyeglasses Step */}
-                <div 
-                  className={`p-3 rounded-lg border transition-colors ${
-                    getLayerStatus('eyeglasses') === 'locked'
-                      ? 'bg-gray-100 border-gray-200 cursor-not-allowed opacity-60'
-                      : currentLayer === 'eyeglasses'
-                      ? 'bg-blue-50 border-blue-200 cursor-pointer'
-                      : 'bg-gray-50 border-gray-200 cursor-pointer'
-                  }`}
-                  onClick={() => getLayerStatus('eyeglasses') !== 'locked' && handleLayerChange('eyeglasses')}
-                >
-                  <div className="flex items-center gap-3">
-                    <Glasses className="h-5 w-5 text-gray-600" />
-                    <div>
-                      <div className="font-medium">Eyeglasses</div>
-                      <div className="text-xs text-gray-600">Frames, lenses & options</div>
-                    </div>
-                  </div>
-                </div>
-
-                {/* Contact Lenses Step */}
-                <div 
-                  className={`p-3 rounded-lg border transition-colors ${
-                    getLayerStatus('contacts') === 'locked'
-                      ? 'bg-gray-100 border-gray-200 cursor-not-allowed opacity-60'
-                      : currentLayer === 'contacts'
-                      ? 'bg-blue-50 border-blue-200 cursor-pointer'
-                      : 'bg-gray-50 border-gray-200 cursor-pointer'
-                  }`}
-                  onClick={() => getLayerStatus('contacts') !== 'locked' && handleLayerChange('contacts')}
-                >
-                  <div className="flex items-center gap-3">
-                    <Eye className="h-5 w-5 text-gray-600" />
-                    <div>
-                      <div className="font-medium">Contact Lenses</div>
-                      <div className="text-xs text-gray-600">Brands, types & parameters</div>
-                    </div>
-                  </div>
-                </div>
-
-                {/* Review Step */}
-                <div 
-                  className={`p-3 rounded-lg border transition-colors ${
-                    getLayerStatus('review') === 'locked'
-                      ? 'bg-gray-100 border-gray-200 cursor-not-allowed opacity-60'
-                      : currentLayer === 'review'
-                      ? 'bg-blue-50 border-blue-200 cursor-pointer'
-                      : 'bg-gray-50 border-gray-200 cursor-pointer'
-                  }`}
-                  onClick={() => getLayerStatus('review') !== 'locked' && handleLayerChange('review')}
-                >
-                  <div className="flex items-center gap-3">
-                    <CheckCircle className="h-5 w-5 text-gray-600" />
-                    <div>
-                      <div className="font-medium">Review</div>
-                      <div className="text-xs text-gray-600">Review quote details</div>
-                    </div>
-                  </div>
-                </div>
-
-                {/* Finalize Step */}
-                <div 
-                  className={`p-3 rounded-lg border transition-colors ${
-                    getLayerStatus('finalize') === 'locked'
-                      ? 'bg-gray-100 border-gray-200 cursor-not-allowed opacity-60'
-                      : currentLayer === 'finalize'
-                      ? 'bg-blue-50 border-blue-200 cursor-pointer'
-                      : 'bg-gray-50 border-gray-200 cursor-pointer'
-                  }`}
-                  onClick={() => getLayerStatus('finalize') !== 'locked' && handleLayerChange('finalize')}
-                >
-                  <div className="flex items-center gap-3">
-                    <CheckCircle className="h-5 w-5 text-gray-600" />
-                    <div>
-                      <div className="font-medium">Finalize</div>
-                      <div className="text-xs text-gray-600">Complete the quote</div>
-                    </div>
-                  </div>
-                </div>
-              </CardContent>
-            </Card>
-          </div>
-
-          {/* Main Content */}
-          <div className="lg:col-span-3 space-y-6">
-            {/* Customer Info Display */}
-            {selectedCustomer && (
-              <Card>
-                <CardContent className="pt-6">
-                  <div className="flex items-center justify-between">
-                    <div className="flex items-center gap-4">
-                      <div className="h-10 w-10 bg-blue-100 rounded-full flex items-center justify-center">
-                        <User className="h-5 w-5 text-blue-600" />
-                      </div>
-                      <div>
-                        <h3 className="font-semibold text-lg">
-                          {selectedCustomer.firstName} {selectedCustomer.lastName}
-                        </h3>
-                        <div className="flex items-center gap-4 text-sm text-gray-600">
-                          {selectedCustomer.email && <span>📧 {selectedCustomer.email}</span>}
-                          {selectedCustomer.phone && <span>📞 {selectedCustomer.phone}</span>}
-                        </div>
-                        {selectedCustomer.insuranceCarrier && (
-                          <div className="mt-1">
-                            <Badge variant="outline" className="text-xs">
-                              {selectedCustomer.insuranceCarrier}
-                            </Badge>
-                            {selectedCustomer.memberId && (
-                              <span className="text-xs text-gray-500 ml-2">
-                                ID: {selectedCustomer.memberId}
-                              </span>
-                            )}
-                          </div>
-                        )}
-                      </div>
-                    </div>
-                    <Button 
-                      variant="outline" 
-                      size="sm"
-                      onClick={() => {
-                        setSelectedCustomer(null)
-                        setCurrentLayer('customer')
-                      }}
-                    >
-                      Change Customer
-                    </Button>
-                  </div>
-                </CardContent>
-              </Card>
-            )}
-
+      {/* Main Layout - 3-Panel Master Plan Design */}
+      <div className="layout-3-panel">
+        
+        {/* Left Navigation Panel - 160px */}
+        <QuoteNavPanel 
+          currentLayer={currentLayer}
+          onLayerChange={handleLayerChange}
+          getLayerStatus={getLayerStatus}
+        />
+        
+        {/* Center Content Panel - Fluid */}
+        <div className="bg-white p-6 space-y-6 overflow-y-auto">
+          
+          {/* Customer Info Header */}
+          {selectedCustomer && (
+            <CustomerInfoHeader 
+              customer={selectedCustomer}
+              locationId={session?.user?.locationId}
+              onChangeCustomer={() => {
+                setSelectedCustomer(null)
+                setCurrentLayer('customer')
+              }}
+            />
+          )}
+          
+          {/* Layer Content */}
+          <div className="space-y-6">
+            
             {/* Customer Selection Layer */}
             {currentLayer === 'customer' && (
               <Card>
                 <CardHeader>
-                  <CardTitle className="flex items-center gap-2">
-                    <User className="h-5 w-5" />
-                    Select Customer
+                  <CardTitle className="flex items-center space-x-2">
+                    <User className="h-5 w-5 text-brand-purple" />
+                    <span>Select Customer</span>
                   </CardTitle>
                 </CardHeader>
                 <CardContent>
@@ -383,12 +231,12 @@ export default function QuoteBuilderPage() {
                           setCustomerSearch(e.target.value)
                           searchCustomers(e.target.value)
                         }}
-                        className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
+                        className="w-full px-3 py-2 border border-neutral-200 rounded-brand-md focus:outline-none focus:ring-2 focus:ring-brand-purple focus:border-brand-purple"
                       />
                     </div>
 
                     {loading && (
-                      <div className="text-center py-4 text-gray-500">
+                      <div className="text-center py-4 text-neutral-500">
                         <Clock className="h-5 w-5 animate-spin mx-auto mb-2" />
                         Searching customers...
                       </div>
@@ -396,17 +244,17 @@ export default function QuoteBuilderPage() {
 
                     {customerResults.length > 0 && (
                       <div className="space-y-2 max-h-64 overflow-y-auto">
-                        <h4 className="text-sm font-medium text-gray-700">Search Results:</h4>
+                        <h4 className="text-sm font-medium text-neutral-700">Search Results:</h4>
                         {customerResults.map((customer) => (
                           <div
                             key={customer.id}
-                            className="p-4 border rounded-lg cursor-pointer hover:bg-gray-50 transition-colors"
+                            className="p-4 border border-neutral-200 rounded-brand-md cursor-pointer hover:border-brand-purple hover:bg-primary-purple-light transition-colors"
                             onClick={() => handleCustomerSelect(customer)}
                           >
-                            <div className="font-medium">
+                            <div className="font-medium text-neutral-900">
                               {customer.firstName} {customer.lastName}
                             </div>
-                            <div className="text-sm text-gray-600">
+                            <div className="text-sm text-neutral-600">
                               {customer.email && <span>📧 {customer.email}</span>}
                               {customer.phone && <span className="ml-2">📞 {customer.phone}</span>}
                             </div>
@@ -416,7 +264,7 @@ export default function QuoteBuilderPage() {
                                   {customer.insuranceCarrier}
                                 </Badge>
                                 {customer.memberId && (
-                                  <span className="text-xs text-gray-500 ml-2">
+                                  <span className="text-xs text-neutral-500 ml-2">
                                     ID: {customer.memberId}
                                   </span>
                                 )}
@@ -430,10 +278,10 @@ export default function QuoteBuilderPage() {
                     <Separator />
 
                     <div className="space-y-3">
-                      <h4 className="text-sm font-medium text-gray-700">Or create a new customer:</h4>
+                      <h4 className="text-sm font-medium text-neutral-700">Or create a new customer:</h4>
                       <Button 
                         variant="outline" 
-                        className="w-full"
+                        className="w-full border-brand-purple/30 text-brand-purple hover:bg-brand-purple hover:text-white"
                         onClick={() => {
                           // Store current quote context
                           sessionStorage.setItem('quoteBuilderContext', 'true')
@@ -452,19 +300,43 @@ export default function QuoteBuilderPage() {
             {/* Exam Services Layer */}
             {currentLayer === 'exam-services' && selectedCustomer && (
               <ExamServicesLayer 
-                onNext={() => setCurrentLayer('eyeglasses')}
-                onBack={() => setCurrentLayer('customer')}
+                onNext={async () => {
+                  await saveQuote()
+                  setCurrentLayer('eyeglasses')
+                }}
+                onBack={async () => {
+                  await saveQuote()
+                  setCurrentLayer('customer')
+                }}
               />
             )}
 
             {/* Eyeglasses Layer */}
             {currentLayer === 'eyeglasses' && selectedCustomer && (
-              <EyeglassesLayer />
+              <EyeglassesLayer 
+                onNext={async () => {
+                  await saveQuote()
+                  setCurrentLayer('contacts')
+                }}
+                onBack={async () => {
+                  await saveQuote()
+                  setCurrentLayer('exam-services')
+                }}
+              />
             )}
 
             {/* Contact Lenses Layer */}
             {currentLayer === 'contacts' && selectedCustomer && (
-              <ContactLensLayer />
+              <ContactLensLayer 
+                onNext={async () => {
+                  await saveQuote()
+                  setCurrentLayer('review')
+                }}
+                onBack={async () => {
+                  await saveQuote()
+                  setCurrentLayer('eyeglasses')
+                }}
+              />
             )}
 
             {/* Review Layer */}
@@ -489,8 +361,23 @@ export default function QuoteBuilderPage() {
                 onComplete={() => router.push('/dashboard')}
               />
             )}
+            
           </div>
         </div>
+        
+        {/* Right Pricing Sidebar - 280px */}
+        <PricingSidebar 
+          customerName={selectedCustomer ? `${selectedCustomer.firstName} ${selectedCustomer.lastName}` : ''}
+          onGenerateQuote={() => {
+            console.log('Generating quote...');
+            // TODO: Implement quote generation logic
+          }}
+          onProceedToCheckout={() => {
+            console.log('Proceeding to checkout...');
+            setCurrentLayer('review');
+          }}
+        />
+        
       </div>
     </div>
   )

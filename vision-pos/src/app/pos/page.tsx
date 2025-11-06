@@ -19,7 +19,8 @@ import {
   User, 
   CreditCard,
   Calculator,
-  Package
+  Package,
+  ArrowLeft
 } from 'lucide-react'
 
 interface Customer {
@@ -230,9 +231,21 @@ export default function POSPage() {
     <div className="container mx-auto p-6">
       {/* Header */}
       <div className="flex items-center justify-between mb-6">
-        <div>
-          <h1 className="text-3xl font-bold text-gray-900">Point of Sale</h1>
-          <p className="text-gray-600">Process customer transactions</p>
+        <div className="flex items-center space-x-4">
+          <Button 
+            variant="ghost" 
+            size="sm"
+            onClick={() => router.push('/dashboard')}
+            className="text-neutral-600 hover:text-brand-purple"
+          >
+            <ArrowLeft className="h-4 w-4 mr-2" />
+            Back to Dashboard
+          </Button>
+          <div className="h-6 w-px bg-neutral-300" />
+          <div>
+            <h1 className="text-3xl font-bold text-gray-900">Point of Sale</h1>
+            <p className="text-gray-600">Process customer transactions</p>
+          </div>
         </div>
         <div className="flex items-center gap-4">
           <Badge variant="outline" className="px-3 py-1">

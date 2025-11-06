@@ -1,6 +1,3 @@
-// This is your Prisma schema file,
-// learn more about it in the docs: https://pris.ly/d/prisma-schema
-
 generator client {
   provider = "prisma-client-js"
 }
@@ -10,820 +7,700 @@ datasource db {
   url      = "file:./dev.db"
 }
 
-// ============================================================================
-// CORE ENTITIES - Week 1 Foundation
-// ============================================================================
-
-model Location {
-  id          String   @id @default(cuid())
-  name        String   @unique // "Downtown", "Westside"
-  address     String
-  phone       String?
-  timezone    String   @default("America/Los_Angeles")
-  active      Boolean  @default(true)
-  createdAt   DateTime @default(now())
-  updatedAt   DateTime @updatedAt
-  
-  // Relations
-  users       User[]
-  products    ProductLocation[]
-  transactions Transaction[]
-  inventory   Inventory[]
-  purchaseOrders PurchaseOrder[]
-  
-  @@map("locations")
+model communication_preferences {
+  id                    String    @id
+  customerId            String    @unique
+  emailAppointments     Boolean   @default(true)
+  emailPromotions       Boolean   @default(false)
+  emailReminders        Boolean   @default(true)
+  emailNewsletters      Boolean   @default(false)
+  smsAppointments       Boolean   @default(true)
+  smsPickupReady        Boolean   @default(true)
+  smsPromotions         Boolean   @default(false)
+  phoneAppointments     Boolean   @default(false)
+  phoneFollowUp         Boolean   @default(false)
+  phoneEmergencyContact Boolean   @default(true)
+  mailingStatements     Boolean   @default(true)
+  mailingPromotions     Boolean   @default(false)
+  mailingCatalogs       Boolean   @default(false)
+  createdAt             DateTime  @default(now())
+  updatedAt             DateTime
+  customers             customers @relation(fields: [customerId], references: [id])
 }
 
-model User {
-  id          String   @id @default(cuid())
-  email       String   @unique
-  passwordHash String?
-  role        UserRole @default(SALES_ASSOCIATE)
-  locationId  String
-  firstName   String
-  lastName    String
-  active      Boolean  @default(true)
-  createdAt   DateTime @default(now())
-  updatedAt   DateTime @updatedAt
-  
-  // Relations
-  location    Location @relation(fields: [locationId], references: [id])
-  transactions Transaction[]
-  inventoryMovements InventoryMovement[]
-  purchaseOrders PurchaseOrder[]
-  
-  @@map("users")
+model customer_addresses {
+  id         String    @id
+  customerId String
+  type       String
+  street     String
+  street2    String?
+  city       String
+  state      String
+  zipCode    String
+  country    String    @default("USA")
+  isPrimary  Boolean   @default(false)
+  isActive   Boolean   @default(true)
+  createdAt  DateTime  @default(now())
+  updatedAt  DateTime
+  customers  customers @relation(fields: [customerId], references: [id])
 }
 
-enum UserRole {
-  ADMIN
-  MANAGER
-  SALES_ASSOCIATE
+model customer_insurance {
+  id                       String    @id
+  customerId               String
+  carrier                  String
+  planName                 String?
+  planType                 String
+  memberId                 String
+  groupNumber              String?
+  effectiveDate            DateTime
+  expirationDate           DateTime?
+  copayAmount              Float?
+  deductible               Float?
+  isPrimary                Boolean   @default(false)
+  isActive                 Boolean   @default(true)
+  subscriberName           String?
+  relationshipToSubscriber String?
+  coverageDetails          Json
+  createdAt                DateTime  @default(now())
+  updatedAt                DateTime
+  customers                customers @relation(fields: [customerId], references: [id])
 }
 
-model InsuranceCarrier {
-  id          String   @id @default(cuid())
-  name        String   @unique // "VSP", "EyeMed", "Spectera"
-  code        String   @unique // "vsp", "eyemed", "spectera"
-  active      Boolean  @default(true)
-  config      Json?    // Carrier-specific configuration
-  createdAt   DateTime @default(now())
-  updatedAt   DateTime @updatedAt
-  
-  @@map("insurance_carriers")
+model customer_preferences {
+  id                        String    @id
+  customerId                String    @unique
+  preferredContactMethod    String    @default("EMAIL")
+  appointmentReminders      Boolean   @default(true)
+  promotionalEmails         Boolean   @default(false)
+  language                  String    @default("en")
+  timezone                  String    @default("America/New_York")
+  preferredBrands           Json      @default("[]")
+  budgetRange               Json?
+  largeFont                 Boolean   @default(false)
+  audioAssistance           Boolean   @default(false)
+  wheelchairAccessible      Boolean   @default(false)
+  preferredProviders        Json      @default("[]")
+  preferredAppointmentTimes Json      @default("[]")
+  specialInstructions       String?
+  createdAt                 DateTime  @default(now())
+  updatedAt                 DateTime
+  customers                 customers @relation(fields: [customerId], references: [id])
 }
 
-model ProductCategory {
-  id          String   @id @default(cuid())
-  name        String   @unique // "Frames", "Lenses", "Coatings", "Add-ons", "Contacts"
-  code        String   @unique // "frames", "lenses", "coatings", "addons", "contacts"
-  description String?
-  active      Boolean  @default(true)
-  createdAt   DateTime @default(now())
-  updatedAt   DateTime @updatedAt
-  
-  // Relations
-  products    Product[]
-  
-  @@map("product_categories")
-}
-
-model Product {
-  id              String   @id @default(cuid())
-  name            String
-  sku             String?  @unique
-  categoryId      String
-  manufacturer    String?
-  basePrice       Float    // Using Float for SQLite compatibility
-  
-  // Insurance tier mappings
-  tierVsp         String?  // K, J, F, O, N for progressives
-  tierEyemed      String?  // tier_1, tier_2, tier_3, tier_4, tier_5
-  tierSpectera    String?  // I, II, III, IV, V
-  
-  active          Boolean  @default(true)
-  createdAt       DateTime @default(now())
-  updatedAt       DateTime @updatedAt
-  
-  // Relations
-  category        ProductCategory @relation(fields: [categoryId], references: [id])
-  locations       ProductLocation[]
-  transactionItems TransactionItem[]
-  inventory       Inventory[]
-  suppliers       ProductSupplier[]
-  purchaseOrderItems PurchaseOrderItem[]
-  
-  @@map("products")
-}
-
-model ProductLocation {
-  id          String   @id @default(cuid())
-  productId   String
-  locationId  String
-  priceOverride Float? // Location-specific price override
-  available   Boolean  @default(true)
-  createdAt   DateTime @default(now())
-  updatedAt   DateTime @updatedAt
-  
-  // Relations
-  product     Product  @relation(fields: [productId], references: [id])
-  location    Location @relation(fields: [locationId], references: [id])
-  
-  @@unique([productId, locationId])
-  @@map("product_locations")
-}
-
-// ============================================================================
-// CUSTOMER & TRANSACTION MODELS - Week 1 Day 4
-// ============================================================================
-
-model Customer {
-  id              String   @id @default(cuid())
-  firstName       String
-  lastName        String
-  email           String?
-  phone           String?
-  dateOfBirth     DateTime?
-  gender          Gender?
-  
-  // Legacy fields for migration compatibility
-  address         String?  // Will be migrated to CustomerAddress
-  city            String?  // Will be migrated to CustomerAddress  
-  state           String?  // Will be migrated to CustomerAddress
-  zipCode         String?  // Will be migrated to CustomerAddress
-  insuranceCarrier String? // Will be migrated to CustomerInsurance
-  memberId        String? // Will be migrated to CustomerInsurance
-  groupNumber     String? // Will be migrated to CustomerInsurance
-  eligibilityDate DateTime? // Will be migrated to CustomerInsurance
-  active          Boolean  @default(true) // Will be migrated to accountStatus
-  
-  // New account information
-  customerNumber  String?  @unique // Made optional for migration
-  accountStatus   AccountStatus @default(ACTIVE)
-  registrationDate DateTime @default(now())
-  lastVisit       DateTime?
-  
-  // Analytics fields
-  totalSpent      Float    @default(0)
-  averageOrderValue Float  @default(0)
-  customerLifetimeValue Float @default(0)
-  lastPurchaseDate DateTime?
-  isHighValueCustomer Boolean @default(false)
-  isFrequentCustomer Boolean @default(false)
-  riskLevel       RiskLevel @default(LOW)
-  
-  // Marketing and communication
-  marketingConsent Boolean @default(false)
-  notes           String?
-  
-  createdAt       DateTime @default(now())
-  updatedAt       DateTime @updatedAt
-  createdBy       String?
-  updatedBy       String?
-  
-  // Relations
-  addresses       CustomerAddress[]
-  insuranceInfo   CustomerInsurance[]
-  preferences     CustomerPreferences?
-  eyewearPreferences EyewearPreferences?
-  communicationPreferences CommunicationPreferences?
-  relationships   CustomerRelationship[] @relation("PrimaryCustomer")
-  relatedTo       CustomerRelationship[] @relation("RelatedCustomer")
-  purchaseHistory CustomerPurchaseHistory[]
-  visitHistory    CustomerVisit[]
-  prescriptions   EyePrescription[]
-  tags            CustomerTagAssignment[]
-  transactions    Transaction[]
-  
-  @@map("customers")
-}
-
-enum Gender {
-  MALE
-  FEMALE
-  OTHER
-  PREFER_NOT_TO_SAY
-}
-
-enum AccountStatus {
-  ACTIVE
-  INACTIVE
-  SUSPENDED
-}
-
-enum RiskLevel {
-  LOW
-  MEDIUM
-  HIGH
-}
-
-model CustomerAddress {
-  id          String   @id @default(cuid())
-  customerId  String
-  type        AddressType
-  street      String
-  street2     String?
-  city        String
-  state       String
-  zipCode     String
-  country     String   @default("USA")
-  isPrimary   Boolean  @default(false)
-  isActive    Boolean  @default(true)
-  
-  createdAt   DateTime @default(now())
-  updatedAt   DateTime @updatedAt
-  
-  // Relations
-  customer    Customer @relation(fields: [customerId], references: [id])
-  
-  @@map("customer_addresses")
-}
-
-enum AddressType {
-  HOME
-  WORK
-  BILLING
-  SHIPPING
-  OTHER
-}
-
-model CustomerInsurance {
-  id              String   @id @default(cuid())
-  customerId      String
-  carrier         String
-  planName        String?
-  planType        InsurancePlanType
-  memberId        String
-  groupNumber     String?
-  effectiveDate   DateTime
-  expirationDate  DateTime?
-  copayAmount     Float?
-  deductible      Float?
-  isPrimary       Boolean  @default(false)
-  isActive        Boolean  @default(true)
-  
-  // Dependent information
-  subscriberName  String?
-  relationshipToSubscriber RelationshipType?
-  
-  // Coverage details stored as JSON
-  coverageDetails Json
-  
-  createdAt       DateTime @default(now())
-  updatedAt       DateTime @updatedAt
-  
-  // Relations
-  customer        Customer @relation(fields: [customerId], references: [id])
-  
-  @@map("customer_insurance")
-}
-
-enum InsurancePlanType {
-  VISION
-  MEDICAL
-  BOTH
-}
-
-enum RelationshipType {
-  SELF
-  SPOUSE
-  CHILD
-  DEPENDENT
-  OTHER
-}
-
-model CustomerPreferences {
-  id              String   @id @default(cuid())
-  customerId      String   @unique
-  
-  preferredContactMethod ContactMethod @default(EMAIL)
-  appointmentReminders Boolean @default(true)
-  promotionalEmails Boolean @default(false)
-  language        String   @default("en")
-  timezone        String   @default("America/New_York")
-  
-  // Shopping preferences stored as JSON
-  preferredBrands Json     @default("[]")
-  budgetRange     Json?
-  
-  // Accessibility needs
-  largeFont       Boolean  @default(false)
-  audioAssistance Boolean  @default(false)
-  wheelchairAccessible Boolean @default(false)
-  
-  // Visit preferences stored as JSON
-  preferredProviders Json   @default("[]")
-  preferredAppointmentTimes Json @default("[]")
-  specialInstructions String?
-  
-  createdAt       DateTime @default(now())
-  updatedAt       DateTime @updatedAt
-  
-  // Relations
-  customer        Customer @relation(fields: [customerId], references: [id])
-  
-  @@map("customer_preferences")
-}
-
-enum ContactMethod {
-  EMAIL
-  PHONE
-  SMS
-  MAIL
-}
-
-model EyewearPreferences {
-  id              String   @id @default(cuid())
-  customerId      String   @unique
-  
-  // Preferences stored as JSON arrays
-  frameStyles     Json     @default("[]")
-  frameMaterials  Json     @default("[]")
-  frameColors     Json     @default("[]")
-  lensTypes       Json     @default("[]")
-  lensCoatings    Json     @default("[]")
-  contactLensBrands Json   @default("[]")
-  contactLensTypes Json    @default("[]")
-  
-  // Budget preferences
-  framesBudget    Float?
-  contactsBudget  Float?
-  
-  // Special needs
-  safetyRequirements Boolean @default(false)
-  computerGlasses Boolean  @default(false)
-  sportsEyewear   Boolean  @default(false)
-  fashionPriority Priority @default(MEDIUM)
-  comfortPriority Priority @default(HIGH)
-  
-  createdAt       DateTime @default(now())
-  updatedAt       DateTime @updatedAt
-  
-  // Relations
-  customer        Customer @relation(fields: [customerId], references: [id])
-  
-  @@map("eyewear_preferences")
-}
-
-enum Priority {
-  HIGH
-  MEDIUM
-  LOW
-}
-
-model CommunicationPreferences {
-  id            String   @id @default(cuid())
-  customerId    String   @unique
-  
-  // Email preferences as individual boolean fields for SQLite compatibility
-  emailAppointments    Boolean @default(true)
-  emailPromotions      Boolean @default(false) 
-  emailReminders       Boolean @default(true)
-  emailNewsletters     Boolean @default(false)
-  
-  // SMS preferences
-  smsAppointments      Boolean @default(true)
-  smsPickupReady       Boolean @default(true)
-  smsPromotions        Boolean @default(false)
-  
-  // Phone preferences
-  phoneAppointments    Boolean @default(false)
-  phoneFollowUp        Boolean @default(false)
-  phoneEmergencyContact Boolean @default(true)
-  
-  // Mailing preferences
-  mailingStatements    Boolean @default(true)
-  mailingPromotions    Boolean @default(false)
-  mailingCatalogs      Boolean @default(false)
-  
-  createdAt     DateTime @default(now())
-  updatedAt     DateTime @updatedAt
-  
-  // Relations
-  customer      Customer @relation(fields: [customerId], references: [id], onDelete: Restrict)
-  
-  @@map("communication_preferences")
-}
-
-model CustomerRelationship {
-  id              String   @id @default(cuid())
-  primaryCustomerId String
-  relatedCustomerId String
-  relationshipType CustomerRelationshipType
-  isActive        Boolean  @default(true)
-  notes           String?
-  
-  createdAt       DateTime @default(now())
-  
-  // Relations
-  primaryCustomer Customer @relation("PrimaryCustomer", fields: [primaryCustomerId], references: [id])
-  relatedCustomer Customer @relation("RelatedCustomer", fields: [relatedCustomerId], references: [id])
-  
-  @@unique([primaryCustomerId, relatedCustomerId])
-  @@map("customer_relationships")
-}
-
-enum CustomerRelationshipType {
-  SPOUSE
-  CHILD
-  PARENT
-  SIBLING
-  GUARDIAN
-  DEPENDENT
-  OTHER
-}
-
-model CustomerPurchaseHistory {
-  id              String   @id @default(cuid())
-  customerId      String
-  transactionId   String
-  orderDate       DateTime
-  totalAmount     Float
-  paymentMethod   String
-  
-  // Eye care specific
+model customer_purchase_history {
+  id               String    @id
+  customerId       String
+  transactionId    String
+  orderDate        DateTime
+  totalAmount      Float
+  paymentMethod    String
   prescriptionUsed String?
-  providerId      String?
-  
-  // Items stored as JSON text for SQLite compatibility
-  itemsJson       String   @default("[]")
-  
-  createdAt       DateTime @default(now())
-  
-  // Relations
-  customer        Customer @relation(fields: [customerId], references: [id])
-  
-  @@map("customer_purchase_history")
+  providerId       String?
+  itemsJson        String    @default("[]")
+  createdAt        DateTime  @default(now())
+  customers        customers @relation(fields: [customerId], references: [id])
 }
 
-model CustomerVisit {
-  id              String   @id @default(cuid())
-  customerId      String
-  visitDate       DateTime
-  visitType       VisitType
-  providerId      String?
-  providerName    String?
-  duration        Int?     // minutes
-  notes           String?
-  outcome         String?
-  nextAppointmentRecommended Boolean @default(false)
-  
-  createdAt       DateTime @default(now())
-  
-  // Relations
-  customer        Customer @relation(fields: [customerId], references: [id])
-  
-  @@map("customer_visits")
+model customer_relationships {
+  id                                                            String    @id
+  primaryCustomerId                                             String
+  relatedCustomerId                                             String
+  relationshipType                                              String
+  isActive                                                      Boolean   @default(true)
+  notes                                                         String?
+  createdAt                                                     DateTime  @default(now())
+  customers_customer_relationships_relatedCustomerIdTocustomers customers @relation("customer_relationships_relatedCustomerIdTocustomers", fields: [relatedCustomerId], references: [id])
+  customers_customer_relationships_primaryCustomerIdTocustomers customers @relation("customer_relationships_primaryCustomerIdTocustomers", fields: [primaryCustomerId], references: [id])
+
+  @@unique([primaryCustomerId, relatedCustomerId])
 }
 
-enum VisitType {
-  EXAM
-  FITTING
-  PICKUP
-  ADJUSTMENT
-  CONSULTATION
-  FOLLOW_UP
-}
+model customer_tag_assignments {
+  id            String        @id
+  customerId    String
+  tagId         String
+  createdAt     DateTime      @default(now())
+  customer_tags customer_tags @relation(fields: [tagId], references: [id])
+  customers     customers     @relation(fields: [customerId], references: [id])
 
-model EyePrescription {
-  id              String   @id @default(cuid())
-  customerId      String
-  prescriptionDate DateTime
-  providerId      String?
-  providerName    String?
-  
-  // Eye measurements stored as JSON text for SQLite
-  rightEyeJson    String   @default("{}")
-  leftEyeJson     String   @default("{}")
-  
-  // Additional measurements
-  pupillaryDistance Float?
-  bifocalHeight   Float?
-  
-  // Prescription details
-  prescriptionType PrescriptionType
-  notes           String?
-  
-  // Validity
-  expirationDate  DateTime?
-  isActive        Boolean  @default(true)
-  
-  createdAt       DateTime @default(now())
-  updatedAt       DateTime @updatedAt
-  
-  // Relations
-  customer        Customer @relation(fields: [customerId], references: [id])
-  
-  @@map("eye_prescriptions")
-}
-
-enum PrescriptionType {
-  DISTANCE
-  READING
-  BIFOCAL
-  PROGRESSIVE
-  COMPUTER
-}
-
-model CustomerTag {
-  id              String   @id @default(cuid())
-  name            String   @unique
-  color           String?
-  category        TagCategory?
-  
-  createdAt       DateTime @default(now())
-  updatedAt       DateTime @updatedAt
-  
-  // Relations
-  assignments     CustomerTagAssignment[]
-  
-  @@map("customer_tags")
-}
-
-enum TagCategory {
-  PREFERENCE
-  MEDICAL
-  BUSINESS
-  BEHAVIOR
-  OTHER
-}
-
-model CustomerTagAssignment {
-  id              String   @id @default(cuid())
-  customerId      String
-  tagId           String
-  
-  createdAt       DateTime @default(now())
-  
-  // Relations
-  customer        Customer    @relation(fields: [customerId], references: [id])
-  tag             CustomerTag @relation(fields: [tagId], references: [id])
-  
   @@unique([customerId, tagId])
-  @@map("customer_tag_assignments")
 }
 
-model Transaction {
-  id              String   @id @default(cuid())
-  customerId      String
-  userId          String   // Sales associate who processed
-  locationId      String
-  
-  // Transaction Details
-  subtotal        Float
-  tax             Float
-  discount        Float    @default(0)
-  total           Float
-  
-  // Insurance Information
-  insuranceCarrier String?
-  insuranceDiscount Float   @default(0)
-  patientPortion  Float
-  
-  // Transaction Status
-  status          TransactionStatus @default(PENDING)
-  paymentMethod   String?
-  
-  createdAt       DateTime @default(now())
-  updatedAt       DateTime @updatedAt
-  
-  // Relations
-  customer        Customer @relation(fields: [customerId], references: [id])
-  user            User     @relation(fields: [userId], references: [id])
-  location        Location @relation(fields: [locationId], references: [id])
-  items           TransactionItem[]
-  
-  @@map("transactions")
+model customer_tags {
+  id                       String                     @id
+  name                     String                     @unique
+  color                    String?
+  category                 String?
+  createdAt                DateTime                   @default(now())
+  updatedAt                DateTime
+  customer_tag_assignments customer_tag_assignments[]
 }
 
-enum TransactionStatus {
-  PENDING
-  COMPLETED
-  CANCELLED
-  REFUNDED
+model customer_visits {
+  id                         String    @id
+  customerId                 String
+  visitDate                  DateTime
+  visitType                  String
+  providerId                 String?
+  providerName               String?
+  duration                   Int?
+  notes                      String?
+  outcome                    String?
+  nextAppointmentRecommended Boolean   @default(false)
+  createdAt                  DateTime  @default(now())
+  customers                  customers @relation(fields: [customerId], references: [id])
 }
 
-model TransactionItem {
-  id              String   @id @default(cuid())
-  transactionId   String
-  productId       String
-  quantity        Int      @default(1)
-  unitPrice       Float
-  discount        Float    @default(0)
-  total           Float
-  
-  // Insurance calculations
-  insuranceTier   String?
-  insuranceDiscount Float   @default(0)
-  
-  createdAt       DateTime @default(now())
-  updatedAt       DateTime @updatedAt
-  
-  // Relations
-  transaction     Transaction @relation(fields: [transactionId], references: [id])
-  product         Product     @relation(fields: [productId], references: [id])
-  
-  @@map("transaction_items")
+model customers {
+  id                                                                         String                      @id
+  firstName                                                                  String
+  lastName                                                                   String
+  email                                                                      String?
+  phone                                                                      String?
+  dateOfBirth                                                                DateTime?
+  gender                                                                     String?
+  address                                                                    String?
+  city                                                                       String?
+  state                                                                      String?
+  zipCode                                                                    String?
+  insuranceCarrier                                                           String?
+  memberId                                                                   String?
+  groupNumber                                                                String?
+  eligibilityDate                                                            DateTime?
+  active                                                                     Boolean                     @default(true)
+  customerNumber                                                             String?                     @unique
+  accountStatus                                                              String                      @default("ACTIVE")
+  registrationDate                                                           DateTime                    @default(now())
+  lastVisit                                                                  DateTime?
+  totalSpent                                                                 Float                       @default(0)
+  averageOrderValue                                                          Float                       @default(0)
+  customerLifetimeValue                                                      Float                       @default(0)
+  lastPurchaseDate                                                           DateTime?
+  isHighValueCustomer                                                        Boolean                     @default(false)
+  isFrequentCustomer                                                         Boolean                     @default(false)
+  riskLevel                                                                  String                      @default("LOW")
+  marketingConsent                                                           Boolean                     @default(false)
+  notes                                                                      String?
+  createdAt                                                                  DateTime                    @default(now())
+  updatedAt                                                                  DateTime
+  createdBy                                                                  String?
+  updatedBy                                                                  String?
+  communication_preferences                                                  communication_preferences?
+  customer_addresses                                                         customer_addresses[]
+  customer_insurance                                                         customer_insurance[]
+  customer_preferences                                                       customer_preferences?
+  customer_purchase_history                                                  customer_purchase_history[]
+  customer_relationships_customer_relationships_relatedCustomerIdTocustomers customer_relationships[]    @relation("customer_relationships_relatedCustomerIdTocustomers")
+  customer_relationships_customer_relationships_primaryCustomerIdTocustomers customer_relationships[]    @relation("customer_relationships_primaryCustomerIdTocustomers")
+  customer_tag_assignments                                                   customer_tag_assignments[]
+  customer_visits                                                            customer_visits[]
+  eye_prescriptions                                                          eye_prescriptions[]
+  eyewear_preferences                                                        eyewear_preferences?
+  quotes                                                                     quotes[]
+  second_pairs                                                               second_pairs[]
+  transactions                                                               transactions[]
+  pofIncidents                                                               PofIncidents[]
 }
 
-// ============================================================================
-// INVENTORY MANAGEMENT MODELS - Week 1 Day 5
-// ============================================================================
+model exam_services {
+  id               String     @id
+  name             String
+  subtitle         String?
+  price            Float
+  duration         Int
+  category         String
+  insuranceCovered Boolean    @default(false)
+  copay            Float?
+  locationId       String?
+  active           Boolean    @default(true)
+  createdAt        DateTime   @default(now())
+  updatedAt        DateTime
+  createdBy        String?
+  updatedBy        String?
+  locations        locations? @relation(fields: [locationId], references: [id])
+}
 
-model Inventory {
-  id              String   @id @default(cuid())
-  productId       String
-  locationId      String
-  
-  // Stock Information
-  currentStock    Int      @default(0)
-  reservedStock   Int      @default(0) // Items reserved for orders
-  availableStock  Int      @default(0) // currentStock - reservedStock
-  
-  // Reorder Information
-  reorderPoint    Int      @default(5)  // When to reorder
-  reorderQuantity Int      @default(20) // How many to order
-  maxStock        Int?     // Maximum stock level
-  
-  // Cost Information
-  costPrice       Float?   // What we paid for the item
-  lastCostPrice   Float?   // Previous cost price for comparison
-  
-  // Tracking
-  lastRestocked   DateTime?
-  lastSold        DateTime?
-  
-  createdAt       DateTime @default(now())
-  updatedAt       DateTime @updatedAt
-  
-  // Relations
-  product         Product  @relation(fields: [productId], references: [id])
-  location        Location @relation(fields: [locationId], references: [id])
-  movements       InventoryMovement[]
-  
+model eye_prescriptions {
+  id                String    @id
+  customerId        String
+  prescriptionDate  DateTime
+  providerId        String?
+  providerName      String?
+  rightEyeJson      String    @default("{}")
+  leftEyeJson       String    @default("{}")
+  pupillaryDistance Float?
+  bifocalHeight     Float?
+  prescriptionType  String
+  notes             String?
+  expirationDate    DateTime?
+  isActive          Boolean   @default(true)
+  createdAt         DateTime  @default(now())
+  updatedAt         DateTime
+  customers         customers @relation(fields: [customerId], references: [id])
+}
+
+model eyewear_preferences {
+  id                 String    @id
+  customerId         String    @unique
+  frameStyles        Json      @default("[]")
+  frameMaterials     Json      @default("[]")
+  frameColors        Json      @default("[]")
+  lensTypes          Json      @default("[]")
+  lensCoatings       Json      @default("[]")
+  contactLensBrands  Json      @default("[]")
+  contactLensTypes   Json      @default("[]")
+  framesBudget       Float?
+  contactsBudget     Float?
+  safetyRequirements Boolean   @default(false)
+  computerGlasses    Boolean   @default(false)
+  sportsEyewear      Boolean   @default(false)
+  fashionPriority    String    @default("MEDIUM")
+  comfortPriority    String    @default("HIGH")
+  createdAt          DateTime  @default(now())
+  updatedAt          DateTime
+  customers          customers @relation(fields: [customerId], references: [id])
+}
+
+model insurance_carriers {
+  id        String   @id
+  name      String   @unique
+  code      String   @unique
+  active    Boolean  @default(true)
+  config    Json?
+  createdAt DateTime @default(now())
+  updatedAt DateTime
+}
+
+model inventory {
+  id                  String                @id
+  productId           String
+  locationId          String
+  currentStock        Int                   @default(0)
+  reservedStock       Int                   @default(0)
+  availableStock      Int                   @default(0)
+  reorderPoint        Int                   @default(5)
+  reorderQuantity     Int                   @default(20)
+  maxStock            Int?
+  costPrice           Float?
+  lastCostPrice       Float?
+  lastRestocked       DateTime?
+  lastSold            DateTime?
+  createdAt           DateTime              @default(now())
+  updatedAt           DateTime
+  locations           locations             @relation(fields: [locationId], references: [id])
+  products            products              @relation(fields: [productId], references: [id])
+  inventory_movements inventory_movements[]
+
   @@unique([productId, locationId])
-  @@map("inventory")
 }
 
-model InventoryMovement {
-  id              String   @id @default(cuid())
-  inventoryId     String
-  
-  // Movement Details
-  type            MovementType
-  quantity        Int      // Positive for additions, negative for reductions
-  reason          String?  // Optional reason for the movement
-  
-  // Reference Information
-  referenceType   String?  // "transaction", "adjustment", "restock", "transfer"
-  referenceId     String?  // ID of the related record
-  
-  // Cost tracking
-  unitCost        Float?   // Cost per unit for this movement
-  
-  // User tracking
-  userId          String?
-  notes           String?
-  
-  createdAt       DateTime @default(now())
-  
-  // Relations
-  inventory       Inventory @relation(fields: [inventoryId], references: [id])
-  user            User?     @relation(fields: [userId], references: [id])
-  
-  @@map("inventory_movements")
+model inventory_movements {
+  id            String    @id
+  inventoryId   String
+  type          String
+  quantity      Int
+  reason        String?
+  referenceType String?
+  referenceId   String?
+  unitCost      Float?
+  userId        String?
+  notes         String?
+  createdAt     DateTime  @default(now())
+  users         users?    @relation(fields: [userId], references: [id])
+  inventory     inventory @relation(fields: [inventoryId], references: [id])
 }
 
-enum MovementType {
-  SALE          // Stock reduction from sale
-  RETURN        // Stock increase from return
-  RESTOCK       // Stock increase from receiving shipment
-  ADJUSTMENT    // Manual stock adjustment (positive or negative)
-  TRANSFER_IN   // Stock increase from transfer from another location
-  TRANSFER_OUT  // Stock reduction from transfer to another location
-  DAMAGED       // Stock reduction due to damage
-  EXPIRED       // Stock reduction due to expiration
-  LOST          // Stock reduction due to loss/theft
+model locations {
+  id                String              @id
+  name              String              @unique
+  address           String
+  phone             String?
+  timezone          String              @default("America/Los_Angeles")
+  active            Boolean             @default(true)
+  createdAt         DateTime            @default(now())
+  updatedAt         DateTime
+  exam_services     exam_services[]
+  inventory         inventory[]
+  product_locations product_locations[]
+  purchase_orders   purchase_orders[]
+  quotes            quotes[]
+  second_pairs      second_pairs[]
+  transactions      transactions[]
+  users             users[]
+  pofIncidents      PofIncidents[]
 }
 
-model Supplier {
-  id              String   @id @default(cuid())
-  name            String   @unique
-  contactName     String?
-  email           String?
-  phone           String?
-  
-  // Address
-  address         String?
-  city            String?
-  state           String?
-  zipCode         String?
-  country         String   @default("USA")
-  
-  // Business Information
-  website         String?
-  taxId           String?
-  paymentTerms    String?  // "Net 30", "COD", etc.
-  
-  active          Boolean  @default(true)
-  createdAt       DateTime @default(now())
-  updatedAt       DateTime @updatedAt
-  
-  // Relations
-  products        ProductSupplier[]
-  purchaseOrders  PurchaseOrder[]
-  
-  @@map("suppliers")
+model product_categories {
+  id          String     @id
+  name        String     @unique
+  code        String     @unique
+  description String?
+  active      Boolean    @default(true)
+  createdAt   DateTime   @default(now())
+  updatedAt   DateTime
+  products    products[]
 }
 
-model ProductSupplier {
-  id              String   @id @default(cuid())
-  productId       String
-  supplierId      String
-  
-  // Supplier-specific information
-  supplierSku     String?  // Supplier's SKU for this product
-  supplierPrice   Float?   // Current price from supplier
-  leadTimeDays    Int?     // Days to deliver
-  minimumOrder    Int      @default(1)
-  
-  isPrimary       Boolean  @default(false) // Primary supplier for this product
-  active          Boolean  @default(true)
-  
-  createdAt       DateTime @default(now())
-  updatedAt       DateTime @updatedAt
-  
-  // Relations
-  product         Product  @relation(fields: [productId], references: [id])
-  supplier        Supplier @relation(fields: [supplierId], references: [id])
-  
+model product_locations {
+  id            String    @id
+  productId     String
+  locationId    String
+  priceOverride Float?
+  available     Boolean   @default(true)
+  createdAt     DateTime  @default(now())
+  updatedAt     DateTime
+  locations     locations @relation(fields: [locationId], references: [id])
+  products      products  @relation(fields: [productId], references: [id])
+
+  @@unique([productId, locationId])
+}
+
+model product_suppliers {
+  id            String    @id
+  productId     String
+  supplierId    String
+  supplierSku   String?
+  supplierPrice Float?
+  leadTimeDays  Int?
+  minimumOrder  Int       @default(1)
+  isPrimary     Boolean   @default(false)
+  active        Boolean   @default(true)
+  createdAt     DateTime  @default(now())
+  updatedAt     DateTime
+  suppliers     suppliers @relation(fields: [supplierId], references: [id])
+  products      products  @relation(fields: [productId], references: [id])
+
   @@unique([productId, supplierId])
-  @@map("product_suppliers")
 }
 
-model PurchaseOrder {
-  id              String   @id @default(cuid())
-  supplierId      String
-  locationId      String
-  userId          String   // User who created the order
+model products {
+  id                   String                 @id
+  name                 String
+  sku                  String?                @unique
+  categoryId           String
+  manufacturer         String?
+  basePrice            Float
+  tierVsp              String?
+  tierEyemed           String?
+  tierSpectera         String?
+  active               Boolean                @default(true)
+  createdAt            DateTime               @default(now())
+  updatedAt            DateTime
+  inventory            inventory[]
+  product_locations    product_locations[]
+  product_suppliers    product_suppliers[]
+  product_categories   product_categories     @relation(fields: [categoryId], references: [id])
+  purchase_order_items purchase_order_items[]
+  transaction_items    transaction_items[]
+}
+
+model purchase_order_items {
+  id               String          @id
+  purchaseOrderId  String
+  productId        String
+  quantityOrdered  Int
+  quantityReceived Int             @default(0)
+  unitCost         Float
+  total            Float
+  notes            String?
+  createdAt        DateTime        @default(now())
+  updatedAt        DateTime
+  products         products        @relation(fields: [productId], references: [id])
+  purchase_orders  purchase_orders @relation(fields: [purchaseOrderId], references: [id])
+}
+
+model purchase_orders {
+  id                   String                 @id
+  supplierId           String
+  locationId           String
+  userId               String
+  orderNumber          String                 @unique
+  status               String                 @default("PENDING")
+  subtotal             Float
+  tax                  Float                  @default(0)
+  shipping             Float                  @default(0)
+  total                Float
+  orderDate            DateTime               @default(now())
+  expectedDate         DateTime?
+  receivedDate         DateTime?
+  notes                String?
+  createdAt            DateTime               @default(now())
+  updatedAt            DateTime
+  purchase_order_items purchase_order_items[]
+  users                users                  @relation(fields: [userId], references: [id])
+  locations            locations              @relation(fields: [locationId], references: [id])
+  suppliers            suppliers              @relation(fields: [supplierId], references: [id])
+}
+
+model quotes {
+  id                                                  String         @id
+  customerId                                          String
+  userId                                              String
+  locationId                                          String
+  quoteNumber                                         String         @unique
+  description                                         String?
+  status                                              String         @default("BUILDING")
+  patientInfo                                         Json
+  insuranceInfo                                       Json
+  examServices                                        Json
+  eyeglasses                                          Json
+  contacts                                            Json
+  subtotal                                            Float
+  tax                                                 Float          @default(0)
+  discount                                            Float          @default(0)
+  insuranceDiscount                                   Float          @default(0)
+  total                                               Float
+  patientResponsibility                               Float
+  isSecondPair                                        Boolean        @default(false)
+  secondPairOf                                        String?
+  secondPairDiscount                                  Float          @default(0)
+  secondPairType                                      String?
   
-  // Order Information
-  orderNumber     String   @unique
-  status          PurchaseOrderStatus @default(PENDING)
+  // Patient-Owned Frame (POF) Fields
+  isPatientOwnedFrame                                 Boolean        @default(false)
+  pofInspectionCompleted                              Boolean        @default(false)
+  pofConditionAssessment                              String?        // "EXCELLENT", "GOOD", "FAIR", "POOR"
+  pofWaiverSigned                                     Boolean        @default(false)
+  pofFrameDescription                                 String?        // Brand, model, color description
+  pofFixedFee                                         Float          @default(0)
+  pofInspectionNotes                                  String?
+  pofInspectedBy                                      String?
+  pofInspectedAt                                      DateTime?
+  pofWaiverSignedAt                                   DateTime?
   
-  // Financial Information
-  subtotal        Float
-  tax             Float    @default(0)
-  shipping        Float    @default(0)
-  total           Float
+  examSignatureCompleted                              Boolean        @default(false)
+  materialsSignatureCompleted                         Boolean        @default(false)
+  examSignedAt                                        DateTime?
+  materialsSignedAt                                   DateTime?
+  expirationDate                                      DateTime
+  completedAt                                         DateTime?
+  createdAt                                           DateTime       @default(now())
+  updatedAt                                           DateTime
+  locations                                           locations      @relation(fields: [locationId], references: [id])
+  users                                               users          @relation(fields: [userId], references: [id])
+  customers                                           customers      @relation(fields: [customerId], references: [id])
+  second_pairs_second_pairs_secondPairQuoteIdToquotes second_pairs?  @relation("second_pairs_secondPairQuoteIdToquotes")
+  second_pairs_second_pairs_originalQuoteIdToquotes   second_pairs[] @relation("second_pairs_originalQuoteIdToquotes")
+  pofIncidents                                        PofIncidents[]
+  email_logs                                          email_logs[]
+  signatures                                          signatures[]
+}
+
+model signatures {
+  id                String    @id
+  quoteId           String
+  signatureType     String    // "EXAM", "MATERIALS"
+  signatureData     String    // Base64 encoded signature image data
+  signerName        String    // Name of the person signing
+  signerRole        String?   // Role/title of signer (optional)
+  ipAddress         String?   // IP address for audit trail
+  userAgent         String?   // Browser/device info for audit trail
+  deviceInfo        String?   // Additional device information
+  timestamp         DateTime  @default(now())
+  isValid           Boolean   @default(true)
+  invalidatedAt     DateTime?
+  invalidatedBy     String?   // User ID who invalidated
+  invalidationReason String?  // Reason for invalidation
   
-  // Dates
-  orderDate       DateTime @default(now())
-  expectedDate    DateTime?
-  receivedDate    DateTime?
+  // Signature verification data
+  nameVerified      Boolean   @default(false)
+  nameVerifiedAt    DateTime?
+  nameVerifiedBy    String?   // User ID who verified name match
   
-  notes           String?
+  // Metadata
+  signatureWidth    Int?      // Canvas width for replay
+  signatureHeight   Int?      // Canvas height for replay
+  signatureHash     String?   // Hash of signature data for integrity
   
-  createdAt       DateTime @default(now())
-  updatedAt       DateTime @updatedAt
+  // Audit trail
+  createdAt         DateTime  @default(now())
+  updatedAt         DateTime  @updatedAt
   
   // Relations
-  supplier        Supplier @relation(fields: [supplierId], references: [id])
-  location        Location @relation(fields: [locationId], references: [id])
-  user            User     @relation(fields: [userId], references: [id])
-  items           PurchaseOrderItem[]
+  quotes            quotes    @relation(fields: [quoteId], references: [id])
   
-  @@map("purchase_orders")
+  @@index([quoteId])
+  @@index([signatureType])
+  @@index([timestamp])
+  @@index([signerName])
+  @@map("signatures")
 }
 
-enum PurchaseOrderStatus {
-  PENDING
-  SENT
-  CONFIRMED
-  PARTIALLY_RECEIVED
-  RECEIVED
-  CANCELLED
+model second_pairs {
+  id                                            String    @id
+  originalQuoteId                               String
+  secondPairQuoteId                             String    @unique
+  customerId                                    String
+  userId                                        String
+  locationId                                    String
+  discountType                                  String
+  discountPercent                               Float
+  discountAmount                                Float
+  originalTotal                                 Float
+  finalTotal                                    Float
+  originalPurchaseDate                          DateTime
+  secondPairPurchaseDate                        DateTime
+  daysAfterOriginal                             Int
+  managerOverride                               Boolean   @default(false)
+  overrideReason                                String?
+  overrideBy                                    String?
+  createdAt                                     DateTime  @default(now())
+  updatedAt                                     DateTime
+  locations                                     locations @relation(fields: [locationId], references: [id])
+  users                                         users     @relation(fields: [userId], references: [id])
+  customers                                     customers @relation(fields: [customerId], references: [id])
+  quotes_second_pairs_secondPairQuoteIdToquotes quotes    @relation("second_pairs_secondPairQuoteIdToquotes", fields: [secondPairQuoteId], references: [id])
+  quotes_second_pairs_originalQuoteIdToquotes   quotes    @relation("second_pairs_originalQuoteIdToquotes", fields: [originalQuoteId], references: [id])
 }
 
-model PurchaseOrderItem {
-  id              String   @id @default(cuid())
-  purchaseOrderId String
-  productId       String
+model suppliers {
+  id                String              @id
+  name              String              @unique
+  contactName       String?
+  email             String?
+  phone             String?
+  address           String?
+  city              String?
+  state             String?
+  zipCode           String?
+  country           String              @default("USA")
+  website           String?
+  taxId             String?
+  paymentTerms      String?
+  active            Boolean             @default(true)
+  createdAt         DateTime            @default(now())
+  updatedAt         DateTime
+  product_suppliers product_suppliers[]
+  purchase_orders   purchase_orders[]
+}
+
+model transaction_items {
+  id                String       @id
+  transactionId     String
+  productId         String
+  quantity          Int          @default(1)
+  unitPrice         Float
+  discount          Float        @default(0)
+  total             Float
+  insuranceTier     String?
+  insuranceDiscount Float        @default(0)
+  createdAt         DateTime     @default(now())
+  updatedAt         DateTime
+  products          products     @relation(fields: [productId], references: [id])
+  transactions      transactions @relation(fields: [transactionId], references: [id])
+}
+
+model transactions {
+  id                String              @id
+  customerId        String
+  userId            String
+  locationId        String
+  subtotal          Float
+  tax               Float
+  discount          Float               @default(0)
+  total             Float
+  insuranceCarrier  String?
+  insuranceDiscount Float               @default(0)
+  patientPortion    Float
+  status            String              @default("PENDING")
+  paymentMethod     String?
+  createdAt         DateTime            @default(now())
+  updatedAt         DateTime
+  transaction_items transaction_items[]
+  locations         locations           @relation(fields: [locationId], references: [id])
+  users             users               @relation(fields: [userId], references: [id])
+  customers         customers           @relation(fields: [customerId], references: [id])
+}
+
+model users {
+  id                  String                @id
+  email               String                @unique
+  passwordHash        String?
+  role                String                @default("SALES_ASSOCIATE")
+  locationId          String
+  firstName           String
+  lastName            String
+  active              Boolean               @default(true)
+  createdAt           DateTime              @default(now())
+  updatedAt           DateTime
+  inventory_movements inventory_movements[]
+  purchase_orders     purchase_orders[]
+  quotes              quotes[]
+  second_pairs        second_pairs[]
+  transactions        transactions[]
+  pofIncidents        PofIncidents[]
+  locations           locations             @relation(fields: [locationId], references: [id])
+}
+
+// Patient-Owned Frame (POF) Incident Tracking
+model PofIncidents {
+  id                  String              @id @default(cuid())
+  quoteId             String
+  customerId          String
+  userId              String              // Staff member who reported
+  locationId          String
   
-  // Order Details
-  quantityOrdered Int
-  quantityReceived Int      @default(0)
-  unitCost        Float
-  total           Float
+  // Incident Details
+  incidentType        String              // "FRAME_DAMAGE", "FITTING_ISSUE", "LENS_INCOMPATIBILITY", "LIABILITY_CLAIM", "OTHER"
+  severity            String              // "LOW", "MEDIUM", "HIGH", "CRITICAL"
+  title               String              // Brief incident title
+  description         String              // Detailed incident description
   
-  notes           String?
+  // Frame Information
+  frameDescription    String?             // Description of the patient's frame
+  frameCondition      String?             // Condition before/after incident
   
-  createdAt       DateTime @default(now())
-  updatedAt       DateTime @updatedAt
+  // Resolution
+  status              String              @default("OPEN") // "OPEN", "IN_PROGRESS", "RESOLVED", "ESCALATED"
+  resolution          String?             // How the incident was resolved
+  resolvedBy          String?             // Staff member who resolved
+  resolvedAt          DateTime?
+  
+  // Financial Impact
+  financialImpact     Float               @default(0)      // Cost of incident
+  refundIssued        Float               @default(0)      // Any refund given
+  
+  // Documentation
+  photosAttached      Boolean             @default(false)  // Whether photos were taken
+  customerNotified    Boolean             @default(false)  // Customer awareness
+  insuranceNotified   Boolean             @default(false)  // Insurance company notified
+  
+  // Audit Trail
+  createdAt           DateTime            @default(now())
+  updatedAt           DateTime            @updatedAt
   
   // Relations
-  purchaseOrder   PurchaseOrder @relation(fields: [purchaseOrderId], references: [id])
-  product         Product       @relation(fields: [productId], references: [id])
+  quotes              quotes              @relation(fields: [quoteId], references: [id])
+  customers           customers           @relation(fields: [customerId], references: [id])
+  users               users               @relation(fields: [userId], references: [id])
+  locations           locations           @relation(fields: [locationId], references: [id])
   
-  @@map("purchase_order_items")
+  @@map("pof_incidents")
+}
+
+model email_logs {
+  id                String    @id
+  quoteId           String
+  recipientEmail    String
+  ccEmails          String?   // JSON array of CC emails
+  bccEmails         String?   // JSON array of BCC emails
+  subject           String
+  status            String    // "SENT", "FAILED", "PENDING", "BOUNCED"
+  provider          String?   // "sendgrid", "smtp", "ses"
+  messageId         String?   // Provider message ID for tracking
+  errorMessage      String?   // Error details if failed
+  retryCount        Int       @default(0)
+  sentAt            DateTime
+  bounceReason      String?   // If email bounced
+  openedAt          DateTime? // Email tracking (if supported)
+  clickedAt         DateTime? // Link click tracking (if supported)
+  
+  // Relations
+  quotes            quotes    @relation(fields: [quoteId], references: [id])
+  
+  @@index([quoteId])
+  @@index([recipientEmail])
+  @@index([status])
+  @@map("email_logs")
 }

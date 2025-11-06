@@ -1,7 +1,8 @@
 'use client'
 
 import React, { useState, useEffect, useMemo, useCallback } from 'react'
-import { Search, Plus, Filter, MoreHorizontal, Phone, Mail, MapPin, Calendar, DollarSign, BarChart, Users } from 'lucide-react'
+import { useRouter } from 'next/navigation'
+import { Search, Plus, Filter, MoreHorizontal, Phone, Mail, MapPin, Calendar, DollarSign, BarChart, Users, ArrowLeft } from 'lucide-react'
 import { Input } from '@/components/ui/input'
 import { Button } from '@/components/ui/button'
 import { Badge } from '@/components/ui/badge'
@@ -16,6 +17,7 @@ interface CustomerListProps {
 }
 
 export default function CustomerManagement({ onSelectCustomer, showActions = true }: CustomerListProps) {
+  const router = useRouter()
   const [customers, setCustomers] = useState<Customer[]>([])
   const [loading, setLoading] = useState(true)
   const [searchTerm, setSearchTerm] = useState('')
@@ -156,11 +158,23 @@ export default function CustomerManagement({ onSelectCustomer, showActions = tru
     <div className="space-y-6">
       {/* Header */}
       <div className="flex items-center justify-between">
-        <div>
-          <h1 className="text-3xl font-bold tracking-tight">Customer Management</h1>
-          <p className="text-muted-foreground">
-            Search, view, and manage customer profiles and information
-          </p>
+        <div className="flex items-center space-x-4">
+          <Button 
+            variant="ghost" 
+            size="sm"
+            onClick={() => router.push('/dashboard')}
+            className="text-neutral-600 hover:text-brand-purple"
+          >
+            <ArrowLeft className="h-4 w-4 mr-2" />
+            Back to Dashboard
+          </Button>
+          <div className="h-6 w-px bg-neutral-300" />
+          <div>
+            <h1 className="text-3xl font-bold tracking-tight">Customer Management</h1>
+            <p className="text-muted-foreground">
+              Search, view, and manage customer profiles and information
+            </p>
+          </div>
         </div>
         {showActions && (
           <div className="flex items-center space-x-2">

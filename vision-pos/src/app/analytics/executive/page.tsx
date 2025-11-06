@@ -23,7 +23,8 @@ import {
   Crown,
   CheckCircle,
   XCircle,
-  Download
+  Download,
+  ArrowLeft
 } from 'lucide-react';
 import { format } from 'date-fns';
 
@@ -120,29 +121,31 @@ export default function ExecutiveDashboard() {
     }
   };
 
-  const getPeriodLabel = () => {
-    switch (period) {
-      case '7': return 'Last 7 Days';
-      case '30': return 'Last 30 Days';
-      case 'month': return 'This Month';
-      case 'quarter': return 'This Quarter';
-      case 'year': return 'This Year';
-      default: return `Last ${period} Days`;
-    }
-  };
-
   return (
     <div className="container mx-auto p-6 space-y-6">
       {/* Header */}
       <div className="flex items-center justify-between">
-        <div>
-          <h1 className="text-3xl font-bold tracking-tight">Executive Dashboard</h1>
-          <p className="text-muted-foreground">
-            High-level business intelligence and performance metrics
-          </p>
-          <p className="text-sm text-muted-foreground">
-            Period: {dateRange?.start} to {dateRange?.end}
-          </p>
+        <div className="flex items-center gap-4">
+          <Button
+            variant="outline"
+            size="sm"
+            asChild
+            className="flex items-center gap-2"
+          >
+            <a href="/dashboard">
+              <ArrowLeft className="h-4 w-4" />
+              Back to Dashboard
+            </a>
+          </Button>
+          <div>
+            <h1 className="text-3xl font-bold tracking-tight">Executive Dashboard</h1>
+            <p className="text-muted-foreground">
+              High-level business intelligence and performance metrics
+            </p>
+            <p className="text-sm text-muted-foreground">
+              Period: {dateRange?.start} to {dateRange?.end}
+            </p>
+          </div>
         </div>
         <div className="flex gap-2">
           <Button variant="outline" onClick={() => handleExport('summary')}>

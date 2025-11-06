@@ -1,22 +1,23 @@
 'use client'
 
-import { useState } from 'react'
-import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
-import { Button } from '@/components/ui/button'
-import { Checkbox } from '@/components/ui/checkbox'
-import { Badge } from '@/components/ui/badge'
-import { Separator } from '@/components/ui/separator'
-import { Calendar, Clock, Eye, Activity, Brain, AlertCircle } from 'lucide-react'
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select'
+import { useState, useCallback } from 'react'
+import { NavigationFooter } from '@/components/quote-builder/layout/navigation-footer'
+import { 
+  VSPCategorySection, 
+  VSPSelectionButton, 
+  VSPGrid2, 
+  VSPGrid3
+} from '@/components/ui/vsp-components'
+import { useQuoteStore } from '@/store/quote-store'
 
 interface ExamService {
   id: string
   name: string
-  description: string
+  subtitle?: string
   price: number
   duration: number
   required?: boolean
-  category: 'comprehensive' | 'diagnostic' | 'specialty'
+  category: 'patient-type' | 'exam-type' | 'screeners' | 'diagnostics' | 'advanced' | 'contact-fitting'
   insuranceCovered?: boolean
   copay?: number
 }
@@ -27,143 +28,240 @@ interface ExamServicesLayerProps {
 }
 
 const examServices: ExamService[] = [
-  // Comprehensive Eye Exams
+  // Patient Type
+  {
+    id: 'new-patient',
+    name: 'New Patient',
+    subtitle: 'First visit',
+    price: 0,
+    duration: 0,
+    category: 'patient-type'
+  },
+  {
+    id: 'established-patient',
+    name: 'Established Patient',
+    subtitle: 'Return visit',
+    price: 0,
+    duration: 0,
+    category: 'patient-type'
+  },
+  
+  // Exam Type
   {
     id: 'routine-exam',
-    name: 'Routine Eye Exam',
-    description: 'Complete vision and eye health examination',
+    name: 'Routine Exam',
+    subtitle: 'Good pricing',
     price: 150,
     duration: 60,
-    category: 'comprehensive',
+    category: 'exam-type',
     insuranceCovered: true,
     copay: 25
   },
   {
     id: 'medical-exam',
-    name: 'Medical Eye Exam',
-    description: 'Comprehensive medical evaluation for eye conditions',
+    name: 'Medical Exam',
+    subtitle: 'Better',
     price: 200,
     duration: 90,
-    category: 'comprehensive',
+    category: 'exam-type',
     insuranceCovered: true,
     copay: 35
   },
-  {
-    id: 'contact-fitting',
-    name: 'Contact Lens Fitting',
-    description: 'Specialized fitting for contact lens wearers',
-    price: 75,
-    duration: 30,
-    category: 'comprehensive',
-    insuranceCovered: false
-  },
   
-  // Diagnostic Services
+  // Screeners
+  {
+    id: 'iwellness',
+    name: 'iWellness',
+    subtitle: '$39',
+    price: 39,
+    duration: 15,
+    category: 'screeners'
+  },
   {
     id: 'optomap',
-    name: 'Optomap Retinal Imaging',
-    description: 'Wide-field retinal photography for early disease detection',
+    name: 'OptoMap (Ultra-Wide Field Image)',
+    subtitle: '',
     price: 45,
     duration: 15,
-    category: 'diagnostic',
-    insuranceCovered: false
+    category: 'screeners'
   },
+  
+  // Diagnostics
   {
     id: 'oct-scan',
-    name: 'iWellness OCT Scan',
-    description: 'Optical coherence tomography for detailed retinal analysis',
+    name: 'OCT (Retina and Optic Nerve)',
+    subtitle: '',
     price: 65,
     duration: 20,
-    category: 'diagnostic',
-    insuranceCovered: true,
-    copay: 15
+    category: 'diagnostics'
   },
   {
     id: 'visual-field',
-    name: 'Visual Field Testing',
-    description: 'Comprehensive peripheral vision assessment',
+    name: 'Visual Field',
+    subtitle: '',
     price: 85,
     duration: 30,
-    category: 'diagnostic',
-    insuranceCovered: true,
-    copay: 20
+    category: 'diagnostics'
+  },
+  {
+    id: 'external-photos',
+    name: 'External Photos',
+    subtitle: '',
+    price: 25,
+    duration: 10,
+    category: 'diagnostics'
+  },
+  {
+    id: 'corneal-thickness',
+    name: 'Corneal Thickness Measurement',
+    subtitle: '',
+    price: 35,
+    duration: 15,
+    category: 'diagnostics'
   },
   
-  // Specialty Exams
+  // Advanced Testing
   {
-    id: 'glaucoma-testing',
-    name: 'Glaucoma Testing',
-    description: 'Comprehensive glaucoma screening and monitoring',
+    id: 'neurological-screening',
+    name: 'Neurological Headache Screening',
+    subtitle: '',
     price: 120,
     duration: 45,
-    category: 'specialty',
-    insuranceCovered: true,
-    copay: 30
+    category: 'advanced'
   },
   {
-    id: 'dry-eye-evaluation',
-    name: 'Dry Eye Evaluation',
-    description: 'Specialized testing for dry eye syndrome',
+    id: 'atropine-evaluation',
+    name: 'Atropine Myopia Management Evaluation',
+    subtitle: '',
     price: 95,
     duration: 35,
-    category: 'specialty',
-    insuranceCovered: false
+    category: 'advanced'
   },
   {
-    id: 'diabetic-eye-care',
-    name: 'Diabetic Eye Care',
-    description: 'Specialized diabetic retinopathy screening',
+    id: 'amblyopia-evaluation',
+    name: 'Amblyopia Evaluation',
+    subtitle: '',
     price: 110,
     duration: 40,
-    category: 'specialty',
-    insuranceCovered: true,
-    copay: 25
+    category: 'advanced'
+  },
+  
+  // Contact Lens Fitting
+  {
+    id: 'spherical-fitting',
+    name: 'Spherical fitting',
+    subtitle: '',
+    price: 75,
+    duration: 30,
+    category: 'contact-fitting'
+  },
+  {
+    id: 'toric-fitting',
+    name: 'Toric Fitting',
+    subtitle: '',
+    price: 95,
+    duration: 35,
+    category: 'contact-fitting'
+  },
+  {
+    id: 'monovision-fitting',
+    name: 'Monovision Fitting',
+    subtitle: '',
+    price: 85,
+    duration: 30,
+    category: 'contact-fitting'
+  },
+  {
+    id: 'multifocal-fitting',
+    name: 'Multifocal Fitting',
+    subtitle: '',
+    price: 120,
+    duration: 45,
+    category: 'contact-fitting'
+  },
+  {
+    id: 'multifocal-toric-fitting',
+    name: 'Multifocal Toric Fitting',
+    subtitle: '',
+    price: 150,
+    duration: 60,
+    category: 'contact-fitting'
+  },
+  {
+    id: 'corneal-rgp-fitting',
+    name: 'Corneal RGP Fitting',
+    subtitle: '',
+    price: 200,
+    duration: 60,
+    category: 'contact-fitting'
+  },
+  {
+    id: 'specialty-contact-fitting',
+    name: 'Specialty Contact Lens Fitting',
+    subtitle: '',
+    price: 250,
+    duration: 75,
+    category: 'contact-fitting'
+  },
+  {
+    id: 'ortho-k-fitting',
+    name: 'Ortho-K Myopia Management',
+    subtitle: '',
+    price: 300,
+    duration: 90,
+    category: 'contact-fitting'
+  },
+  {
+    id: 'mysight-fitting',
+    name: 'MySight Myopia Management',
+    subtitle: '',
+    price: 275,
+    duration: 80,
+    category: 'contact-fitting'
   }
 ]
 
-const appointmentSlots = [
-  { time: '9:00 AM', available: true },
-  { time: '10:30 AM', available: true },
-  { time: '12:00 PM', available: false },
-  { time: '1:30 PM', available: true },
-  { time: '3:00 PM', available: true },
-  { time: '4:30 PM', available: false }
-]
-
-const providers = [
-  { id: 'dr-smith', name: 'Dr. Sarah Smith, OD', specialty: 'General Optometry' },
-  { id: 'dr-johnson', name: 'Dr. Michael Johnson, OD', specialty: 'Contact Lenses' },
-  { id: 'dr-brown', name: 'Dr. Emily Brown, MD', specialty: 'Medical Eye Care' }
-]
-
 export default function ExamServicesLayer({ onNext, onBack }: ExamServicesLayerProps) {
-  const [selectedServices, setSelectedServices] = useState<string[]>(['routine-exam'])
-  const [selectedDate, setSelectedDate] = useState<string>('')
-  const [selectedTime, setSelectedTime] = useState<string>('')
-  const [selectedProvider, setSelectedProvider] = useState<string>('')
-  const [showScheduling, setShowScheduling] = useState(false)
+  const { updateExamServices, saveQuote, getSelectedExamServices } = useQuoteStore()
+  
+  // Initialize with saved services or defaults
+  const [selectedServices, setSelectedServices] = useState<string[]>(() => {
+    const savedServices = getSelectedExamServices()
+    return savedServices.length > 0 ? savedServices : ['new-patient', 'routine-exam']
+  })
 
-  const handleServiceToggle = (serviceId: string) => {
+  const saveExamData = useCallback(async () => {
+    try {
+      updateExamServices(selectedServices)
+      await saveQuote()
+    } catch (error) {
+      console.error('Failed to save exam data:', error)
+    }
+  }, [selectedServices, updateExamServices, saveQuote])
+
+  const handleServiceToggle = (serviceId: string, category: string) => {
     setSelectedServices(prev => {
-      // Ensure at least one comprehensive exam is selected
-      if (serviceId === 'routine-exam' || serviceId === 'medical-exam') {
-        // If deselecting a comprehensive exam, ensure another one is selected
-        if (prev.includes(serviceId)) {
-          const otherComprehensiveSelected = prev.some(id => 
-            (id === 'routine-exam' || id === 'medical-exam') && id !== serviceId
-          )
-          if (!otherComprehensiveSelected) {
-            return prev // Don't allow deselection if it's the only comprehensive exam
-          }
-        }
+      // Handle mutually exclusive selections
+      if (category === 'patient-type' || category === 'exam-type') {
+        // Remove other selections in the same category
+        const filtered = prev.filter(id => {
+          const service = examServices.find(s => s.id === id)
+          return service?.category !== category
+        })
+        return [...filtered, serviceId]
       }
       
+      // Handle multiple selections
       if (prev.includes(serviceId)) {
         return prev.filter(id => id !== serviceId)
       } else {
         return [...prev, serviceId]
       }
     })
+  }
+
+  const isServiceSelected = (serviceId: string) => {
+    return selectedServices.includes(serviceId)
   }
 
   const getSelectedServicesData = () => {
@@ -185,298 +283,233 @@ export default function ExamServicesLayer({ onNext, onBack }: ExamServicesLayerP
     return getSelectedServicesData().reduce((sum, service) => sum + service.duration, 0)
   }
 
-  const canProceed = () => {
-    const hasComprehensiveExam = selectedServices.some(id => 
-      examServices.find(service => service.id === id)?.category === 'comprehensive'
+  // Validation functions for NavigationFooter
+  const getValidationErrors = (): string[] => {
+    const errors: string[] = []
+    
+    const hasPatientType = selectedServices.some(id => 
+      examServices.find(service => service.id === id)?.category === 'patient-type'
     )
-    return hasComprehensiveExam && (!showScheduling || (selectedDate && selectedTime && selectedProvider))
+    const hasExamType = selectedServices.some(id => 
+      examServices.find(service => service.id === id)?.category === 'exam-type'
+    )
+    
+    if (!hasPatientType) {
+      errors.push('Please select patient type (New or Established)')
+    }
+    if (!hasExamType) {
+      errors.push('Please select exam type (Routine or Medical)')
+    }
+    
+    return errors
   }
 
-  const handleNext = () => {
-    if (canProceed()) {
-      // Here you would typically save the exam services selection to your state management
+  const getValidationWarnings = (): string[] => {
+    const warnings: string[] = []
+    
+    if (getTotalDuration() > 120) {
+      warnings.push('Appointment may be lengthy - consider scheduling across multiple visits')
+    }
+    
+    return warnings
+  }
+
+  const canProceedWithSelection = (): boolean => {
+    const hasPatientType = selectedServices.some(id => 
+      examServices.find(service => service.id === id)?.category === 'patient-type'
+    )
+    const hasExamType = selectedServices.some(id => 
+      examServices.find(service => service.id === id)?.category === 'exam-type'
+    )
+    return hasPatientType && hasExamType
+  }
+
+  const handleNext = async () => {
+    if (canProceedWithSelection()) {
+      // Save data before navigation
+      await saveExamData()
       console.log('Selected exam services:', {
         services: getSelectedServicesData(),
-        appointment: showScheduling ? {
-          date: selectedDate,
-          time: selectedTime,
-          provider: selectedProvider,
-          duration: getTotalDuration()
-        } : null,
         totals: calculateTotal()
       })
       onNext()
     }
   }
 
-  const { subtotal, insuranceDiscount, patientResponsibility } = calculateTotal()
+  const formatPrice = (price: number) => {
+    return `$${price.toFixed(2)}`
+  }
+
+  const getServicesByCategory = (category: string) => {
+    return examServices.filter(service => service.category === category)
+  }
 
   return (
-    <div className="space-y-6">
+    <div className="space-y-8 bg-vsp-light min-h-screen p-6">
+      
+      {/* Header */}
       <div className="text-center">
-        <h2 className="text-2xl font-bold text-gray-900">Exam Services</h2>
-        <p className="text-gray-600 mt-2">Select the eye exam services you need</p>
+        <h2 className="text-vsp-title text-2xl mb-2">Exams</h2>
+        <p className="text-vsp-subtitle">Select exam type and add any additional tests.</p>
       </div>
 
-      {/* Service Categories */}
-      <div className="grid gap-6">
-        {/* Comprehensive Eye Exams */}
-        <Card>
-          <CardHeader>
-            <CardTitle className="flex items-center gap-2">
-              <Eye className="h-5 w-5 text-blue-600" />
-              Comprehensive Eye Exams
-              <Badge variant="secondary">Required</Badge>
-            </CardTitle>
-          </CardHeader>
-          <CardContent className="space-y-4">
-            {examServices.filter(service => service.category === 'comprehensive').map(service => (
-              <div key={service.id} className="flex items-start space-x-3 p-4 border rounded-lg hover:bg-gray-50">
-                <Checkbox
-                  id={service.id}
-                  checked={selectedServices.includes(service.id)}
-                  onCheckedChange={() => handleServiceToggle(service.id)}
-                />
-                <div className="flex-1">
-                  <div className="flex items-center justify-between">
-                    <label htmlFor={service.id} className="font-medium cursor-pointer">
-                      {service.name}
-                    </label>
-                    <div className="flex items-center gap-2">
-                      <Badge variant={service.insuranceCovered ? "default" : "secondary"}>
-                        {service.insuranceCovered ? `$${service.copay} copay` : `$${service.price}`}
-                      </Badge>
-                      <Badge variant="outline">
-                        <Clock className="h-3 w-3 mr-1" />
-                        {service.duration}min
-                      </Badge>
-                    </div>
-                  </div>
-                  <p className="text-sm text-gray-600 mt-1">{service.description}</p>
-                </div>
-              </div>
-            ))}
-          </CardContent>
-        </Card>
+      {/* Patient Type */}
+      <VSPCategorySection number={1} title="Select Patient Type">
+        <VSPGrid2>
+          {getServicesByCategory('patient-type').map(service => (
+            <VSPSelectionButton
+              key={service.id}
+              selected={isServiceSelected(service.id)}
+              onClick={() => handleServiceToggle(service.id, service.category)}
+              subtitle={service.subtitle}
+            >
+              {service.name}
+            </VSPSelectionButton>
+          ))}
+        </VSPGrid2>
+        <p className="text-xs text-neutral-500 mt-2">Select patient type to continue</p>
+      </VSPCategorySection>
 
-        {/* Diagnostic Services */}
-        <Card>
-          <CardHeader>
-            <CardTitle className="flex items-center gap-2">
-              <Activity className="h-5 w-5 text-green-600" />
-              Diagnostic Services
-              <Badge variant="outline">Optional</Badge>
-            </CardTitle>
-          </CardHeader>
-          <CardContent className="space-y-4">
-            {examServices.filter(service => service.category === 'diagnostic').map(service => (
-              <div key={service.id} className="flex items-start space-x-3 p-4 border rounded-lg hover:bg-gray-50">
-                <Checkbox
-                  id={service.id}
-                  checked={selectedServices.includes(service.id)}
-                  onCheckedChange={() => handleServiceToggle(service.id)}
-                />
-                <div className="flex-1">
-                  <div className="flex items-center justify-between">
-                    <label htmlFor={service.id} className="font-medium cursor-pointer">
-                      {service.name}
-                    </label>
-                    <div className="flex items-center gap-2">
-                      <Badge variant={service.insuranceCovered ? "default" : "secondary"}>
-                        {service.insuranceCovered ? `$${service.copay} copay` : `$${service.price}`}
-                      </Badge>
-                      <Badge variant="outline">
-                        <Clock className="h-3 w-3 mr-1" />
-                        {service.duration}min
-                      </Badge>
-                    </div>
-                  </div>
-                  <p className="text-sm text-gray-600 mt-1">{service.description}</p>
-                </div>
-              </div>
-            ))}
-          </CardContent>
-        </Card>
+      {/* Exam Type */}
+      <VSPCategorySection number={2} title="Select Exam Type">
+        <VSPGrid2>
+          {getServicesByCategory('exam-type').map(service => (
+            <VSPSelectionButton
+              key={service.id}
+              selected={isServiceSelected(service.id)}
+              onClick={() => handleServiceToggle(service.id, service.category)}
+              subtitle={service.subtitle}
+              price={service.insuranceCovered ? `$${service.copay} copay` : formatPrice(service.price)}
+            >
+              {service.name}
+            </VSPSelectionButton>
+          ))}
+        </VSPGrid2>
+        <p className="text-xs text-neutral-500 mt-2">Cash exam fee is $100</p>
+      </VSPCategorySection>
 
-        {/* Specialty Services */}
-        <Card>
-          <CardHeader>
-            <CardTitle className="flex items-center gap-2">
-              <Brain className="h-5 w-5 text-purple-600" />
-              Specialty Services
-              <Badge variant="outline">As Needed</Badge>
-            </CardTitle>
-          </CardHeader>
-          <CardContent className="space-y-4">
-            {examServices.filter(service => service.category === 'specialty').map(service => (
-              <div key={service.id} className="flex items-start space-x-3 p-4 border rounded-lg hover:bg-gray-50">
-                <Checkbox
-                  id={service.id}
-                  checked={selectedServices.includes(service.id)}
-                  onCheckedChange={() => handleServiceToggle(service.id)}
-                />
-                <div className="flex-1">
-                  <div className="flex items-center justify-between">
-                    <label htmlFor={service.id} className="font-medium cursor-pointer">
-                      {service.name}
-                    </label>
-                    <div className="flex items-center gap-2">
-                      <Badge variant={service.insuranceCovered ? "default" : "secondary"}>
-                        {service.insuranceCovered ? `$${service.copay} copay` : `$${service.price}`}
-                      </Badge>
-                      <Badge variant="outline">
-                        <Clock className="h-3 w-3 mr-1" />
-                        {service.duration}min
-                      </Badge>
-                    </div>
-                  </div>
-                  <p className="text-sm text-gray-600 mt-1">{service.description}</p>
-                </div>
-              </div>
-            ))}
-          </CardContent>
-        </Card>
-      </div>
+      {/* Screeners */}
+      <VSPCategorySection number={3} title="Screeners">
+        <VSPGrid2>
+          {getServicesByCategory('screeners').map(service => (
+            <VSPSelectionButton
+              key={service.id}
+              selected={isServiceSelected(service.id)}
+              onClick={() => handleServiceToggle(service.id, service.category)}
+              price={formatPrice(service.price)}
+            >
+              {service.name}
+            </VSPSelectionButton>
+          ))}
+        </VSPGrid2>
+      </VSPCategorySection>
 
-      {/* Appointment Scheduling */}
-      <Card>
-        <CardHeader>
-          <CardTitle className="flex items-center gap-2">
-            <Calendar className="h-5 w-5 text-blue-600" />
-            Schedule Your Appointment
-          </CardTitle>
-        </CardHeader>
-        <CardContent className="space-y-4">
-          <div className="flex items-center space-x-2">
-            <Checkbox
-              id="schedule-now"
-              checked={showScheduling}
-              onCheckedChange={(checked) => setShowScheduling(checked === true)}
-            />
-            <label htmlFor="schedule-now" className="font-medium cursor-pointer">
-              Schedule appointment now
-            </label>
-          </div>
+      {/* Diagnostics */}
+      <VSPCategorySection number={4} title="Diagnostics">
+        <VSPGrid2>
+          {getServicesByCategory('diagnostics').map(service => (
+            <VSPSelectionButton
+              key={service.id}
+              selected={isServiceSelected(service.id)}
+              onClick={() => handleServiceToggle(service.id, service.category)}
+              price={formatPrice(service.price)}
+            >
+              {service.name}
+            </VSPSelectionButton>
+          ))}
+        </VSPGrid2>
+      </VSPCategorySection>
 
-          {showScheduling && (
-            <div className="grid grid-cols-1 md:grid-cols-3 gap-4 mt-4">
-              <div>
-                <label className="block text-sm font-medium mb-2">Select Date</label>
-                <Select value={selectedDate} onValueChange={setSelectedDate}>
-                  <SelectTrigger>
-                    <SelectValue placeholder="Choose date" />
-                  </SelectTrigger>
-                  <SelectContent>
-                    <SelectItem value="2024-03-15">Today - March 15</SelectItem>
-                    <SelectItem value="2024-03-16">Tomorrow - March 16</SelectItem>
-                    <SelectItem value="2024-03-18">Monday - March 18</SelectItem>
-                    <SelectItem value="2024-03-19">Tuesday - March 19</SelectItem>
-                    <SelectItem value="2024-03-20">Wednesday - March 20</SelectItem>
-                  </SelectContent>
-                </Select>
-              </div>
+      {/* Advanced Testing */}
+      <VSPCategorySection number={5} title="Advanced Testing">
+        <VSPGrid3>
+          {getServicesByCategory('advanced').map(service => (
+            <VSPSelectionButton
+              key={service.id}
+              selected={isServiceSelected(service.id)}
+              onClick={() => handleServiceToggle(service.id, service.category)}
+              price={formatPrice(service.price)}
+            >
+              {service.name}
+            </VSPSelectionButton>
+          ))}
+        </VSPGrid3>
+      </VSPCategorySection>
 
-              <div>
-                <label className="block text-sm font-medium mb-2">Select Time</label>
-                <Select value={selectedTime} onValueChange={setSelectedTime}>
-                  <SelectTrigger>
-                    <SelectValue placeholder="Choose time" />
-                  </SelectTrigger>
-                  <SelectContent>
-                    {appointmentSlots.map(slot => (
-                      <SelectItem 
-                        key={slot.time} 
-                        value={slot.time}
-                        disabled={!slot.available}
-                      >
-                        {slot.time} {!slot.available && '(Unavailable)'}
-                      </SelectItem>
-                    ))}
-                  </SelectContent>
-                </Select>
-              </div>
-
-              <div>
-                <label className="block text-sm font-medium mb-2">Select Provider</label>
-                <Select value={selectedProvider} onValueChange={setSelectedProvider}>
-                  <SelectTrigger>
-                    <SelectValue placeholder="Choose provider" />
-                  </SelectTrigger>
-                  <SelectContent>
-                    {providers.map(provider => (
-                      <SelectItem key={provider.id} value={provider.id}>
-                        <div>
-                          <div className="font-medium">{provider.name}</div>
-                          <div className="text-sm text-gray-500">{provider.specialty}</div>
-                        </div>
-                      </SelectItem>
-                    ))}
-                  </SelectContent>
-                </Select>
-              </div>
-            </div>
-          )}
-        </CardContent>
-      </Card>
-
-      {/* Summary */}
-      <Card>
-        <CardHeader>
-          <CardTitle>Exam Services Summary</CardTitle>
-        </CardHeader>
-        <CardContent>
+      {/* Contact Lens Exam - One Click Panel */}
+      <VSPCategorySection number={6} title="Contact Lens Exam (Optional)">
+        <div className="space-y-6">
+          {/* Standard Soft Lens */}
           <div className="space-y-3">
-            <div className="flex justify-between items-center">
-              <span>Selected Services ({getSelectedServicesData().length})</span>
-              <span className="font-medium">{getTotalDuration()} minutes total</span>
-            </div>
-            
-            <Separator />
-            
-            <div className="space-y-2 text-sm">
-              <div className="flex justify-between">
-                <span>Subtotal:</span>
-                <span>${subtotal}</span>
-              </div>
-              {insuranceDiscount > 0 && (
-                <div className="flex justify-between text-green-600">
-                  <span>Insurance Coverage:</span>
-                  <span>-${insuranceDiscount}</span>
-                </div>
-              )}
-              <div className="flex justify-between font-semibold text-lg border-t pt-2">
-                <span>Your Responsibility:</span>
-                <span>${patientResponsibility}</span>
-              </div>
-            </div>
-
-            {!selectedServices.some(id => 
-              examServices.find(service => service.id === id)?.category === 'comprehensive'
-            ) && (
-              <div className="flex items-center gap-2 text-amber-600 bg-amber-50 p-3 rounded-lg">
-                <AlertCircle className="h-4 w-4" />
-                <span className="text-sm">At least one comprehensive eye exam is required</span>
-              </div>
-            )}
+            <h5 className="text-vsp-label">Standard Soft Lens</h5>
+            <VSPGrid2>
+              {getServicesByCategory('contact-fitting')
+                .filter(service => ['spherical-fitting', 'toric-fitting', 'monovision-fitting', 'multifocal-fitting'].includes(service.id))
+                .map(service => (
+                <VSPSelectionButton
+                  key={service.id}
+                  selected={isServiceSelected(service.id)}
+                  onClick={() => handleServiceToggle(service.id, service.category)}
+                  price={formatPrice(service.price)}
+                >
+                  {service.name}
+                </VSPSelectionButton>
+              ))}
+            </VSPGrid2>
           </div>
-        </CardContent>
-      </Card>
 
-      {/* Navigation */}
-      <div className="flex justify-between">
-        {onBack && (
-          <Button variant="outline" onClick={onBack}>
-            Back
-          </Button>
-        )}
-        <Button 
-          onClick={handleNext}
-          disabled={!canProceed()}
-          className="ml-auto"
-        >
-          Continue to Products
-        </Button>
-      </div>
+          {/* Specialty Fittings */}
+          <div className="space-y-3">
+            <h5 className="text-vsp-label">Specialty Fittings</h5>
+            <VSPGrid2>
+              {getServicesByCategory('contact-fitting')
+                .filter(service => ['multifocal-toric-fitting', 'corneal-rgp-fitting', 'specialty-contact-fitting'].includes(service.id))
+                .map(service => (
+                <VSPSelectionButton
+                  key={service.id}
+                  selected={isServiceSelected(service.id)}
+                  onClick={() => handleServiceToggle(service.id, service.category)}
+                  price={formatPrice(service.price)}
+                >
+                  {service.name}
+                </VSPSelectionButton>
+              ))}
+            </VSPGrid2>
+          </div>
+
+          {/* Myopia Management */}
+          <div className="space-y-3">
+            <h5 className="text-vsp-label">Myopia Management</h5>
+            <VSPGrid2>
+              {getServicesByCategory('contact-fitting')
+                .filter(service => ['ortho-k-fitting', 'mysight-fitting'].includes(service.id))
+                .map(service => (
+                <VSPSelectionButton
+                  key={service.id}
+                  selected={isServiceSelected(service.id)}
+                  onClick={() => handleServiceToggle(service.id, service.category)}
+                  price={formatPrice(service.price)}
+                >
+                  {service.name}
+                </VSPSelectionButton>
+              ))}
+            </VSPGrid2>
+          </div>
+        </div>
+      </VSPCategorySection>
+
+      {/* Navigation Footer */}
+      <NavigationFooter
+        currentStep={1}
+        totalSteps={3}
+        onNext={handleNext}
+        onBack={onBack}
+        canProceed={canProceedWithSelection()}
+        validationErrors={getValidationErrors()}
+        validationWarnings={getValidationWarnings()}
+        nextLabel="Continue to Glasses"
+        backLabel="Back to Customer"
+      />
     </div>
   )
 }

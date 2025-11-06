@@ -22,7 +22,8 @@ import {
   TrendingUp, 
   Edit,
   Eye,
-  BarChart3
+  BarChart3,
+  ArrowLeft
 } from 'lucide-react'
 
 interface Product {
@@ -191,16 +192,23 @@ export default function InventoryPage() {
       <header className="bg-white border-b border-gray-200">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
           <div className="flex justify-between items-center py-4">
-            <div>
-              <h1 className="text-2xl font-bold text-gray-900">Inventory Management</h1>
-              <p className="text-sm text-gray-600">
-                Manage your product inventory and stock levels
-              </p>
-            </div>
             <div className="flex items-center space-x-4">
-              <Button onClick={() => router.push('/dashboard')}>
+              <Button 
+                variant="ghost" 
+                size="sm"
+                onClick={() => router.push('/dashboard')}
+                className="text-neutral-600 hover:text-brand-purple"
+              >
+                <ArrowLeft className="h-4 w-4 mr-2" />
                 Back to Dashboard
               </Button>
+              <div className="h-6 w-px bg-neutral-300" />
+              <div>
+                <h1 className="text-2xl font-bold text-gray-900">Inventory Management</h1>
+                <p className="text-sm text-gray-600">
+                  Manage your product inventory and stock levels
+                </p>
+              </div>
             </div>
           </div>
         </div>

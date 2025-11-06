@@ -1,6 +1,7 @@
 'use client';
 
 import Link from 'next/link';
+import { useRouter } from 'next/navigation';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { 
@@ -9,7 +10,8 @@ import {
   Package, 
   BarChart3,
   TrendingUp,
-  DollarSign
+  DollarSign,
+  ArrowLeft
 } from 'lucide-react';
 
 const reportCategories = [
@@ -69,14 +71,28 @@ const reportCategories = [
 ];
 
 export default function ReportsPage() {
+  const router = useRouter()
+  
   return (
     <div className="container mx-auto p-6 space-y-6">
       {/* Header */}
-      <div>
-        <h1 className="text-3xl font-bold tracking-tight">Reports & Analytics</h1>
-        <p className="text-muted-foreground">
-          Comprehensive reporting and analytics for your vision practice
-        </p>
+      <div className="flex items-center space-x-4">
+        <Button 
+          variant="ghost" 
+          size="sm"
+          onClick={() => router.push('/dashboard')}
+          className="text-neutral-600 hover:text-brand-purple"
+        >
+          <ArrowLeft className="h-4 w-4 mr-2" />
+          Back to Dashboard
+        </Button>
+        <div className="h-6 w-px bg-neutral-300" />
+        <div>
+          <h1 className="text-3xl font-bold tracking-tight">Reports & Analytics</h1>
+          <p className="text-muted-foreground">
+            Comprehensive reporting and analytics for your vision practice
+          </p>
+        </div>
       </div>
 
       {/* Quick Stats */}

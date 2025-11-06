@@ -7,6 +7,7 @@ import { Button } from '@/components/ui/button'
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
 import { Loader2, LogOut, Store, Users, Package, DollarSign } from 'lucide-react'
 import StockAlerts from '@/components/stock-alerts'
+import { SecondPairQuickAction } from '@/components/dashboard/second-pair-widget'
 
 export default function DashboardPage() {
   const { data: session, status } = useSession()
@@ -194,6 +195,9 @@ export default function DashboardPage() {
                   </Button>
                 </CardContent>
               </Card>
+
+              {/* Second Pair Quick Action */}
+              <SecondPairQuickAction locationId={session?.user?.locationId} />
             </div>
           </div>
 

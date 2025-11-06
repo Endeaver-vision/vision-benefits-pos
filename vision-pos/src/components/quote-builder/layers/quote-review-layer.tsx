@@ -318,6 +318,35 @@ export function QuoteReviewLayer({ onEdit, onFinalize }: QuoteReviewProps) {
                   </div>
                 </div>
               )}
+
+              {/* Consolidated Eyeglasses Pricing */}
+              <div className="pt-4 border-t bg-blue-50 p-4 rounded-lg">
+                <h4 className="font-semibold mb-3 flex items-center gap-2">
+                  <Calculator className="h-4 w-4" />
+                  Eyeglasses Total
+                </h4>
+                <div className="space-y-2 text-sm">
+                  <div className="flex justify-between">
+                    <span>Subtotal:</span>
+                    <span>${eyeglassesSubtotal.toFixed(2)}</span>
+                  </div>
+                  {eyeglassesDiscounts > 0 && (
+                    <div className="flex justify-between text-green-600">
+                      <span>Discounts:</span>
+                      <span>-${eyeglassesDiscounts.toFixed(2)}</span>
+                    </div>
+                  )}
+                  <div className="flex justify-between text-blue-600">
+                    <span>Insurance Benefit:</span>
+                    <span>-${eyeglassesInsuranceDiscount.toFixed(2)}</span>
+                  </div>
+                  <Separator />
+                  <div className="flex justify-between font-bold text-lg">
+                    <span>Your Cost:</span>
+                    <span>${eyeglassesTotal.toFixed(2)}</span>
+                  </div>
+                </div>
+              </div>
             </CardContent>
           </Card>
 
@@ -354,22 +383,18 @@ export function QuoteReviewLayer({ onEdit, onFinalize }: QuoteReviewProps) {
                   </div>
                 </div>
 
-                {/* Parameters */}
+                {/* Simplified Parameters - Basic Info Only */}
                 <div className="grid grid-cols-2 gap-4 text-sm">
                   <div>
                     <h5 className="font-medium">Right Eye (OD)</h5>
                     <div className="text-gray-600">
-                      Power: {mockContactLenses.parameters.rightEye.power}<br/>
-                      BC: {mockContactLenses.parameters.rightEye.baseCurve}mm<br/>
-                      DIA: {mockContactLenses.parameters.rightEye.diameter}mm
+                      Power: {mockContactLenses.parameters.rightEye.power}
                     </div>
                   </div>
                   <div>
                     <h5 className="font-medium">Left Eye (OS)</h5>
                     <div className="text-gray-600">
-                      Power: {mockContactLenses.parameters.leftEye.power}<br/>
-                      BC: {mockContactLenses.parameters.leftEye.baseCurve}mm<br/>
-                      DIA: {mockContactLenses.parameters.leftEye.diameter}mm
+                      Power: {mockContactLenses.parameters.leftEye.power}
                     </div>
                   </div>
                 </div>
@@ -397,6 +422,37 @@ export function QuoteReviewLayer({ onEdit, onFinalize }: QuoteReviewProps) {
                     <div className="text-sm text-green-700">Annual supply rebate from {mockContactLenses.brand}</div>
                   </div>
                   <div className="text-green-600 font-medium">-${mockContactLenses.rebate.toFixed(2)}</div>
+                </div>
+              </div>
+
+              {/* Consolidated Contact Lens Pricing */}
+              <div className="pt-4 border-t bg-blue-50 p-4 rounded-lg">
+                <h4 className="font-semibold mb-3 flex items-center gap-2">
+                  <Calculator className="h-4 w-4" />
+                  Contact Lenses Total
+                </h4>
+                <div className="space-y-2 text-sm">
+                  <div className="flex justify-between">
+                    <span>Annual Supply:</span>
+                    <span>${mockContactLenses.basePrice.toFixed(2)}</span>
+                  </div>
+                  <div className="flex justify-between">
+                    <span>Fitting Fee:</span>
+                    <span>${mockContactLenses.fittingFee.toFixed(2)}</span>
+                  </div>
+                  <div className="flex justify-between text-green-600">
+                    <span>Manufacturer Rebate:</span>
+                    <span>-${contactsRebate.toFixed(2)}</span>
+                  </div>
+                  <div className="flex justify-between text-blue-600">
+                    <span>Insurance Benefit:</span>
+                    <span>-${contactsInsuranceDiscount.toFixed(2)}</span>
+                  </div>
+                  <Separator />
+                  <div className="flex justify-between font-bold text-lg">
+                    <span>Your Cost:</span>
+                    <span>${contactsTotal.toFixed(2)}</span>
+                  </div>
                 </div>
               </div>
             </CardContent>
@@ -428,107 +484,69 @@ export function QuoteReviewLayer({ onEdit, onFinalize }: QuoteReviewProps) {
 
         {/* Pricing Sidebar */}
         <div className="lg:col-span-1 space-y-6">
-          {/* Pricing Breakdown */}
+          {/* Order Summary */}
           <Card>
             <CardHeader>
               <CardTitle className="flex items-center gap-2">
                 <Calculator className="h-5 w-5" />
-                Pricing Breakdown
+                Order Summary
               </CardTitle>
             </CardHeader>
             <CardContent className="space-y-4">
-              {/* Eyeglasses Pricing */}
-              <div>
-                <h4 className="font-semibold mb-3 flex items-center gap-2">
-                  <Glasses className="h-4 w-4" />
-                  Eyeglasses
-                </h4>
-                <div className="space-y-2 text-sm">
-                  <div className="flex justify-between">
-                    <span>Frame:</span>
-                    <span>${mockEyeglassesSelection.frame.price.toFixed(2)}</span>
+              {/* Simplified totals */}
+              <div className="space-y-3">
+                <div className="flex justify-between items-center p-3 bg-blue-50 rounded-lg">
+                  <div className="flex items-center gap-2">
+                    <Glasses className="h-4 w-4" />
+                    <span className="font-medium">Eyeglasses</span>
                   </div>
-                  <div className="flex justify-between">
-                    <span>Lenses:</span>
-                    <span>${mockEyeglassesSelection.lenses.price.toFixed(2)}</span>
-                  </div>
-                  <div className="flex justify-between">
-                    <span>Enhancements:</span>
-                    <span>${mockEyeglassesSelection.enhancements.reduce((sum, enh) => sum + enh.price, 0).toFixed(2)}</span>
-                  </div>
-                  {mockEyeglassesSelection.secondPair && (
-                    <>
-                      <div className="flex justify-between">
-                        <span>Second Pair:</span>
-                        <span>${mockEyeglassesSelection.secondPair.frame.price.toFixed(2)}</span>
-                      </div>
-                      <div className="flex justify-between text-green-600">
-                        <span>Second Pair Discount:</span>
-                        <span>-${eyeglassesDiscounts.toFixed(2)}</span>
-                      </div>
-                    </>
-                  )}
-                  <div className="flex justify-between text-blue-600">
-                    <span>Insurance Discount:</span>
-                    <span>-${eyeglassesInsuranceDiscount.toFixed(2)}</span>
-                  </div>
-                  <Separator />
-                  <div className="flex justify-between font-medium">
-                    <span>Eyeglasses Total:</span>
-                    <span>${eyeglassesTotal.toFixed(2)}</span>
-                  </div>
+                  <span className="font-bold">${eyeglassesTotal.toFixed(2)}</span>
                 </div>
-              </div>
-
-              <Separator />
-
-              {/* Contact Lenses Pricing */}
-              <div>
-                <h4 className="font-semibold mb-3 flex items-center gap-2">
-                  <Eye className="h-4 w-4" />
-                  Contact Lenses
-                </h4>
-                <div className="space-y-2 text-sm">
-                  <div className="flex justify-between">
-                    <span>Annual Supply:</span>
-                    <span>${mockContactLenses.basePrice.toFixed(2)}</span>
+                
+                <div className="flex justify-between items-center p-3 bg-blue-50 rounded-lg">
+                  <div className="flex items-center gap-2">
+                    <Eye className="h-4 w-4" />
+                    <span className="font-medium">Contact Lenses</span>
                   </div>
-                  <div className="flex justify-between">
-                    <span>Fitting Fee:</span>
-                    <span>${mockContactLenses.fittingFee.toFixed(2)}</span>
-                  </div>
-                  <div className="flex justify-between text-green-600">
-                    <span>Manufacturer Rebate:</span>
-                    <span>-${contactsRebate.toFixed(2)}</span>
-                  </div>
-                  <div className="flex justify-between text-blue-600">
-                    <span>Insurance Discount:</span>
-                    <span>-${contactsInsuranceDiscount.toFixed(2)}</span>
-                  </div>
-                  <Separator />
-                  <div className="flex justify-between font-medium">
-                    <span>Contacts Total:</span>
-                    <span>${contactsTotal.toFixed(2)}</span>
-                  </div>
+                  <span className="font-bold">${contactsTotal.toFixed(2)}</span>
                 </div>
-              </div>
 
-              <Separator />
-
-              {/* Order Total */}
-              <div className="space-y-2">
-                <div className="flex justify-between">
-                  <span>Subtotal:</span>
-                  <span>${orderSubtotal.toFixed(2)}</span>
-                </div>
-                <div className="flex justify-between">
-                  <span>Tax (8.75%):</span>
-                  <span>${tax.toFixed(2)}</span>
-                </div>
                 <Separator />
-                <div className="flex justify-between text-lg font-bold">
-                  <span>Grand Total:</span>
-                  <span>${grandTotal.toFixed(2)}</span>
+
+                <div className="space-y-2">
+                  <div className="flex justify-between">
+                    <span>Subtotal:</span>
+                    <span>${orderSubtotal.toFixed(2)}</span>
+                  </div>
+                  <div className="flex justify-between">
+                    <span>Tax (8.75%):</span>
+                    <span>${tax.toFixed(2)}</span>
+                  </div>
+                  <Separator />
+                  <div className="flex justify-between text-xl font-bold text-blue-600">
+                    <span>Total Due:</span>
+                    <span>${grandTotal.toFixed(2)}</span>
+                  </div>
+                </div>
+              </div>
+
+              {/* Savings Summary */}
+              <div className="p-4 bg-green-50 rounded-lg border border-green-200">
+                <h4 className="font-semibold text-green-800 mb-2">Total Savings</h4>
+                <div className="space-y-1 text-sm text-green-700">
+                  <div className="flex justify-between">
+                    <span>Insurance Benefits:</span>
+                    <span>${(eyeglassesInsuranceDiscount + contactsInsuranceDiscount).toFixed(2)}</span>
+                  </div>
+                  <div className="flex justify-between">
+                    <span>Rebates & Discounts:</span>
+                    <span>${(contactsRebate + eyeglassesDiscounts).toFixed(2)}</span>
+                  </div>
+                  <Separator />
+                  <div className="flex justify-between font-medium">
+                    <span>You Saved:</span>
+                    <span>${(eyeglassesInsuranceDiscount + contactsInsuranceDiscount + contactsRebate + eyeglassesDiscounts).toFixed(2)}</span>
+                  </div>
                 </div>
               </div>
             </CardContent>

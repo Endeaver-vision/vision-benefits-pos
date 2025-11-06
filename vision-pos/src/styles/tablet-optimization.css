@@ -1,0 +1,401 @@
+/**
+ * Week 6 Tablet Workflow Optimization - CSS Styles
+ * Tablet-specific styles for enhanced touch experience
+ */
+
+/* Tablet Device Detection */
+@media (min-width: 768px) and (max-width: 1024px) and (pointer: coarse) {
+  /* Tablet-specific styles */
+  .tablet-optimized {
+    /* Enhanced touch targets */
+    button, .btn {
+      min-height: 48px;
+      min-width: 48px;
+      padding: 12px 16px;
+      font-size: 16px;
+      border-radius: 8px;
+    }
+
+    /* Larger form inputs */
+    input, textarea, select {
+      min-height: 48px;
+      padding: 12px 16px;
+      font-size: 16px;
+      border-radius: 6px;
+    }
+
+    /* Enhanced spacing */
+    .form-group {
+      margin-bottom: 24px;
+    }
+
+    /* Better visual feedback */
+    button:active, .btn:active {
+      transform: scale(0.95);
+      transition: transform 0.1s ease;
+    }
+  }
+}
+
+/* Signature Canvas Tablet Optimizations */
+.signature-canvas.tablet-optimized {
+  /* Enhanced border and shadow for better visibility */
+  border: 3px solid #d1d5db;
+  border-radius: 12px;
+  box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1), 0 2px 4px -1px rgba(0, 0, 0, 0.06);
+  
+  /* Ensure no accidental zoom or scroll */
+  touch-action: none;
+  user-select: none;
+  -webkit-user-select: none;
+  -webkit-touch-callout: none;
+}
+
+.signature-canvas.tablet-optimized:active {
+  border-color: #3b82f6;
+  box-shadow: 0 0 0 3px rgba(59, 130, 246, 0.1);
+}
+
+/* Tablet Workflow Layout */
+.tablet-workflow-layout.tablet-optimized {
+  /* Larger navigation elements */
+  .nav-item {
+    padding: 16px 20px;
+    font-size: 18px;
+    min-height: 56px;
+  }
+
+  /* Enhanced modal sizing */
+  .modal-content {
+    padding: 32px;
+    border-radius: 16px;
+  }
+
+  /* Better spacing in forms */
+  .form-section {
+    margin-bottom: 32px;
+  }
+
+  /* Larger checkboxes and radio buttons */
+  input[type="checkbox"], input[type="radio"] {
+    width: 20px;
+    height: 20px;
+    margin-right: 12px;
+  }
+}
+
+/* Portrait Orientation Optimizations */
+@media (orientation: portrait) and (min-width: 768px) and (max-width: 1024px) {
+  .tablet-optimized {
+    /* Adjust layout for portrait mode */
+    .signature-canvas-container {
+      width: 100%;
+      max-width: 600px;
+      margin: 0 auto;
+    }
+
+    /* Stack elements vertically */
+    .form-row {
+      flex-direction: column;
+    }
+
+    .form-row > * {
+      width: 100%;
+      margin-bottom: 16px;
+    }
+
+    /* Adjust modal positioning */
+    .modal {
+      align-items: flex-start;
+      padding-top: 60px;
+    }
+  }
+}
+
+/* Landscape Orientation Optimizations */
+@media (orientation: landscape) and (min-width: 768px) and (max-width: 1024px) {
+  .tablet-optimized {
+    /* Optimize for landscape mode */
+    .signature-canvas-container {
+      width: 100%;
+      max-width: 800px;
+    }
+
+    /* Use horizontal space effectively */
+    .form-row {
+      display: flex;
+      gap: 24px;
+    }
+
+    .form-row > * {
+      flex: 1;
+    }
+
+    /* Adjust modal to use more horizontal space */
+    .modal-content {
+      max-width: 90vw;
+    }
+  }
+}
+
+/* Touch-specific Hover States */
+@media (hover: none) and (pointer: coarse) {
+  /* Remove hover effects for touch devices */
+  .hover-effect:hover {
+    transform: none;
+    box-shadow: none;
+  }
+
+  /* Use active states instead */
+  .hover-effect:active {
+    transform: scale(0.95);
+    background-color: rgba(0, 0, 0, 0.05);
+  }
+
+  /* Enhanced focus states for accessibility */
+  button:focus, input:focus, textarea:focus, select:focus {
+    outline: 3px solid #3b82f6;
+    outline-offset: 2px;
+  }
+}
+
+/* Signature Modal Tablet Optimizations */
+.signature-modal.tablet-optimized {
+  /* Full-screen on tablet for better signing experience */
+  .modal-overlay {
+    padding: 16px;
+  }
+
+  .modal-content {
+    max-width: 95vw;
+    max-height: 90vh;
+    border-radius: 16px;
+  }
+
+  /* Larger signature area */
+  .signature-area {
+    min-height: 300px;
+    padding: 24px;
+  }
+
+  /* Enhanced action buttons */
+  .action-buttons {
+    padding: 24px;
+    gap: 16px;
+  }
+
+  .action-buttons button {
+    flex: 1;
+    min-height: 56px;
+    font-size: 18px;
+    font-weight: 600;
+  }
+
+  /* Clear button styling */
+  .clear-signature-btn {
+    background-color: #f3f4f6;
+    color: #374151;
+    border: 2px solid #d1d5db;
+  }
+
+  .clear-signature-btn:active {
+    background-color: #e5e7eb;
+  }
+
+  /* Save button styling */
+  .save-signature-btn {
+    background-color: #3b82f6;
+    color: white;
+    border: 2px solid #3b82f6;
+  }
+
+  .save-signature-btn:active {
+    background-color: #2563eb;
+  }
+
+  .save-signature-btn:disabled {
+    background-color: #9ca3af;
+    border-color: #9ca3af;
+    cursor: not-allowed;
+  }
+}
+
+/* Quote Output Tablet Optimizations */
+.quote-output.tablet-optimized {
+  /* Larger preview area */
+  .preview-container {
+    min-height: 400px;
+    border-radius: 12px;
+    box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1);
+  }
+
+  /* Enhanced action buttons */
+  .output-actions {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(160px, 1fr));
+    gap: 16px;
+    padding: 24px;
+  }
+
+  .output-action-btn {
+    min-height: 56px;
+    padding: 16px;
+    font-size: 16px;
+    border-radius: 8px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 8px;
+  }
+
+  /* Status indicators */
+  .status-indicator {
+    font-size: 16px;
+    padding: 8px 16px;
+    border-radius: 20px;
+  }
+}
+
+/* Navigation Tablet Optimizations */
+.navigation.tablet-optimized {
+  /* Larger navigation elements */
+  .nav-tabs {
+    border-bottom: 3px solid #e5e7eb;
+  }
+
+  .nav-tab {
+    padding: 16px 24px;
+    font-size: 18px;
+    min-height: 56px;
+    border-bottom: 3px solid transparent;
+  }
+
+  .nav-tab.active {
+    border-bottom-color: #3b82f6;
+    font-weight: 600;
+  }
+
+  /* Enhanced breadcrumbs */
+  .breadcrumb {
+    padding: 16px 0;
+    font-size: 16px;
+  }
+
+  .breadcrumb-item {
+    padding: 8px 12px;
+    border-radius: 6px;
+  }
+
+  .breadcrumb-item:active {
+    background-color: rgba(0, 0, 0, 0.05);
+  }
+}
+
+/* Error and Success Messages */
+.message.tablet-optimized {
+  /* Larger, more visible messages */
+  padding: 20px 24px;
+  font-size: 16px;
+  border-radius: 12px;
+  box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1);
+
+  /* Enhanced icon sizing */
+  .message-icon {
+    width: 24px;
+    height: 24px;
+    margin-right: 12px;
+  }
+
+  /* Dismiss button */
+  .dismiss-btn {
+    min-width: 32px;
+    min-height: 32px;
+    border-radius: 6px;
+  }
+}
+
+/* Loading States */
+.loading.tablet-optimized {
+  /* Larger loading indicators */
+  .spinner {
+    width: 32px;
+    height: 32px;
+    border-width: 3px;
+  }
+
+  .loading-text {
+    font-size: 18px;
+    margin-top: 16px;
+  }
+}
+
+/* Accessibility Enhancements for Touch */
+@media (hover: none) {
+  /* Ensure all interactive elements are large enough */
+  button, a, input, select, textarea {
+    min-height: 44px;
+    min-width: 44px;
+  }
+
+  /* Increase spacing between interactive elements */
+  .button-group > *:not(:last-child) {
+    margin-right: 12px;
+    margin-bottom: 12px;
+  }
+
+  /* Enhanced focus indicators */
+  *:focus {
+    outline: 3px solid #3b82f6;
+    outline-offset: 2px;
+  }
+}
+
+/* Animation Optimizations for Touch Devices */
+@media (prefers-reduced-motion: no-preference) {
+  .tablet-optimized button {
+    transition: transform 0.1s ease, background-color 0.2s ease;
+  }
+
+  .tablet-optimized .modal {
+    transition: opacity 0.2s ease;
+  }
+
+  .tablet-optimized .signature-canvas {
+    transition: border-color 0.2s ease, box-shadow 0.2s ease;
+  }
+}
+
+/* High DPI Display Optimizations */
+@media (-webkit-min-device-pixel-ratio: 2), (min-resolution: 192dpi) {
+  .tablet-optimized {
+    /* Ensure crisp rendering on high-DPI displays */
+    .signature-canvas {
+      image-rendering: -webkit-optimize-contrast;
+      image-rendering: crisp-edges;
+    }
+
+    /* Enhance border rendering */
+    border-width: 0.5px;
+  }
+}
+
+/* Print Optimizations for Tablet */
+@media print {
+  .tablet-optimized {
+    /* Hide interactive elements */
+    button, .btn, .action-buttons {
+      display: none !important;
+    }
+
+    /* Optimize content for printing */
+    .signature-canvas {
+      border: 1px solid #000;
+      page-break-inside: avoid;
+    }
+
+    .quote-content {
+      font-size: 12pt;
+      line-height: 1.4;
+    }
+  }
+}
