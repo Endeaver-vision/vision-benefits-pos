@@ -5,7 +5,7 @@ import { useRouter } from 'next/navigation'
 import { useEffect } from 'react'
 import { Button } from '@/components/ui/button'
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
-import { Loader2, LogOut, Store, Users, Package, DollarSign } from 'lucide-react'
+import { Loader2, LogOut, Store, Users, Package, DollarSign, Shield } from 'lucide-react'
 import StockAlerts from '@/components/stock-alerts'
 import { SecondPairQuickAction } from '@/components/dashboard/second-pair-widget'
 
@@ -195,17 +195,77 @@ export default function DashboardPage() {
                   </Button>
                 </CardContent>
               </Card>
-
-              {/* Second Pair Quick Action */}
-              <SecondPairQuickAction locationId={session?.user?.locationId} />
             </div>
           </div>
 
-          {/* Stock Alerts Sidebar */}
-          <div className="lg:col-span-1">
+          {/* Right Sidebar */}
+          <div className="lg:col-span-1 space-y-6">
             <StockAlerts maxItems={4} />
+            
+            {/* Second Pair Quick Action */}
+            <SecondPairQuickAction locationId={session?.user?.locationId} />
           </div>
         </div>
+
+        {/* Admin Section - Only visible for Admin users */}
+        {session?.user?.role === 'ADMIN' && (
+          <div className="mb-8">
+            <div className="mb-6">
+              <h2 className="text-xl font-semibold text-gray-900 flex items-center">
+                <Shield className="h-5 w-5 mr-2 text-blue-600" />
+                Administration
+              </h2>
+              <p className="text-sm text-gray-600 mt-1">System administration and management tools</p>
+            </div>
+            
+            <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
+              <Card className="cursor-pointer hover:shadow-md transition-shadow border-blue-200">
+                <CardHeader className="pb-3">
+                  <CardTitle className="text-lg flex items-center text-blue-900">
+                    <Package className="h-5 w-5 mr-2" />
+                    Product Management
+                  </CardTitle>
+                </CardHeader>
+                <CardContent>
+                  <p className="text-sm text-gray-600 mb-4">Manage products, categories, pricing, and inventory</p>
+                  <Button className="w-full bg-blue-600 hover:bg-blue-700" asChild>
+                    <a href="/admin/products">Manage Products</a>
+                  </Button>
+                </CardContent>
+              </Card>
+
+              <Card className="cursor-pointer hover:shadow-md transition-shadow border-purple-200">
+                <CardHeader className="pb-3">
+                  <CardTitle className="text-lg flex items-center text-purple-900">
+                    <Users className="h-5 w-5 mr-2" />
+                    User Management
+                  </CardTitle>
+                </CardHeader>
+                <CardContent>
+                  <p className="text-sm text-gray-600 mb-4">Manage staff accounts, roles, and permissions</p>
+                  <Button className="w-full bg-purple-600 hover:bg-purple-700" asChild>
+                    <a href="/admin/users">Manage Users</a>
+                  </Button>
+                </CardContent>
+              </Card>
+
+              <Card className="cursor-pointer hover:shadow-md transition-shadow border-green-200">
+                <CardHeader className="pb-3">
+                  <CardTitle className="text-lg flex items-center text-green-900">
+                    <Store className="h-5 w-5 mr-2" />
+                    Location Settings
+                  </CardTitle>
+                </CardHeader>
+                <CardContent>
+                  <p className="text-sm text-gray-600 mb-4">Configure locations, settings, and preferences</p>
+                  <Button className="w-full bg-green-600 hover:bg-green-700" asChild>
+                    <a href="/admin/locations">Location Settings</a>
+                  </Button>
+                </CardContent>
+              </Card>
+            </div>
+          </div>
+        )}
       </main>
     </div>
   )

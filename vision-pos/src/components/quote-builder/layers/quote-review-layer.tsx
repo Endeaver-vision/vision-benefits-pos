@@ -19,6 +19,7 @@ import {
   Edit,
   Percent
 } from 'lucide-react'
+import { useQuoteStore, useQuoteSelectors } from '@/store/quote-store'
 
 // Mock data - in real app this would come from store/props
 const mockCustomer = {
@@ -86,23 +87,17 @@ export function QuoteReviewLayer({ onEdit, onFinalize }: QuoteReviewProps) {
   const [termsAccepted, setTermsAccepted] = useState(false)
   const [selectedPaymentOption, setSelectedPaymentOption] = useState<'full' | 'insurance' | 'financing'>('insurance')
 
-  // Calculate totals
-  const eyeglassesSubtotal = 
-    mockEyeglassesSelection.frame.price + 
-    mockEyeglassesSelection.lenses.price + 
-    mockEyeglassesSelection.enhancements.reduce((sum, enh) => sum + enh.price, 0) +
-    (mockEyeglassesSelection.secondPair?.frame.price || 0)
+  // Get actual quote data from store
+  const { quote, getExamServicesPricing } = useQuoteStore()
+  const { getTotalEyeglassesCost, getTotalContactsCost } = useQuoteSelectors()
 
-  const eyeglassesDiscounts = mockEyeglassesSelection.secondPair?.discount || 0
-  const eyeglassesInsuranceDiscount = 200.00 // Mock VSP discount
-  const eyeglassesTotal = eyeglassesSubtotal - eyeglassesDiscounts - eyeglassesInsuranceDiscount
+  // Calculate totals from actual selections
+  const examPricing = getExamServicesPricing()
+  const examTotal = examPricing.subtotal
+  const eyeglassesTotal = getTotalEyeglassesCost()
+  const contactsTotal = getTotalContactsCost()
 
-  const contactsSubtotal = mockContactLenses.basePrice + mockContactLenses.fittingFee
-  const contactsRebate = mockContactLenses.rebate
-  const contactsInsuranceDiscount = 50.00 // Mock VSP contact discount
-  const contactsTotal = contactsSubtotal - contactsRebate - contactsInsuranceDiscount
-
-  const orderSubtotal = eyeglassesTotal + contactsTotal
+  const orderSubtotal = examTotal + eyeglassesTotal + contactsTotal
   const tax = orderSubtotal * 0.0875 // 8.75% tax
   const grandTotal = orderSubtotal + tax
 
@@ -328,18 +323,14 @@ export function QuoteReviewLayer({ onEdit, onFinalize }: QuoteReviewProps) {
                 <div className="space-y-2 text-sm">
                   <div className="flex justify-between">
                     <span>Subtotal:</span>
-                    <span>${eyeglassesSubtotal.toFixed(2)}</span>
+                    <span>${eyeglassesTotal.toFixed(2)}</span>
                   </div>
-                  {eyeglassesDiscounts > 0 && (
+                  {examPricing.insuranceApplied > 0 && (
                     <div className="flex justify-between text-green-600">
-                      <span>Discounts:</span>
-                      <span>-${eyeglassesDiscounts.toFixed(2)}</span>
+                      <span>Insurance Benefit:</span>
+                      <span>-${examPricing.insuranceApplied.toFixed(2)}</span>
                     </div>
                   )}
-                  <div className="flex justify-between text-blue-600">
-                    <span>Insurance Benefit:</span>
-                    <span>-${eyeglassesInsuranceDiscount.toFixed(2)}</span>
-                  </div>
                   <Separator />
                   <div className="flex justify-between font-bold text-lg">
                     <span>Your Cost:</span>
@@ -433,20 +424,8 @@ export function QuoteReviewLayer({ onEdit, onFinalize }: QuoteReviewProps) {
                 </h4>
                 <div className="space-y-2 text-sm">
                   <div className="flex justify-between">
-                    <span>Annual Supply:</span>
-                    <span>${mockContactLenses.basePrice.toFixed(2)}</span>
-                  </div>
-                  <div className="flex justify-between">
-                    <span>Fitting Fee:</span>
-                    <span>${mockContactLenses.fittingFee.toFixed(2)}</span>
-                  </div>
-                  <div className="flex justify-between text-green-600">
-                    <span>Manufacturer Rebate:</span>
-                    <span>-${contactsRebate.toFixed(2)}</span>
-                  </div>
-                  <div className="flex justify-between text-blue-600">
-                    <span>Insurance Benefit:</span>
-                    <span>-${contactsInsuranceDiscount.toFixed(2)}</span>
+                    <span>Contact Lenses:</span>
+                    <span>${contactsTotal.toFixed(2)}</span>
                   </div>
                   <Separator />
                   <div className="flex justify-between font-bold text-lg">
@@ -534,18 +513,16 @@ export function QuoteReviewLayer({ onEdit, onFinalize }: QuoteReviewProps) {
               <div className="p-4 bg-green-50 rounded-lg border border-green-200">
                 <h4 className="font-semibold text-green-800 mb-2">Total Savings</h4>
                 <div className="space-y-1 text-sm text-green-700">
-                  <div className="flex justify-between">
-                    <span>Insurance Benefits:</span>
-                    <span>${(eyeglassesInsuranceDiscount + contactsInsuranceDiscount).toFixed(2)}</span>
-                  </div>
-                  <div className="flex justify-between">
-                    <span>Rebates & Discounts:</span>
-                    <span>${(contactsRebate + eyeglassesDiscounts).toFixed(2)}</span>
-                  </div>
+                  {examPricing.insuranceApplied > 0 && (
+                    <div className="flex justify-between">
+                      <span>Insurance Benefits:</span>
+                      <span>${examPricing.insuranceApplied.toFixed(2)}</span>
+                    </div>
+                  )}
                   <Separator />
                   <div className="flex justify-between font-medium">
                     <span>You Saved:</span>
-                    <span>${(eyeglassesInsuranceDiscount + contactsInsuranceDiscount + contactsRebate + eyeglassesDiscounts).toFixed(2)}</span>
+                    <span>${examPricing.insuranceApplied.toFixed(2)}</span>
                   </div>
                 </div>
               </div>

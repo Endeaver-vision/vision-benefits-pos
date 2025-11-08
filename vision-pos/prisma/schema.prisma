@@ -316,6 +316,10 @@ model locations {
   name              String              @unique
   address           String
   phone             String?
+  email             String?
+  website           String?
+  logo              String?             // File path for uploaded logo
+  taxRate           Float?              // Location-specific tax rate
   timezone          String              @default("America/Los_Angeles")
   active            Boolean             @default(true)
   createdAt         DateTime            @default(now())
@@ -329,6 +333,7 @@ model locations {
   transactions      transactions[]
   users             users[]
   pofIncidents      PofIncidents[]
+  activityLogs      user_activity_logs[]
 }
 
 model product_categories {
@@ -440,7 +445,35 @@ model quotes {
   locationId                                          String
   quoteNumber                                         String         @unique
   description                                         String?
-  status                                              String         @default("BUILDING")
+  
+  // Quote State Management - Week 7 Day 1
+  status                                              String         @default("BUILDING") // BUILDING, DRAFT, PRESENTED, SIGNED, COMPLETED, CANCELLED, EXPIRED
+  previousStatus                                      String?        // Track status history
+  statusChangedAt                                     DateTime       @default(now())
+  statusChangedBy                                     String?        // User ID who changed status
+  statusReason                                        String?        // Reason for status change (especially for CANCELLED, EXPIRED)
+  
+  // Completion Flags
+  buildingCompleted                                   Boolean        @default(false)  // All quote items added
+  presentationCompleted                               Boolean        @default(false)  // Quote presented to customer
+  signaturesCompleted                                 Boolean        @default(false)  // All required signatures collected
+  paymentCompleted                                    Boolean        @default(false)  // Payment/insurance processed
+  fulfillmentCompleted                                Boolean        @default(false)  // Products delivered/services completed
+  
+  // State Timestamps
+  buildingCompletedAt                                 DateTime?      // When quote building was completed
+  draftCreatedAt                                      DateTime?      // When saved as draft
+  presentedAt                                         DateTime?      // When presented to customer
+  signedAt                                            DateTime?      // When all signatures completed
+  cancelledAt                                         DateTime?      // When cancelled
+  expiredAt                                           DateTime?      // When expired
+  
+  // Auto-Expiration Fields
+  autoExpireAfterDays                                 Int            @default(30)     // Days until auto-expire
+  lastActivityAt                                      DateTime       @default(now())  // Track activity for expiration
+  expireNotificationSent                              Boolean        @default(false)  // Whether expiration warning sent
+  expireNotificationSentAt                            DateTime?      // When expiration warning sent
+  
   patientInfo                                         Json
   insuranceInfo                                       Json
   examServices                                        Json
@@ -624,12 +657,16 @@ model users {
   active              Boolean               @default(true)
   createdAt           DateTime              @default(now())
   updatedAt           DateTime
+  lastLoginAt         DateTime?
+  passwordResetToken  String?
+  passwordResetExpires DateTime?
   inventory_movements inventory_movements[]
   purchase_orders     purchase_orders[]
   quotes              quotes[]
   second_pairs        second_pairs[]
   transactions        transactions[]
   pofIncidents        PofIncidents[]
+  activityLogs        user_activity_logs[]
   locations           locations             @relation(fields: [locationId], references: [id])
 }
 
@@ -703,4 +740,27 @@ model email_logs {
   @@index([recipientEmail])
   @@index([status])
   @@map("email_logs")
+}
+
+model user_activity_logs {
+  id          String    @id @default(cuid())
+  userId      String
+  action      String    // "QUOTE_CREATED", "QUOTE_UPDATED", "SALE_COMPLETED", "LOGIN", "LOGOUT", "PASSWORD_RESET", etc.
+  entity      String?   // "QUOTE", "CUSTOMER", "PRODUCT", "USER", etc.
+  entityId    String?   // ID of the entity being acted upon
+  details     String?   // JSON string with additional details
+  ipAddress   String?
+  userAgent   String?
+  locationId  String?
+  metadata    String?   // Additional JSON metadata
+  createdAt   DateTime  @default(now())
+  
+  user        users     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  location    locations? @relation(fields: [locationId], references: [id])
+  
+  @@index([userId])
+  @@index([action])
+  @@index([createdAt])
+  @@index([locationId])
+  @@map("user_activity_logs")
 }

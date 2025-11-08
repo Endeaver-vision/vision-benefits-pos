@@ -73,7 +73,7 @@ async function seedInventoryData() {
     console.log('Creating suppliers...');
     const createdSuppliers = [];
     for (const supplier of suppliers) {
-      const created = await prisma.supplier.upsert({
+      const created = await prisma.suppliers.upsert({
         where: { name: supplier.name },
         update: supplier,
         create: supplier
@@ -82,10 +82,10 @@ async function seedInventoryData() {
     }
 
     // 2. Get all products and locations
-    const products = await prisma.product.findMany({
+    const products = await prisma.products.findMany({
       include: { category: true }
     });
-    const locations = await prisma.location.findMany();
+    const locations = await prisma.locations.findMany();
 
     // 3. Create product-supplier relationships
     console.log('Creating product-supplier relationships...');
@@ -139,7 +139,7 @@ async function seedInventoryData() {
         isPrimary: true
       };
 
-      const created = await prisma.productSupplier.upsert({
+      const created = await prisma.product_suppliers.upsert({
         where: {
           productId_supplierId: {
             productId: product.id,
@@ -238,7 +238,7 @@ async function seedInventoryData() {
     // 5. Create some inventory movements for analytics
     console.log('Creating inventory movements...');
     const inventoryRecords = await prisma.inventory.findMany();
-    const users = await prisma.user.findMany();
+    const users = await prisma.users.findMany();
     
     for (let i = 0; i < 100; i++) {
       const inventory = inventoryRecords[Math.floor(Math.random() * inventoryRecords.length)];
@@ -265,7 +265,7 @@ async function seedInventoryData() {
 
       const createdAt = new Date(Date.now() - Math.random() * 60 * 24 * 60 * 60 * 1000); // Last 60 days
 
-      await prisma.inventoryMovement.create({
+      await prisma.inventory_movements.create({
         data: {
           inventoryId: inventory.id,
           type: type as any,
@@ -299,7 +299,7 @@ async function seedInventoryData() {
 
       const orderNumber = `PO-${Date.now()}-${Math.random().toString(36).substr(2, 4).toUpperCase()}`;
       
-      const purchaseOrder = await prisma.purchaseOrder.create({
+      const purchaseOrder = await prisma.purchase_orders.create({
         data: {
           supplierId: supplier.id,
           locationId: location.id,
@@ -331,7 +331,7 @@ async function seedInventoryData() {
         const total = quantityOrdered * productSupplier.supplierPrice;
         subtotal += total;
 
-        await prisma.purchaseOrderItem.create({
+        await prisma.purchase_order_items.create({
           data: {
             purchaseOrderId: purchaseOrder.id,
             productId: productSupplier.productId,
@@ -346,7 +346,7 @@ async function seedInventoryData() {
       const tax = subtotal * 0.08; // 8% tax
       const totalAmount = subtotal + tax + purchaseOrder.shipping;
 
-      await prisma.purchaseOrder.update({
+      await prisma.purchase_orders.update({
         where: { id: purchaseOrder.id },
         data: {
           subtotal,
@@ -360,7 +360,7 @@ async function seedInventoryData() {
     
     // Print summary
     const finalCounts = {
-      suppliers: await prisma.supplier.count(),
+      suppliers: await prisma.suppliers.count(),
       productSuppliers: await prisma.productSupplier.count(),
       inventory: await prisma.inventory.count(),
       movements: await prisma.inventoryMovement.count(),

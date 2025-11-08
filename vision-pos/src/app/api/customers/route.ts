@@ -34,7 +34,7 @@ export async function GET(request: NextRequest) {
 
     // Execute queries
     const [customers, total] = await Promise.all([
-      prisma.customer.findMany({
+      prisma.customers.findMany({
         where: whereClause,
         take: limit,
         skip: skip,
@@ -43,7 +43,7 @@ export async function GET(request: NextRequest) {
           { firstName: 'asc' }
         ]
       }),
-      prisma.customer.count({ where: whereClause })
+      prisma.customers.count({ where: whereClause })
     ])
 
     // Calculate pagination info
@@ -108,7 +108,7 @@ export async function POST(request: NextRequest) {
 
     // Check for duplicate email if provided
     if (email) {
-      const existingCustomer = await prisma.customer.findFirst({
+      const existingCustomer = await prisma.customers.findFirst({
         where: {
           email,
           active: true
@@ -124,8 +124,9 @@ export async function POST(request: NextRequest) {
     }
 
     // Create customer using current schema
-    const customer = await prisma.customer.create({
+    const customer = await prisma.customers.create({
       data: {
+        id: `cust_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`,
         firstName,
         lastName,
         email,
@@ -136,7 +137,10 @@ export async function POST(request: NextRequest) {
         city,
         state,
         zipCode,
-        active: true
+        active: true,
+        registrationDate: new Date(),
+        createdAt: new Date(),
+        updatedAt: new Date()
       }
     })
 

@@ -1,6 +1,6 @@
 'use client'
 
-import { useState, useCallback } from 'react'
+import { useCallback, useEffect } from 'react'
 import { NavigationFooter } from '@/components/quote-builder/layout/navigation-footer'
 import { 
   VSPCategorySection, 
@@ -224,40 +224,46 @@ const examServices: ExamService[] = [
 export default function ExamServicesLayer({ onNext, onBack }: ExamServicesLayerProps) {
   const { updateExamServices, saveQuote, getSelectedExamServices } = useQuoteStore()
   
-  // Initialize with saved services or defaults
-  const [selectedServices, setSelectedServices] = useState<string[]>(() => {
-    const savedServices = getSelectedExamServices()
-    return savedServices.length > 0 ? savedServices : ['new-patient', 'routine-exam']
-  })
+  // Work directly with Zustand store - no local state duplication
+  const selectedServices = getSelectedExamServices()
+  
+  // Initialize default services if none are selected
+  useEffect(() => {
+    if (selectedServices.length === 0) {
+      updateExamServices(['new-patient', 'routine-exam'])
+    }
+  }, [selectedServices.length, updateExamServices])
 
   const saveExamData = useCallback(async () => {
     try {
-      updateExamServices(selectedServices)
       await saveQuote()
     } catch (error) {
       console.error('Failed to save exam data:', error)
     }
-  }, [selectedServices, updateExamServices, saveQuote])
+  }, [saveQuote])
 
   const handleServiceToggle = (serviceId: string, category: string) => {
-    setSelectedServices(prev => {
-      // Handle mutually exclusive selections
-      if (category === 'patient-type' || category === 'exam-type') {
-        // Remove other selections in the same category
-        const filtered = prev.filter(id => {
-          const service = examServices.find(s => s.id === id)
-          return service?.category !== category
-        })
-        return [...filtered, serviceId]
-      }
-      
+    let newServices: string[]
+    
+    // Handle mutually exclusive selections
+    if (category === 'patient-type' || category === 'exam-type') {
+      // Remove other selections in the same category
+      const filtered = selectedServices.filter(id => {
+        const service = examServices.find(s => s.id === id)
+        return service?.category !== category
+      })
+      newServices = [...filtered, serviceId]
+    } else {
       // Handle multiple selections
-      if (prev.includes(serviceId)) {
-        return prev.filter(id => id !== serviceId)
+      if (selectedServices.includes(serviceId)) {
+        newServices = selectedServices.filter(id => id !== serviceId)
       } else {
-        return [...prev, serviceId]
+        newServices = [...selectedServices, serviceId]
       }
-    })
+    }
+    
+    // Update Zustand store directly - no local state involved
+    updateExamServices(newServices)
   }
 
   const isServiceSelected = (serviceId: string) => {

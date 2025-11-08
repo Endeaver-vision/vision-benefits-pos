@@ -16,7 +16,7 @@ export async function GET(
     const inventory = await prisma.inventory.findUnique({
       where: { id: params.id },
       include: {
-        product: {
+        products: {
           include: {
             category: true,
             suppliers: {
@@ -118,18 +118,18 @@ export async function PATCH(
         })
       },
       include: {
-        product: {
+        products: {
           include: {
             category: true
           }
         },
-        location: true
+        locations: true
       }
     })
 
     // Create inventory movement if stock changed
     if (stockDifference !== 0) {
-      await prisma.inventoryMovement.create({
+      await prisma.inventory_movements.create({
         data: {
           inventoryId: params.id,
           type: stockDifference > 0 ? 'ADJUSTMENT' : 'ADJUSTMENT',
@@ -186,7 +186,7 @@ export async function DELETE(
     }
 
     // Delete all movements first, then inventory
-    await prisma.inventoryMovement.deleteMany({
+    await prisma.inventory_movements.deleteMany({
       where: { inventoryId: params.id }
     })
 

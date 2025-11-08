@@ -314,18 +314,39 @@ export const useQuoteStore = create<QuoteBuilderState>()(
         const services = get().quote.exam.selectedServices
         // Define exam service prices (this would normally come from a database)
         const servicePrices: Record<string, number> = {
+          // Patient type (no charge)
+          'new-patient': 0.00,
+          'established-patient': 0.00,
+          
+          // Exam types
+          'routine-exam': 150.00,
+          'medical-exam': 200.00,
           'comprehensive-exam': 275.00,
-          'contact-lens-fitting': 125.00,
-          'retinal-imaging': 85.00,
+          
+          // Screeners
+          'glaucoma-screening': 45.00,
+          'macular-degeneration-screening': 50.00,
+          'diabetic-screening': 55.00,
+          
+          // Diagnostics
           'visual-field-testing': 95.00,
+          'retinal-imaging': 85.00,
           'oct-scan': 145.00,
-          // Add-on services
           'dilation': 35.00,
-          'retinal-photos': 65.00,
+          
+          // Advanced testing
           'oct-macula': 125.00,
           'oct-glaucoma': 125.00,
           'visual-field-extended': 75.00,
-          'corneal-topography': 95.00
+          'corneal-topography': 95.00,
+          'retinal-photos': 65.00,
+          
+          // Contact fitting
+          'contact-lens-fitting': 125.00,
+          'multifocal-contact-fitting': 150.00,
+          'specialty-contact-fitting': 175.00,
+          'multifocal-toric-fitting': 200.00,
+          'corneal-rgp-fitting': 225.00
         }
         
         return services.reduce((total, serviceId) => {
@@ -338,26 +359,52 @@ export const useQuoteStore = create<QuoteBuilderState>()(
         const { carrier } = get().quote.insurance
         
         const servicePrices: Record<string, number> = {
+          // Patient type (no charge)
+          'new-patient': 0.00,
+          'established-patient': 0.00,
+          
+          // Exam types
+          'routine-exam': 150.00,
+          'medical-exam': 200.00,
           'comprehensive-exam': 275.00,
-          'contact-lens-fitting': 125.00,
-          'retinal-imaging': 85.00,
+          
+          // Screeners
+          'glaucoma-screening': 45.00,
+          'macular-degeneration-screening': 50.00,
+          'diabetic-screening': 55.00,
+          
+          // Diagnostics
           'visual-field-testing': 95.00,
+          'retinal-imaging': 85.00,
           'oct-scan': 145.00,
           'dilation': 35.00,
-          'retinal-photos': 65.00,
+          
+          // Advanced testing
           'oct-macula': 125.00,
           'oct-glaucoma': 125.00,
           'visual-field-extended': 75.00,
-          'corneal-topography': 95.00
+          'corneal-topography': 95.00,
+          'retinal-photos': 65.00,
+          
+          // Contact fitting
+          'contact-lens-fitting': 125.00,
+          'multifocal-contact-fitting': 150.00,
+          'specialty-contact-fitting': 175.00,
+          'multifocal-toric-fitting': 200.00,
+          'corneal-rgp-fitting': 225.00
         }
 
         // Mock insurance coverage - in real app would come from API
         const insuranceCoverage: Record<string, { copay?: number; covered: boolean }> = {
+          'routine-exam': { copay: carrier === 'VSP' ? 25 : carrier === 'EyeMed' ? 20 : 30, covered: true },
+          'medical-exam': { copay: carrier === 'VSP' ? 35 : carrier === 'EyeMed' ? 30 : 40, covered: true },
           'comprehensive-exam': { copay: carrier === 'VSP' ? 25 : carrier === 'EyeMed' ? 20 : 30, covered: true },
           'visual-field-testing': { copay: 15, covered: true },
           'dilation': { copay: 10, covered: true },
           'oct-glaucoma': { copay: 25, covered: true },
-          'visual-field-extended': { copay: 15, covered: true }
+          'visual-field-extended': { copay: 15, covered: true },
+          'retinal-imaging': { copay: 20, covered: true },
+          'oct-scan': { copay: 30, covered: true }
         }
 
         const subtotal = services.reduce((total, serviceId) => {
@@ -404,20 +451,98 @@ export const useQuoteSelectors = () => {
       return targetIndex <= currentIndex + 1
     },
     
-    // Pricing totals
+    // Pricing totals - Calculate based on actual selections
     getTotalExamCost: () => {
-      const { exam } = store.quote.pricing
-      return exam.comprehensive + exam.contactFitting + exam.iwellness + exam.optomap
+      const examPricing = store.getExamServicesPricing()
+      return examPricing.subtotal
     },
     
     getTotalEyeglassesCost: () => {
-      const { eyeglasses } = store.quote.pricing
-      return eyeglasses.frame + eyeglasses.lenses + eyeglasses.enhancements
+      const { eyeglasses } = store.quote
+      let total = 0
+      
+      // Only calculate if items are actually selected
+      if (eyeglasses.frame?.price) {
+        total += eyeglasses.frame.price
+      }
+      
+      if (eyeglasses.lenses.type) {
+        // Calculate lens pricing based on type and material
+        const lensTypePrices: Record<string, number> = {
+          'single-vision': 99,
+          'progressive': 299,
+          'bifocal': 179,
+          'computer': 189
+        }
+        
+        const materialMultipliers: Record<string, number> = {
+          'plastic': 1.0,
+          'polycarbonate': 1.5,
+          'high-index': 2.2,
+          'trivex': 1.8
+        }
+        
+        const basePrice = lensTypePrices[eyeglasses.lenses.type] || 99
+        const multiplier = materialMultipliers[eyeglasses.lenses.material] || 1.0
+        total += basePrice * multiplier
+      }
+      
+      // Add enhancement pricing
+      if (eyeglasses.enhancements && eyeglasses.enhancements.length > 0) {
+        const enhancementPrices: Record<string, number> = {
+          'anti-reflective': 89,
+          'photochromic': 129,
+          'polarized': 159,
+          'blue-light': 69,
+          'scratch-resistant': 39,
+          'premium-ar': 149
+        }
+        
+        eyeglasses.enhancements.forEach(enhancement => {
+          total += enhancementPrices[enhancement] || 50
+        })
+      }
+      
+      return total
     },
     
     getTotalContactsCost: () => {
-      const { contacts } = store.quote.pricing
-      return contacts.product + contacts.fitting
+      const { contacts } = store.quote
+      let total = 0
+      
+      // Only calculate if contacts are actually selected
+      if (contacts.brand && contacts.type) {
+        // Base pricing for contact lenses
+        const basePrices: Record<string, Record<string, number>> = {
+          acuvue: { daily: 35, weekly: 45, monthly: 55, extended: 65 },
+          biofinity: { daily: 32, weekly: 42, monthly: 52, extended: 62 },
+          dailies: { daily: 38, weekly: 48, monthly: 58, extended: 68 },
+          bausch: { daily: 30, weekly: 40, monthly: 50, extended: 60 }
+        }
+        
+        const brandKey = contacts.brand.toLowerCase().replace(/[^a-z]/g, '')
+        const typeKey = contacts.type
+        const basePrice = basePrices[brandKey]?.[typeKey] || 50
+        
+        // Calculate annual supply quantity
+        const annualQuantities: Record<string, number> = {
+          daily: 24, // 24 boxes per year
+          weekly: 8,  // 8 boxes per year
+          monthly: 4, // 4 boxes per year
+          extended: 2 // 2 boxes per year
+        }
+        
+        const quantity = contacts.quantity || annualQuantities[typeKey] || 1
+        total += basePrice * quantity
+        
+        // Add fitting fee if contact fitting service is selected
+        const examServices = store.quote.exam.selectedServices
+        if (examServices.includes('contact-lens-fitting')) {
+          total += 75 // Contact fitting fee
+        }
+      }
+      
+      return total
     },
     
     getGrandTotal: () => {

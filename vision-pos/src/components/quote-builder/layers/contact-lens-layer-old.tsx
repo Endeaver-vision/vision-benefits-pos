@@ -62,7 +62,6 @@ interface ContactPricingCalculator {
   afterRebateTotal: number // Calculated: inOfficeTotal - manufacturerRebate
   finalCostPerBox: number // Calculated: afterRebateTotal ÷ numberOfBoxes
 }
-}
 
 interface ContactLensLayerProps {
   onNext: () => void

@@ -6,46 +6,18 @@ import { useRouter } from 'next/navigation'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
 import { Label } from '@/components/ui/label'
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select'
+
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card'
 import { Alert, AlertDescription } from '@/components/ui/alert'
 import { Eye, EyeOff, Loader2 } from 'lucide-react'
 
-interface Location {
-  id: string
-  name: string
-  address: string
-}
-
 export default function LoginPage() {
   const [email, setEmail] = useState('')
   const [password, setPassword] = useState('')
-  const [locationId, setLocationId] = useState('')
   const [showPassword, setShowPassword] = useState(false)
   const [isLoading, setIsLoading] = useState(false)
   const [error, setError] = useState('')
-  const [locations, setLocations] = useState<Location[]>([])
   const router = useRouter()
-
-  // Fetch locations on component mount
-  useEffect(() => {
-    const fetchLocations = async () => {
-      try {
-        const response = await fetch('/api/locations')
-        if (response.ok) {
-          const result = await response.json()
-          console.log('Locations API response:', result)
-          setLocations(result.data || [])
-        } else {
-          console.error('Failed to fetch locations - Status:', response.status)
-        }
-      } catch (error) {
-        console.error('Failed to fetch locations:', error)
-      }
-    }
-
-    fetchLocations()
-  }, [])
 
   // Check if user is already authenticated
   useEffect(() => {
@@ -64,7 +36,7 @@ export default function LoginPage() {
     setIsLoading(true)
     setError('')
 
-    if (!email || !password || !locationId) {
+    if (!email || !password) {
       setError('Please fill in all fields')
       setIsLoading(false)
       return
@@ -74,12 +46,11 @@ export default function LoginPage() {
       const result = await signIn('credentials', {
         email,
         password,
-        locationId,
         redirect: false,
       })
 
       if (result?.error) {
-        setError('Invalid credentials. Please check your email, password, and location.')
+        setError('Invalid credentials. Please check your email and password.')
       } else if (result?.ok) {
         // Successful login - redirect to dashboard
         router.push('/dashboard')
@@ -151,27 +122,7 @@ export default function LoginPage() {
               </div>
             </div>
 
-            <div className="space-y-2">
-              <Label htmlFor="location">Location ({locations.length} available)</Label>
-              <Select value={locationId} onValueChange={setLocationId} disabled={isLoading}>
-                <SelectTrigger>
-                  <SelectValue placeholder="Select your location" />
-                </SelectTrigger>
-                <SelectContent>
-                  {locations.length === 0 ? (
-                    <SelectItem value="loading" disabled>
-                      Loading locations...
-                    </SelectItem>
-                  ) : (
-                    locations.map((location) => (
-                      <SelectItem key={location.id} value={location.id}>
-                        {location.name} - {location.address}
-                      </SelectItem>
-                    ))
-                  )}
-                </SelectContent>
-              </Select>
-            </div>
+
 
             <Button
               type="submit"
@@ -192,7 +143,7 @@ export default function LoginPage() {
           <div className="mt-6 text-center text-sm text-gray-600">
             <p>Demo Credentials:</p>
             <p className="font-mono text-xs mt-1">
-              admin@visioncare.com | Password123 | Any location
+              admin@visioncare.com | Password123
             </p>
           </div>
         </CardContent>

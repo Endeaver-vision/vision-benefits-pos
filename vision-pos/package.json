@@ -8,6 +8,8 @@
     "start": "next start",
     "lint": "eslint",
     "db:seed": "tsx prisma/seed.ts",
+    "db:seed:production": "tsx prisma/seed-production-week8.ts",
+    "db:validate:production": "tsx scripts/validate-production-data-simple.ts",
     "db:migrate": "prisma migrate dev",
     "db:studio": "prisma studio",
     "test:email": "tsx scripts/test-email.js"
@@ -41,6 +43,7 @@
     "lucide-react": "^0.552.0",
     "next": "16.0.1",
     "next-auth": "^4.24.13",
+    "node-fetch": "^3.3.2",
     "nodemailer": "^7.0.10",
     "prisma": "^6.18.0",
     "puppeteer": "^24.29.0",

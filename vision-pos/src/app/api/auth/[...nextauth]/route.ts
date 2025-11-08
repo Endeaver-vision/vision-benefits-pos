@@ -11,8 +11,7 @@ export const authOptions: AuthOptions = {
       name: 'credentials',
       credentials: {
         email: { label: 'Email', type: 'email' },
-        password: { label: 'Password', type: 'password' },
-        locationId: { label: 'Location', type: 'text' }
+        password: { label: 'Password', type: 'password' }
       },
       async authorize(credentials) {
         if (!credentials?.email || !credentials?.password) {
@@ -21,13 +20,13 @@ export const authOptions: AuthOptions = {
 
         try {
           // Find user by email
-          const user = await prisma.user.findUnique({
+          const user = await prisma.users.findUnique({
             where: { 
               email: credentials.email,
               active: true 
             },
             include: {
-              location: true
+              locations: true
             }
           })
 
@@ -42,18 +41,15 @@ export const authOptions: AuthOptions = {
             throw new Error('Invalid email or password')
           }
 
-          // Check if location is provided and matches user's location
-          if (credentials.locationId && user.locationId !== credentials.locationId) {
-            throw new Error('Invalid location for this user')
-          }
-
+          // Location is stored in user profile, not required at login
+          // This enables multi-business platform architecture
           return {
             id: user.id,
             email: user.email,
             name: `${user.firstName} ${user.lastName}`,
             role: user.role,
             locationId: user.locationId,
-            locationName: user.location.name,
+            locationName: user.locations?.name || 'Default Location',
           }
         } catch (error) {
           console.error('Authentication error:', error)

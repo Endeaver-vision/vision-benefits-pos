@@ -25,7 +25,7 @@ import { useQuoteStore } from '@/store/quote-store'
 import ExamServicesLayer from '@/components/quote-builder/layers/exam-services-layer'
 import EyeglassesLayer from '@/components/quote-builder/layers/eyeglasses-layer'
 import ContactLensLayer from '@/components/quote-builder/layers/contact-lens-layer'
-import { QuoteReviewLayer } from '@/components/quote-builder/layers/quote-review-layer'
+import { QuoteReviewLayer } from '@/components/quote-builder/layers/quote-review-layer-simple'
 import { QuoteFinalizationLayer } from '@/components/quote-builder/layers/quote-finalization-layer'
 
 export default function QuoteBuilderPage() {

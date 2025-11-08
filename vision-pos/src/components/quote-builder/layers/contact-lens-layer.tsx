@@ -103,15 +103,23 @@ export default function ContactLensLayer({ onNext, onBack }: ContactLensLayerPro
   // Calculate dependent fields using useMemo
   const calculatedPricing = useMemo(() => {
     const totalCost = pricing.pricePerBox * pricing.numberOfBoxes
-    const inOfficeTotal = Math.max(0, totalCost - pricing.additionalSavings - pricing.insuranceBenefit)
-    const afterRebateTotal = Math.max(0, inOfficeTotal - pricing.manufacturerRebate)
-    const finalCostPerBox = pricing.numberOfBoxes > 0 ? afterRebateTotal / pricing.numberOfBoxes : 0
+    
+    // Patient Pays = Base Cost - Insurance - Additional Savings
+    // Patient pays everything INCLUDING the rebate amount
+    const patientPays = Math.max(0, totalCost - pricing.insuranceBenefit - pricing.additionalSavings)
+    
+    // In-Office Total = Same as Patient Pays (they pay everything)
+    const inOfficeTotal = patientPays
+    
+    // Manufacturer rebate ONLY affects final cost per box calculation
+    const afterRebateAmount = Math.max(0, patientPays - pricing.manufacturerRebate)
+    const finalCostPerBox = pricing.numberOfBoxes > 0 ? afterRebateAmount / pricing.numberOfBoxes : 0
 
     return {
       ...pricing,
       totalCostOfCLs: totalCost,
       inOfficeTotal,
-      afterRebateTotal,
+      afterRebateTotal: patientPays, // Same as inOfficeTotal
       finalCostPerBox: Math.max(0, finalCostPerBox)
     }
   }, [pricing])
@@ -267,12 +275,12 @@ export default function ContactLensLayer({ onNext, onBack }: ContactLensLayerPro
 
       {/* 3. Contact Lens Pricing Calculator */}
       <VSPCategorySection number={3} title="Contact Lens Pricing Calculator">
-        <div className="bg-white p-6 rounded-lg border border-neutral-200">
-          <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
-            
-            {/* Data Entry Fields */}
-            <div className="space-y-4">
-              <h4 className="font-semibold text-blue-900 mb-4">Data Entry</h4>
+        <div className="space-y-6">
+          
+          {/* Data Entry Section - Full Width */}
+          <div className="bg-white p-6 rounded-lg border border-neutral-200">
+            <h4 className="font-semibold text-blue-900 mb-6 text-xl">Data Entry</h4>
+            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-5 gap-6">
               
               <div>
                 <Label htmlFor="pricePerBox">Price per Box</Label>
@@ -339,68 +347,37 @@ export default function ContactLensLayer({ onNext, onBack }: ContactLensLayerPro
                 />
               </div>
             </div>
+          </div>
 
-            {/* Calculated Fields */}
-            <div className="space-y-4">
-              <h4 className="font-semibold text-blue-900 mb-4">Calculated Fields</h4>
-              
-              <div>
-                <Label>Total Cost of CLs</Label>
-                <div className="bg-neutral-100 p-3 rounded-md text-lg font-semibold">
-                  {formatPrice(calculatedPricing.totalCostOfCLs)}
-                </div>
-                <p className="text-xs text-neutral-500 mt-1">Price per Box × Number of Boxes</p>
+          {/* Final Summary Section - Full Width */}
+          <div className="bg-white p-6 rounded-lg border border-neutral-200">
+            <h4 className="font-semibold text-blue-900 mb-6 text-xl">Final Pricing Summary</h4>
+            
+            <div className="bg-blue-50 p-6 rounded-lg space-y-4">
+              <div className="flex justify-between text-lg">
+                <span>Original Price:</span>
+                <span className="font-semibold">{formatPrice(calculatedPricing.totalCostOfCLs)}</span>
               </div>
-
-              <div>
-                <Label>In-Office Total</Label>
-                <div className="bg-neutral-100 p-3 rounded-md text-lg font-semibold">
-                  {formatPrice(calculatedPricing.inOfficeTotal)}
-                </div>
-                <p className="text-xs text-neutral-500 mt-1">Total Cost - Additional Savings - Insurance Benefit</p>
+              <div className="flex justify-between text-red-600 text-lg">
+                <span>Insurance Benefit:</span>
+                <span className="font-semibold">-{formatPrice(pricing.insuranceBenefit)}</span>
               </div>
-
-              <div>
-                <Label>After Rebate Total</Label>
-                <div className="bg-neutral-100 p-3 rounded-md text-lg font-semibold">
-                  {formatPrice(calculatedPricing.afterRebateTotal)}
-                </div>
-                <p className="text-xs text-neutral-500 mt-1">In-Office Total - Manufacturer Rebate</p>
+              <div className="flex justify-between text-red-600 text-lg">
+                <span>Additional Savings:</span>
+                <span className="font-semibold">-{formatPrice(pricing.additionalSavings)}</span>
               </div>
-
-              <div>
-                <Label>Final Cost per Box</Label>
-                <div className="bg-blue-100 p-3 rounded-md text-lg font-bold text-blue-900">
-                  {formatPrice(calculatedPricing.finalCostPerBox)}
-                </div>
-                <p className="text-xs text-neutral-500 mt-1">After Rebate Total ÷ Number of Boxes</p>
+              <hr className="border-blue-200" />
+              <div className="flex justify-between text-2xl font-bold text-green-800 bg-green-100 p-4 rounded-lg border-2 border-green-300">
+                <span>Patient Pays:</span>
+                <span>{formatPrice(calculatedPricing.afterRebateTotal)}</span>
               </div>
-            </div>
-
-            {/* Summary */}
-            <div className="space-y-4">
-              <h4 className="font-semibold text-blue-900 mb-4">Pricing Summary</h4>
-              
-              <div className="bg-blue-50 p-4 rounded-lg space-y-3">
-                <div className="flex justify-between">
-                  <span>Original Price:</span>
-                  <span className="font-semibold">{formatPrice(calculatedPricing.totalCostOfCLs)}</span>
-                </div>
-                <div className="flex justify-between text-green-600">
-                  <span>Total Savings:</span>
-                  <span className="font-semibold">
-                    -{formatPrice(pricing.additionalSavings + pricing.insuranceBenefit + pricing.manufacturerRebate)}
-                  </span>
-                </div>
-                <hr className="border-blue-200" />
-                <div className="flex justify-between text-sm text-neutral-600">
-                  <span>Patient Pays:</span>
-                  <span className="font-medium">{formatPrice(calculatedPricing.afterRebateTotal)}</span>
-                </div>
-                <div className="flex justify-between text-2xl font-bold text-blue-900 bg-yellow-100 p-3 rounded-lg border-2 border-yellow-300 mt-3">
-                  <span>Final Cost per Box:</span>
-                  <span className="text-3xl">{formatPrice(calculatedPricing.finalCostPerBox)}</span>
-                </div>
+              <hr className="border-gray-300" />
+              <div className="flex justify-between text-3xl font-bold text-blue-900 bg-yellow-100 p-4 rounded-lg border-2 border-yellow-300">
+                <span>Effective Cost per Box:</span>
+                <span>{formatPrice(calculatedPricing.finalCostPerBox)}</span>
+              </div>
+              <div className="text-sm text-blue-700 px-4 mt-2">
+                After manufacturer rebate: (Patient Pays - ${formatPrice(pricing.manufacturerRebate)}) ÷ {pricing.numberOfBoxes} boxes
               </div>
             </div>
           </div>

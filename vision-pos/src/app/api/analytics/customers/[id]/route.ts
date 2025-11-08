@@ -12,7 +12,7 @@ export async function GET(request: NextRequest, { params }: Props) {
     const { id } = params;
 
     // Get customer with all transactions and related data
-    const customer = await prisma.customer.findUnique({
+    const customer = await prisma.customers.findUnique({
       where: { id },
       include: {
         transactions: {

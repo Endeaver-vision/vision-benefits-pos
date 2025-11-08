@@ -7,7 +7,7 @@ export async function GET(
   { params }: { params: { id: string } }
 ) {
   try {
-    const customer = await prisma.customer.findUnique({
+    const customer = await prisma.customers.findUnique({
       where: {
         id: params.id,
         active: true
@@ -73,7 +73,7 @@ export async function PUT(
     } = body
 
     // Check if customer exists
-    const existingCustomer = await prisma.customer.findUnique({
+    const existingCustomer = await prisma.customers.findUnique({
       where: { id: params.id, active: true }
     })
 
@@ -86,7 +86,7 @@ export async function PUT(
 
     // Check for duplicate email if email is being changed
     if (email && email !== existingCustomer.email) {
-      const duplicateCustomer = await prisma.customer.findFirst({
+      const duplicateCustomer = await prisma.customers.findFirst({
         where: {
           email,
           active: true,
@@ -102,7 +102,7 @@ export async function PUT(
       }
     }
 
-    const customer = await prisma.customer.update({
+    const customer = await prisma.customers.update({
       where: { id: params.id },
       data: {
         firstName,
@@ -141,7 +141,7 @@ export async function DELETE(
   { params }: { params: { id: string } }
 ) {
   try {
-    const customer = await prisma.customer.findUnique({
+    const customer = await prisma.customers.findUnique({
       where: { id: params.id, active: true }
     })
 
@@ -153,7 +153,7 @@ export async function DELETE(
     }
 
     // Soft delete by setting active to false
-    await prisma.customer.update({
+    await prisma.customers.update({
       where: { id: params.id },
       data: { active: false }
     })

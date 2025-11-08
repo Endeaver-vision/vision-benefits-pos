@@ -58,7 +58,11 @@ export function PricingSidebar({ className = '' }: PricingSidebarProps) {
     await saveQuote()
   }
 
-  const isQuoteComplete = examTotal > 0 || eyeglassesTotal > 0 || contactsTotal > 0
+  // Check if any services are actually selected
+  const hasExamServices = quote.exam.selectedServices.length > 0
+  const hasEyeglassesSelection = quote.eyeglasses.frame?.id || quote.eyeglasses.lenses.type
+  const hasContactsSelection = quote.contacts.brand && quote.contacts.type
+  const isQuoteComplete = hasExamServices || hasEyeglassesSelection || hasContactsSelection
 
   return (
     <Card className={`sticky top-6 ${className}`}>
@@ -175,57 +179,55 @@ export function PricingSidebar({ className = '' }: PricingSidebarProps) {
                 )}
               </div>
               
-              {/* Frame & Lenses */}
-              <div className="flex justify-between items-center">
-                <div className="flex items-center">
-                  <Glasses className="h-4 w-4 mr-2 text-muted-foreground" />
-                  <span className="text-sm">Frame & Lenses</span>
+              {/* Frame & Lenses - Only show if selections exist */}
+              {(quote.eyeglasses.frame?.id || quote.eyeglasses.lenses.type) && (
+                <div className="flex justify-between items-center">
+                  <div className="flex items-center">
+                    <Glasses className="h-4 w-4 mr-2 text-muted-foreground" />
+                    <span className="text-sm">Frame & Lenses</span>
+                  </div>
+                  <div className="flex items-center space-x-2">
+                    <span className="text-sm">{formatCurrency(eyeglassesTotal)}</span>
+                    {eyeglassesTotal > 0 && (
+                      <Badge variant="secondary" className="text-xs">
+                        ✓
+                      </Badge>
+                    )}
+                  </div>
                 </div>
-                <div className="flex items-center space-x-2">
-                  <span className="text-sm">{formatCurrency(eyeglassesTotal)}</span>
-                  {eyeglassesTotal > 0 && (
-                    <Badge variant="secondary" className="text-xs">
-                      ✓
-                    </Badge>
-                  )}
-                </div>
-              </div>
+              )}
               
-              {/* Contact Lenses */}
-              <div className="flex justify-between items-center">
-                <div className="flex items-center">
-                  <Contact className="h-4 w-4 mr-2 text-muted-foreground" />
-                  <span className="text-sm">Contact Lenses</span>
+              {/* Contact Lenses - Only show if selections exist */}
+              {(quote.contacts.brand && quote.contacts.type) && (
+                <div className="flex justify-between items-center">
+                  <div className="flex items-center">
+                    <Contact className="h-4 w-4 mr-2 text-muted-foreground" />
+                    <span className="text-sm">Contact Lenses</span>
+                  </div>
+                  <div className="flex items-center space-x-2">
+                    <span className="text-sm">{formatCurrency(contactsTotal)}</span>
+                    {contactsTotal > 0 && (
+                      <Badge variant="secondary" className="text-xs">
+                        ✓
+                      </Badge>
+                    )}
+                  </div>
                 </div>
-                <div className="flex items-center space-x-2">
-                  <span className="text-sm">{formatCurrency(contactsTotal)}</span>
-                  {contactsTotal > 0 && (
-                    <Badge variant="secondary" className="text-xs">
-                      ✓
-                    </Badge>
-                  )}
-                </div>
-              </div>
+              )}
 
               <Separator className="my-3" />
 
               {/* Subtotal */}
               <div className="flex justify-between font-medium">
                 <span>Subtotal</span>
-                <span>{formatCurrency(quote.pricing.subtotal)}</span>
+                <span>{formatCurrency(examTotal + eyeglassesTotal + contactsTotal)}</span>
               </div>
 
               {/* Insurance Coverage */}
-              <div className="flex justify-between text-green-600">
-                <span>Insurance Coverage</span>
-                <span>-{formatCurrency(quote.pricing.insurance.totalCoverage)}</span>
-              </div>
-
-              {/* Second Pair Discount */}
-              {quote.pricing.secondPairDiscount > 0 && (
-                <div className="flex justify-between text-blue-600">
-                  <span>Second Pair Discount</span>
-                  <span>-{formatCurrency(quote.pricing.secondPairDiscount)}</span>
+              {examPricing.insuranceApplied > 0 && (
+                <div className="flex justify-between text-green-600">
+                  <span>Insurance Coverage</span>
+                  <span>-{formatCurrency(examPricing.insuranceApplied)}</span>
                 </div>
               )}
 
