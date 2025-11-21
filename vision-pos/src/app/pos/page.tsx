@@ -228,6 +228,12 @@ export default function POSPage() {
 
   return (
     <div className="container mx-auto p-6">
+      {/* Back Button */}
+      <Button variant="ghost" size="sm" onClick={() => router.push('/dashboard')} className="mb-4">
+        <Search className="h-4 w-4 mr-2" />
+        Back to Dashboard
+      </Button>
+
       {/* Header */}
       <div className="flex items-center justify-between mb-6">
         <div>

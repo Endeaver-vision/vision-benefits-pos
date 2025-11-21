@@ -1,7 +1,8 @@
 'use client'
 
 import React, { useState, useEffect, useMemo, useCallback } from 'react'
-import { Search, Plus, Filter, MoreHorizontal, Phone, Mail, MapPin, Calendar, DollarSign, BarChart, Users } from 'lucide-react'
+import { Search, Plus, Filter, MoreHorizontal, Phone, Mail, MapPin, Calendar, DollarSign, BarChart, Users, ArrowLeft } from 'lucide-react'
+import Link from 'next/link'
 import { Input } from '@/components/ui/input'
 import { Button } from '@/components/ui/button'
 import { Badge } from '@/components/ui/badge'
@@ -119,12 +120,8 @@ export default function CustomerManagement({ onSelectCustomer, showActions = tru
     if (onSelectCustomer) {
       onSelectCustomer(customer)
     } else {
-      // Default behavior: Log selection and show in console
-      console.log('✅ Customer selected:', customer)
-      console.log(`📝 Selected: ${customer.firstName} ${customer.lastName}`)
-      if (customer.email) console.log(`📧 Email: ${customer.email}`)
-      if (customer.phone) console.log(`📞 Phone: ${customer.phone}`)
-      if (customer.insuranceCarrier) console.log(`🏥 Insurance: ${customer.insuranceCarrier}`)
+      // Default behavior: Navigate to customer details
+      window.location.href = `/customers/${customer.id}`
     }
   }
 
@@ -154,6 +151,14 @@ export default function CustomerManagement({ onSelectCustomer, showActions = tru
 
   return (
     <div className="space-y-6">
+      {/* Back Button */}
+      <Link href="/dashboard">
+        <Button variant="ghost" size="sm" className="flex items-center gap-2">
+          <ArrowLeft className="h-4 w-4" />
+          Back to Dashboard
+        </Button>
+      </Link>
+
       {/* Header */}
       <div className="flex items-center justify-between">
         <div>
@@ -180,10 +185,12 @@ export default function CustomerManagement({ onSelectCustomer, showActions = tru
               <Users className="h-4 w-4" />
               <span>Segmentation</span>
             </Button>
-            <Button className="flex items-center gap-2">
-              <Plus className="h-4 w-4" />
-              New Customer
-            </Button>
+            <Link href="/customers/new">
+              <Button className="flex items-center gap-2">
+                <Plus className="h-4 w-4" />
+                New Customer
+              </Button>
+            </Link>
           </div>
         )}
       </div>
@@ -353,114 +360,129 @@ export default function CustomerManagement({ onSelectCustomer, showActions = tru
           ) : (
             <div className="space-y-4">
               {customers.map((customer) => (
-                <div
+                <Card
                   key={customer.id}
-                  className="border rounded-lg p-4 transition-all hover:shadow-md cursor-pointer hover:bg-accent"
+                  className="transition-all hover:shadow-md cursor-pointer hover:bg-accent"
                   onClick={() => handleCustomerSelect(customer)}
                 >
-                  <div className="flex items-start justify-between">
-                    <div className="flex-1 space-y-2">
-                      {/* Customer Name and Number */}
-                      <div className="flex items-center gap-3">
-                        <h3 className="text-lg font-semibold">
-                          {customer.firstName} {customer.lastName}
-                        </h3>
-                        <Badge variant="outline" className="text-xs">
-                          {customer.customerNumber}
-                        </Badge>
-                        <Badge variant={getStatusBadgeVariant(customer.accountStatus)}>
-                          {customer.accountStatus}
-                        </Badge>
-                        {customer.isHighValueCustomer && (
-                          <Badge variant="secondary" className="bg-yellow-100 text-yellow-800">
-                            High Value
+                  <CardContent className="p-4">
+                    <div className="flex items-start justify-between">
+                      <div className="flex-1 space-y-2">
+                        {/* Customer Name and Number */}
+                        <div className="flex items-center gap-3">
+                          <h3 className="text-lg font-semibold">
+                            {customer.firstName} {customer.lastName}
+                          </h3>
+                          <Badge variant="outline" className="text-xs">
+                            {customer.customerNumber}
                           </Badge>
-                        )}
-                      </div>
-
-                      {/* Contact Information */}
-                      <div className="flex flex-wrap items-center gap-4 text-sm text-muted-foreground">
-                        {customer.email && (
-                          <div className="flex items-center gap-1">
-                            <Mail className="h-4 w-4" />
-                            {customer.email}
-                          </div>
-                        )}
-                        {customer.phone && (
-                          <div className="flex items-center gap-1">
-                            <Phone className="h-4 w-4" />
-                            {customer.phone}
-                          </div>
-                        )}
-                        {(customer.city || customer.state) && (
-                          <div className="flex items-center gap-1">
-                            <MapPin className="h-4 w-4" />
-                            {customer.city && customer.state ? `${customer.city}, ${customer.state}` : customer.city || customer.state}
-                          </div>
-                        )}
-                      </div>
-
-                      {/* Customer Metrics */}
-                      <div className="flex flex-wrap items-center gap-4 text-sm">
-                        <div className="flex items-center gap-1">
-                          <DollarSign className="h-4 w-4 text-green-600" />
-                          <span className="font-medium">Total Spent:</span>
-                          <span>{formatCurrency(customer.totalSpent || 0)}</span>
-                        </div>
-                        <div className="flex items-center gap-1">
-                          <Calendar className="h-4 w-4 text-blue-600" />
-                          <span className="font-medium">Member Since:</span>
-                          <span>{formatDate(customer.registrationDate)}</span>
-                        </div>
-                        {customer.lastVisit && (
-                          <div className="flex items-center gap-1">
-                            <Calendar className="h-4 w-4 text-purple-600" />
-                            <span className="font-medium">Last Visit:</span>
-                            <span>{formatDate(customer.lastVisit)}</span>
-                          </div>
-                        )}
-                      </div>
-
-                      {/* Insurance Information */}
-                      {customer.insuranceCarrier && (
-                        <div className="text-sm">
-                          <span className="font-medium">Insurance:</span>
-                          <span className="ml-1">{customer.insuranceCarrier}</span>
-                          {customer.memberId && (
-                            <span className="ml-2 text-muted-foreground">
-                              (ID: {customer.memberId})
-                            </span>
+                          <Badge variant={getStatusBadgeVariant(customer.accountStatus)}>
+                            {customer.accountStatus}
+                          </Badge>
+                          {customer.isHighValueCustomer && (
+                            <Badge variant="secondary" className="bg-yellow-100 text-yellow-800">
+                              High Value
+                            </Badge>
                           )}
                         </div>
+
+                        {/* Contact Information */}
+                        <div className="flex flex-wrap items-center gap-4 text-sm text-muted-foreground">
+                          {customer.email && (
+                            <div className="flex items-center gap-1">
+                              <Mail className="h-4 w-4" />
+                              {customer.email}
+                            </div>
+                          )}
+                          {customer.phone && (
+                            <div className="flex items-center gap-1">
+                              <Phone className="h-4 w-4" />
+                              {customer.phone}
+                            </div>
+                          )}
+                          {(customer.city || customer.state) && (
+                            <div className="flex items-center gap-1">
+                              <MapPin className="h-4 w-4" />
+                              {customer.city && customer.state ? `${customer.city}, ${customer.state}` : customer.city || customer.state}
+                            </div>
+                          )}
+                        </div>
+
+                        {/* Customer Metrics */}
+                        <div className="flex flex-wrap items-center gap-4 text-sm">
+                          <div className="flex items-center gap-1">
+                            <DollarSign className="h-4 w-4 text-green-600" />
+                            <span className="font-medium">Total Spent:</span>
+                            <span>{formatCurrency(customer.totalSpent || 0)}</span>
+                          </div>
+                          <div className="flex items-center gap-1">
+                            <Calendar className="h-4 w-4 text-blue-600" />
+                            <span className="font-medium">Member Since:</span>
+                            <span>{formatDate(customer.registrationDate)}</span>
+                          </div>
+                          {customer.lastVisit && (
+                            <div className="flex items-center gap-1">
+                              <Calendar className="h-4 w-4 text-purple-600" />
+                              <span className="font-medium">Last Visit:</span>
+                              <span>{formatDate(customer.lastVisit)}</span>
+                            </div>
+                          )}
+                        </div>
+
+                        {/* Insurance Information */}
+                        {customer.insuranceCarrier && (
+                          <div className="text-sm">
+                            <span className="font-medium">Insurance:</span>
+                            <span className="ml-1">{customer.insuranceCarrier}</span>
+                            {customer.memberId && (
+                              <span className="ml-2 text-muted-foreground">
+                                (ID: {customer.memberId})
+                              </span>
+                            )}
+                          </div>
+                        )}
+                      </div>
+
+                      {/* Actions */}
+                      {showActions && (
+                        <DropdownMenu>
+                          <DropdownMenuTrigger asChild onClick={(e) => e.stopPropagation()}>
+                            <Button variant="ghost" size="sm">
+                              <MoreHorizontal className="h-4 w-4" />
+                            </Button>
+                          </DropdownMenuTrigger>
+                          <DropdownMenuContent align="end">
+                            <DropdownMenuItem onClick={(e) => { 
+                              e.stopPropagation()
+                              sessionStorage.setItem('selectedCustomer', JSON.stringify(customer))
+                              window.location.href = '/quote-builder'
+                            }}>
+                              Start Quote
+                            </DropdownMenuItem>
+                            <DropdownMenuItem onClick={(e) => { 
+                              e.stopPropagation()
+                              window.location.href = `/customers/${customer.id}`
+                            }}>
+                              View Details
+                            </DropdownMenuItem>
+                            <DropdownMenuItem onClick={(e) => { 
+                              e.stopPropagation()
+                              window.location.href = `/customers/${customer.id}/edit`
+                            }}>
+                              Edit Customer
+                            </DropdownMenuItem>
+                            <DropdownMenuItem onClick={(e) => { 
+                              e.stopPropagation()
+                              window.location.href = `/customers/${customer.id}/history`
+                            }}>
+                              View History
+                            </DropdownMenuItem>
+                          </DropdownMenuContent>
+                        </DropdownMenu>
                       )}
                     </div>
-
-                    {/* Actions */}
-                    {showActions && (
-                      <DropdownMenu>
-                        <DropdownMenuTrigger asChild>
-                          <Button variant="ghost" size="sm">
-                            <MoreHorizontal className="h-4 w-4" />
-                          </Button>
-                        </DropdownMenuTrigger>
-                        <DropdownMenuContent align="end">
-                          <DropdownMenuItem onClick={() => handleCustomerSelect(customer)}>
-                            View Profile
-                          </DropdownMenuItem>
-                          <DropdownMenuItem>
-                            Edit Customer
-                          </DropdownMenuItem>
-                          <DropdownMenuItem>
-                            View History
-                          </DropdownMenuItem>
-                          <DropdownMenuItem>
-                            Create Quote
-                          </DropdownMenuItem>
-                        </DropdownMenuContent>
-                      </DropdownMenu>
-                    )}
-                  </div>
-                </div>
+                  </CardContent>
+                </Card>
               ))}
             </div>
           )}

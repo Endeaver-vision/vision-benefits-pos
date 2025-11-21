@@ -2,6 +2,7 @@
 
 // @ts-nocheck
 import { useState } from 'react';
+import Link from 'next/link';
 import { useQuery } from '@tanstack/react-query';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
@@ -23,7 +24,8 @@ import {
   Crown,
   CheckCircle,
   XCircle,
-  Download
+  Download,
+  ArrowLeft
 } from 'lucide-react';
 import { format } from 'date-fns';
 
@@ -133,6 +135,14 @@ export default function ExecutiveDashboard() {
 
   return (
     <div className="container mx-auto p-6 space-y-6">
+      {/* Back Button */}
+      <Link href="/analytics">
+        <Button variant="ghost" size="sm" className="flex items-center gap-2">
+          <ArrowLeft className="h-4 w-4" />
+          Back to Analytics
+        </Button>
+      </Link>
+
       {/* Header */}
       <div className="flex items-center justify-between">
         <div>

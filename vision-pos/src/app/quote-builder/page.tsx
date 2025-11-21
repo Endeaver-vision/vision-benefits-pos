@@ -16,12 +16,11 @@ import {
   Glasses
 } from 'lucide-react'
 
-// Import the layer components
-import ExamServicesLayer from '@/components/quote-builder/layers/exam-services-layer'
-import { EyeglassesLayer } from '@/components/quote-builder/layers/eyeglasses-layer'
-import { ContactLensLayer } from '@/components/quote-builder/layers/contact-lens-layer'
+// Import the simplified layer components
+import ExamServicesLayer from '@/components/quote-builder/layers/exam-services-layer-simple'
+import { EyeglassesLayerSimple } from '@/components/quote-builder/layers/eyeglasses-layer-simple'
+import { ContactLensLayerSimple } from '@/components/quote-builder/layers/contact-lens-layer-simple'
 import { QuoteReviewLayer } from '@/components/quote-builder/layers/quote-review-layer'
-import { QuoteFinalizationLayer } from '@/components/quote-builder/layers/quote-finalization-layer'
 
 interface Customer {
   id: string
@@ -33,7 +32,7 @@ interface Customer {
   memberId?: string
 }
 
-type QuoteLayer = 'customer' | 'exam-services' | 'eyeglasses' | 'contacts' | 'review' | 'finalize'
+type QuoteLayer = 'customer' | 'exam-services' | 'eyeglasses' | 'contacts' | 'review'
 
 export default function QuoteBuilderPage() {
   const { data: session, status } = useSession()
@@ -127,8 +126,6 @@ export default function QuoteBuilderPage() {
         return selectedCustomer ? (currentLayer === 'contacts' ? 'current' : 'available') : 'locked'
       case 'review':
         return selectedCustomer ? (currentLayer === 'review' ? 'current' : 'available') : 'locked'
-      case 'finalize':
-        return selectedCustomer ? (currentLayer === 'finalize' ? 'current' : 'available') : 'locked'
       default:
         return 'locked'
     }
@@ -288,25 +285,6 @@ export default function QuoteBuilderPage() {
                   </div>
                 </div>
 
-                {/* Finalize Step */}
-                <div 
-                  className={`p-3 rounded-lg border transition-colors ${
-                    getLayerStatus('finalize') === 'locked'
-                      ? 'bg-gray-100 border-gray-200 cursor-not-allowed opacity-60'
-                      : currentLayer === 'finalize'
-                      ? 'bg-blue-50 border-blue-200 cursor-pointer'
-                      : 'bg-gray-50 border-gray-200 cursor-pointer'
-                  }`}
-                  onClick={() => getLayerStatus('finalize') !== 'locked' && handleLayerChange('finalize')}
-                >
-                  <div className="flex items-center gap-3">
-                    <CheckCircle className="h-5 w-5 text-gray-600" />
-                    <div>
-                      <div className="font-medium">Finalize</div>
-                      <div className="text-xs text-gray-600">Complete the quote</div>
-                    </div>
-                  </div>
-                </div>
               </CardContent>
             </Card>
           </div>
@@ -459,12 +437,18 @@ export default function QuoteBuilderPage() {
 
             {/* Eyeglasses Layer */}
             {currentLayer === 'eyeglasses' && selectedCustomer && (
-              <EyeglassesLayer />
+              <EyeglassesLayerSimple 
+                onNext={() => setCurrentLayer('contacts')}
+                onBack={() => setCurrentLayer('exam-services')}
+              />
             )}
 
             {/* Contact Lenses Layer */}
             {currentLayer === 'contacts' && selectedCustomer && (
-              <ContactLensLayer />
+              <ContactLensLayerSimple 
+                onNext={() => setCurrentLayer('review')}
+                onBack={() => setCurrentLayer('eyeglasses')}
+              />
             )}
 
             {/* Review Layer */}
@@ -477,16 +461,10 @@ export default function QuoteBuilderPage() {
                   else if (section === 'contacts') setCurrentLayer('contacts')
                 }}
                 onFinalize={() => {
-                  setCurrentLayer('finalize')
-                  console.log('Quote finalized!')
+                  // Complete the quote and go to dashboard
+                  console.log('Quote completed!')
+                  router.push('/dashboard')
                 }}
-              />
-            )}
-
-            {/* Finalize Layer */}
-            {currentLayer === 'finalize' && selectedCustomer && (
-              <QuoteFinalizationLayer 
-                onComplete={() => router.push('/dashboard')}
               />
             )}
           </div>

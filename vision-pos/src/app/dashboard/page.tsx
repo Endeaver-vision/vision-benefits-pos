@@ -67,6 +67,21 @@ export default function DashboardPage() {
 
       {/* Main Content */}
       <main className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
+        {/* Main Quote Button - Full Width Solid Chip */}
+        <div className="mb-8">
+          <a href="/quote-builder" className="block">
+            <div className="cursor-pointer hover:shadow-xl transition-all bg-blue-600 hover:bg-blue-700 rounded-lg p-8">
+              <div className="flex items-center justify-center gap-4">
+                <Store className="h-12 w-12 text-white" />
+                <div className="text-center">
+                  <h2 className="text-3xl font-bold text-white">Quote</h2>
+                  <p className="text-blue-100 mt-1">Start or continue a quote</p>
+                </div>
+              </div>
+            </div>
+          </a>
+        </div>
+
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6 mb-8">
           {/* Quick Stats */}
           <Card>
@@ -120,30 +135,6 @@ export default function DashboardPage() {
             <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
               <Card className="cursor-pointer hover:shadow-md transition-shadow">
                 <CardHeader>
-                  <CardTitle className="text-lg">New Quote</CardTitle>
-                </CardHeader>
-                <CardContent>
-                  <p className="text-sm text-gray-600 mb-4">Start a new eyeglasses quote with comprehensive selection</p>
-                  <Button className="w-full" asChild>
-                    <a href="/quote-builder">Start Quote</a>
-                  </Button>
-                </CardContent>
-              </Card>
-
-              <Card className="cursor-pointer hover:shadow-md transition-shadow">
-                <CardHeader>
-                  <CardTitle className="text-lg">Quick POS</CardTitle>
-                </CardHeader>
-                <CardContent>
-                  <p className="text-sm text-gray-600 mb-4">Quick product sales and accessories</p>
-                  <Button variant="outline" className="w-full" asChild>
-                    <a href="/pos">Quick Sale</a>
-                  </Button>
-                </CardContent>
-              </Card>
-
-              <Card className="cursor-pointer hover:shadow-md transition-shadow">
-                <CardHeader>
                   <CardTitle className="text-lg">Customer Lookup</CardTitle>
                 </CardHeader>
                 <CardContent>
@@ -168,32 +159,16 @@ export default function DashboardPage() {
 
               <Card className="cursor-pointer hover:shadow-md transition-shadow">
                 <CardHeader>
-                  <CardTitle className="text-lg">Sales Analytics</CardTitle>
+                  <CardTitle className="text-lg">Analytics & Reports</CardTitle>
                 </CardHeader>
                 <CardContent>
-                  <p className="text-sm text-gray-600 mb-4">View sales trends and performance metrics</p>
-                  <div className="space-y-2">
-                    <Button variant="outline" className="w-full" asChild>
-                      <a href="/analytics">View Analytics</a>
-                    </Button>
-                    <Button className="w-full" asChild>
-                      <a href="/analytics/executive">Executive Dashboard</a>
-                    </Button>
-                  </div>
-                </CardContent>
-              </Card>
-
-              <Card className="cursor-pointer hover:shadow-md transition-shadow">
-                <CardHeader>
-                  <CardTitle className="text-lg">Reports</CardTitle>
-                </CardHeader>
-                <CardContent>
-                  <p className="text-sm text-gray-600 mb-4">Comprehensive reporting and data exports</p>
+                  <p className="text-sm text-gray-600 mb-4">View sales trends, performance metrics, and reports</p>
                   <Button variant="outline" className="w-full" asChild>
-                    <a href="/reports">View Reports</a>
+                    <a href="/analytics">View All Analytics</a>
                   </Button>
                 </CardContent>
               </Card>
+
             </div>
           </div>
 

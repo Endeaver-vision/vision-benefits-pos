@@ -2,6 +2,7 @@
 
 import React, { useState, useEffect } from 'react'
 import { useParams, useRouter } from 'next/navigation'
+import Link from 'next/link'
 import { ArrowLeft, Edit, Phone, Mail, MapPin, Calendar, DollarSign, CreditCard, User, FileText, Plus, Eye } from 'lucide-react'
 import { Button } from '@/components/ui/button'
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
@@ -133,38 +134,48 @@ export default function CustomerProfile() {
 
   return (
     <div className="container mx-auto p-6 space-y-6">
+      {/* Back Button */}
+      <Link href="/customers">
+        <Button variant="ghost" size="sm" className="flex items-center gap-2">
+          <ArrowLeft className="h-4 w-4" />
+          Back to Customer Management
+        </Button>
+      </Link>
+
       {/* Header */}
       <div className="flex items-center justify-between">
-        <div className="flex items-center gap-4">
-          <Button variant="ghost" size="sm" onClick={() => router.back()}>
-            <ArrowLeft className="h-4 w-4 mr-2" />
-            Back
-          </Button>
-          <div>
-            <h1 className="text-3xl font-bold tracking-tight">
-              {customer.firstName} {customer.lastName}
-            </h1>
-            <div className="flex items-center gap-2 mt-1">
-              {customer.customerNumber && (
-                <Badge variant="outline">{customer.customerNumber}</Badge>
-              )}
-              <Badge variant={getStatusBadgeVariant(customer.accountStatus)}>
-                {customer.accountStatus}
+        <div>
+          <h1 className="text-3xl font-bold tracking-tight">
+            {customer.firstName} {customer.lastName}
+          </h1>
+          <div className="flex items-center gap-2 mt-1">
+            {customer.customerNumber && (
+              <Badge variant="outline">{customer.customerNumber}</Badge>
+            )}
+            <Badge variant={getStatusBadgeVariant(customer.accountStatus)}>
+              {customer.accountStatus}
+            </Badge>
+            {customer.isHighValueCustomer && (
+              <Badge variant="secondary" className="bg-yellow-100 text-yellow-800">
+                High Value Customer
               </Badge>
-              {customer.isHighValueCustomer && (
-                <Badge variant="secondary" className="bg-yellow-100 text-yellow-800">
-                  High Value Customer
-                </Badge>
-              )}
-            </div>
+            )}
           </div>
         </div>
         <div className="flex gap-2">
-          <Button variant="outline">
+          <Button 
+            variant="outline"
+            onClick={() => router.push(`/customers/${customerId}/edit`)}
+          >
             <Edit className="h-4 w-4 mr-2" />
             Edit Profile
           </Button>
-          <Button>
+          <Button
+            onClick={() => {
+              sessionStorage.setItem('selectedCustomer', JSON.stringify(customer))
+              router.push('/quote-builder')
+            }}
+          >
             <Plus className="h-4 w-4 mr-2" />
             New Quote
           </Button>

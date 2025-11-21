@@ -9,7 +9,8 @@ import {
   Package, 
   BarChart3,
   TrendingUp,
-  DollarSign
+  DollarSign,
+  ArrowLeft
 } from 'lucide-react';
 
 const reportCategories = [
@@ -71,6 +72,14 @@ const reportCategories = [
 export default function ReportsPage() {
   return (
     <div className="container mx-auto p-6 space-y-6">
+      {/* Back Button */}
+      <Link href="/analytics">
+        <Button variant="ghost" size="sm" className="flex items-center gap-2">
+          <ArrowLeft className="h-4 w-4" />
+          Back to Analytics
+        </Button>
+      </Link>
+
       {/* Header */}
       <div>
         <h1 className="text-3xl font-bold tracking-tight">Reports & Analytics</h1>

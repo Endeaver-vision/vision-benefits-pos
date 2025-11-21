@@ -148,6 +148,18 @@ export default function TransactionReportsPage() {
 
   return (
     <div className="container mx-auto p-6 space-y-6">
+      {/* Back Buttons */}
+      <div className="flex gap-2">
+        <Button variant="ghost" size="sm" onClick={() => window.location.href = '/reports'}>
+          <ChevronLeft className="h-4 w-4 mr-1" />
+          Back to Reports
+        </Button>
+        <Button variant="ghost" size="sm" onClick={() => window.location.href = '/analytics'}>
+          <ChevronLeft className="h-4 w-4 mr-1" />
+          Back to Analytics
+        </Button>
+      </div>
+
       {/* Header */}
       <div className="flex items-center justify-between">
         <div>

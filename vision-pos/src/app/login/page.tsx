@@ -20,39 +20,17 @@ interface Location {
 export default function LoginPage() {
   const [email, setEmail] = useState('')
   const [password, setPassword] = useState('')
-  const [locationId, setLocationId] = useState('')
   const [showPassword, setShowPassword] = useState(false)
   const [isLoading, setIsLoading] = useState(false)
   const [error, setError] = useState('')
-  const [locations, setLocations] = useState<Location[]>([])
   const router = useRouter()
-
-  // Fetch locations on component mount
-  useEffect(() => {
-    const fetchLocations = async () => {
-      try {
-        const response = await fetch('/api/locations')
-        if (response.ok) {
-          const result = await response.json()
-          console.log('Locations API response:', result)
-          setLocations(result.data || [])
-        } else {
-          console.error('Failed to fetch locations - Status:', response.status)
-        }
-      } catch (error) {
-        console.error('Failed to fetch locations:', error)
-      }
-    }
-
-    fetchLocations()
-  }, [])
 
   // Check if user is already authenticated
   useEffect(() => {
     const checkAuth = async () => {
       const session = await getSession()
       if (session) {
-        router.push('/dashboard')
+        router.push('/quote-builder')
       }
     }
 
@@ -64,7 +42,7 @@ export default function LoginPage() {
     setIsLoading(true)
     setError('')
 
-    if (!email || !password || !locationId) {
+    if (!email || !password) {
       setError('Please fill in all fields')
       setIsLoading(false)
       return
@@ -74,15 +52,14 @@ export default function LoginPage() {
       const result = await signIn('credentials', {
         email,
         password,
-        locationId,
         redirect: false,
       })
 
       if (result?.error) {
         setError('Invalid credentials. Please check your email, password, and location.')
       } else if (result?.ok) {
-        // Successful login - redirect to dashboard
-        router.push('/dashboard')
+        // Successful login - redirect to quote builder (POS)
+        router.push('/quote-builder')
       }
     } catch (err) {
       console.error('Login error:', err)
@@ -151,28 +128,6 @@ export default function LoginPage() {
               </div>
             </div>
 
-            <div className="space-y-2">
-              <Label htmlFor="location">Location ({locations.length} available)</Label>
-              <Select value={locationId} onValueChange={setLocationId} disabled={isLoading}>
-                <SelectTrigger>
-                  <SelectValue placeholder="Select your location" />
-                </SelectTrigger>
-                <SelectContent>
-                  {locations.length === 0 ? (
-                    <SelectItem value="loading" disabled>
-                      Loading locations...
-                    </SelectItem>
-                  ) : (
-                    locations.map((location) => (
-                      <SelectItem key={location.id} value={location.id}>
-                        {location.name} - {location.address}
-                      </SelectItem>
-                    ))
-                  )}
-                </SelectContent>
-              </Select>
-            </div>
-
             <Button
               type="submit"
               className="w-full"
@@ -190,9 +145,12 @@ export default function LoginPage() {
           </form>
 
           <div className="mt-6 text-center text-sm text-gray-600">
-            <p>Demo Credentials:</p>
-            <p className="font-mono text-xs mt-1">
-              admin@visioncare.com | Password123 | Any location
+            <p className="font-semibold">Demo Credentials:</p>
+            <p className="font-mono text-xs mt-2">
+              Email: demo@visionpos.com
+            </p>
+            <p className="font-mono text-xs">
+              Password: demo123
             </p>
           </div>
         </CardContent>

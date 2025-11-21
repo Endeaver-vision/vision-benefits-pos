@@ -4,12 +4,13 @@ import { prisma } from '@/lib/prisma'
 // GET /api/customers/[id] - Get customer by ID
 export async function GET(
   request: NextRequest,
-  { params }: { params: { id: string } }
+  { params }: { params: Promise<{ id: string }> }
 ) {
   try {
+    const { id } = await params
     const customer = await prisma.customer.findUnique({
       where: {
-        id: params.id,
+        id: id,
         active: true
       },
       include: {
@@ -50,9 +51,10 @@ export async function GET(
 // PUT /api/customers/[id] - Update customer
 export async function PUT(
   request: NextRequest,
-  { params }: { params: { id: string } }
+  { params }: { params: Promise<{ id: string }> }
 ) {
   try {
+    const { id } = await params
     const body = await request.json()
     
     const {
@@ -74,7 +76,7 @@ export async function PUT(
 
     // Check if customer exists
     const existingCustomer = await prisma.customer.findUnique({
-      where: { id: params.id, active: true }
+      where: { id: id, active: true }
     })
 
     if (!existingCustomer) {
@@ -90,7 +92,7 @@ export async function PUT(
         where: {
           email,
           active: true,
-          NOT: { id: params.id }
+          NOT: { id: id }
         }
       })
 
@@ -103,7 +105,7 @@ export async function PUT(
     }
 
     const customer = await prisma.customer.update({
-      where: { id: params.id },
+      where: { id: id },
       data: {
         firstName,
         lastName,
@@ -138,11 +140,12 @@ export async function PUT(
 // DELETE /api/customers/[id] - Soft delete customer
 export async function DELETE(
   request: NextRequest,
-  { params }: { params: { id: string } }
+  { params }: { params: Promise<{ id: string }> }
 ) {
   try {
+    const { id } = await params
     const customer = await prisma.customer.findUnique({
-      where: { id: params.id, active: true }
+      where: { id: id, active: true }
     })
 
     if (!customer) {
@@ -154,7 +157,7 @@ export async function DELETE(
 
     // Soft delete by setting active to false
     await prisma.customer.update({
-      where: { id: params.id },
+      where: { id: id },
       data: { active: false }
     })
 

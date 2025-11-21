@@ -42,6 +42,7 @@ export async function GET(request: NextRequest) {
     const associatePerformance = await getAssociatePerformance(locationId, dateRanges.current.start, dateRanges.current.end)
 
     return NextResponse.json({
+      success: true,
       data: {
         period,
         dateRange: dateRanges.current,

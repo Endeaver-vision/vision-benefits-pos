@@ -82,12 +82,17 @@ export async function POST(request: NextRequest) {
       lastName,
       email,
       phone,
+      dateOfBirth,
+      gender,
       insuranceCarrier,
       memberId,
+      groupNumber,
+      eligibilityDate,
       address,
       city,
       state,
-      zipCode
+      zipCode,
+      notes
     } = body
 
     // Validate required fields
@@ -123,19 +128,24 @@ export async function POST(request: NextRequest) {
       }
     }
 
-    // Create customer using current schema
+    // Create customer with all fields
     const customer = await prisma.customer.create({
       data: {
         firstName,
         lastName,
-        email,
-        phone,
-        insuranceCarrier,
-        memberId,
-        address,
-        city,
-        state,
-        zipCode,
+        email: email || null,
+        phone: phone || null,
+        dateOfBirth: dateOfBirth ? new Date(dateOfBirth) : null,
+        gender: gender || null,
+        insuranceCarrier: insuranceCarrier || null,
+        memberId: memberId || null,
+        groupNumber: groupNumber || null,
+        eligibilityDate: eligibilityDate ? new Date(eligibilityDate) : null,
+        address: address || null,
+        city: city || null,
+        state: state || null,
+        zipCode: zipCode || null,
+        notes: notes || null,
         active: true
       }
     })

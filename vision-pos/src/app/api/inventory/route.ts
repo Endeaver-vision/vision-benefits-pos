@@ -19,12 +19,6 @@ export async function GET(request: NextRequest) {
     
     const where: Prisma.InventoryWhereInput = {
       locationId,
-      ...(lowStock && {
-        OR: [
-          { currentStock: { lte: prisma.inventory.fields.reorderPoint } },
-          { availableStock: { lte: 0 } }
-        ]
-      }),
       ...(search && {
         product: {
           OR: [
@@ -70,20 +64,29 @@ export async function GET(request: NextRequest) {
       ]
     })
 
+    // Filter for low stock if requested (can't do in Prisma query since comparing two fields)
+    let filteredInventory = inventory
+    if (lowStock) {
+      filteredInventory = inventory.filter(item => 
+        item.currentStock <= item.reorderPoint || item.availableStock <= 0
+      )
+    }
+
     // Calculate low stock items
     const lowStockCount = inventory.filter(item => 
       item.currentStock <= item.reorderPoint || item.availableStock <= 0
     ).length
 
     // Calculate total value
-    const totalValue = inventory.reduce((sum, item) => 
+    const totalValue = filteredInventory.reduce((sum, item) => 
       sum + (item.currentStock * (item.costPrice || 0)), 0
     )
 
     return NextResponse.json({
-      data: inventory,
+      success: true,
+      data: filteredInventory,
       summary: {
-        totalItems: inventory.length,
+        totalItems: filteredInventory.length,
         lowStockCount,
         totalValue,
         lastUpdated: new Date().toISOString()

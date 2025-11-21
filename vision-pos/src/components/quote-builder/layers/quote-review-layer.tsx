@@ -126,9 +126,9 @@ export function QuoteReviewLayer({ onEdit, onFinalize }: QuoteReviewProps) {
         </CardContent>
       </Card>
 
-      <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
+      <div className="space-y-6">
         {/* Main Review Content */}
-        <div className="lg:col-span-2 space-y-6">
+        <div className="space-y-6">
           {/* Customer Information */}
           <Card>
             <CardHeader>
@@ -402,12 +402,13 @@ export function QuoteReviewLayer({ onEdit, onFinalize }: QuoteReviewProps) {
             </CardContent>
           </Card>
 
-          {/* Quote Actions */}
+          {/* Quote Actions & Finalize */}
           <Card>
             <CardHeader>
-              <CardTitle>Quote Actions</CardTitle>
+              <CardTitle>Finalize Quote</CardTitle>
             </CardHeader>
-            <CardContent>
+            <CardContent className="space-y-6">
+              {/* Quick Actions */}
               <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
                 <Button variant="outline" className="flex items-center gap-2">
                   <Download className="h-4 w-4" />
@@ -422,195 +423,32 @@ export function QuoteReviewLayer({ onEdit, onFinalize }: QuoteReviewProps) {
                   Save Draft
                 </Button>
               </div>
-            </CardContent>
-          </Card>
-        </div>
 
-        {/* Pricing Sidebar */}
-        <div className="lg:col-span-1 space-y-6">
-          {/* Pricing Breakdown */}
-          <Card>
-            <CardHeader>
-              <CardTitle className="flex items-center gap-2">
-                <Calculator className="h-5 w-5" />
-                Pricing Breakdown
-              </CardTitle>
-            </CardHeader>
-            <CardContent className="space-y-4">
-              {/* Eyeglasses Pricing */}
-              <div>
-                <h4 className="font-semibold mb-3 flex items-center gap-2">
-                  <Glasses className="h-4 w-4" />
-                  Eyeglasses
-                </h4>
-                <div className="space-y-2 text-sm">
-                  <div className="flex justify-between">
-                    <span>Frame:</span>
-                    <span>${mockEyeglassesSelection.frame.price.toFixed(2)}</span>
+              <Separator />
+
+              {/* Total Summary */}
+              <div className="bg-gray-50 p-6 rounded-lg">
+                <div className="space-y-3">
+                  <div className="flex justify-between text-lg">
+                    <span>Order Subtotal:</span>
+                    <span className="font-semibold">${orderSubtotal.toFixed(2)}</span>
                   </div>
                   <div className="flex justify-between">
-                    <span>Lenses:</span>
-                    <span>${mockEyeglassesSelection.lenses.price.toFixed(2)}</span>
-                  </div>
-                  <div className="flex justify-between">
-                    <span>Enhancements:</span>
-                    <span>${mockEyeglassesSelection.enhancements.reduce((sum, enh) => sum + enh.price, 0).toFixed(2)}</span>
-                  </div>
-                  {mockEyeglassesSelection.secondPair && (
-                    <>
-                      <div className="flex justify-between">
-                        <span>Second Pair:</span>
-                        <span>${mockEyeglassesSelection.secondPair.frame.price.toFixed(2)}</span>
-                      </div>
-                      <div className="flex justify-between text-green-600">
-                        <span>Second Pair Discount:</span>
-                        <span>-${eyeglassesDiscounts.toFixed(2)}</span>
-                      </div>
-                    </>
-                  )}
-                  <div className="flex justify-between text-blue-600">
-                    <span>Insurance Discount:</span>
-                    <span>-${eyeglassesInsuranceDiscount.toFixed(2)}</span>
+                    <span>Tax (8.75%):</span>
+                    <span className="font-semibold">${tax.toFixed(2)}</span>
                   </div>
                   <Separator />
-                  <div className="flex justify-between font-medium">
-                    <span>Eyeglasses Total:</span>
-                    <span>${eyeglassesTotal.toFixed(2)}</span>
+                  <div className="flex justify-between text-2xl font-bold">
+                    <span>Grand Total:</span>
+                    <span>${grandTotal.toFixed(2)}</span>
                   </div>
                 </div>
               </div>
 
               <Separator />
 
-              {/* Contact Lenses Pricing */}
-              <div>
-                <h4 className="font-semibold mb-3 flex items-center gap-2">
-                  <Eye className="h-4 w-4" />
-                  Contact Lenses
-                </h4>
-                <div className="space-y-2 text-sm">
-                  <div className="flex justify-between">
-                    <span>Annual Supply:</span>
-                    <span>${mockContactLenses.basePrice.toFixed(2)}</span>
-                  </div>
-                  <div className="flex justify-between">
-                    <span>Fitting Fee:</span>
-                    <span>${mockContactLenses.fittingFee.toFixed(2)}</span>
-                  </div>
-                  <div className="flex justify-between text-green-600">
-                    <span>Manufacturer Rebate:</span>
-                    <span>-${contactsRebate.toFixed(2)}</span>
-                  </div>
-                  <div className="flex justify-between text-blue-600">
-                    <span>Insurance Discount:</span>
-                    <span>-${contactsInsuranceDiscount.toFixed(2)}</span>
-                  </div>
-                  <Separator />
-                  <div className="flex justify-between font-medium">
-                    <span>Contacts Total:</span>
-                    <span>${contactsTotal.toFixed(2)}</span>
-                  </div>
-                </div>
-              </div>
-
-              <Separator />
-
-              {/* Order Total */}
-              <div className="space-y-2">
-                <div className="flex justify-between">
-                  <span>Subtotal:</span>
-                  <span>${orderSubtotal.toFixed(2)}</span>
-                </div>
-                <div className="flex justify-between">
-                  <span>Tax (8.75%):</span>
-                  <span>${tax.toFixed(2)}</span>
-                </div>
-                <Separator />
-                <div className="flex justify-between text-lg font-bold">
-                  <span>Grand Total:</span>
-                  <span>${grandTotal.toFixed(2)}</span>
-                </div>
-              </div>
-            </CardContent>
-          </Card>
-
-          {/* Payment Options */}
-          <Card>
-            <CardHeader>
-              <CardTitle className="flex items-center gap-2">
-                <CreditCard className="h-5 w-5" />
-                Payment Options
-              </CardTitle>
-            </CardHeader>
-            <CardContent className="space-y-4">
-              <div className="space-y-3">
-                <div 
-                  className={`p-3 border rounded-lg cursor-pointer transition-colors ${
-                    selectedPaymentOption === 'insurance' 
-                      ? 'border-blue-500 bg-blue-50' 
-                      : 'border-gray-200 hover:border-gray-300'
-                  }`}
-                  onClick={() => setSelectedPaymentOption('insurance')}
-                >
-                  <div className="flex items-center justify-between">
-                    <div>
-                      <div className="font-medium">Insurance + Patient Pay</div>
-                      <div className="text-sm text-gray-600">Recommended option</div>
-                    </div>
-                    {selectedPaymentOption === 'insurance' && (
-                      <CheckCircle className="h-5 w-5 text-blue-600" />
-                    )}
-                  </div>
-                </div>
-
-                <div 
-                  className={`p-3 border rounded-lg cursor-pointer transition-colors ${
-                    selectedPaymentOption === 'full' 
-                      ? 'border-blue-500 bg-blue-50' 
-                      : 'border-gray-200 hover:border-gray-300'
-                  }`}
-                  onClick={() => setSelectedPaymentOption('full')}
-                >
-                  <div className="flex items-center justify-between">
-                    <div>
-                      <div className="font-medium">Pay in Full</div>
-                      <div className="text-sm text-gray-600">One-time payment</div>
-                    </div>
-                    {selectedPaymentOption === 'full' && (
-                      <CheckCircle className="h-5 w-5 text-blue-600" />
-                    )}
-                  </div>
-                </div>
-
-                <div 
-                  className={`p-3 border rounded-lg cursor-pointer transition-colors ${
-                    selectedPaymentOption === 'financing' 
-                      ? 'border-blue-500 bg-blue-50' 
-                      : 'border-gray-200 hover:border-gray-300'
-                  }`}
-                  onClick={() => setSelectedPaymentOption('financing')}
-                >
-                  <div className="flex items-center justify-between">
-                    <div>
-                      <div className="font-medium">Financing Available</div>
-                      <div className="text-sm text-gray-600">12 months 0% APR</div>
-                    </div>
-                    {selectedPaymentOption === 'financing' && (
-                      <CheckCircle className="h-5 w-5 text-blue-600" />
-                    )}
-                  </div>
-                </div>
-              </div>
-            </CardContent>
-          </Card>
-
-          {/* Finalize Quote */}
-          <Card>
-            <CardHeader>
-              <CardTitle>Ready to Finalize?</CardTitle>
-            </CardHeader>
-            <CardContent className="space-y-4">
-              <div className="space-y-3">
+              {/* Terms and Finalize Button */}
+              <div className="space-y-4">
                 <div className="flex items-center space-x-2">
                   <input
                     type="checkbox"
@@ -624,18 +462,28 @@ export function QuoteReviewLayer({ onEdit, onFinalize }: QuoteReviewProps) {
                   </label>
                 </div>
 
-                <Button 
-                  className="w-full" 
-                  size="lg"
-                  disabled={!termsAccepted}
-                  onClick={onFinalize}
-                >
-                  <CheckCircle className="h-4 w-4 mr-2" />
-                  Finalize Quote
-                </Button>
+                <div className="flex gap-3">
+                  <Button 
+                    onClick={() => onEdit?.('contacts')}
+                    variant="outline"
+                    size="lg"
+                    className="flex-1"
+                  >
+                    Back to Contacts
+                  </Button>
+                  <Button 
+                    className="flex-1" 
+                    size="lg"
+                    disabled={!termsAccepted}
+                    onClick={onFinalize}
+                  >
+                    <CheckCircle className="h-4 w-4 mr-2" />
+                    Complete Quote
+                  </Button>
+                </div>
 
                 <div className="text-xs text-gray-500 text-center">
-                  By finalizing, you authorize the processing of this order and any applicable insurance claims.
+                  By completing, you authorize the processing of this order and any applicable insurance claims.
                 </div>
               </div>
             </CardContent>
