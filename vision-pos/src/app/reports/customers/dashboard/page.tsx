@@ -166,7 +166,7 @@ export default function CustomerDashboard() {
                 </div>
                 <div className="text-right">
                   <div className="text-2xl font-bold text-purple-800">
-                    {customers.filter(c => c.isHighValueCustomer && c.isFrequentCustomer).length}
+                    {customers.filter((c: any) => c.isHighValueCustomer && c.isFrequentCustomer).length}
                   </div>
                   <div className="text-sm text-purple-600">customers</div>
                 </div>

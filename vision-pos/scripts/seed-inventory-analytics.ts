@@ -247,7 +247,7 @@ async function seedInventoryData() {
       const movementTypes = ['SALE', 'RETURN', 'RESTOCK', 'ADJUSTMENT'];
       const type = movementTypes[Math.floor(Math.random() * movementTypes.length)];
       
-      let quantity;
+      let quantity: number;
       switch (type) {
         case 'SALE':
           quantity = -(Math.floor(Math.random() * 5) + 1); // -1 to -5
@@ -260,6 +260,9 @@ async function seedInventoryData() {
           break;
         case 'ADJUSTMENT':
           quantity = Math.floor(Math.random() * 11) - 5; // -5 to 5
+          break;
+        default:
+          quantity = 0;
           break;
       }
 
@@ -328,7 +331,8 @@ async function seedInventoryData() {
         const quantityReceived = status === 'RECEIVED' ? quantityOrdered : 
                                 status === 'PARTIALLY_RECEIVED' ? Math.floor(quantityOrdered * 0.7) : 0;
         
-        const total = quantityOrdered * productSupplier.supplierPrice;
+        const unitCost = productSupplier.supplierPrice || 0;
+        const total = quantityOrdered * unitCost;
         subtotal += total;
 
         await prisma.purchaseOrderItem.create({
@@ -337,7 +341,7 @@ async function seedInventoryData() {
             productId: productSupplier.productId,
             quantityOrdered,
             quantityReceived,
-            unitCost: productSupplier.supplierPrice,
+            unitCost,
             total
           }
         });

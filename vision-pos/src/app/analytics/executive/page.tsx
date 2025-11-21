@@ -197,7 +197,7 @@ export default function ExecutiveDashboard() {
       {/* Alerts */}
       {alerts && alerts.length > 0 && (
         <div className="grid gap-4">
-          {alerts.map((alert, index) => (
+          {alerts.map((alert: any, index: number) => (
             <div
               key={index}
               className={`flex items-center p-4 rounded-lg border ${
@@ -312,7 +312,7 @@ export default function ExecutiveDashboard() {
               </CardHeader>
               <CardContent>
                 <div className="space-y-4">
-                  {categoryPerformance?.slice(0, 5).map((category, index) => (
+                  {categoryPerformance?.slice(0, 5).map((category: any, index: number) => (
                     <div key={category.name} className="flex items-center justify-between p-3 bg-muted rounded-lg">
                       <div className="flex items-center space-x-3">
                         <div className="w-8 h-8 bg-primary text-primary-foreground rounded-full flex items-center justify-center text-sm font-bold">
@@ -344,8 +344,8 @@ export default function ExecutiveDashboard() {
                 <CardDescription>Last 30 days performance</CardDescription>
               </CardHeader>
               <CardContent>
-                <div className="space-y-2">
-                  {dailyTrends?.slice(-7).map((day) => (
+                <div className="space-y-4">
+                  {dailyTrends?.slice(-7).map((day: any) => (
                     <div key={day.date} className="flex items-center justify-between p-2 text-sm">
                       <div className="flex items-center space-x-2">
                         <Calendar className="h-4 w-4 text-muted-foreground" />
@@ -552,7 +552,7 @@ export default function ExecutiveDashboard() {
               </CardHeader>
               <CardContent>
                 <div className="space-y-4">
-                  {topCustomers?.slice(0, 5).map((customer, index) => (
+                  {topCustomers?.slice(0, 5).map((customer: any, index: number) => (
                     <div key={customer.customer.id} className="flex items-center justify-between p-3 bg-muted rounded-lg">
                       <div className="flex items-center space-x-3">
                         <div className="w-8 h-8 bg-primary text-primary-foreground rounded-full flex items-center justify-center text-sm font-bold">

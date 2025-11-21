@@ -55,7 +55,7 @@ export default function NewQuotePage() {
   const renderLayerContent = () => {
     switch (currentLayer) {
       case 'exam':
-        return <ExamServicesLayer />
+        return <ExamServicesLayer onNext={() => setCurrentLayer('eyeglasses')} />
       
       case 'eyeglasses':
         return <EyeglassesLayer />

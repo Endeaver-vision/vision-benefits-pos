@@ -90,9 +90,8 @@ export async function PUT(
   request: NextRequest,
   { params }: { params: Promise<{ id: string }> }
 ) {
-  const { id } = await params
   try {
-    const { id } = params
+    const { id } = await params
     const updateData = await request.json()
     
     // In a real implementation, this would update the database

@@ -204,6 +204,12 @@ export async function GET(request: NextRequest) {
         })
       )
       
+      const averageMetrics = await prisma.customer.aggregate({
+        where: { active: true },
+        _avg: { totalSpent: true },
+        _sum: { totalSpent: true }
+      })
+      
       growthAnalysis = {
         periods: growthData,
         trends: {
