@@ -1,4 +1,5 @@
 import Fuse from 'fuse.js'
+import type { IFuseOptions } from 'fuse.js'
 import { Customer, CustomerSearchFilters, CustomerSearchResponse } from '@/types/customer'
 import { prisma } from '@/lib/prisma'
 
@@ -8,7 +9,7 @@ import { prisma } from '@/lib/prisma'
  */
 
 export class CustomerSearchService {
-  private static fuseOptions: Fuse.IFuseOptions<any> = {
+  private static fuseOptions: IFuseOptions<any> = {
     keys: [
       { name: 'firstName', weight: 0.3 },
       { name: 'lastName', weight: 0.3 },
