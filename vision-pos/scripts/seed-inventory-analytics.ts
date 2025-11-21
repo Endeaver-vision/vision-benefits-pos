@@ -222,7 +222,7 @@ async function seedInventoryData() {
             locationId: location.id,
             currentStock,
             reservedStock,
-            availableStack,
+            availableStock,
             reorderPoint,
             reorderQuantity,
             maxStock: reorderQuantity * 3,
