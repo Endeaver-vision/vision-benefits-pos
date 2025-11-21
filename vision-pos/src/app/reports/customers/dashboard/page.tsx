@@ -230,7 +230,7 @@ export default function CustomerDashboard() {
           </CardHeader>
           <CardContent>
             <div className="space-y-4">
-              {topCustomers.topSpenders?.slice(0, 5).map((customer, index) => (
+              {topCustomers.topSpenders?.slice(0, 5).map((customer: any, index: number) => (
                 <div key={customer.id} className="flex items-center justify-between p-3 bg-muted rounded-lg">
                   <div className="flex items-center space-x-3">
                     <div className="w-8 h-8 bg-primary text-primary-foreground rounded-full flex items-center justify-center text-sm font-bold">
@@ -264,8 +264,8 @@ export default function CustomerDashboard() {
           <CardContent>
             <div className="space-y-4">
               {Object.entries(insights.insuranceAnalysis || {})
-                .sort(([,a], [,b]) => b.customers - a.customers)
-                .map(([carrier, data]) => (
+                .sort(([,a], [,b]) => (b as any).customers - (a as any).customers)
+                .map(([carrier, data]: [string, any]) => (
                 <div key={carrier} className="flex items-center justify-between p-3 bg-muted rounded-lg">
                   <div>
                     <div className="font-medium">{carrier}</div>
@@ -293,9 +293,9 @@ export default function CustomerDashboard() {
           <CardContent>
             <div className="space-y-4">
               {Object.entries(insights.categoryAnalysis || {})
-                .sort(([,a], [,b]) => b.customers - a.customers)
+                .sort(([,a], [,b]) => (b as any).customers - (a as any).customers)
                 .slice(0, 5)
-                .map(([category, data]) => (
+                .map(([category, data]: [string, any]) => (
                 <div key={category} className="flex items-center justify-between p-3 bg-muted rounded-lg">
                   <div>
                     <div className="font-medium">{category}</div>
