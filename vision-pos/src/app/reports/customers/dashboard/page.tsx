@@ -182,7 +182,7 @@ export default function CustomerDashboard() {
                 </div>
                 <div className="text-right">
                   <div className="text-2xl font-bold text-green-800">
-                    {customers.filter(c => c.isHighValueCustomer).length}
+                    {customers.filter((c: any) => c.isHighValueCustomer).length}
                   </div>
                   <div className="text-sm text-green-600">customers</div>
                 </div>
@@ -198,7 +198,7 @@ export default function CustomerDashboard() {
                 </div>
                 <div className="text-right">
                   <div className="text-2xl font-bold text-blue-800">
-                    {customers.filter(c => c.isFrequentCustomer).length}
+                    {customers.filter((c: any) => c.isFrequentCustomer).length}
                   </div>
                   <div className="text-sm text-blue-600">customers</div>
                 </div>
@@ -213,10 +213,10 @@ export default function CustomerDashboard() {
                   </div>
                 </div>
                 <div className="text-right">
-                  <div className="text-2xl font-bold text-gray-800">
-                    {customers.filter(c => c.isRepeatCustomer).length}
+                  <div className="text-2xl font-bold text-amber-800">
+                    {customers.filter((c: any) => c.isRepeatCustomer).length}
                   </div>
-                  <div className="text-sm text-gray-600">customers</div>
+                  <div className="text-sm text-amber-600">customers</div>
                 </div>
               </div>
             </div>
