@@ -9,6 +9,10 @@ const inter = Inter({ subsets: ["latin"] });
 export const metadata: Metadata = {
   title: "Vision Benefits POS",
   description: "AI-Powered Vision Benefits Point of Sale System",
+  icons: {
+    icon: '/icon.tsx',
+    apple: '/apple-icon.tsx',
+  },
 };
 
 export default function RootLayout({
