@@ -162,9 +162,9 @@ export default function DashboardPage() {
                   <CardTitle className="text-lg">Analytics & Reports</CardTitle>
                 </CardHeader>
                 <CardContent>
-                  <p className="text-sm text-gray-600 mb-4">View sales trends, performance metrics, and reports</p>
+                  <p className="text-sm text-gray-600 mb-4">Performance metrics, sales analytics, and data exports</p>
                   <Button variant="outline" className="w-full" asChild>
-                    <a href="/analytics">View All Analytics</a>
+                    <a href="/analytics">View Analytics</a>
                   </Button>
                 </CardContent>
               </Card>
