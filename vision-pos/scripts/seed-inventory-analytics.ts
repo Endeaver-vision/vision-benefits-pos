@@ -213,7 +213,7 @@ async function seedInventoryData() {
             reorderQuantity,
             maxStock: reorderQuantity * 3,
             costPrice,
-            lastCostPrice: costPrice * (0.9 + Math.random() * 0.2), // ±10% variance
+            lastCostPrice: costPrice ? costPrice * (0.9 + Math.random() * 0.2) : null, // ±10% variance
             lastRestocked,
             lastSold
           },
@@ -222,12 +222,12 @@ async function seedInventoryData() {
             locationId: location.id,
             currentStock,
             reservedStock,
-            availableStock,
+            availableStack,
             reorderPoint,
             reorderQuantity,
             maxStock: reorderQuantity * 3,
             costPrice,
-            lastCostPrice: costPrice * (0.9 + Math.random() * 0.2),
+            lastCostPrice: costPrice ? costPrice * (0.9 + Math.random() * 0.2) : null,
             lastRestocked,
             lastSold
           }
