@@ -1,0 +1,7 @@
+{
+  "$schema": "https://openapi.vercel.sh/vercel.json",
+  "buildCommand": "cd vision-pos && npx prisma generate && npm run build",
+  "installCommand": "cd vision-pos && npm install",
+  "framework": "nextjs",
+  "outputDirectory": "vision-pos/.next"
+}
