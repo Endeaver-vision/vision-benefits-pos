@@ -5,7 +5,7 @@ import { authOptions } from '@/app/api/auth/[...nextauth]/route'
 
 export async function GET(
   request: NextRequest,
-  { params }: { params: { id: string } }
+  { params }: { params: Promise<{ id: string }> }
 ) {
   try {
     const session = await getServerSession(authOptions)
@@ -13,8 +13,9 @@ export async function GET(
       return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
     }
 
+    const { id } = await params
     const inventory = await prisma.inventory.findUnique({
-      where: { id: params.id },
+      where: { id },
       include: {
         product: {
           include: {
@@ -64,9 +65,10 @@ export async function GET(
 
 export async function PATCH(
   request: NextRequest,
-  { params }: { params: { id: string } }
+  { params }: { params: Promise<{ id: string }> }
 ) {
   try {
+    const { id } = await params
     const session = await getServerSession(authOptions)
     if (!session) {
       return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
@@ -89,7 +91,7 @@ export async function PATCH(
 
     // Get current inventory
     const currentInventory = await prisma.inventory.findUnique({
-      where: { id: params.id }
+      where: { id }
     })
 
     if (!currentInventory) {
@@ -103,7 +105,7 @@ export async function PATCH(
 
     // Update inventory
     const updatedInventory = await prisma.inventory.update({
-      where: { id: params.id },
+      where: { id },
       data: {
         ...(currentStock !== undefined && {
           currentStock,
@@ -131,7 +133,7 @@ export async function PATCH(
     if (stockDifference !== 0) {
       await prisma.inventoryMovement.create({
         data: {
-          inventoryId: params.id,
+          inventoryId: id,
           type: stockDifference > 0 ? 'ADJUSTMENT' : 'ADJUSTMENT',
           quantity: stockDifference,
           reason: reason || (stockDifference > 0 ? 'Stock increase adjustment' : 'Stock decrease adjustment'),
@@ -156,9 +158,10 @@ export async function PATCH(
 
 export async function DELETE(
   request: NextRequest,
-  { params }: { params: { id: string } }
+  { params }: { params: Promise<{ id: string }> }
 ) {
   try {
+    const { id } = await params
     const session = await getServerSession(authOptions)
     if (!session) {
       return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
@@ -171,7 +174,7 @@ export async function DELETE(
 
     // Check if inventory exists and has no reserved stock
     const inventory = await prisma.inventory.findUnique({
-      where: { id: params.id }
+      where: { id }
     })
 
     if (!inventory) {
@@ -187,11 +190,11 @@ export async function DELETE(
 
     // Delete all movements first, then inventory
     await prisma.inventoryMovement.deleteMany({
-      where: { inventoryId: params.id }
+      where: { inventoryId: id }
     })
 
     await prisma.inventory.delete({
-      where: { id: params.id }
+      where: { id }
     })
 
     return NextResponse.json({ message: 'Inventory item deleted successfully' })

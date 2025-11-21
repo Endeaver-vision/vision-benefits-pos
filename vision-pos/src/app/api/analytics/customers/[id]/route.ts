@@ -2,14 +2,14 @@ import { NextRequest, NextResponse } from 'next/server';
 import { prisma } from '@/lib/prisma';
 
 interface Props {
-  params: {
+  params: Promise<{
     id: string;
-  };
+  }>;
 }
 
 export async function GET(request: NextRequest, { params }: Props) {
   try {
-    const { id } = params;
+    const { id } = await params;
 
     // Get customer with all transactions and related data
     const customer = await prisma.customer.findUnique({

@@ -3,10 +3,10 @@ import { AutomationTrigger } from '@/types/communication'
 
 export async function PATCH(
   request: NextRequest,
-  { params }: { params: { id: string } }
+  { params }: { params: Promise<{ id: string }> }
 ) {
   try {
-    const { id } = params
+    const { id } = await params
     const updates = await request.json()
 
     // In a real implementation, this would update the trigger in the database
@@ -36,10 +36,10 @@ export async function PATCH(
 
 export async function GET(
   request: NextRequest,
-  { params }: { params: { id: string } }
+  { params }: { params: Promise<{ id: string }> }
 ) {
   try {
-    const { id } = params
+    const { id } = await params
 
     // Mock trigger data - in a real app, this would come from a database
     const trigger: AutomationTrigger = {

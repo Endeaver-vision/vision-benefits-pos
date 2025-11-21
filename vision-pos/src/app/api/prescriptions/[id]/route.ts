@@ -26,10 +26,10 @@ function validatePrescription(prescription: PrescriptionDetails): { isValid: boo
 
 export async function GET(
   request: NextRequest,
-  { params }: { params: { id: string } }
+  { params }: { params: Promise<{ id: string }> }
 ) {
   try {
-    const { id } = params
+    const { id } = await params
     
     // In a real implementation, this would query the database
     // For now, return a mock prescription
@@ -88,8 +88,9 @@ export async function GET(
 
 export async function PUT(
   request: NextRequest,
-  { params }: { params: { id: string } }
+  { params }: { params: Promise<{ id: string }> }
 ) {
+  const { id } = await params
   try {
     const { id } = params
     const updateData = await request.json()
