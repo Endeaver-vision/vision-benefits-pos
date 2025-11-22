@@ -5,7 +5,7 @@ import { useRouter } from 'next/navigation'
 import { useEffect } from 'react'
 import { Button } from '@/components/ui/button'
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
-import { Loader2, LogOut, Store, Users, Package, DollarSign } from 'lucide-react'
+import { Loader2, LogOut, Store, Users, Package, DollarSign, Tag } from 'lucide-react'
 import StockAlerts from '@/components/stock-alerts'
 
 export default function DashboardPage() {
@@ -141,6 +141,18 @@ export default function DashboardPage() {
                   <p className="text-sm text-gray-600 mb-4">Search for existing customer records</p>
                   <Button variant="outline" className="w-full" asChild>
                     <a href="/customers">Search Customers</a>
+                  </Button>
+                </CardContent>
+              </Card>
+
+              <Card className="cursor-pointer hover:shadow-md transition-shadow">
+                <CardHeader>
+                  <CardTitle className="text-lg">Product Catalog</CardTitle>
+                </CardHeader>
+                <CardContent>
+                  <p className="text-sm text-gray-600 mb-4">View prices and insurance tiers</p>
+                  <Button variant="outline" className="w-full" asChild>
+                    <a href="/products">View Products</a>
                   </Button>
                 </CardContent>
               </Card>
