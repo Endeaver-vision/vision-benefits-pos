@@ -72,6 +72,15 @@ quote = quote_order(request)
 print(quote)
 ```
 
+## CLI usage
+- From repo root: `python -m pricing_engine.cli --request-file my_request.json --pretty`
+- Or inline JSON: `python -m pricing_engine.cli --request-json '{"customer": {...}, "plan": {...}, "cart": [...]}' --pretty`
+
+## HTTP dev server
+- Start: `python -m pricing_engine.server` (listens on `0.0.0.0:8000`)
+- Health check: `curl http://localhost:8000/health`
+- Quote: `curl -X POST http://localhost:8000/quote -H 'Content-Type: application/json' -d @my_request.json`
+
 ## Notes
 - This module reuses the existing provider rule engines in `rules_lib/`.
 - Enhancements in the cart should be passed as an array; the engine sets the flags expected by provider rules.
