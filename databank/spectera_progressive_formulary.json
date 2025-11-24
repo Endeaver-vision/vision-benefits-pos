@@ -1,0 +1,282 @@
+[
+  {
+    "product_id": "essilor_natural_digital",
+    "brand": "Essilor",
+    "product_name": "Natural® Digital",
+    "tier": "I",
+    "is_digital": true,
+    "is_ray_ban": false,
+    "is_short": false,
+    "design_type": "Standard"
+  },
+  {
+    "product_id": "essilor_ideal",
+    "brand": "Essilor",
+    "product_name": "Ideal™",
+    "tier": "I",
+    "is_digital": false,
+    "is_ray_ban": false,
+    "is_short": false,
+    "design_type": "Standard"
+  },
+  {
+    "product_id": "essilor_adaptar",
+    "brand": "Essilor",
+    "product_name": "Adaptar®",
+    "tier": "I",
+    "is_digital": false,
+    "is_ray_ban": false,
+    "is_short": false,
+    "design_type": "Standard"
+  },
+  {
+    "product_id": "hoya_select_13",
+    "brand": "HOYA",
+    "product_name": "Select 13",
+    "tier": "I",
+    "is_digital": false,
+    "is_ray_ban": false,
+    "is_short": false,
+    "design_type": "Standard"
+  },
+  {
+    "product_id": "kodak_easy_14",
+    "brand": "KODAK",
+    "product_name": "Easy 14",
+    "tier": "I",
+    "is_digital": false,
+    "is_ray_ban": false,
+    "is_short": false,
+    "design_type": "Standard"
+  },
+  {
+    "product_id": "shamir_element",
+    "brand": "Shamir",
+    "product_name": "Element™",
+    "tier": "I",
+    "is_digital": false,
+    "is_ray_ban": false,
+    "is_short": false,
+    "design_type": "Standard"
+  },
+  {
+    "product_id": "varilux_comfort",
+    "brand": "Essilor",
+    "product_name": "Varilux Comfort®",
+    "tier": "II",
+    "is_digital": false,
+    "is_ray_ban": false,
+    "is_short": false,
+    "design_type": "Standard"
+  },
+  {
+    "product_id": "varilux_comfort_short",
+    "brand": "Essilor",
+    "product_name": "Varilux Comfort Short™",
+    "tier": "II",
+    "is_digital": false,
+    "is_ray_ban": false,
+    "is_short": true,
+    "design_type": "Standard"
+  },
+  {
+    "product_id": "hoya_amplitude_bks",
+    "brand": "HOYA",
+    "product_name": "Amplitude® BKS™",
+    "tier": "II",
+    "is_digital": false,
+    "is_ray_ban": false,
+    "is_short": false,
+    "design_type": "Standard"
+  },
+  {
+    "product_id": "shamir_autograph_ii_office",
+    "brand": "Shamir",
+    "product_name": "Autograph II Office™",
+    "tier": "II",
+    "is_digital": false,
+    "is_ray_ban": false,
+    "is_short": false,
+    "design_type": "Occupational"
+  },
+  {
+    "product_id": "kodak_precise_plus",
+    "brand": "KODAK",
+    "product_name": "Precise Plus",
+    "tier": "II",
+    "is_digital": false,
+    "is_ray_ban": false,
+    "is_short": false,
+    "design_type": "Standard"
+  },
+  {
+    "product_id": "varilux_comfort_max",
+    "brand": "Essilor",
+    "product_name": "Varilux Comfort Max",
+    "tier": "III",
+    "is_digital": false,
+    "is_ray_ban": false,
+    "is_short": false,
+    "design_type": "Standard"
+  },
+  {
+    "product_id": "varilux_physio_drx",
+    "brand": "Essilor",
+    "product_name": "Varilux Physio DRx™",
+    "tier": "III",
+    "is_digital": true,
+    "is_ray_ban": false,
+    "is_short": false,
+    "design_type": "Standard"
+  },
+  {
+    "product_id": "hoya_amplitude_hd3",
+    "brand": "HOYA",
+    "product_name": "Amplitude HD3",
+    "tier": "III",
+    "is_digital": true,
+    "is_ray_ban": false,
+    "is_short": false,
+    "design_type": "Standard"
+  },
+  {
+    "product_id": "shamir_autograph_ii_plus",
+    "brand": "Shamir",
+    "product_name": "Autograph II+",
+    "tier": "III",
+    "is_digital": false,
+    "is_ray_ban": false,
+    "is_short": false,
+    "design_type": "Standard"
+  },
+  {
+    "product_id": "kodak_unique",
+    "brand": "KODAK",
+    "product_name": "Unique™",
+    "tier": "III",
+    "is_digital": false,
+    "is_ray_ban": false,
+    "is_short": false,
+    "design_type": "Standard"
+  },
+  {
+    "product_id": "varilux_w3_plus",
+    "brand": "Essilor",
+    "product_name": "Varilux W3+",
+    "tier": "IV",
+    "is_digital": false,
+    "is_ray_ban": false,
+    "is_short": false,
+    "design_type": "Standard"
+  },
+  {
+    "product_id": "varilux_physio_extensee",
+    "brand": "Essilor",
+    "product_name": "Varilux Physio extensee™",
+    "tier": "IV",
+    "is_digital": false,
+    "is_ray_ban": false,
+    "is_short": false,
+    "design_type": "Standard"
+  },
+  {
+    "product_id": "rayban_varilux_sun_xtra",
+    "brand": "Essilor",
+    "product_name": "Ray-Ban Varilux Sun-Xtra™",
+    "tier": "IV",
+    "is_digital": false,
+    "is_ray_ban": true,
+    "is_short": false,
+    "design_type": "Sun"
+  },
+  {
+    "product_id": "hoya_id_lifestyle_3",
+    "brand": "HOYA",
+    "product_name": "iD Lifestyle 3",
+    "tier": "IV",
+    "is_digital": true,
+    "is_ray_ban": false,
+    "is_short": false,
+    "design_type": "Lifestyle"
+  },
+  {
+    "product_id": "shamir_autograph_iii",
+    "brand": "Shamir",
+    "product_name": "Autograph III",
+    "tier": "IV",
+    "is_digital": false,
+    "is_ray_ban": false,
+    "is_short": false,
+    "design_type": "Standard"
+  },
+  {
+    "product_id": "kodak_unique_dro_hd",
+    "brand": "KODAK",
+    "product_name": "Unique DRO HD",
+    "tier": "IV",
+    "is_digital": true,
+    "is_ray_ban": false,
+    "is_short": false,
+    "design_type": "Standard"
+  },
+  {
+    "product_id": "varilux_x_design",
+    "brand": "Essilor",
+    "product_name": "Varilux X Design",
+    "tier": "V",
+    "is_digital": true,
+    "is_ray_ban": false,
+    "is_short": false,
+    "design_type": "Premium"
+  },
+  {
+    "product_id": "varilux_x_4d",
+    "brand": "Essilor",
+    "product_name": "Varilux X 4D",
+    "tier": "V",
+    "is_digital": true,
+    "is_ray_ban": false,
+    "is_short": false,
+    "design_type": "Premium"
+  },
+  {
+    "product_id": "varilux_x_fit",
+    "brand": "Essilor",
+    "product_name": "Varilux X Fit",
+    "tier": "V",
+    "is_digital": true,
+    "is_ray_ban": false,
+    "is_short": false,
+    "design_type": "Premium"
+  },
+  {
+    "product_id": "varilux_xr_design",
+    "brand": "Essilor",
+    "product_name": "Varilux XR Design",
+    "tier": "V",
+    "is_digital": true,
+    "is_ray_ban": false,
+    "is_short": false,
+    "design_type": "Premium"
+  },
+  {
+    "product_id": "hoya_id_mystyle_2",
+    "brand": "HOYA",
+    "product_name": "iD MyStyle 2",
+    "tier": "V",
+    "is_digital": true,
+    "is_ray_ban": false,
+    "is_short": false,
+    "design_type": "Personalized"
+  },
+  {
+    "product_id": "kodak_unique_infinite_hd",
+    "brand": "KODAK",
+    "product_name": "Unique Infinite HD",
+    "tier": "V",
+    "is_digital": true,
+    "is_ray_ban": false,
+    "is_short": false,
+    "design_type": "Premium"
+  }
+]

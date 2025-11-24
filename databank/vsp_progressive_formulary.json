@@ -1,0 +1,202 @@
+[
+  {
+    "product_id": "varilux-x-fit",
+    "brand": "Essilor",
+    "product_name": "Varilux X Fit Technology",
+    "tier": "N",
+    "tier_name": "Custom Level 2",
+    "is_customizable": true,
+    "base_code": "NA",
+    "design_type": "Custom Progressive"
+  },
+  {
+    "product_id": "varilux-x-design",
+    "brand": "Essilor",
+    "product_name": "Varilux X Design Technology",
+    "tier": "O",
+    "tier_name": "Custom Level 1",
+    "is_customizable": false,
+    "base_code": "OA",
+    "design_type": "Custom Progressive"
+  },
+  {
+    "product_id": "varilux-comfort-max",
+    "brand": "Essilor",
+    "product_name": "Varilux Comfort Max",
+    "tier": "F",
+    "tier_name": "Premium Advanced",
+    "is_customizable": false,
+    "base_code": "FA",
+    "design_type": "Premium Progressive"
+  },
+  {
+    "product_id": "varilux-comfort-2",
+    "brand": "Essilor",
+    "product_name": "Varilux Comfort 2",
+    "tier": "J",
+    "tier_name": "Premium Standard",
+    "is_customizable": false,
+    "base_code": "JA",
+    "design_type": "Premium Progressive"
+  },
+  {
+    "product_id": "ethos",
+    "brand": "Plexus",
+    "product_name": "Ethos",
+    "tier": "K",
+    "tier_name": "Standard",
+    "is_customizable": false,
+    "base_code": "KA",
+    "design_type": "Standard Progressive"
+  },
+  {
+    "product_id": "ethos-plus",
+    "brand": "Plexus",
+    "product_name": "Ethos Plus",
+    "tier": "J",
+    "tier_name": "Premium Standard",
+    "is_customizable": false,
+    "base_code": "JA",
+    "design_type": "Premium Progressive"
+  },
+  {
+    "product_id": "unity-via-elite-ii",
+    "brand": "Plexus",
+    "product_name": "Unity Via Elite II",
+    "tier": "N",
+    "tier_name": "Custom Level 2",
+    "is_customizable": true,
+    "base_code": "NA",
+    "design_type": "Custom Progressive"
+  },
+  {
+    "product_id": "unity-via-plus-ii",
+    "brand": "Plexus",
+    "product_name": "Unity Via Plus II",
+    "tier": "O",
+    "tier_name": "Custom Level 1",
+    "is_customizable": true,
+    "base_code": "OA",
+    "design_type": "Custom Progressive"
+  },
+  {
+    "product_id": "unity-via-ii",
+    "brand": "Plexus",
+    "product_name": "Unity Via II",
+    "tier": "F",
+    "tier_name": "Premium Advanced",
+    "is_customizable": false,
+    "base_code": "FA",
+    "design_type": "Premium Progressive"
+  },
+  {
+    "product_id": "zeiss-smartlife-individual",
+    "brand": "ZEISS",
+    "product_name": "ZEISS SmartLife Individual",
+    "tier": "N",
+    "tier_name": "Custom Level 2",
+    "is_customizable": true,
+    "base_code": "NA",
+    "design_type": "Custom Progressive"
+  },
+  {
+    "product_id": "zeiss-smartlife-superb",
+    "brand": "ZEISS",
+    "product_name": "ZEISS SmartLife Superb",
+    "tier": "O",
+    "tier_name": "Custom Level 1",
+    "is_customizable": true,
+    "base_code": "OA",
+    "design_type": "Custom Progressive"
+  },
+  {
+    "product_id": "shamir-autograph-intelligence",
+    "brand": "Shamir",
+    "product_name": "Shamir Autograph Intelligence",
+    "tier": "N",
+    "tier_name": "Custom Level 2",
+    "is_customizable": true,
+    "base_code": "NA",
+    "design_type": "Custom Progressive"
+  },
+  {
+    "product_id": "shamir-autograph-ii-plus",
+    "brand": "Shamir",
+    "product_name": "Shamir Autograph II+",
+    "tier": "O",
+    "tier_name": "Custom Level 1",
+    "is_customizable": true,
+    "base_code": "OA",
+    "design_type": "Custom Progressive"
+  },
+  {
+    "product_id": "shamir-spectrum-plus",
+    "brand": "Shamir",
+    "product_name": "Shamir Spectrum+",
+    "tier": "F",
+    "tier_name": "Premium Advanced",
+    "is_customizable": false,
+    "base_code": "FA",
+    "design_type": "Premium Progressive"
+  },
+  {
+    "product_id": "shamir-element",
+    "brand": "Shamir",
+    "product_name": "Shamir Element",
+    "tier": "J",
+    "tier_name": "Premium Standard",
+    "is_customizable": false,
+    "base_code": "JA",
+    "design_type": "Premium Progressive"
+  },
+  {
+    "product_id": "shamir-genesis-hd",
+    "brand": "Shamir",
+    "product_name": "Shamir Genesis HD",
+    "tier": "K",
+    "tier_name": "Standard",
+    "is_customizable": false,
+    "base_code": "KA",
+    "design_type": "Standard Progressive"
+  },
+  {
+    "product_id": "hoya-idmystyle-3",
+    "brand": "Hoya",
+    "product_name": "Hoyalux iDMyStyle 3",
+    "tier": "N",
+    "tier_name": "Custom Level 2",
+    "is_customizable": true,
+    "base_code": "NA",
+    "design_type": "Custom Progressive"
+  },
+  {
+    "product_id": "hoya-array",
+    "brand": "Hoya",
+    "product_name": "Hoya Array",
+    "tier": "F",
+    "tier_name": "Premium Advanced",
+    "is_customizable": false,
+    "base_code": "FA",
+    "design_type": "Premium Progressive"
+  },
+  {
+    "product_id": "kodak-unique-dro",
+    "brand": "Kodak",
+    "product_name": "Kodak Unique DRO",
+    "tier": "O",
+    "tier_name": "Custom Level 1",
+    "is_customizable": false,
+    "base_code": "OA",
+    "design_type": "Custom Progressive"
+  },
+  {
+    "product_id": "kodak-precise",
+    "brand": "Kodak",
+    "product_name": "Kodak Precise",
+    "tier": "J",
+    "tier_name": "Premium Standard",
+    "is_customizable": false,
+    "base_code": "JA",
+    "design_type": "Premium Progressive"
+  }
+]

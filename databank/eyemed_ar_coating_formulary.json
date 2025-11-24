@@ -1,0 +1,290 @@
+[
+  {
+    "product_id": "standard_ar",
+    "brand": "Generic",
+    "product_name": "Standard AR",
+    "tier": "standard",
+    "has_blue_light": false,
+    "is_backside_only": false,
+    "is_sun_specific": false
+  },
+  {
+    "product_id": "backside_ar",
+    "brand": "Generic",
+    "product_name": "Backside AR",
+    "tier": "standard",
+    "has_blue_light": false,
+    "is_backside_only": true,
+    "is_sun_specific": false
+  },
+  {
+    "product_id": "standard_backside_ar",
+    "brand": "Generic",
+    "product_name": "Standard Backside AR",
+    "tier": "standard",
+    "has_blue_light": false,
+    "is_backside_only": true,
+    "is_sun_specific": false
+  },
+  {
+    "product_id": "anti_reflective_ar",
+    "brand": "Generic",
+    "product_name": "Anti-Reflective AR",
+    "tier": "tier_1",
+    "has_blue_light": false,
+    "is_backside_only": false,
+    "is_sun_specific": false
+  },
+  {
+    "product_id": "blue_shield_ar",
+    "brand": "Generic",
+    "product_name": "Blue Shield AR",
+    "tier": "tier_1",
+    "has_blue_light": true,
+    "is_backside_only": false,
+    "is_sun_specific": false
+  },
+  {
+    "product_id": "clean_shield_ar",
+    "brand": "Generic",
+    "product_name": "Clean Shield AR",
+    "tier": "tier_1",
+    "has_blue_light": false,
+    "is_backside_only": false,
+    "is_sun_specific": false
+  },
+  {
+    "product_id": "costa_standard_ar",
+    "brand": "Costa",
+    "product_name": "Costa Standard AR",
+    "tier": "tier_1",
+    "has_blue_light": false,
+    "is_backside_only": false,
+    "is_sun_specific": false
+  },
+  {
+    "product_id": "crizal_kids_uv",
+    "brand": "Essilor",
+    "product_name": "Crizal Kids UV™",
+    "tier": "tier_1",
+    "has_blue_light": false,
+    "is_backside_only": false,
+    "is_sun_specific": false
+  },
+  {
+    "product_id": "hoya_premium_coating",
+    "brand": "HOYA",
+    "product_name": "Hoya Premium Coating",
+    "tier": "tier_1",
+    "has_blue_light": false,
+    "is_backside_only": false,
+    "is_sun_specific": false
+  },
+  {
+    "product_id": "oakley_standard_ar",
+    "brand": "Oakley",
+    "product_name": "Oakley® Standard AR",
+    "tier": "tier_1",
+    "has_blue_light": false,
+    "is_backside_only": false,
+    "is_sun_specific": false
+  },
+  {
+    "product_id": "rayban_ar_classic",
+    "brand": "Ray-Ban",
+    "product_name": "Ray-Ban® AR Classic",
+    "tier": "tier_1",
+    "has_blue_light": false,
+    "is_backside_only": false,
+    "is_sun_specific": false
+  },
+  {
+    "product_id": "rayban_ar_sun_classic",
+    "brand": "Ray-Ban",
+    "product_name": "Ray-Ban® AR Sun Classic",
+    "tier": "tier_1",
+    "has_blue_light": false,
+    "is_backside_only": false,
+    "is_sun_specific": true
+  },
+  {
+    "product_id": "zeiss_super_et",
+    "brand": "ZEISS",
+    "product_name": "ZEISS Super ET",
+    "tier": "tier_1",
+    "has_blue_light": false,
+    "is_backside_only": false,
+    "is_sun_specific": false
+  },
+  {
+    "product_id": "bluecrystal",
+    "brand": "Generic",
+    "product_name": "BluCrystal",
+    "tier": "tier_2",
+    "has_blue_light": true,
+    "is_backside_only": false,
+    "is_sun_specific": false
+  },
+  {
+    "product_id": "crizal_easy_new",
+    "brand": "Essilor",
+    "product_name": "Crizal Easy New",
+    "tier": "tier_2",
+    "has_blue_light": false,
+    "is_backside_only": false,
+    "is_sun_specific": false
+  },
+  {
+    "product_id": "crizal_prevencia_kids",
+    "brand": "Essilor",
+    "product_name": "Crizal® Prevencia® Kids",
+    "tier": "tier_2",
+    "has_blue_light": true,
+    "is_backside_only": false,
+    "is_sun_specific": false
+  },
+  {
+    "product_id": "hi_vision",
+    "brand": "HOYA",
+    "product_name": "Hi Vision",
+    "tier": "tier_2",
+    "has_blue_light": false,
+    "is_backside_only": false,
+    "is_sun_specific": false
+  },
+  {
+    "product_id": "hoya_premium_viewprotect",
+    "brand": "HOYA",
+    "product_name": "Hoya Premium w/ ViewProtect",
+    "tier": "tier_2",
+    "has_blue_light": true,
+    "is_backside_only": false,
+    "is_sun_specific": false
+  },
+  {
+    "product_id": "oakley_plus_ar",
+    "brand": "Oakley",
+    "product_name": "Oakley® Plus AR",
+    "tier": "tier_2",
+    "has_blue_light": false,
+    "is_backside_only": false,
+    "is_sun_specific": false
+  },
+  {
+    "product_id": "rayban_ar_plus",
+    "brand": "Ray-Ban",
+    "product_name": "Ray-Ban® AR Plus",
+    "tier": "tier_2",
+    "has_blue_light": true,
+    "is_backside_only": false,
+    "is_sun_specific": false
+  },
+  {
+    "product_id": "zeiss_duravision_blueprotect",
+    "brand": "ZEISS",
+    "product_name": "ZEISS DuraVision BlueProtect",
+    "tier": "tier_2",
+    "has_blue_light": true,
+    "is_backside_only": false,
+    "is_sun_specific": false
+  },
+  {
+    "product_id": "crizal_avance_uv",
+    "brand": "Essilor",
+    "product_name": "Crizal Avancé UV",
+    "tier": "tier_3",
+    "has_blue_light": false,
+    "is_backside_only": false,
+    "is_sun_specific": false
+  },
+  {
+    "product_id": "crizal_easy_uv",
+    "brand": "Essilor",
+    "product_name": "Crizal Easy UV",
+    "tier": "tier_3",
+    "has_blue_light": false,
+    "is_backside_only": false,
+    "is_sun_specific": false
+  },
+  {
+    "product_id": "crizal_prevencia",
+    "brand": "Essilor",
+    "product_name": "Crizal® Prevencia®",
+    "tier": "tier_3",
+    "has_blue_light": true,
+    "is_backside_only": false,
+    "is_sun_specific": false
+  },
+  {
+    "product_id": "crizal_rock",
+    "brand": "Essilor",
+    "product_name": "Crizal Rock",
+    "tier": "tier_3",
+    "has_blue_light": false,
+    "is_backside_only": false,
+    "is_sun_specific": false
+  },
+  {
+    "product_id": "crizal_sapphire_360",
+    "brand": "Essilor",
+    "product_name": "Crizal Sapphire 360°",
+    "tier": "tier_3",
+    "has_blue_light": false,
+    "is_backside_only": false,
+    "is_sun_specific": false
+  },
+  {
+    "product_id": "crizal_sapphire_hr",
+    "brand": "Essilor",
+    "product_name": "Crizal Sapphire HR",
+    "tier": "tier_3",
+    "has_blue_light": false,
+    "is_backside_only": false,
+    "is_sun_specific": false
+  },
+  {
+    "product_id": "hoya_recharge",
+    "brand": "HOYA",
+    "product_name": "Hoya Recharge",
+    "tier": "tier_3",
+    "has_blue_light": true,
+    "is_backside_only": false,
+    "is_sun_specific": false
+  },
+  {
+    "product_id": "hoya_recharge_eyex",
+    "brand": "HOYA",
+    "product_name": "Hoya Recharge EX3",
+    "tier": "tier_3",
+    "has_blue_light": true,
+    "is_backside_only": false,
+    "is_sun_specific": false
+  },
+  {
+    "product_id": "oakley_prizm_ar",
+    "brand": "Oakley",
+    "product_name": "Oakley® Prizm AR",
+    "tier": "tier_3",
+    "has_blue_light": false,
+    "is_backside_only": false,
+    "is_sun_specific": false
+  },
+  {
+    "product_id": "rayban_ar_premium",
+    "brand": "Ray-Ban",
+    "product_name": "Ray-Ban® AR Premium",
+    "tier": "tier_3",
+    "has_blue_light": true,
+    "is_backside_only": false,
+    "is_sun_specific": false
+  },
+  {
+    "product_id": "zeiss_duravision_platinum",
+    "brand": "ZEISS",
+    "product_name": "ZEISS DuraVision Platinum",
+    "tier": "tier_3",
+    "has_blue_light": true,
+    "is_backside_only": false,
+    "is_sun_specific": false
+  }
+]

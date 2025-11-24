@@ -1,0 +1,262 @@
+[
+  {
+    "product_id": "essilor_endura",
+    "brand": "Essilor",
+    "product_name": "Endura™",
+    "tier": "I",
+    "has_blue_light": false,
+    "has_mirror_option": false,
+    "has_uv_backside": false,
+    "is_ray_ban": false
+  },
+  {
+    "product_id": "essilor_reflection_free",
+    "brand": "Essilor",
+    "product_name": "Reflection Free",
+    "tier": "I",
+    "has_blue_light": false,
+    "has_mirror_option": false,
+    "has_uv_backside": false,
+    "is_ray_ban": false
+  },
+  {
+    "product_id": "essilor_sharpview_plus",
+    "brand": "Essilor",
+    "product_name": "Sharpview+™",
+    "tier": "I",
+    "has_blue_light": false,
+    "has_mirror_option": false,
+    "has_uv_backside": false,
+    "is_ray_ban": false
+  },
+  {
+    "product_id": "rayban_sun_uv_ar2",
+    "brand": "Essilor",
+    "product_name": "Ray-Ban® Sun UV AR²",
+    "tier": "I",
+    "has_blue_light": false,
+    "has_mirror_option": false,
+    "has_uv_backside": true,
+    "is_ray_ban": true
+  },
+  {
+    "product_id": "crizal_easy",
+    "brand": "Essilor",
+    "product_name": "Crizal® Easy™",
+    "tier": "II",
+    "has_blue_light": false,
+    "has_mirror_option": false,
+    "has_uv_backside": false,
+    "is_ray_ban": false
+  },
+  {
+    "product_id": "essilor_endura_ez",
+    "brand": "Essilor",
+    "product_name": "Endura™ EZ",
+    "tier": "II",
+    "has_blue_light": false,
+    "has_mirror_option": false,
+    "has_uv_backside": false,
+    "is_ray_ban": false
+  },
+  {
+    "product_id": "hoya_hivision",
+    "brand": "HOYA",
+    "product_name": "HiVision™",
+    "tier": "II",
+    "has_blue_light": false,
+    "has_mirror_option": false,
+    "has_uv_backside": false,
+    "is_ray_ban": false
+  },
+  {
+    "product_id": "hoya_premium",
+    "brand": "HOYA",
+    "product_name": "Premium",
+    "tier": "II",
+    "has_blue_light": false,
+    "has_mirror_option": false,
+    "has_uv_backside": false,
+    "is_ray_ban": false
+  },
+  {
+    "product_id": "shamir_glacier_basic",
+    "brand": "Shamir",
+    "product_name": "Glacier Basic",
+    "tier": "II",
+    "has_blue_light": false,
+    "has_mirror_option": false,
+    "has_uv_backside": false,
+    "is_ray_ban": false
+  },
+  {
+    "product_id": "kodak_clear",
+    "brand": "KODAK",
+    "product_name": "CleAR",
+    "tier": "II",
+    "has_blue_light": false,
+    "has_mirror_option": false,
+    "has_uv_backside": false,
+    "is_ray_ban": false
+  },
+  {
+    "product_id": "essilor_anti_fog_ar",
+    "brand": "Essilor",
+    "product_name": "Anti-Fog AR",
+    "tier": "III",
+    "has_blue_light": false,
+    "has_mirror_option": false,
+    "has_uv_backside": false,
+    "is_ray_ban": false
+  },
+  {
+    "product_id": "crizal_easy_pro",
+    "brand": "Essilor",
+    "product_name": "Crizal® Easy PRO",
+    "tier": "III",
+    "has_blue_light": false,
+    "has_mirror_option": false,
+    "has_uv_backside": false,
+    "is_ray_ban": false
+  },
+  {
+    "product_id": "xperio_uv",
+    "brand": "Essilor",
+    "product_name": "Xperio UV™",
+    "tier": "III",
+    "has_blue_light": false,
+    "has_mirror_option": true,
+    "has_uv_backside": false,
+    "is_ray_ban": false
+  },
+  {
+    "product_id": "hoya_hivision_viewprotect",
+    "brand": "HOYA",
+    "product_name": "HiVision w/ViewProtect®",
+    "tier": "III",
+    "has_blue_light": false,
+    "has_mirror_option": false,
+    "has_uv_backside": false,
+    "is_ray_ban": false
+  },
+  {
+    "product_id": "shamir_glacier_plus",
+    "brand": "Shamir",
+    "product_name": "Glacier PLUS®",
+    "tier": "III",
+    "has_blue_light": false,
+    "has_mirror_option": false,
+    "has_uv_backside": false,
+    "is_ray_ban": false
+  },
+  {
+    "product_id": "crizal_prevencia_3",
+    "brand": "Essilor",
+    "product_name": "Crizal® Prevencia® 3",
+    "tier": "IV",
+    "has_blue_light": true,
+    "has_mirror_option": false,
+    "has_uv_backside": false,
+    "is_ray_ban": false
+  },
+  {
+    "product_id": "crizal_rock",
+    "brand": "Essilor",
+    "product_name": "Crizal® Rock™",
+    "tier": "IV",
+    "has_blue_light": false,
+    "has_mirror_option": false,
+    "has_uv_backside": false,
+    "is_ray_ban": false
+  },
+  {
+    "product_id": "crizal_sapphire_hr",
+    "brand": "Essilor",
+    "product_name": "Crizal® Sapphire™ HR",
+    "tier": "IV",
+    "has_blue_light": false,
+    "has_mirror_option": false,
+    "has_uv_backside": false,
+    "is_ray_ban": false
+  },
+  {
+    "product_id": "crizal_sunshield_uv",
+    "brand": "Essilor",
+    "product_name": "Crizal® Sunshield UV",
+    "tier": "IV",
+    "has_blue_light": false,
+    "has_mirror_option": true,
+    "has_uv_backside": false,
+    "is_ray_ban": false
+  },
+  {
+    "product_id": "rayban_crizal_rock_2",
+    "brand": "Essilor",
+    "product_name": "Ray-Ban® Crizal® Rock™ 2",
+    "tier": "IV",
+    "has_blue_light": false,
+    "has_mirror_option": false,
+    "has_uv_backside": false,
+    "is_ray_ban": true
+  },
+  {
+    "product_id": "rayban_crizal_sapphire_360",
+    "brand": "Essilor",
+    "product_name": "Ray-Ban® Crizal Sapphire® 360˚ UV 2",
+    "tier": "IV",
+    "has_blue_light": false,
+    "has_mirror_option": false,
+    "has_uv_backside": true,
+    "is_ray_ban": true
+  },
+  {
+    "product_id": "hoya_recharge_3",
+    "brand": "HOYA",
+    "product_name": "Recharge™ 3",
+    "tier": "IV",
+    "has_blue_light": true,
+    "has_mirror_option": false,
+    "has_uv_backside": false,
+    "is_ray_ban": false
+  },
+  {
+    "product_id": "hoya_super_hivision",
+    "brand": "HOYA",
+    "product_name": "Super HiVision™",
+    "tier": "IV",
+    "has_blue_light": false,
+    "has_mirror_option": false,
+    "has_uv_backside": false,
+    "is_ray_ban": false
+  },
+  {
+    "product_id": "hoya_ex3",
+    "brand": "HOYA",
+    "product_name": "EX3®",
+    "tier": "IV",
+    "has_blue_light": false,
+    "has_mirror_option": false,
+    "has_uv_backside": false,
+    "is_ray_ban": false
+  },
+  {
+    "product_id": "shamir_glacier_expression",
+    "brand": "Shamir",
+    "product_name": "Glacier Expression™",
+    "tier": "IV",
+    "has_blue_light": false,
+    "has_mirror_option": false,
+    "has_uv_backside": false,
+    "is_ray_ban": false
+  },
+  {
+    "product_id": "kodak_total_clear",
+    "brand": "KODAK",
+    "product_name": "TotalCleAR™",
+    "tier": "IV",
+    "has_blue_light": false,
+    "has_mirror_option": false,
+    "has_uv_backside": false,
+    "is_ray_ban": false
+  }
+]

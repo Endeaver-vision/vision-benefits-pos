@@ -1,0 +1,52 @@
+[
+  {
+    "product_id": "crizal-rock",
+    "brand": "Essilor",
+    "product_name": "Crizal Rock",
+    "vsp_tier": "D",
+    "tier_name": "Premium Plus",
+    "code": "QV",
+    "has_blue_light": true,
+    "warranty_years": 2
+  },
+  {
+    "product_id": "crizal-sapphire-360",
+    "brand": "Essilor",
+    "product_name": "Crizal Sapphire 360",
+    "vsp_tier": "D",
+    "tier_name": "Premium Plus",
+    "code": "QV",
+    "has_blue_light": true,
+    "warranty_years": 2
+  },
+  {
+    "product_id": "crizal-prevencia",
+    "brand": "Essilor",
+    "product_name": "Crizal Prevencia",
+    "vsp_tier": "C",
+    "tier_name": "Premium",
+    "code": "QT",
+    "has_blue_light": true,
+    "warranty_years": 1
+  },
+  {
+    "product_id": "crizal-easy-pro",
+    "brand": "Essilor",
+    "product_name": "Crizal Easy Pro",
+    "vsp_tier": "C",
+    "tier_name": "Premium",
+    "code": "QT",
+    "has_blue_light": false,
+    "warranty_years": 1
+  },
+  {
+    "product_id": "unity-ar",
+    "brand": "Plexus",
+    "product_name": "Unity AR",
+    "vsp_tier": "A",
+    "tier_name": "Basic",
+    "code": "QM",
+    "has_blue_light": false,
+    "warranty_years": 1
+  }
+]

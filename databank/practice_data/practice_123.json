@@ -1,0 +1,35 @@
+{
+  "practice_id": "123",
+  "practice_name": "Vision Care Associates",
+  "uc_prices": {
+    "vsp": {
+      "NA": {
+        "mf": 250.00
+      },
+      "QV": {
+        "mf": 120.00
+      }
+    }
+  },
+  "bundles": [
+    {
+      "bundle_id": "kids_package",
+      "bundle_name": "Kids' Complete Package",
+      "items": [
+        {
+          "type": "frame",
+          "brand": "Generic Kids"
+        },
+        {
+          "type": "lenses",
+          "material": "Polycarbonate"
+        },
+        {
+          "type": "lenses",
+          "enhancement": "scratch_coating"
+        }
+      ],
+      "bundle_price": 199.00
+    }
+  ]
+}
