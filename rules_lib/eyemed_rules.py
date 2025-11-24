@@ -1,5 +1,12 @@
 import json
-from typing import Dict, Any, List
+import os
+from typing import Dict, Any, List, Optional
+
+try:
+    import psycopg2
+    import psycopg2.extras
+except ModuleNotFoundError:
+    psycopg2 = None  # Optional; falls back to JSON databank
 from .base import RuleBase
 
 class EyemedRules(RuleBase):
@@ -7,18 +14,82 @@ class EyemedRules(RuleBase):
     Eyemed-specific rules engine.
     """
 
-    def __init__(self, benefit_authorization: Dict[str, Any]):
+    def __init__(self, benefit_authorization: Dict[str, Any], practice_id: str = None):
         super().__init__(benefit_authorization)
-        self.progressive_formulary = self._load_formulary('eyemed_progressive_formulary.json')
-        self.ar_coating_formulary = self._load_formulary('eyemed_ar_coating_formulary.json')
+        self.conn = self._connect_db()
 
-    def _load_formulary(self, filename: str) -> List[Dict[str, Any]]:
-        """Loads a formulary from a JSON file in the databank."""
+        self.progressive_formulary = self._load_progressive_formulary()
+        self.ar_coating_formulary = self._load_ar_coating_formulary()
+
+        if practice_id:
+            self._load_practice_data(practice_id)
+
+    def __del__(self):
+        if getattr(self, "conn", None):
+            try:
+                self.conn.close()
+            except Exception:
+                pass
+
+    def _connect_db(self) -> Optional["psycopg2.extensions.connection"]:
+        if psycopg2 is None:
+            return None
         try:
-            with open(f'databank/{filename}', 'r') as f:
+            return psycopg2.connect(
+                dbname=os.getenv("DB_NAME", "vision_automation"),
+                user=os.getenv("DB_USER", "postgres"),
+                password=os.getenv("DB_PASSWORD", "mysecretpassword"),
+                host=os.getenv("DB_HOST", "localhost"),
+                port=os.getenv("DB_PORT", "5432"),
+            )
+        except Exception:
+            return None
+
+    def _load_progressive_formulary(self) -> List[Dict[str, Any]]:
+        """Loads the Eyemed progressive formulary from DB, falling back to JSON."""
+        if self.conn:
+            try:
+                with self.conn.cursor(cursor_factory=psycopg2.extras.DictCursor) as cur:
+                    cur.execute("SELECT * FROM eyemed_progressive_formulary")
+                    return [dict(row) for row in cur.fetchall()]
+            except Exception:
+                pass
+        try:
+            with open('databank/eyemed_progressive_formulary.json', 'r') as f:
                 return json.load(f)
         except (FileNotFoundError, json.JSONDecodeError):
             return []
+
+    def _load_ar_coating_formulary(self) -> List[Dict[str, Any]]:
+        """Loads the Eyemed AR coating formulary from DB, falling back to JSON."""
+        if self.conn:
+            try:
+                with self.conn.cursor(cursor_factory=psycopg2.extras.DictCursor) as cur:
+                    cur.execute("SELECT * FROM eyemed_ar_coating_formulary")
+                    return [dict(row) for row in cur.fetchall()]
+            except Exception:
+                pass
+        try:
+            with open('databank/eyemed_ar_coating_formulary.json', 'r') as f:
+                return json.load(f)
+        except (FileNotFoundError, json.JSONDecodeError):
+            return []
+
+    def _load_practice_data(self, practice_id: str):
+        """Loads practice-specific data from DB, falling back to JSON."""
+        if self.conn:
+            try:
+                with self.conn.cursor(cursor_factory=psycopg2.extras.DictCursor) as cur:
+                    cur.execute("SELECT * FROM practice_data WHERE practice_id = %s", (practice_id,))
+                    practice_data = cur.fetchone()
+                    if practice_data:
+                        return  # nothing Eyemed-specific yet
+            except Exception:
+                pass
+        try:
+            _ = json.load(open(f'databank/practice_data/practice_{practice_id}.json', 'r'))
+        except Exception:
+            pass
 
     def _get_progressive_tier(self, product_name: str) -> Dict[str, Any]:
         """Looks up a progressive lens in the formulary."""

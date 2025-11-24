@@ -1,5 +1,12 @@
 import json
-from typing import Dict, Any, List
+import os
+from typing import Dict, Any, List, Optional
+
+try:
+    import psycopg2
+    import psycopg2.extras
+except ModuleNotFoundError:
+    psycopg2 = None  # Optional; falls back to JSON databank
 from .base import RuleBase
 
 class VspRules(RuleBase):
@@ -9,26 +16,16 @@ class VspRules(RuleBase):
 
     def __init__(self, benefit_authorization: Dict[str, Any], practice_id: str = None):
         super().__init__(benefit_authorization)
-        self.progressive_formulary = self._load_formulary('vsp_progressive_formulary.json')
-        self.ar_coating_formulary = self._load_formulary('vsp_ar_coating_formulary.json')
+        self.conn = self._connect_db()
+
+        self.progressive_formulary = self._load_progressive_formulary()
+        self.ar_coating_formulary = self._load_ar_coating_formulary()
         self.pricing_tier = self.plan.get('pricing_tier', 'choice') # Default to choice
         self.uc_prices = self.copays.get('uc_prices', {})
         self.bundles = []
 
         if practice_id:
-            try:
-                with open(f'databank/practice_data/practice_{practice_id}.json', 'r') as f:
-                    practice_data = json.load(f)
-                    practice_uc_prices = practice_data.get('uc_prices', {}).get('vsp', {})
-                    # Merge prices, with practice prices taking precedence
-                    for code, vision_types in practice_uc_prices.items():
-                        if code not in self.uc_prices:
-                            self.uc_prices[code] = {}
-                        self.uc_prices[code].update(vision_types)
-                    self.bundles = practice_data.get('bundles', [])
-            except (FileNotFoundError, json.JSONDecodeError):
-                # Handle cases where practice data doesn't exist
-                pass
+            self._load_practice_data(practice_id)
 
         # In a real system, this would be in a database.
         # For now, we'll store the pricing tables in memory.
@@ -96,15 +93,89 @@ class VspRules(RuleBase):
             "photochromic": "PR",
             "polarized": "DA",
         }
+    
+    def __del__(self):
+        if getattr(self, "conn", None):
+            try:
+                self.conn.close()
+            except Exception:
+                pass
 
-
-    def _load_formulary(self, filename: str) -> List[Dict[str, Any]]:
-        """Loads a formulary from a JSON file in the databank."""
+    def _connect_db(self) -> Optional["psycopg2.extensions.connection"]:
+        """Attempt to open a DB connection using env vars; return None on failure."""
+        if psycopg2 is None:
+            return None
         try:
-            with open(f'databank/{filename}', 'r') as f:
+            return psycopg2.connect(
+                dbname=os.getenv("DB_NAME", "vision_automation"),
+                user=os.getenv("DB_USER", "postgres"),
+                password=os.getenv("DB_PASSWORD", "mysecretpassword"),
+                host=os.getenv("DB_HOST", "localhost"),
+                port=os.getenv("DB_PORT", "5432"),
+            )
+        except Exception:
+            return None
+
+    def _load_progressive_formulary(self) -> List[Dict[str, Any]]:
+        """Loads the VSP progressive formulary from DB, falling back to JSON."""
+        if self.conn:
+            try:
+                with self.conn.cursor(cursor_factory=psycopg2.extras.DictCursor) as cur:
+                    cur.execute("SELECT * FROM vsp_progressive_formulary")
+                    return [dict(row) for row in cur.fetchall()]
+            except Exception:
+                pass
+        try:
+            with open('databank/vsp_progressive_formulary.json', 'r') as f:
                 return json.load(f)
         except (FileNotFoundError, json.JSONDecodeError):
             return []
+
+    def _load_ar_coating_formulary(self) -> List[Dict[str, Any]]:
+        """Loads the VSP AR coating formulary from DB, falling back to JSON."""
+        if self.conn:
+            try:
+                with self.conn.cursor(cursor_factory=psycopg2.extras.DictCursor) as cur:
+                    cur.execute("SELECT * FROM vsp_ar_coating_formulary")
+                    return [dict(row) for row in cur.fetchall()]
+            except Exception:
+                pass
+        try:
+            with open('databank/vsp_ar_coating_formulary.json', 'r') as f:
+                return json.load(f)
+        except (FileNotFoundError, json.JSONDecodeError):
+            return []
+
+    def _load_practice_data(self, practice_id: str):
+        """Loads practice-specific data from DB, falling back to JSON."""
+        if self.conn:
+            try:
+                with self.conn.cursor(cursor_factory=psycopg2.extras.DictCursor) as cur:
+                    cur.execute("SELECT * FROM practice_data WHERE practice_id = %s", (practice_id,))
+                    practice_data = cur.fetchone()
+                    if practice_data:
+                        practice_uc_prices = practice_data.get('vsp_uc_prices', {}) or {}
+                        for code, vision_types in practice_uc_prices.items():
+                            if code not in self.uc_prices:
+                                self.uc_prices[code] = {}
+                            self.uc_prices[code].update(vision_types)
+                        self.bundles = practice_data.get('vsp_bundles', []) or []
+                        return
+            except Exception:
+                pass
+
+        # Fallback to JSON file
+        try:
+            with open(f'databank/practice_data/practice_{practice_id}.json', 'r') as f:
+                practice_data = json.load(f)
+                practice_uc_prices = practice_data.get('uc_prices', {}).get('vsp', {}) or {}
+                for code, vision_types in practice_uc_prices.items():
+                    if code not in self.uc_prices:
+                        self.uc_prices[code] = {}
+                    self.uc_prices[code].update(vision_types)
+                self.bundles = practice_data.get('bundles', []) or []
+        except (FileNotFoundError, json.JSONDecodeError):
+            pass
 
     def _get_progressive_tier(self, product_name: str) -> Dict[str, Any]:
         """Looks up a progressive lens in the formulary."""
