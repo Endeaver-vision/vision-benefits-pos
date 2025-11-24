@@ -81,11 +81,17 @@ print(quote)
 - Health check: `curl http://localhost:8000/health`
 - Quote: `curl -X POST http://localhost:8000/quote -H 'Content-Type: application/json' -d @my_request.json`
 
+## Sample requests
+- `samples/request_vsp.json`
+- `samples/request_spectera.json`
+- `samples/request_eyemed.json`
+- `samples/request_contacts_addons.json` (demonstrates contacts + addon pass-through)
+
 ## Notes
 - This module reuses the existing provider rule engines in `rules_lib/`.
 - Enhancements in the cart should be passed as an array; the engine sets the flags expected by provider rules.
 - Currently supports one exam, one frame, one lenses entry per request; extras are ignored with a warning.
-- Contacts/addons are not yet implemented; they will be ignored with a warning until rules are added.
+- Contacts/addons: now supported as pass-through line items (contacts sum `box_price * boxes`; addons use `retail_price`); insurance logic can be layered later.
 - `practice_id` is honored for VSP to pull practice overrides/bundles when available in `databank/practice_data`.
 - If a formulary JSON is malformed (e.g., `spectera_ar_coating_formulary.json` currently has a parse issue), provider lookups will simply return empty and may mark items as "Not Covered".
 
@@ -96,3 +102,8 @@ If you want the databank in Postgres (e.g., Gemini's `vision-db` container on po
 3. Run loader: `python -m pricing_engine.db_loader`
    - Creates DB if missing, applies `sql_schema.sql`, and loads all JSON formularies + practice_data.
    - Uses `ON CONFLICT DO NOTHING` for safe reruns.
+
+## Testing and helpers
+- Run all tests: `make test` (uses `python -m unittest`)
+- Quick quote with sample: `make quote` (defaults to `samples/request_vsp.json`)
+- Start dev server: `make serve`

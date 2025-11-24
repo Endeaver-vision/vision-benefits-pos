@@ -1,0 +1,27 @@
+{
+  "customer": {
+    "name": "Jim Doe",
+    "age": 50,
+    "member_id": "EYEMED123"
+  },
+  "plan": {
+    "provider": "eyemed",
+    "copays": {
+      "exam": 15,
+      "frame_allowance": 120,
+      "frame_overage_discount": 0.2,
+      "progressive_premium_tier_5": 160.0,
+      "ar_premium_tier_3": 95.0
+    }
+  },
+  "cart": [
+    { "item_id": "exam1", "type": "exam", "code": "92014", "description": "Comprehensive Exam" },
+    { "item_id": "frame1", "type": "frame", "brand": "Generic", "retail_price": 180 },
+    {
+      "item_id": "lens1",
+      "type": "lenses",
+      "progressive_product": "Varilux X Design",
+      "ar_coating_product": "Crizal Sapphire HR"
+    }
+  ]
+}

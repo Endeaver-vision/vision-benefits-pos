@@ -1,0 +1,31 @@
+{
+  "customer": {
+    "name": "John Doe",
+    "age": 45,
+    "member_id": "M123"
+  },
+  "plan": {
+    "provider": "vsp",
+    "product_tier": "choice",
+    "copays": {
+      "exam": 10,
+      "frame_allowance": 150,
+      "frame_overage_discount": 0.2,
+      "uc_prices": {
+        "NA": { "mf": 200 },
+        "QV": { "mf": 100 }
+      }
+    }
+  },
+  "cart": [
+    { "item_id": "exam1", "type": "exam", "code": "92014", "description": "Comprehensive Exam" },
+    { "item_id": "frame1", "type": "frame", "brand": "Ray-Ban", "retail_price": 250 },
+    {
+      "item_id": "lens1",
+      "type": "lenses",
+      "vision_type": "mf",
+      "progressive_product": "Varilux X Fit Technology",
+      "ar_coating_product": "Crizal Rock"
+    }
+  ]
+}

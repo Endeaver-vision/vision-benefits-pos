@@ -1,0 +1,27 @@
+{
+  "customer": {
+    "name": "Jane Doe",
+    "age": 35,
+    "member_id": "SPECTERA123"
+  },
+  "plan": {
+    "provider": "spectera",
+    "copays": {
+      "exam_adult": 20,
+      "frame_allowance": 130,
+      "frame_overage_percent": 0.7,
+      "progressive_tier_v": 280.0,
+      "ar_tier_iv": 95.0
+    }
+  },
+  "cart": [
+    { "item_id": "exam1", "type": "exam", "code": "92014", "description": "Comprehensive Exam" },
+    { "item_id": "frame1", "type": "frame", "brand": "Generic", "retail_price": 200 },
+    {
+      "item_id": "lens1",
+      "type": "lenses",
+      "progressive_product": "Varilux X Design",
+      "ar_coating_product": "Crizal® Sapphire™ HR"
+    }
+  ]
+}

@@ -1,0 +1,19 @@
+{
+  "customer": { "name": "Add On Tester", "age": 30 },
+  "plan": { "provider": "vsp", "copays": {} },
+  "cart": [
+    {
+      "item_id": "contacts1",
+      "type": "contacts",
+      "brand": "Acme Daily",
+      "box_price": 60,
+      "boxes": 2
+    },
+    {
+      "item_id": "addon1",
+      "type": "addon",
+      "description": "Adjustments / Misc Service",
+      "retail_price": 30
+    }
+  ]
+}

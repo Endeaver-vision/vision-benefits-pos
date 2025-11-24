@@ -33,6 +33,7 @@ class PricingEngine:
         - cart: list of line items (exam|frame|lenses|contacts|addon/service).
         - practice_context: optional dict with practice_id (for VSP overrides/bundles).
         """
+        self._validate_request(request)
         warnings: List[str] = []
 
         plan = request.get("plan", {})
@@ -45,7 +46,7 @@ class PricingEngine:
         practice_context = request.get("practice_context", {})
 
         benefit_auth = self._build_benefit_auth(customer, plan)
-        order, cart_warnings = self._build_order(cart)
+        order, extras, cart_warnings = self._build_order(cart)
         warnings.extend(cart_warnings)
 
         # Instantiate provider-specific engine
@@ -57,11 +58,13 @@ class PricingEngine:
             engine = rule_cls(benefit_auth)
 
         calc = engine.calculate_total_cost(order)
+        extra_line_items, extras_total, extra_warnings = self._calculate_extras(extras)
+        warnings.extend(extra_warnings)
 
         response = {
             "provider": provider_key,
-            "patient_pays": calc.get("total_patient_cost", 0),
-            "line_items": self._format_line_items(calc.get("itemized_costs", [])),
+            "patient_pays": calc.get("total_patient_cost", 0) + extras_total,
+            "line_items": self._format_line_items(calc.get("itemized_costs", [])) + extra_line_items,
             "applied_rules": self._applied_rules(plan, practice_context),
             "warnings": warnings,
             "raw": {
@@ -70,6 +73,23 @@ class PricingEngine:
             },
         }
         return response
+
+    @staticmethod
+    def _validate_request(request: Dict[str, Any]) -> None:
+        if not isinstance(request, dict):
+            raise ValueError("Request must be a JSON object/dict")
+        plan = request.get("plan")
+        if not isinstance(plan, dict):
+            raise ValueError("Missing plan")
+        provider = (plan.get("provider") or "").lower()
+        if provider not in ProviderMap:
+            raise ValueError(f"Unsupported provider: {provider}")
+        cart = request.get("cart")
+        if not isinstance(cart, list) or not cart:
+            raise ValueError("Cart must be a non-empty list")
+        for item in cart:
+            if not isinstance(item, dict) or "type" not in item:
+                raise ValueError("Each cart item must be an object with a 'type'")
 
     @staticmethod
     def _build_benefit_auth(customer: Dict[str, Any], plan: Dict[str, Any]) -> Dict[str, Any]:
@@ -89,8 +109,9 @@ class PricingEngine:
         }
 
     @staticmethod
-    def _build_order(cart: List[Dict[str, Any]]) -> Tuple[Dict[str, Any], List[str]]:
+    def _build_order(cart: List[Dict[str, Any]]) -> Tuple[Dict[str, Any], List[Dict[str, Any]], List[str]]:
         order: Dict[str, Any] = {}
+        extras: List[Dict[str, Any]] = []
         warnings: List[str] = []
 
         # Track whether we already captured each core type to avoid collisions
@@ -118,9 +139,54 @@ class PricingEngine:
                     lenses[enh] = True
                 order["lenses"] = lenses
                 seen["lenses"] = True
+            elif item_type in {"contacts", "addon", "add-on", "service"}:
+                extras.append(item)
             else:
                 warnings.append(f"Unsupported or duplicate item ignored: {item}")
-        return order, warnings
+        return order, extras, warnings
+
+    @staticmethod
+    def _calculate_extras(extras: List[Dict[str, Any]]) -> Tuple[List[Dict[str, Any]], float, List[str]]:
+        line_items: List[Dict[str, Any]] = []
+        total = 0.0
+        warnings: List[str] = []
+
+        for idx, item in enumerate(extras):
+            item_type = item.get("type")
+            if item_type == "contacts":
+                brand = item.get("brand", "Contacts")
+                boxes = item.get("boxes", 0)
+                box_price = item.get("box_price", 0.0)
+                patient_pays = float(box_price) * float(boxes)
+                total += patient_pays
+                line_items.append(
+                    {
+                        "id": f"extra_contacts_{idx}",
+                        "category": "contacts",
+                        "description": f"{brand} ({boxes} boxes @ ${box_price:.2f})",
+                        "patient_pays": round(patient_pays, 2),
+                    }
+                )
+                if boxes == 0 or box_price == 0:
+                    warnings.append("Contacts item missing box_price or boxes; treated as $0")
+            elif item_type in {"addon", "add-on", "service"}:
+                desc = item.get("description") or item.get("code") or "Addon"
+                retail = float(item.get("retail_price", 0.0))
+                total += retail
+                line_items.append(
+                    {
+                        "id": f"extra_addon_{idx}",
+                        "category": "addon",
+                        "description": desc,
+                        "patient_pays": round(retail, 2),
+                    }
+                )
+                if retail == 0:
+                    warnings.append(f"Addon '{desc}' has no retail_price; treated as $0")
+            else:
+                warnings.append(f"Unsupported extra item ignored: {item}")
+
+        return line_items, round(total, 2), warnings
 
     @staticmethod
     def _format_line_items(items: List[Dict[str, Any]]) -> List[Dict[str, Any]]:
