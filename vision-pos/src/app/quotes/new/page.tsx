@@ -8,11 +8,12 @@ import ExamServicesLayer from '@/components/quote-builder/layers/exam-services-l
 import { EyeglassesLayer } from '@/components/quote-builder/layers/eyeglasses-layer'
 import { useQuoteStore, useQuoteSelectors } from '../../../store/quote-store'
 import { LayerDefinition, LayerId } from '../../../types/quote-builder'
-import { 
-  User, 
-  Glasses, 
+import {
+  User,
+  Glasses,
   Contact
 } from 'lucide-react'
+import PageLayout from '@/components/layout/page-layout'
 
 // Layer definitions
 const LAYERS: LayerDefinition[] = [
@@ -87,10 +88,11 @@ export default function NewQuotePage() {
   }
 
   return (
-    <div className="min-h-screen bg-background">
-      {/* Quote Header */}
-      <QuoteHeader />
-
+    <PageLayout
+      title="New Quote"
+      subtitle="Build a comprehensive quote"
+      showFooterNav={false}
+    >
       <div className="container mx-auto px-4 py-6">
         <div className="grid grid-cols-12 gap-6 min-h-[calc(100vh-200px)]">
           
@@ -126,6 +128,6 @@ export default function NewQuotePage() {
 
         </div>
       </div>
-    </div>
+    </PageLayout>
   )
 }

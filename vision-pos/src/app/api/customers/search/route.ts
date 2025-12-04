@@ -83,9 +83,9 @@ export async function GET(request: NextRequest) {
       
       const where = {
         OR: [
-          { firstName: { contains: query } },
-          { lastName: { contains: query } },
-          { email: { contains: query } },
+          { firstName: { contains: query, mode: 'insensitive' } },
+          { lastName: { contains: query, mode: 'insensitive' } },
+          { email: { contains: query, mode: 'insensitive' } },
           { phone: { contains: query } },
           { memberId: { contains: query } }
         ]

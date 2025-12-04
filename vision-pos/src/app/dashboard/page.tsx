@@ -1,65 +1,19 @@
 'use client'
 
-import { useSession, signOut } from 'next-auth/react'
-import { useRouter } from 'next/navigation'
-import { useEffect } from 'react'
-import { Button } from '@/components/ui/button'
+import Link from 'next/link'
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
-import { Loader2, LogOut, Store, Users, Package, DollarSign, Tag } from 'lucide-react'
-import StockAlerts from '@/components/stock-alerts'
+import { Store, Users, Package, DollarSign, BarChart3, Box, Shield, FileSearch, ArrowRight } from 'lucide-react'
 
 export default function DashboardPage() {
-  const { data: session, status } = useSession()
-  const router = useRouter()
-
-  useEffect(() => {
-    if (status === 'unauthenticated') {
-      router.push('/login')
-    }
-  }, [status, router])
-
-  if (status === 'loading') {
-    return (
-      <div className="min-h-screen flex items-center justify-center">
-        <Loader2 className="h-8 w-8 animate-spin" />
-      </div>
-    )
-  }
-
-  if (!session) {
-    return null
-  }
-
-  const handleSignOut = () => {
-    signOut({ callbackUrl: '/login' })
-  }
-
   return (
-    <div className="min-h-screen bg-gray-50">
+    <div className="min-h-screen">
       {/* Header */}
-      <header className="bg-white border-b border-gray-200">
+      <header className="glass-card border-b border-white/20">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
           <div className="flex justify-between items-center py-4">
             <div>
-              <h1 className="text-2xl font-bold text-gray-900">Vision Benefits POS</h1>
-              <p className="text-sm text-gray-600">
-                Welcome, {session.user.name} ({session.user.role})
-              </p>
-            </div>
-            <div className="flex items-center space-x-4">
-              <div className="text-right">
-                <p className="text-sm font-medium text-gray-900">{session.user.locationName}</p>
-                <p className="text-xs text-gray-500">{session.user.email}</p>
-              </div>
-              <Button
-                variant="outline"
-                size="sm"
-                onClick={handleSignOut}
-                className="flex items-center space-x-2"
-              >
-                <LogOut className="h-4 w-4" />
-                <span>Sign Out</span>
-              </Button>
+              <h1 className="text-2xl font-bold text-white">Vision Benefits POS</h1>
+              <p className="text-sm text-blue-200">Welcome</p>
             </div>
           </div>
         </div>
@@ -69,8 +23,8 @@ export default function DashboardPage() {
       <main className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
         {/* Main Quote Button - Full Width Solid Chip */}
         <div className="mb-8">
-          <a href="/quote-builder" className="block">
-            <div className="cursor-pointer hover:shadow-xl transition-all bg-blue-600 hover:bg-blue-700 rounded-lg p-8">
+          <Link href="/quote-builder" className="block">
+            <div className="cursor-pointer hover:shadow-xl transition-all chip-blue rounded-xl p-8">
               <div className="flex items-center justify-center gap-4">
                 <Store className="h-12 w-12 text-white" />
                 <div className="text-center">
@@ -79,115 +33,135 @@ export default function DashboardPage() {
                 </div>
               </div>
             </div>
-          </a>
+          </Link>
         </div>
 
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6 mb-8">
           {/* Quick Stats */}
-          <Card>
+          <Card className="glass-card border-white/20">
             <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-              <CardTitle className="text-sm font-medium">Today&apos;s Sales</CardTitle>
-              <DollarSign className="h-4 w-4 text-muted-foreground" />
+              <CardTitle className="text-sm font-medium text-white/80">Today&apos;s Sales</CardTitle>
+              <DollarSign className="h-4 w-4 text-emerald-400" />
             </CardHeader>
             <CardContent>
-              <div className="text-2xl font-bold">$2,847</div>
-              <p className="text-xs text-muted-foreground">+12% from yesterday</p>
+              <div className="text-2xl font-bold text-white">$2,847</div>
+              <p className="text-xs text-emerald-400">+12% from yesterday</p>
             </CardContent>
           </Card>
 
-          <Card>
+          <Card className="glass-card border-white/20">
             <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-              <CardTitle className="text-sm font-medium">Orders</CardTitle>
-              <Package className="h-4 w-4 text-muted-foreground" />
+              <CardTitle className="text-sm font-medium text-white/80">Orders</CardTitle>
+              <Package className="h-4 w-4 text-blue-400" />
             </CardHeader>
             <CardContent>
-              <div className="text-2xl font-bold">23</div>
-              <p className="text-xs text-muted-foreground">+5 from yesterday</p>
+              <div className="text-2xl font-bold text-white">23</div>
+              <p className="text-xs text-blue-400">+5 from yesterday</p>
             </CardContent>
           </Card>
 
-          <Card>
+          <Card className="glass-card border-white/20">
             <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-              <CardTitle className="text-sm font-medium">Customers</CardTitle>
-              <Users className="h-4 w-4 text-muted-foreground" />
+              <CardTitle className="text-sm font-medium text-white/80">Customers</CardTitle>
+              <Users className="h-4 w-4 text-purple-400" />
             </CardHeader>
             <CardContent>
-              <div className="text-2xl font-bold">18</div>
-              <p className="text-xs text-muted-foreground">+2 new today</p>
+              <div className="text-2xl font-bold text-white">18</div>
+              <p className="text-xs text-purple-400">+2 new today</p>
             </CardContent>
           </Card>
 
-          <Card>
+          <Card className="glass-card border-white/20">
             <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-              <CardTitle className="text-sm font-medium">Avg. Order</CardTitle>
-              <Store className="h-4 w-4 text-muted-foreground" />
+              <CardTitle className="text-sm font-medium text-white/80">Avg. Order</CardTitle>
+              <Store className="h-4 w-4 text-orange-400" />
             </CardHeader>
             <CardContent>
-              <div className="text-2xl font-bold">$124</div>
-              <p className="text-xs text-muted-foreground">+8% from last week</p>
+              <div className="text-2xl font-bold text-white">$124</div>
+              <p className="text-xs text-orange-400">+8% from last week</p>
             </CardContent>
           </Card>
         </div>
 
-        {/* Quick Actions */}
-        <div className="grid grid-cols-1 lg:grid-cols-3 gap-6 mb-8">
-          <div className="lg:col-span-2">
-            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-              <Card className="cursor-pointer hover:shadow-md transition-shadow">
-                <CardHeader>
-                  <CardTitle className="text-lg">Customer Lookup</CardTitle>
-                </CardHeader>
-                <CardContent>
-                  <p className="text-sm text-gray-600 mb-4">Search for existing customer records</p>
-                  <Button variant="outline" className="w-full" asChild>
-                    <a href="/customers">Search Customers</a>
-                  </Button>
-                </CardContent>
-              </Card>
+        {/* Quick Actions - 4 equal size boxes */}
+        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6 mb-8">
+          <Link href="/customers" className="block">
+            <Card className="glass-card border-white/20 cursor-pointer hover:shadow-lg transition-all h-full hover:scale-[1.02] hover:bg-white/20">
+              <CardHeader>
+                <div className="flex items-center gap-3">
+                  <Users className="h-6 w-6 text-purple-400" />
+                  <CardTitle className="text-lg text-white">Customer Lookup</CardTitle>
+                </div>
+              </CardHeader>
+              <CardContent>
+                <p className="text-sm text-white/70">Search for existing customer records</p>
+              </CardContent>
+            </Card>
+          </Link>
 
-              <Card className="cursor-pointer hover:shadow-md transition-shadow">
-                <CardHeader>
-                  <CardTitle className="text-lg">Product Catalog</CardTitle>
-                </CardHeader>
-                <CardContent>
-                  <p className="text-sm text-gray-600 mb-4">View prices and insurance tiers</p>
-                  <Button variant="outline" className="w-full" asChild>
-                    <a href="/products">View Products</a>
-                  </Button>
-                </CardContent>
-              </Card>
+          <Link href="/products" className="block">
+            <Card className="glass-card border-white/20 cursor-pointer hover:shadow-lg transition-all h-full hover:scale-[1.02] hover:bg-white/20">
+              <CardHeader>
+                <div className="flex items-center gap-3">
+                  <Package className="h-6 w-6 text-blue-400" />
+                  <CardTitle className="text-lg text-white">Product Catalog</CardTitle>
+                </div>
+              </CardHeader>
+              <CardContent>
+                <p className="text-sm text-white/70">View prices and insurance tiers</p>
+              </CardContent>
+            </Card>
+          </Link>
 
-              <Card className="cursor-pointer hover:shadow-md transition-shadow">
-                <CardHeader>
-                  <CardTitle className="text-lg">Inventory</CardTitle>
-                </CardHeader>
-                <CardContent>
-                  <p className="text-sm text-gray-600 mb-4">View and manage product inventory</p>
-                  <Button variant="outline" className="w-full" asChild>
-                    <a href="/inventory">View Inventory</a>
-                  </Button>
-                </CardContent>
-              </Card>
+          <Link href="/inventory" className="block">
+            <Card className="glass-card border-white/20 cursor-pointer hover:shadow-lg transition-all h-full hover:scale-[1.02] hover:bg-white/20">
+              <CardHeader>
+                <div className="flex items-center gap-3">
+                  <Box className="h-6 w-6 text-emerald-400" />
+                  <CardTitle className="text-lg text-white">Inventory</CardTitle>
+                </div>
+              </CardHeader>
+              <CardContent>
+                <p className="text-sm text-white/70">View and manage product inventory</p>
+              </CardContent>
+            </Card>
+          </Link>
 
-              <Card className="cursor-pointer hover:shadow-md transition-shadow">
-                <CardHeader>
-                  <CardTitle className="text-lg">Analytics & Reports</CardTitle>
-                </CardHeader>
-                <CardContent>
-                  <p className="text-sm text-gray-600 mb-4">Performance metrics, sales analytics, and data exports</p>
-                  <Button variant="outline" className="w-full" asChild>
-                    <a href="/analytics">View Analytics</a>
-                  </Button>
-                </CardContent>
-              </Card>
+          <Link href="/analytics" className="block">
+            <Card className="glass-card border-white/20 cursor-pointer hover:shadow-lg transition-all h-full hover:scale-[1.02] hover:bg-white/20">
+              <CardHeader>
+                <div className="flex items-center gap-3">
+                  <BarChart3 className="h-6 w-6 text-orange-400" />
+                  <CardTitle className="text-lg text-white">Analytics & Reports</CardTitle>
+                </div>
+              </CardHeader>
+              <CardContent>
+                <p className="text-sm text-white/70">Performance metrics, sales analytics, and data exports</p>
+              </CardContent>
+            </Card>
+          </Link>
+        </div>
 
-            </div>
-          </div>
-
-          {/* Stock Alerts Sidebar */}
-          <div className="lg:col-span-1">
-            <StockAlerts maxItems={4} />
-          </div>
+        {/* Insurance Scanner Section */}
+        <div className="mb-8">
+          <Link href="/scanner" className="block">
+            <Card className="glass-card border-white/20 cursor-pointer hover:shadow-lg transition-all hover:scale-[1.01] hover:bg-white/20">
+              <CardContent className="py-8">
+                <div className="flex items-center gap-6">
+                  <div className="h-16 w-16 rounded-2xl bg-emerald-500/20 flex items-center justify-center">
+                    <FileSearch className="h-8 w-8 text-emerald-400" />
+                  </div>
+                  <div className="flex-1">
+                    <h3 className="text-xl font-semibold text-white mb-1">Insurance Document Scanner</h3>
+                    <p className="text-white/70">
+                      Scan insurance cards, authorizations, and eligibility documents with AI-powered extraction
+                    </p>
+                  </div>
+                  <ArrowRight className="h-6 w-6 text-white/50" />
+                </div>
+              </CardContent>
+            </Card>
+          </Link>
         </div>
       </main>
     </div>

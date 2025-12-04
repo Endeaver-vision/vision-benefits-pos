@@ -2,14 +2,14 @@
 
 import { useState } from 'react'
 import { useRouter } from 'next/navigation'
-import Link from 'next/link'
 import { Button } from '@/components/ui/button'
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
 import { Input } from '@/components/ui/input'
 import { Label } from '@/components/ui/label'
 import { Textarea } from '@/components/ui/textarea'
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select'
-import { ArrowLeft, Save, User } from 'lucide-react'
+import { Save } from 'lucide-react'
+import PageLayout from '@/components/layout/page-layout'
 
 export default function NewCustomerPage() {
   const router = useRouter()
@@ -75,26 +75,11 @@ export default function NewCustomerPage() {
   }
 
   return (
-    <div className="container mx-auto p-6 space-y-6">
-      {/* Back Button */}
-      <Link href="/customers">
-        <Button variant="ghost" size="sm" className="flex items-center gap-2">
-          <ArrowLeft className="h-4 w-4" />
-          Back to Customers
-        </Button>
-      </Link>
-
-      {/* Header */}
-      <div>
-        <h1 className="text-3xl font-bold tracking-tight flex items-center gap-3">
-          <User className="h-8 w-8 text-blue-600" />
-          New Customer
-        </h1>
-        <p className="text-muted-foreground mt-2">
-          Create a new customer profile
-        </p>
-      </div>
-
+    <PageLayout
+      title="New Customer"
+      subtitle="Create a new customer profile"
+    >
+      <div className="container mx-auto p-6 space-y-6">
       {/* Error Message */}
       {error && (
         <Card className="border-red-300 bg-red-50">
@@ -301,7 +286,7 @@ export default function NewCustomerPage() {
           </Card>
 
           {/* Action Buttons */}
-          <Card className="bg-gray-50">
+          <Card className="glass-card border-white/20">
             <CardContent className="p-4">
               <div className="flex justify-between items-center">
                 <Button
@@ -331,6 +316,7 @@ export default function NewCustomerPage() {
           </Card>
         </div>
       </form>
-    </div>
+      </div>
+    </PageLayout>
   )
 }

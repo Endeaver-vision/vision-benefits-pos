@@ -2,11 +2,11 @@
 
 import { useState, useEffect } from 'react'
 import { useParams, useRouter } from 'next/navigation'
-import Link from 'next/link'
 import { Button } from '@/components/ui/button'
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
 import { Badge } from '@/components/ui/badge'
 import { ArrowLeft, Calendar, DollarSign, Package, FileText, Clock } from 'lucide-react'
+import PageLayout from '@/components/layout/page-layout'
 
 interface Transaction {
   id: string
@@ -129,25 +129,11 @@ export default function CustomerHistoryPage() {
   const transactions = customer.transactions || []
 
   return (
-    <div className="container mx-auto p-6 space-y-6">
-      {/* Back Button */}
-      <Link href={`/customers/${customerId}`}>
-        <Button variant="ghost" size="sm" className="flex items-center gap-2">
-          <ArrowLeft className="h-4 w-4" />
-          Back to Customer Profile
-        </Button>
-      </Link>
-
-      {/* Header */}
-      <div>
-        <h1 className="text-3xl font-bold tracking-tight flex items-center gap-3">
-          <Clock className="h-8 w-8 text-blue-600" />
-          Customer History
-        </h1>
-        <p className="text-muted-foreground mt-2">
-          {customer.firstName} {customer.lastName} - Purchase history and activity
-        </p>
-      </div>
+    <PageLayout
+      title="Customer History"
+      subtitle={`${customer.firstName} ${customer.lastName} - Purchase history and activity`}
+    >
+      <div className="container mx-auto p-6 space-y-6">
 
       {/* Summary Card */}
       <Card>
@@ -248,6 +234,7 @@ export default function CustomerHistoryPage() {
           )}
         </CardContent>
       </Card>
-    </div>
+      </div>
+    </PageLayout>
   )
 }

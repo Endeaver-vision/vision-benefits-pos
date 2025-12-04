@@ -10,6 +10,7 @@ import { Badge } from '@/components/ui/badge'
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs'
 import { Customer } from '@/types/customer'
 
+import CustomerInsurancePricing from './customer-insurance-pricing'
 export default function CustomerProfile() {
   const params = useParams()
   const router = useRouter()
@@ -19,25 +20,25 @@ export default function CustomerProfile() {
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState<string | null>(null)
 
-  useEffect(() => {
-    const fetchCustomer = async () => {
-      try {
-        const response = await fetch(`/api/customers/${customerId}`)
-        const result = await response.json()
-        
-        if (result.success) {
-          setCustomer(result.data)
-        } else {
-          setError(result.error || 'Failed to load customer')
-        }
-      } catch (err) {
-        console.error('Error fetching customer:', err)
-        setError('Failed to load customer')
-      } finally {
-        setLoading(false)
+  const fetchCustomer = async () => {
+    try {
+      const response = await fetch(`/api/customers/${customerId}`)
+      const result = await response.json()
+      
+      if (result.success) {
+        setCustomer(result.data)
+      } else {
+        setError(result.error || 'Failed to load customer')
       }
+    } catch (err) {
+      console.error('Error fetching customer:', err)
+      setError('Failed to load customer')
+    } finally {
+      setLoading(false)
     }
+  }
 
+  useEffect(() => {
     if (customerId) {
       fetchCustomer()
     }
@@ -248,9 +249,9 @@ export default function CustomerProfile() {
         <TabsList className="grid w-full grid-cols-5">
           <TabsTrigger value="overview">Overview</TabsTrigger>
           <TabsTrigger value="contact">Contact & Address</TabsTrigger>
-          <TabsTrigger value="insurance">Insurance</TabsTrigger>
           <TabsTrigger value="history">Purchase History</TabsTrigger>
           <TabsTrigger value="prescriptions">Prescriptions</TabsTrigger>
+          <TabsTrigger value="price-plan">Insurance & Pricing</TabsTrigger>
         </TabsList>
 
         <TabsContent value="overview" className="space-y-6">
@@ -396,54 +397,6 @@ export default function CustomerProfile() {
           </Card>
         </TabsContent>
 
-        <TabsContent value="insurance" className="space-y-6">
-          <Card>
-            <CardHeader>
-              <CardTitle className="flex items-center justify-between">
-                <span className="flex items-center gap-2">
-                  <CreditCard className="h-5 w-5" />
-                  Insurance Information
-                </span>
-              </CardTitle>
-            </CardHeader>
-            <CardContent>
-              {customer.insuranceCarrier ? (
-                <div className="space-y-4">
-                  <div className="grid grid-cols-2 gap-4">
-                    <div>
-                      <p className="text-sm font-medium text-muted-foreground">Insurance Carrier</p>
-                      <p className="text-base">{customer.insuranceCarrier}</p>
-                    </div>
-                    {customer.memberId && (
-                      <div>
-                        <p className="text-sm font-medium text-muted-foreground">Member ID</p>
-                        <p className="text-base">{customer.memberId}</p>
-                      </div>
-                    )}
-                    {customer.groupNumber && (
-                      <div>
-                        <p className="text-sm font-medium text-muted-foreground">Group Number</p>
-                        <p className="text-base">{customer.groupNumber}</p>
-                      </div>
-                    )}
-                    {customer.eligibilityDate && (
-                      <div>
-                        <p className="text-sm font-medium text-muted-foreground">Eligibility Date</p>
-                        <p className="text-base">{formatDate(customer.eligibilityDate)}</p>
-                      </div>
-                    )}
-                  </div>
-                </div>
-              ) : (
-                <div className="text-center text-muted-foreground py-8">
-                  <CreditCard className="h-12 w-12 mx-auto mb-4 opacity-50" />
-                  <p>No insurance information on file</p>
-                </div>
-              )}
-            </CardContent>
-          </Card>
-        </TabsContent>
-
         <TabsContent value="history" className="space-y-6">
           <Card>
             <CardHeader>
@@ -473,7 +426,18 @@ export default function CustomerProfile() {
             </CardContent>
           </Card>
         </TabsContent>
-      </Tabs>
+      
+        <TabsContent value="price-plan" className="space-y-6">
+          <CustomerInsurancePricing 
+            customerId={customerId} 
+            customer={customer}
+            onUpdate={() => {
+              // Refresh customer data
+              fetchCustomer()
+            }}
+          />
+        </TabsContent>
+</Tabs>
     </div>
   )
 }

@@ -10,36 +10,42 @@ export const authOptions: AuthOptions = {
     CredentialsProvider({
       name: 'credentials',
       credentials: {
-        email: { label: 'Email', type: 'email' },
+        username: { label: 'Username', type: 'text' },
         password: { label: 'Password', type: 'password' },
         locationId: { label: 'Location', type: 'text' }
       },
       async authorize(credentials) {
-        if (!credentials?.email || !credentials?.password) {
-          throw new Error('Email and password are required')
+        console.log('🔐 Login attempt:', { username: credentials?.username, hasPassword: !!credentials?.password })
+
+        if (!credentials?.username || !credentials?.password) {
+          throw new Error('Username and password are required')
         }
 
         try {
-          // Find user by email
-          const user = await prisma.user.findUnique({
-            where: { 
-              email: credentials.email,
-              active: true 
+          // Find user by username
+          const user = await prisma.user.findFirst({
+            where: {
+              username: credentials.username,
+              active: true
             },
             include: {
               location: true
             }
           })
 
+          console.log('👤 User found:', !!user, 'Has hash:', !!user?.passwordHash)
+
           if (!user || !user.passwordHash) {
-            throw new Error('Invalid email or password')
+            throw new Error('Invalid username or password')
           }
 
           // Verify password
+          console.log('🔑 Verifying password...')
           const isValidPassword = await verifyPassword(credentials.password, user.passwordHash)
-          
+          console.log('✅ Password valid:', isValidPassword)
+
           if (!isValidPassword) {
-            throw new Error('Invalid email or password')
+            throw new Error('Invalid username or password')
           }
 
           // Check if location is provided and matches user's location
@@ -47,9 +53,11 @@ export const authOptions: AuthOptions = {
             throw new Error('Invalid location for this user')
           }
 
+          console.log('🎉 Login successful for:', user.username)
+
           return {
             id: user.id,
-            email: user.email,
+            email: user.email || user.username, // Fall back to username if no email
             name: `${user.firstName} ${user.lastName}`,
             role: user.role,
             locationId: user.locationId,
@@ -90,7 +98,19 @@ export const authOptions: AuthOptions = {
     strategy: 'jwt' as const,
     maxAge: 24 * 60 * 60, // 24 hours
   },
+  cookies: {
+    sessionToken: {
+      name: `next-auth.session-token`,
+      options: {
+        httpOnly: true,
+        sameSite: 'lax',
+        path: '/',
+        secure: false,
+      },
+    },
+  },
   secret: process.env.NEXTAUTH_SECRET,
+  debug: true,
 }
 
 const handler = NextAuth(authOptions)

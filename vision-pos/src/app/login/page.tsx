@@ -6,19 +6,12 @@ import { useRouter } from 'next/navigation'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
 import { Label } from '@/components/ui/label'
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select'
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card'
 import { Alert, AlertDescription } from '@/components/ui/alert'
 import { Eye, EyeOff, Loader2 } from 'lucide-react'
 
-interface Location {
-  id: string
-  name: string
-  address: string
-}
-
 export default function LoginPage() {
-  const [email, setEmail] = useState('')
+  const [username, setUsername] = useState('')
   const [password, setPassword] = useState('')
   const [showPassword, setShowPassword] = useState(false)
   const [isLoading, setIsLoading] = useState(false)
@@ -42,7 +35,7 @@ export default function LoginPage() {
     setIsLoading(true)
     setError('')
 
-    if (!email || !password) {
+    if (!username || !password) {
       setError('Please fill in all fields')
       setIsLoading(false)
       return
@@ -50,13 +43,13 @@ export default function LoginPage() {
 
     try {
       const result = await signIn('credentials', {
-        email,
+        username,
         password,
         redirect: false,
       })
 
       if (result?.error) {
-        setError('Invalid credentials. Please check your email, password, and location.')
+        setError('Invalid credentials. Please check your username and password.')
       } else if (result?.ok) {
         // Successful login - redirect to quote builder (POS)
         router.push('/quote-builder')
@@ -70,37 +63,38 @@ export default function LoginPage() {
   }
 
   return (
-    <div className="min-h-screen flex items-center justify-center bg-gradient-to-br from-blue-50 to-indigo-100 p-4">
-      <Card className="w-full max-w-md">
+    <div className="min-h-screen flex items-center justify-center bg-gradient-to-br from-slate-900 via-blue-900 to-blue-600 p-4">
+      <Card className="w-full max-w-md bg-white/10 backdrop-blur-md border-white/20">
         <CardHeader className="space-y-1">
-          <CardTitle className="text-2xl text-center">Vision Benefits POS</CardTitle>
-          <CardDescription className="text-center">
+          <CardTitle className="text-2xl text-center text-white">Vision Benefits POS</CardTitle>
+          <CardDescription className="text-center text-white/70">
             Sign in to your account to continue
           </CardDescription>
         </CardHeader>
         <CardContent>
           <form onSubmit={handleSubmit} className="space-y-4">
             {error && (
-              <Alert variant="destructive">
+              <Alert variant="destructive" className="bg-red-500/20 border-red-400/50 text-red-200">
                 <AlertDescription>{error}</AlertDescription>
               </Alert>
             )}
 
             <div className="space-y-2">
-              <Label htmlFor="email">Email</Label>
+              <Label htmlFor="username" className="text-white">Username</Label>
               <Input
-                id="email"
-                type="email"
-                placeholder="Enter your email"
-                value={email}
-                onChange={(e) => setEmail(e.target.value)}
+                id="username"
+                type="text"
+                placeholder="Enter your username"
+                value={username}
+                onChange={(e) => setUsername(e.target.value)}
                 disabled={isLoading}
                 required
+                className="bg-white/10 border-white/30 text-white placeholder:text-white/50"
               />
             </div>
 
             <div className="space-y-2">
-              <Label htmlFor="password">Password</Label>
+              <Label htmlFor="password" className="text-white">Password</Label>
               <div className="relative">
                 <Input
                   id="password"
@@ -110,12 +104,13 @@ export default function LoginPage() {
                   onChange={(e) => setPassword(e.target.value)}
                   disabled={isLoading}
                   required
+                  className="bg-white/10 border-white/30 text-white placeholder:text-white/50"
                 />
                 <Button
                   type="button"
                   variant="ghost"
                   size="sm"
-                  className="absolute right-0 top-0 h-full px-3 py-2 hover:bg-transparent"
+                  className="absolute right-0 top-0 h-full px-3 py-2 hover:bg-transparent text-white/70"
                   onClick={() => setShowPassword(!showPassword)}
                   disabled={isLoading}
                 >
@@ -130,7 +125,7 @@ export default function LoginPage() {
 
             <Button
               type="submit"
-              className="w-full"
+              className="w-full bg-blue-500 hover:bg-blue-600 text-white"
               disabled={isLoading}
             >
               {isLoading ? (
@@ -144,14 +139,18 @@ export default function LoginPage() {
             </Button>
           </form>
 
-          <div className="mt-6 text-center text-sm text-gray-600">
-            <p className="font-semibold">Demo Credentials:</p>
-            <p className="font-mono text-xs mt-2">
-              Email: demo@visionpos.com
-            </p>
-            <p className="font-mono text-xs">
-              Password: demo123
-            </p>
+          <div className="mt-6 p-4 bg-white/10 rounded-lg border border-white/20">
+            <p className="font-semibold text-white text-center mb-3">Test Credentials</p>
+            <div className="space-y-2">
+              <div className="flex items-center justify-between">
+                <span className="text-white/70">Username:</span>
+                <code className="bg-white/20 px-2 py-1 rounded text-sm text-white">caritch</code>
+              </div>
+              <div className="flex items-center justify-between">
+                <span className="text-white/70">Password:</span>
+                <code className="bg-white/20 px-2 py-1 rounded text-sm text-white">Vision2020</code>
+              </div>
+            </div>
           </div>
         </CardContent>
       </Card>

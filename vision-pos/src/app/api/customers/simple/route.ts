@@ -11,18 +11,18 @@ export async function GET(request: NextRequest) {
     let customers = []
 
     if (search.trim()) {
-      // SQLite-compatible search - case-sensitive but works
+      // Case-insensitive search
       customers = await prisma.customer.findMany({
         where: {
           AND: [
             { active: true },
             {
               OR: [
-                { firstName: { contains: search } },
-                { lastName: { contains: search } },
-                { email: { contains: search } },
+                { firstName: { contains: search, mode: 'insensitive' } },
+                { lastName: { contains: search, mode: 'insensitive' } },
+                { email: { contains: search, mode: 'insensitive' } },
                 { phone: { contains: search } },
-                { insuranceCarrier: { contains: search } },
+                { insuranceCarrier: { contains: search, mode: 'insensitive' } },
                 { memberId: { contains: search } }
               ]
             }

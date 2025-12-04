@@ -44,8 +44,32 @@ export class CustomerSearchService {
         return await this.standardSearch(filters, page, limit)
       }
 
-      // Get a broader set of customers for fuzzy matching
-      const allCustomers = await prisma.customer.findMany({
+      // First try direct database search for exact/partial matches
+      const trimmedSearch = searchTerm.trim()
+      const directMatches = await prisma.customer.findMany({
+        where: {
+          ...this.buildWhereClause(filters),
+          OR: [
+            { firstName: { contains: trimmedSearch, mode: 'insensitive' } },
+            { lastName: { contains: trimmedSearch, mode: 'insensitive' } },
+            { email: { contains: trimmedSearch, mode: 'insensitive' } },
+            { phone: { contains: trimmedSearch } },
+            { customerNumber: { contains: trimmedSearch, mode: 'insensitive' } },
+            { memberId: { contains: trimmedSearch } }
+          ]
+        },
+        include: {
+          _count: {
+            select: {
+              transactions: true
+            }
+          }
+        },
+        take: 100
+      })
+
+      // If we have direct matches, use those for fuzzy ranking
+      const allCustomers = directMatches.length > 0 ? directMatches : await prisma.customer.findMany({
         where: this.buildWhereClause(filters),
         include: {
           _count: {
@@ -54,7 +78,7 @@ export class CustomerSearchService {
             }
           }
         },
-        take: 500 // Limit for performance
+        take: 1000 // Increased limit for fuzzy fallback
       })
 
       // Perform fuzzy search

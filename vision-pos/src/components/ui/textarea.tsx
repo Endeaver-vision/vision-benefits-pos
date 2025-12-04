@@ -2,23 +2,27 @@ import * as React from "react"
 
 import { cn } from "@/lib/utils"
 
-export interface TextareaProps
-  extends React.TextareaHTMLAttributes<HTMLTextAreaElement> {}
-
-const Textarea = React.forwardRef<HTMLTextAreaElement, TextareaProps>(
-  ({ className, ...props }, ref) => {
-    return (
-      <textarea
-        className={cn(
-          "flex min-h-[80px] w-full rounded-md border border-input bg-background px-3 py-2 text-sm ring-offset-background placeholder:text-muted-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 disabled:cursor-not-allowed disabled:opacity-50",
-          className
-        )}
-        ref={ref}
-        {...props}
-      />
-    )
-  }
-)
-Textarea.displayName = "Textarea"
+function Textarea({ className, ...props }: React.ComponentProps<"textarea">) {
+  return (
+    <textarea
+      data-slot="textarea"
+      className={cn(
+        "flex min-h-[120px] w-full rounded-2xl px-4 py-3 text-base transition-all duration-200",
+        "bg-white/[0.08] backdrop-blur-sm border border-white/15",
+        "text-foreground placeholder:text-muted-foreground",
+        "shadow-[inset_0_1px_0_0_rgba(255,255,255,0.05)]",
+        "hover:bg-white/[0.1] hover:border-white/20",
+        "focus:bg-white/[0.12] focus:border-primary focus:ring-[3px] focus:ring-primary/20 focus:outline-none",
+        "disabled:pointer-events-none disabled:cursor-not-allowed disabled:opacity-50",
+        "resize-none",
+        "selection:bg-primary/30 selection:text-foreground",
+        "aria-invalid:border-destructive aria-invalid:ring-destructive/20",
+        "md:text-sm",
+        className
+      )}
+      {...props}
+    />
+  )
+}
 
 export { Textarea }

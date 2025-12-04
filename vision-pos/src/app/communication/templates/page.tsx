@@ -1,20 +1,13 @@
-import Link from 'next/link'
-import { Button } from '@/components/ui/button'
-import { ArrowLeft } from 'lucide-react'
 import TemplateManagement from '@/components/communication/template-management'
+import PageLayout from '@/components/layout/page-layout'
 
 export default function CommunicationTemplatesPage() {
   return (
-    <div>
-      <div className="container mx-auto p-6 pb-0">
-        <Link href="/communication">
-          <Button variant="ghost" size="sm" className="flex items-center gap-2">
-            <ArrowLeft className="h-4 w-4" />
-            Back to Communication
-          </Button>
-        </Link>
-      </div>
+    <PageLayout
+      title="Communication Templates"
+      subtitle="Manage email and SMS templates"
+    >
       <TemplateManagement />
-    </div>
+    </PageLayout>
   )
 }

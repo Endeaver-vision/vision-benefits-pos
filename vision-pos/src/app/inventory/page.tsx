@@ -1,6 +1,6 @@
 'use client'
 
-import { useSession } from 'next-auth/react'
+// import { useSession } from 'next-auth/react'
 import { useRouter } from 'next/navigation'
 import { useEffect, useState, useCallback } from 'react'
 import { Button } from '@/components/ui/button'
@@ -14,17 +14,17 @@ import {
   SelectTrigger, 
   SelectValue 
 } from '@/components/ui/select'
-import { 
-  Loader2, 
-  Search, 
-  Package, 
-  AlertTriangle, 
-  TrendingUp, 
+import {
+  Loader2,
+  Search,
+  Package,
+  AlertTriangle,
+  TrendingUp,
   Edit,
   Eye,
-  BarChart3,
-  ArrowLeft
+  BarChart3
 } from 'lucide-react'
+import PageLayout from '@/components/layout/page-layout'
 
 interface Product {
   id: string
@@ -84,7 +84,6 @@ interface InventoryResponse {
 }
 
 export default function InventoryPage() {
-  const { data: session, status } = useSession()
   const router = useRouter()
   const [loading, setLoading] = useState(true)
   const [inventory, setInventory] = useState<InventoryItem[]>([])
@@ -100,10 +99,7 @@ export default function InventoryPage() {
   const [showLowStockOnly, setShowLowStockOnly] = useState(false)
 
   useEffect(() => {
-    if (status === 'unauthenticated') {
-      router.push('/login')
-    }
-  }, [status, router])
+  }, [router])
 
   // Load categories
   const loadCategories = useCallback(async () => {
@@ -120,17 +116,14 @@ export default function InventoryPage() {
 
   // Load inventory
   const loadInventory = useCallback(async () => {
-    if (!session) return
-
+    setLoading(true)
     try {
-      setLoading(true)
       const params = new URLSearchParams()
-      
       if (searchTerm) params.append('search', searchTerm)
-      if (selectedCategory !== 'all') params.append('categoryId', selectedCategory)
+      if (selectedCategory) params.append('category', selectedCategory)
       if (showLowStockOnly) params.append('lowStock', 'true')
 
-      const response = await fetch(`/api/inventory?${params}`)
+      const response = await fetch(`/api/inventory?${params.toString()}`)
       if (response.ok) {
         const data: InventoryResponse = await response.json()
         setInventory(data.data)
@@ -143,14 +136,12 @@ export default function InventoryPage() {
     } finally {
       setLoading(false)
     }
-  }, [session, searchTerm, selectedCategory, showLowStockOnly])
+  }, [searchTerm, selectedCategory, showLowStockOnly])
 
   useEffect(() => {
-    if (session) {
-      loadCategories()
-      loadInventory()
-    }
-  }, [session, loadCategories, loadInventory])
+    loadCategories()
+    loadInventory()
+  }, [loadCategories, loadInventory])
 
   const getStockStatus = (item: InventoryItem) => {
     if (item.availableStock <= 0) {
@@ -174,7 +165,7 @@ export default function InventoryPage() {
     return new Date(dateString).toLocaleDateString()
   }
 
-  if (status === 'loading' || loading) {
+  if (loading) {
     return (
       <div className="min-h-screen flex items-center justify-center">
         <Loader2 className="h-8 w-8 animate-spin" />
@@ -182,34 +173,12 @@ export default function InventoryPage() {
     )
   }
 
-  if (!session) {
-    return null
-  }
 
   return (
-    <div className="min-h-screen bg-gray-50">
-      {/* Back to Dashboard Button */}
-      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 pt-4">
-        <Button variant="ghost" size="sm" onClick={() => router.push('/dashboard')}>
-          <ArrowLeft className="h-4 w-4 mr-2" />
-          Back to Dashboard
-        </Button>
-      </div>
-
-      {/* Header */}
-      <header className="bg-white border-b border-gray-200">
-        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-          <div className="flex justify-between items-center py-4">
-            <div>
-              <h1 className="text-2xl font-bold text-gray-900">Inventory Management</h1>
-              <p className="text-sm text-gray-600">
-                Manage your product inventory and stock levels
-              </p>
-            </div>
-          </div>
-        </div>
-      </header>
-
+    <PageLayout
+      title="Inventory Management"
+      subtitle="Manage your product inventory and stock levels"
+    >
       {/* Main Content */}
       <main className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
         {/* Summary Cards */}
@@ -279,7 +248,7 @@ export default function InventoryPage() {
             <div className="flex flex-col sm:flex-row gap-4">
               <div className="flex-1">
                 <div className="relative">
-                  <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400 h-4 w-4" />
+                  <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-white/60 h-4 w-4" />
                   <Input
                     placeholder="Search products..."
                     value={searchTerm}
@@ -321,9 +290,9 @@ export default function InventoryPage() {
           <CardContent>
             {inventory.length === 0 ? (
               <div className="text-center py-8">
-                <Package className="h-12 w-12 text-gray-400 mx-auto mb-4" />
-                <p className="text-gray-500">No inventory items found</p>
-                <p className="text-sm text-gray-400">
+                <Package className="h-12 w-12 text-white/50 mx-auto mb-4" />
+                <p className="text-white/70">No inventory items found</p>
+                <p className="text-sm text-white/50">
                   Try adjusting your search criteria
                 </p>
               </div>
@@ -331,32 +300,32 @@ export default function InventoryPage() {
               <div className="overflow-x-auto">
                 <table className="w-full">
                   <thead>
-                    <tr className="border-b">
-                      <th className="text-left p-4 font-medium">Product</th>
-                      <th className="text-left p-4 font-medium">Category</th>
-                      <th className="text-right p-4 font-medium">Current Stock</th>
-                      <th className="text-right p-4 font-medium">Available</th>
-                      <th className="text-right p-4 font-medium">Reorder Point</th>
-                      <th className="text-center p-4 font-medium">Status</th>
-                      <th className="text-right p-4 font-medium">Value</th>
-                      <th className="text-center p-4 font-medium">Actions</th>
+                    <tr className="border-b border-white/20">
+                      <th className="text-left p-4 font-medium text-white">Product</th>
+                      <th className="text-left p-4 font-medium text-white">Category</th>
+                      <th className="text-right p-4 font-medium text-white">Current Stock</th>
+                      <th className="text-right p-4 font-medium text-white">Available</th>
+                      <th className="text-right p-4 font-medium text-white">Reorder Point</th>
+                      <th className="text-center p-4 font-medium text-white">Status</th>
+                      <th className="text-right p-4 font-medium text-white">Value</th>
+                      <th className="text-center p-4 font-medium text-white">Actions</th>
                     </tr>
                   </thead>
                   <tbody>
                     {inventory.map((item) => {
                       const stockStatus = getStockStatus(item)
                       const itemValue = item.currentStock * (item.costPrice || 0)
-                      
+
                       return (
-                        <tr key={item.id} className="border-b hover:bg-gray-50">
+                        <tr key={item.id} className="border-b border-white/10 hover:bg-white/5">
                           <td className="p-4">
                             <div>
-                              <div className="font-medium">{item.product.name}</div>
-                              <div className="text-sm text-gray-500">
+                              <div className="font-medium text-white">{item.product.name}</div>
+                              <div className="text-sm text-white/70">
                                 SKU: {item.product.sku || 'N/A'}
                               </div>
                               {item.product.manufacturer && (
-                                <div className="text-xs text-gray-400">
+                                <div className="text-xs text-white/50">
                                   {item.product.manufacturer}
                                 </div>
                               )}
@@ -404,6 +373,6 @@ export default function InventoryPage() {
           </CardContent>
         </Card>
       </main>
-    </div>
+    </PageLayout>
   )
 }

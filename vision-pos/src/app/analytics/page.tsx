@@ -1,46 +1,27 @@
 'use client'
 
 import { useState } from 'react'
-import Link from 'next/link'
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card'
 import { Button } from '@/components/ui/button'
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs'
-import { 
+import {
   BarChart3,
   TrendingUp,
   Users,
   DollarSign,
   Download,
-  ArrowLeft,
   ShoppingCart
 } from 'lucide-react'
+import PageLayout from '@/components/layout/page-layout'
 
 export default function UnifiedAnalyticsPage() {
   const [dateRange, setDateRange] = useState('30d')
 
   return (
-    <div className="container mx-auto p-6 space-y-6">
-      {/* Header */}
-      <div className="flex items-center justify-between">
-        <div className="flex items-center gap-4">
-          <Link href="/dashboard">
-            <Button variant="ghost" size="sm">
-              <ArrowLeft className="h-4 w-4 mr-2" />
-              Dashboard
-            </Button>
-          </Link>
-          <div>
-            <h1 className="text-3xl font-bold tracking-tight flex items-center gap-3">
-              <BarChart3 className="h-8 w-8 text-blue-600" />
-              Analytics & Reports
-            </h1>
-            <p className="text-muted-foreground mt-1">
-              Business intelligence, performance metrics, and data exports
-            </p>
-          </div>
-        </div>
-        
-        {/* Date Range Selector */}
+    <PageLayout
+      title="Analytics & Reports"
+      subtitle="Business intelligence, performance metrics, and data exports"
+      actions={
         <div className="flex gap-2">
           {['7d', '30d', '90d', '1y'].map((range) => (
             <Button
@@ -53,7 +34,9 @@ export default function UnifiedAnalyticsPage() {
             </Button>
           ))}
         </div>
-      </div>
+      }
+    >
+      <div className="container mx-auto p-6 space-y-6">
 
       {/* Tabbed Interface */}
       <Tabs defaultValue="performance" className="space-y-6">
@@ -397,6 +380,7 @@ export default function UnifiedAnalyticsPage() {
           </Card>
         </TabsContent>
       </Tabs>
-    </div>
+      </div>
+    </PageLayout>
   )
 }

@@ -1,24 +1,21 @@
 'use client'
 
-import { useState } from 'react'
+import { useState, useEffect } from 'react'
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
 import { Button } from '@/components/ui/button'
-import { Checkbox } from '@/components/ui/checkbox'
 import { Badge } from '@/components/ui/badge'
 import { Separator } from '@/components/ui/separator'
-import { Calendar, Clock, Eye, Activity, Brain, AlertCircle } from 'lucide-react'
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select'
+import { Check, Loader2 } from 'lucide-react'
+import { useQuoteStore } from '@/store/quote-store'
 
-interface ExamService {
+interface Service {
   id: string
   name: string
-  description: string
-  price: number
-  duration: number
-  required?: boolean
-  category: 'comprehensive' | 'diagnostic' | 'specialty'
-  insuranceCovered?: boolean
-  copay?: number
+  retailPrice: number
+  category: string
+  description?: string
+  patientPays: number
+  insurancePays: number
 }
 
 interface ExamServicesLayerProps {
@@ -26,438 +23,162 @@ interface ExamServicesLayerProps {
   onBack?: () => void
 }
 
-const examServices: ExamService[] = [
-  // Comprehensive Eye Exams
-  {
-    id: 'routine-exam',
-    name: 'Routine Eye Exam',
-    description: 'Complete vision and eye health examination',
-    price: 150,
-    duration: 60,
-    category: 'comprehensive',
-    insuranceCovered: true,
-    copay: 25
-  },
-  {
-    id: 'medical-exam',
-    name: 'Medical Eye Exam',
-    description: 'Comprehensive medical evaluation for eye conditions',
-    price: 200,
-    duration: 90,
-    category: 'comprehensive',
-    insuranceCovered: true,
-    copay: 35
-  },
-  {
-    id: 'contact-fitting',
-    name: 'Contact Lens Fitting',
-    description: 'Specialized fitting for contact lens wearers',
-    price: 75,
-    duration: 30,
-    category: 'comprehensive',
-    insuranceCovered: false
-  },
-  
-  // Diagnostic Services
-  {
-    id: 'optomap',
-    name: 'Optomap Retinal Imaging',
-    description: 'Wide-field retinal photography for early disease detection',
-    price: 45,
-    duration: 15,
-    category: 'diagnostic',
-    insuranceCovered: false
-  },
-  {
-    id: 'oct-scan',
-    name: 'iWellness OCT Scan',
-    description: 'Optical coherence tomography for detailed retinal analysis',
-    price: 65,
-    duration: 20,
-    category: 'diagnostic',
-    insuranceCovered: true,
-    copay: 15
-  },
-  {
-    id: 'visual-field',
-    name: 'Visual Field Testing',
-    description: 'Comprehensive peripheral vision assessment',
-    price: 85,
-    duration: 30,
-    category: 'diagnostic',
-    insuranceCovered: true,
-    copay: 20
-  },
-  
-  // Specialty Exams
-  {
-    id: 'glaucoma-testing',
-    name: 'Glaucoma Testing',
-    description: 'Comprehensive glaucoma screening and monitoring',
-    price: 120,
-    duration: 45,
-    category: 'specialty',
-    insuranceCovered: true,
-    copay: 30
-  },
-  {
-    id: 'dry-eye-evaluation',
-    name: 'Dry Eye Evaluation',
-    description: 'Specialized testing for dry eye syndrome',
-    price: 95,
-    duration: 35,
-    category: 'specialty',
-    insuranceCovered: false
-  },
-  {
-    id: 'diabetic-eye-care',
-    name: 'Diabetic Eye Care',
-    description: 'Specialized diabetic retinopathy screening',
-    price: 110,
-    duration: 40,
-    category: 'specialty',
-    insuranceCovered: true,
-    copay: 25
-  }
-]
-
-const appointmentSlots = [
-  { time: '9:00 AM', available: true },
-  { time: '10:30 AM', available: true },
-  { time: '12:00 PM', available: false },
-  { time: '1:30 PM', available: true },
-  { time: '3:00 PM', available: true },
-  { time: '4:30 PM', available: false }
-]
-
-const providers = [
-  { id: 'dr-smith', name: 'Dr. Sarah Smith, OD', specialty: 'General Optometry' },
-  { id: 'dr-johnson', name: 'Dr. Michael Johnson, OD', specialty: 'Contact Lenses' },
-  { id: 'dr-brown', name: 'Dr. Emily Brown, MD', specialty: 'Medical Eye Care' }
+// Organized service categories matching the price list
+const SERVICE_CATEGORIES = [
+  { key: 'EXAM', label: 'Exam Services', description: 'Comprehensive eye examinations' },
+  { key: 'EXAM_ADDON', label: 'Exam Add-ons', description: 'Diagnostic imaging and testing' },
+  { key: 'CONTACT_LENS_FIT', label: 'Contact Lens Fitting', description: 'Fitting services for contact lenses' },
 ]
 
 export default function ExamServicesLayer({ onNext, onBack }: ExamServicesLayerProps) {
-  const [selectedServices, setSelectedServices] = useState<string[]>(['routine-exam'])
-  const [selectedDate, setSelectedDate] = useState<string>('')
-  const [selectedTime, setSelectedTime] = useState<string>('')
-  const [selectedProvider, setSelectedProvider] = useState<string>('')
-  const [showScheduling, setShowScheduling] = useState(false)
+  const [services, setServices] = useState<Service[]>([])
+  const [loading, setLoading] = useState(true)
+  const [selectedServices, setSelectedServices] = useState<Set<string>>(new Set())
+  const { selectedCustomer } = useQuoteStore()
 
-  const handleServiceToggle = (serviceId: string) => {
-    setSelectedServices(prev => {
-      // Ensure at least one comprehensive exam is selected
-      if (serviceId === 'routine-exam' || serviceId === 'medical-exam') {
-        // If deselecting a comprehensive exam, ensure another one is selected
-        if (prev.includes(serviceId)) {
-          const otherComprehensiveSelected = prev.some(id => 
-            (id === 'routine-exam' || id === 'medical-exam') && id !== serviceId
-          )
-          if (!otherComprehensiveSelected) {
-            return prev // Don't allow deselection if it's the only comprehensive exam
-          }
-        }
+  useEffect(() => {
+    fetchServices()
+  }, [selectedCustomer])
+
+  const fetchServices = async () => {
+    setLoading(true)
+    try {
+      const params = new URLSearchParams()
+      if (selectedCustomer?.id) {
+        params.set('customerId', selectedCustomer.id)
       }
-      
-      if (prev.includes(serviceId)) {
-        return prev.filter(id => id !== serviceId)
-      } else {
-        return [...prev, serviceId]
+      const res = await fetch(`/api/pos/services?${params}`)
+      const data = await res.json()
+      if (data.success) {
+        setServices(data.services)
       }
-    })
-  }
-
-  const getSelectedServicesData = () => {
-    return examServices.filter(service => selectedServices.includes(service.id))
-  }
-
-  const calculateTotal = () => {
-    const services = getSelectedServicesData()
-    const subtotal = services.reduce((sum, service) => sum + service.price, 0)
-    const insuranceDiscount = services.reduce((sum, service) => {
-      return sum + (service.insuranceCovered ? (service.price - (service.copay || 0)) : 0)
-    }, 0)
-    const patientResponsibility = subtotal - insuranceDiscount
-    
-    return { subtotal, insuranceDiscount, patientResponsibility }
-  }
-
-  const getTotalDuration = () => {
-    return getSelectedServicesData().reduce((sum, service) => sum + service.duration, 0)
-  }
-
-  const canProceed = () => {
-    const hasComprehensiveExam = selectedServices.some(id => 
-      examServices.find(service => service.id === id)?.category === 'comprehensive'
-    )
-    return hasComprehensiveExam && (!showScheduling || (selectedDate && selectedTime && selectedProvider))
-  }
-
-  const handleNext = () => {
-    if (canProceed()) {
-      // Here you would typically save the exam services selection to your state management
-      console.log('Selected exam services:', {
-        services: getSelectedServicesData(),
-        appointment: showScheduling ? {
-          date: selectedDate,
-          time: selectedTime,
-          provider: selectedProvider,
-          duration: getTotalDuration()
-        } : null,
-        totals: calculateTotal()
-      })
-      onNext()
+    } catch (error) {
+      console.error('Failed to fetch services:', error)
+    } finally {
+      setLoading(false)
     }
   }
 
-  const { subtotal, insuranceDiscount, patientResponsibility } = calculateTotal()
+  const toggleService = (serviceId: string) => {
+    setSelectedServices(prev => {
+      const next = new Set(prev)
+      if (next.has(serviceId)) {
+        next.delete(serviceId)
+      } else {
+        next.add(serviceId)
+      }
+      return next
+    })
+  }
+
+  const getServicesByCategory = (categoryKey: string) => {
+    if (categoryKey === 'EXAM_ADDON') {
+      // Add-ons include DIAGNOSTIC and PROCEDURE that aren't contact lens fitting
+      return services.filter(s =>
+        s.category === 'DIAGNOSTIC' ||
+        s.category === 'PROCEDURE' ||
+        (s.category === 'EXAM' && !s.name.toLowerCase().includes('exam'))
+      )
+    }
+    return services.filter(s => s.category === categoryKey)
+  }
+
+  const getSelectedTotal = () => {
+    return services
+      .filter(s => selectedServices.has(s.id))
+      .reduce((sum, s) => sum + s.patientPays, 0)
+  }
+
+  const handleNext = () => {
+    // Store selected services in quote store
+    const selected = services.filter(s => selectedServices.has(s.id))
+    console.log('Selected services:', selected)
+    onNext()
+  }
+
+  if (loading) {
+    return (
+      <div className="flex items-center justify-center py-12">
+        <Loader2 className="h-8 w-8 animate-spin text-primary" />
+      </div>
+    )
+  }
 
   return (
     <div className="space-y-6">
       <div className="text-center">
-        <h2 className="text-2xl font-bold text-gray-900">Exam Services</h2>
-        <p className="text-gray-600 mt-2">Select the eye exam services you need</p>
+        <h2 className="text-2xl font-bold">Exam Services</h2>
+        <p className="text-muted-foreground mt-1">Select the services for this visit</p>
       </div>
 
       {/* Service Categories */}
-      <div className="grid gap-6">
-        {/* Comprehensive Eye Exams */}
-        <Card>
-          <CardHeader>
-            <CardTitle className="flex items-center gap-2">
-              <Eye className="h-5 w-5 text-blue-600" />
-              Comprehensive Eye Exams
-              <Badge variant="secondary">Required</Badge>
-            </CardTitle>
-          </CardHeader>
-          <CardContent className="space-y-4">
-            {examServices.filter(service => service.category === 'comprehensive').map(service => (
-              <div key={service.id} className="flex items-start space-x-3 p-4 border rounded-lg hover:bg-gray-50">
-                <Checkbox
-                  id={service.id}
-                  checked={selectedServices.includes(service.id)}
-                  onCheckedChange={() => handleServiceToggle(service.id)}
-                />
-                <div className="flex-1">
-                  <div className="flex items-center justify-between">
-                    <label htmlFor={service.id} className="font-medium cursor-pointer">
-                      {service.name}
-                    </label>
-                    <div className="flex items-center gap-2">
-                      <Badge variant={service.insuranceCovered ? "default" : "secondary"}>
-                        {service.insuranceCovered ? `$${service.copay} copay` : `$${service.price}`}
-                      </Badge>
-                      <Badge variant="outline">
-                        <Clock className="h-3 w-3 mr-1" />
-                        {service.duration}min
-                      </Badge>
-                    </div>
-                  </div>
-                  <p className="text-sm text-gray-600 mt-1">{service.description}</p>
-                </div>
-              </div>
-            ))}
-          </CardContent>
-        </Card>
+      {SERVICE_CATEGORIES.map(category => {
+        const categoryServices = getServicesByCategory(category.key)
+        if (categoryServices.length === 0) return null
 
-        {/* Diagnostic Services */}
-        <Card>
-          <CardHeader>
-            <CardTitle className="flex items-center gap-2">
-              <Activity className="h-5 w-5 text-green-600" />
-              Diagnostic Services
-              <Badge variant="outline">Optional</Badge>
-            </CardTitle>
-          </CardHeader>
-          <CardContent className="space-y-4">
-            {examServices.filter(service => service.category === 'diagnostic').map(service => (
-              <div key={service.id} className="flex items-start space-x-3 p-4 border rounded-lg hover:bg-gray-50">
-                <Checkbox
-                  id={service.id}
-                  checked={selectedServices.includes(service.id)}
-                  onCheckedChange={() => handleServiceToggle(service.id)}
-                />
-                <div className="flex-1">
-                  <div className="flex items-center justify-between">
-                    <label htmlFor={service.id} className="font-medium cursor-pointer">
-                      {service.name}
-                    </label>
-                    <div className="flex items-center gap-2">
-                      <Badge variant={service.insuranceCovered ? "default" : "secondary"}>
-                        {service.insuranceCovered ? `$${service.copay} copay` : `$${service.price}`}
-                      </Badge>
-                      <Badge variant="outline">
-                        <Clock className="h-3 w-3 mr-1" />
-                        {service.duration}min
-                      </Badge>
-                    </div>
-                  </div>
-                  <p className="text-sm text-gray-600 mt-1">{service.description}</p>
-                </div>
-              </div>
-            ))}
-          </CardContent>
-        </Card>
-
-        {/* Specialty Services */}
-        <Card>
-          <CardHeader>
-            <CardTitle className="flex items-center gap-2">
-              <Brain className="h-5 w-5 text-purple-600" />
-              Specialty Services
-              <Badge variant="outline">As Needed</Badge>
-            </CardTitle>
-          </CardHeader>
-          <CardContent className="space-y-4">
-            {examServices.filter(service => service.category === 'specialty').map(service => (
-              <div key={service.id} className="flex items-start space-x-3 p-4 border rounded-lg hover:bg-gray-50">
-                <Checkbox
-                  id={service.id}
-                  checked={selectedServices.includes(service.id)}
-                  onCheckedChange={() => handleServiceToggle(service.id)}
-                />
-                <div className="flex-1">
-                  <div className="flex items-center justify-between">
-                    <label htmlFor={service.id} className="font-medium cursor-pointer">
-                      {service.name}
-                    </label>
-                    <div className="flex items-center gap-2">
-                      <Badge variant={service.insuranceCovered ? "default" : "secondary"}>
-                        {service.insuranceCovered ? `$${service.copay} copay` : `$${service.price}`}
-                      </Badge>
-                      <Badge variant="outline">
-                        <Clock className="h-3 w-3 mr-1" />
-                        {service.duration}min
-                      </Badge>
-                    </div>
-                  </div>
-                  <p className="text-sm text-gray-600 mt-1">{service.description}</p>
-                </div>
-              </div>
-            ))}
-          </CardContent>
-        </Card>
-      </div>
-
-      {/* Appointment Scheduling */}
-      <Card>
-        <CardHeader>
-          <CardTitle className="flex items-center gap-2">
-            <Calendar className="h-5 w-5 text-blue-600" />
-            Schedule Your Appointment
-          </CardTitle>
-        </CardHeader>
-        <CardContent className="space-y-4">
-          <div className="flex items-center space-x-2">
-            <Checkbox
-              id="schedule-now"
-              checked={showScheduling}
-              onCheckedChange={(checked) => setShowScheduling(checked === true)}
-            />
-            <label htmlFor="schedule-now" className="font-medium cursor-pointer">
-              Schedule appointment now
-            </label>
-          </div>
-
-          {showScheduling && (
-            <div className="grid grid-cols-1 md:grid-cols-3 gap-4 mt-4">
-              <div>
-                <label className="block text-sm font-medium mb-2">Select Date</label>
-                <Select value={selectedDate} onValueChange={setSelectedDate}>
-                  <SelectTrigger>
-                    <SelectValue placeholder="Choose date" />
-                  </SelectTrigger>
-                  <SelectContent>
-                    <SelectItem value="2024-03-15">Today - March 15</SelectItem>
-                    <SelectItem value="2024-03-16">Tomorrow - March 16</SelectItem>
-                    <SelectItem value="2024-03-18">Monday - March 18</SelectItem>
-                    <SelectItem value="2024-03-19">Tuesday - March 19</SelectItem>
-                    <SelectItem value="2024-03-20">Wednesday - March 20</SelectItem>
-                  </SelectContent>
-                </Select>
-              </div>
-
-              <div>
-                <label className="block text-sm font-medium mb-2">Select Time</label>
-                <Select value={selectedTime} onValueChange={setSelectedTime}>
-                  <SelectTrigger>
-                    <SelectValue placeholder="Choose time" />
-                  </SelectTrigger>
-                  <SelectContent>
-                    {appointmentSlots.map(slot => (
-                      <SelectItem 
-                        key={slot.time} 
-                        value={slot.time}
-                        disabled={!slot.available}
-                      >
-                        {slot.time} {!slot.available && '(Unavailable)'}
-                      </SelectItem>
-                    ))}
-                  </SelectContent>
-                </Select>
-              </div>
-
-              <div>
-                <label className="block text-sm font-medium mb-2">Select Provider</label>
-                <Select value={selectedProvider} onValueChange={setSelectedProvider}>
-                  <SelectTrigger>
-                    <SelectValue placeholder="Choose provider" />
-                  </SelectTrigger>
-                  <SelectContent>
-                    {providers.map(provider => (
-                      <SelectItem key={provider.id} value={provider.id}>
-                        <div>
-                          <div className="font-medium">{provider.name}</div>
-                          <div className="text-sm text-gray-500">{provider.specialty}</div>
+        return (
+          <Card key={category.key} className="bg-card/90 backdrop-blur-sm">
+            <CardHeader className="pb-3">
+              <CardTitle className="text-lg">{category.label}</CardTitle>
+              <p className="text-sm text-muted-foreground">{category.description}</p>
+            </CardHeader>
+            <CardContent>
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
+                {categoryServices.map(service => {
+                  const isSelected = selectedServices.has(service.id)
+                  return (
+                    <button
+                      key={service.id}
+                      onClick={() => toggleService(service.id)}
+                      className={`
+                        relative p-4 rounded-lg border-2 text-left transition-all duration-200
+                        ${isSelected
+                          ? 'border-primary bg-primary/10 shadow-md'
+                          : 'border-border hover:border-primary/50 hover:bg-accent/50'
+                        }
+                      `}
+                    >
+                      {isSelected && (
+                        <div className="absolute top-2 right-2">
+                          <div className="chip-button p-1 rounded-full">
+                            <Check className="h-4 w-4" />
+                          </div>
                         </div>
-                      </SelectItem>
-                    ))}
-                  </SelectContent>
-                </Select>
+                      )}
+                      <div className="pr-8">
+                        <div className="font-medium">{service.name}</div>
+                        <div className="flex items-center gap-2 mt-2">
+                          <Badge variant="secondary" className="chip-button text-xs">
+                            ${service.patientPays.toFixed(2)}
+                          </Badge>
+                          {service.insurancePays > 0 && (
+                            <span className="text-xs text-green-600">
+                              Ins covers ${service.insurancePays.toFixed(2)}
+                            </span>
+                          )}
+                        </div>
+                      </div>
+                    </button>
+                  )
+                })}
               </div>
-            </div>
-          )}
-        </CardContent>
-      </Card>
+            </CardContent>
+          </Card>
+        )
+      })}
 
       {/* Summary */}
-      <Card>
-        <CardHeader>
-          <CardTitle>Exam Services Summary</CardTitle>
-        </CardHeader>
-        <CardContent>
-          <div className="space-y-3">
-            <div className="flex justify-between items-center">
-              <span>Selected Services ({getSelectedServicesData().length})</span>
-              <span className="font-medium">{getTotalDuration()} minutes total</span>
+      <Card className="bg-card/90 backdrop-blur-sm">
+        <CardContent className="pt-6">
+          <div className="flex justify-between items-center">
+            <div>
+              <span className="text-muted-foreground">Selected Services:</span>
+              <span className="ml-2 font-medium">{selectedServices.size}</span>
             </div>
-            
-            <Separator />
-            
-            <div className="space-y-2 text-sm">
-              <div className="flex justify-between">
-                <span>Subtotal:</span>
-                <span>${subtotal}</span>
-              </div>
-              {insuranceDiscount > 0 && (
-                <div className="flex justify-between text-green-600">
-                  <span>Insurance Coverage:</span>
-                  <span>-${insuranceDiscount}</span>
-                </div>
-              )}
-              <div className="flex justify-between font-semibold text-lg border-t pt-2">
-                <span>Your Responsibility:</span>
-                <span>${patientResponsibility}</span>
-              </div>
+            <div className="text-right">
+              <span className="text-muted-foreground">Patient Total:</span>
+              <span className="ml-2 text-xl font-bold">${getSelectedTotal().toFixed(2)}</span>
             </div>
-
-            {!selectedServices.some(id => 
-              examServices.find(service => service.id === id)?.category === 'comprehensive'
-            ) && (
-              <div className="flex items-center gap-2 text-amber-600 bg-amber-50 p-3 rounded-lg">
-                <AlertCircle className="h-4 w-4" />
-                <span className="text-sm">At least one comprehensive eye exam is required</span>
-              </div>
-            )}
           </div>
         </CardContent>
       </Card>
@@ -469,11 +190,7 @@ export default function ExamServicesLayer({ onNext, onBack }: ExamServicesLayerP
             Back
           </Button>
         )}
-        <Button 
-          onClick={handleNext}
-          disabled={!canProceed()}
-          className="ml-auto"
-        >
+        <Button onClick={handleNext} className="chip-button ml-auto">
           Continue to Products
         </Button>
       </div>

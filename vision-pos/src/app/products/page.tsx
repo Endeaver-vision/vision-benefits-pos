@@ -1,6 +1,6 @@
 'use client'
 
-import { useSession } from 'next-auth/react'
+// import { useSession } from 'next-auth/react'
 import { useRouter } from 'next/navigation'
 import { useEffect, useState } from 'react'
 import { Button } from '@/components/ui/button'
@@ -22,15 +22,16 @@ import {
   TableHeader,
   TableRow,
 } from "@/components/ui/table"
-import { 
-  Loader2, 
-  Search, 
-  Package, 
+import {
+  Loader2,
+  Search,
+  Package,
   DollarSign,
   Shield,
   ArrowUpDown,
   Filter
 } from 'lucide-react'
+import PageLayout from '@/components/layout/page-layout'
 
 interface Product {
   id: string
@@ -56,7 +57,6 @@ interface ProductCategory {
 }
 
 export default function ProductsPage() {
-  const { data: session, status } = useSession()
   const router = useRouter()
   const [products, setProducts] = useState<Product[]>([])
   const [categories, setCategories] = useState<ProductCategory[]>([])
@@ -67,17 +67,12 @@ export default function ProductsPage() {
   const [sortDirection, setSortDirection] = useState<'asc' | 'desc'>('asc')
 
   useEffect(() => {
-    if (status === 'unauthenticated') {
-      router.push('/login')
-    }
-  }, [status, router])
+  }, [router])
 
   useEffect(() => {
-    if (status === 'authenticated') {
-      fetchCategories()
-      fetchProducts()
-    }
-  }, [status])
+    fetchCategories()
+    fetchProducts()
+  }, [])
 
   const fetchCategories = async () => {
     try {
@@ -146,7 +141,7 @@ export default function ProductsPage() {
     return 'outline'
   }
 
-  if (status === 'loading' || loading) {
+  if (loading) {
     return (
       <div className="flex items-center justify-center min-h-screen">
         <Loader2 className="h-8 w-8 animate-spin" />
@@ -155,20 +150,17 @@ export default function ProductsPage() {
   }
 
   return (
-    <div className="container mx-auto py-6 space-y-6">
-      <div className="flex items-center justify-between">
-        <div>
-          <h1 className="text-3xl font-bold tracking-tight">Product Catalog</h1>
-          <p className="text-muted-foreground">
-            View retail prices and insurance tier assignments
-          </p>
-        </div>
+    <PageLayout
+      title="Product Catalog"
+      subtitle="View retail prices and insurance tier assignments"
+      actions={
         <Badge variant="outline" className="text-sm">
           <Package className="h-3 w-3 mr-1" />
           {filteredProducts.length} Products
         </Badge>
-      </div>
-
+      }
+    >
+      <div className="container mx-auto py-6 space-y-6">
       <Card>
         <CardHeader>
           <CardTitle className="text-lg flex items-center gap-2">
@@ -340,6 +332,7 @@ export default function ProductsPage() {
           </div>
         </CardContent>
       </Card>
-    </div>
+      </div>
+    </PageLayout>
   )
 }

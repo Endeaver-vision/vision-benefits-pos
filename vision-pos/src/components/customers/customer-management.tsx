@@ -1,7 +1,7 @@
 'use client'
 
 import React, { useState, useEffect, useMemo, useCallback } from 'react'
-import { Search, Plus, Filter, MoreHorizontal, Phone, Mail, MapPin, Calendar, DollarSign, BarChart, Users, ArrowLeft } from 'lucide-react'
+import { Search, Plus, Filter, MoreHorizontal, Phone, Mail, MapPin, Calendar, DollarSign, BarChart, Users } from 'lucide-react'
 import Link from 'next/link'
 import { Input } from '@/components/ui/input'
 import { Button } from '@/components/ui/button'
@@ -150,23 +150,9 @@ export default function CustomerManagement({ onSelectCustomer, showActions = tru
   }
 
   return (
-    <div className="space-y-6">
-      {/* Back Button */}
-      <Link href="/dashboard">
-        <Button variant="ghost" size="sm" className="flex items-center gap-2">
-          <ArrowLeft className="h-4 w-4" />
-          Back to Dashboard
-        </Button>
-      </Link>
-
-      {/* Header */}
-      <div className="flex items-center justify-between">
-        <div>
-          <h1 className="text-3xl font-bold tracking-tight">Customer Management</h1>
-          <p className="text-muted-foreground">
-            Search, view, and manage customer profiles and information
-          </p>
-        </div>
+    <div className="space-y-6 p-6">
+      {/* Header Actions */}
+      <div className="flex items-center justify-end">
         {showActions && (
           <div className="flex items-center space-x-2">
             <Button 

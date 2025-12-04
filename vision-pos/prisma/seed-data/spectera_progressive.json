@@ -1,0 +1,28 @@
+{"brand":"Essilor","tier":"I","design_type":"Standard","is_digital":true,"is_ray_ban":false,"is_short":false,"product_id":"essilor_natural_digital","product_name":"Natural® Digital"}
+{"brand":"Essilor","tier":"I","design_type":"Standard","is_digital":false,"is_ray_ban":false,"is_short":false,"product_id":"essilor_ideal","product_name":"Ideal™"}
+{"brand":"Essilor","tier":"I","design_type":"Standard","is_digital":false,"is_ray_ban":false,"is_short":false,"product_id":"essilor_adaptar","product_name":"Adaptar®"}
+{"brand":"HOYA","tier":"I","design_type":"Standard","is_digital":false,"is_ray_ban":false,"is_short":false,"product_id":"hoya_select_13","product_name":"Select 13"}
+{"brand":"KODAK","tier":"I","design_type":"Standard","is_digital":false,"is_ray_ban":false,"is_short":false,"product_id":"kodak_easy_14","product_name":"Easy 14"}
+{"brand":"Shamir","tier":"I","design_type":"Standard","is_digital":false,"is_ray_ban":false,"is_short":false,"product_id":"shamir_element","product_name":"Element™"}
+{"brand":"Essilor","tier":"II","design_type":"Standard","is_digital":false,"is_ray_ban":false,"is_short":false,"product_id":"varilux_comfort","product_name":"Varilux Comfort®"}
+{"brand":"Essilor","tier":"II","design_type":"Standard","is_digital":false,"is_ray_ban":false,"is_short":true,"product_id":"varilux_comfort_short","product_name":"Varilux Comfort Short™"}
+{"brand":"HOYA","tier":"II","design_type":"Standard","is_digital":false,"is_ray_ban":false,"is_short":false,"product_id":"hoya_amplitude_bks","product_name":"Amplitude® BKS™"}
+{"brand":"Shamir","tier":"II","design_type":"Occupational","is_digital":false,"is_ray_ban":false,"is_short":false,"product_id":"shamir_autograph_ii_office","product_name":"Autograph II Office™"}
+{"brand":"KODAK","tier":"II","design_type":"Standard","is_digital":false,"is_ray_ban":false,"is_short":false,"product_id":"kodak_precise_plus","product_name":"Precise Plus"}
+{"brand":"Essilor","tier":"III","design_type":"Standard","is_digital":false,"is_ray_ban":false,"is_short":false,"product_id":"varilux_comfort_max","product_name":"Varilux Comfort Max"}
+{"brand":"Essilor","tier":"III","design_type":"Standard","is_digital":true,"is_ray_ban":false,"is_short":false,"product_id":"varilux_physio_drx","product_name":"Varilux Physio DRx™"}
+{"brand":"HOYA","tier":"III","design_type":"Standard","is_digital":true,"is_ray_ban":false,"is_short":false,"product_id":"hoya_amplitude_hd3","product_name":"Amplitude HD3"}
+{"brand":"Shamir","tier":"III","design_type":"Standard","is_digital":false,"is_ray_ban":false,"is_short":false,"product_id":"shamir_autograph_ii_plus","product_name":"Autograph II+"}
+{"brand":"KODAK","tier":"III","design_type":"Standard","is_digital":false,"is_ray_ban":false,"is_short":false,"product_id":"kodak_unique","product_name":"Unique™"}
+{"brand":"Essilor","tier":"IV","design_type":"Standard","is_digital":false,"is_ray_ban":false,"is_short":false,"product_id":"varilux_w3_plus","product_name":"Varilux W3+"}
+{"brand":"Essilor","tier":"IV","design_type":"Standard","is_digital":false,"is_ray_ban":false,"is_short":false,"product_id":"varilux_physio_extensee","product_name":"Varilux Physio extensee™"}
+{"brand":"Essilor","tier":"IV","design_type":"Sun","is_digital":false,"is_ray_ban":true,"is_short":false,"product_id":"rayban_varilux_sun_xtra","product_name":"Ray-Ban Varilux Sun-Xtra™"}
+{"brand":"HOYA","tier":"IV","design_type":"Lifestyle","is_digital":true,"is_ray_ban":false,"is_short":false,"product_id":"hoya_id_lifestyle_3","product_name":"iD Lifestyle 3"}
+{"brand":"Shamir","tier":"IV","design_type":"Standard","is_digital":false,"is_ray_ban":false,"is_short":false,"product_id":"shamir_autograph_iii","product_name":"Autograph III"}
+{"brand":"KODAK","tier":"IV","design_type":"Standard","is_digital":true,"is_ray_ban":false,"is_short":false,"product_id":"kodak_unique_dro_hd","product_name":"Unique DRO HD"}
+{"brand":"Essilor","tier":"V","design_type":"Premium","is_digital":true,"is_ray_ban":false,"is_short":false,"product_id":"varilux_x_design","product_name":"Varilux X Design"}
+{"brand":"Essilor","tier":"V","design_type":"Premium","is_digital":true,"is_ray_ban":false,"is_short":false,"product_id":"varilux_x_4d","product_name":"Varilux X 4D"}
+{"brand":"Essilor","tier":"V","design_type":"Premium","is_digital":true,"is_ray_ban":false,"is_short":false,"product_id":"varilux_x_fit","product_name":"Varilux X Fit"}
+{"brand":"Essilor","tier":"V","design_type":"Premium","is_digital":true,"is_ray_ban":false,"is_short":false,"product_id":"varilux_xr_design","product_name":"Varilux XR Design"}
+{"brand":"HOYA","tier":"V","design_type":"Personalized","is_digital":true,"is_ray_ban":false,"is_short":false,"product_id":"hoya_id_mystyle_2","product_name":"iD MyStyle 2"}
+{"brand":"KODAK","tier":"V","design_type":"Premium","is_digital":true,"is_ray_ban":false,"is_short":false,"product_id":"kodak_unique_infinite_hd","product_name":"Unique Infinite HD"}
