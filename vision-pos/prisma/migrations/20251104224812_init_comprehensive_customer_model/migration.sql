@@ -6,8 +6,8 @@ CREATE TABLE "locations" (
     "phone" TEXT,
     "timezone" TEXT NOT NULL DEFAULT 'America/Los_Angeles',
     "active" BOOLEAN NOT NULL DEFAULT true,
-    "createdAt" DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
-    "updatedAt" DATETIME NOT NULL
+    "createdAt" TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP,
+    "updatedAt" TIMESTAMP NOT NULL
 );
 
 -- CreateTable
@@ -20,8 +20,8 @@ CREATE TABLE "users" (
     "firstName" TEXT NOT NULL,
     "lastName" TEXT NOT NULL,
     "active" BOOLEAN NOT NULL DEFAULT true,
-    "createdAt" DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
-    "updatedAt" DATETIME NOT NULL,
+    "createdAt" TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP,
+    "updatedAt" TIMESTAMP NOT NULL,
     CONSTRAINT "users_locationId_fkey" FOREIGN KEY ("locationId") REFERENCES "locations" ("id") ON DELETE RESTRICT ON UPDATE CASCADE
 );
 
@@ -32,8 +32,8 @@ CREATE TABLE "insurance_carriers" (
     "code" TEXT NOT NULL,
     "active" BOOLEAN NOT NULL DEFAULT true,
     "config" JSONB,
-    "createdAt" DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
-    "updatedAt" DATETIME NOT NULL
+    "createdAt" TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP,
+    "updatedAt" TIMESTAMP NOT NULL
 );
 
 -- CreateTable
@@ -43,8 +43,8 @@ CREATE TABLE "product_categories" (
     "code" TEXT NOT NULL,
     "description" TEXT,
     "active" BOOLEAN NOT NULL DEFAULT true,
-    "createdAt" DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
-    "updatedAt" DATETIME NOT NULL
+    "createdAt" TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP,
+    "updatedAt" TIMESTAMP NOT NULL
 );
 
 -- CreateTable
@@ -59,8 +59,8 @@ CREATE TABLE "products" (
     "tierEyemed" TEXT,
     "tierSpectera" TEXT,
     "active" BOOLEAN NOT NULL DEFAULT true,
-    "createdAt" DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
-    "updatedAt" DATETIME NOT NULL,
+    "createdAt" TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP,
+    "updatedAt" TIMESTAMP NOT NULL,
     CONSTRAINT "products_categoryId_fkey" FOREIGN KEY ("categoryId") REFERENCES "product_categories" ("id") ON DELETE RESTRICT ON UPDATE CASCADE
 );
 
@@ -71,8 +71,8 @@ CREATE TABLE "product_locations" (
     "locationId" TEXT NOT NULL,
     "priceOverride" REAL,
     "available" BOOLEAN NOT NULL DEFAULT true,
-    "createdAt" DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
-    "updatedAt" DATETIME NOT NULL,
+    "createdAt" TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP,
+    "updatedAt" TIMESTAMP NOT NULL,
     CONSTRAINT "product_locations_productId_fkey" FOREIGN KEY ("productId") REFERENCES "products" ("id") ON DELETE RESTRICT ON UPDATE CASCADE,
     CONSTRAINT "product_locations_locationId_fkey" FOREIGN KEY ("locationId") REFERENCES "locations" ("id") ON DELETE RESTRICT ON UPDATE CASCADE
 );
@@ -84,7 +84,7 @@ CREATE TABLE "customers" (
     "lastName" TEXT NOT NULL,
     "email" TEXT,
     "phone" TEXT,
-    "dateOfBirth" DATETIME,
+    "dateOfBirth" TIMESTAMP,
     "gender" TEXT,
     "address" TEXT,
     "city" TEXT,
@@ -93,23 +93,23 @@ CREATE TABLE "customers" (
     "insuranceCarrier" TEXT,
     "memberId" TEXT,
     "groupNumber" TEXT,
-    "eligibilityDate" DATETIME,
+    "eligibilityDate" TIMESTAMP,
     "active" BOOLEAN NOT NULL DEFAULT true,
     "customerNumber" TEXT,
     "accountStatus" TEXT NOT NULL DEFAULT 'ACTIVE',
-    "registrationDate" DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
-    "lastVisit" DATETIME,
+    "registrationDate" TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP,
+    "lastVisit" TIMESTAMP,
     "totalSpent" REAL NOT NULL DEFAULT 0,
     "averageOrderValue" REAL NOT NULL DEFAULT 0,
     "customerLifetimeValue" REAL NOT NULL DEFAULT 0,
-    "lastPurchaseDate" DATETIME,
+    "lastPurchaseDate" TIMESTAMP,
     "isHighValueCustomer" BOOLEAN NOT NULL DEFAULT false,
     "isFrequentCustomer" BOOLEAN NOT NULL DEFAULT false,
     "riskLevel" TEXT NOT NULL DEFAULT 'LOW',
     "marketingConsent" BOOLEAN NOT NULL DEFAULT false,
     "notes" TEXT,
-    "createdAt" DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
-    "updatedAt" DATETIME NOT NULL,
+    "createdAt" TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP,
+    "updatedAt" TIMESTAMP NOT NULL,
     "createdBy" TEXT,
     "updatedBy" TEXT
 );
@@ -127,8 +127,8 @@ CREATE TABLE "customer_addresses" (
     "country" TEXT NOT NULL DEFAULT 'USA',
     "isPrimary" BOOLEAN NOT NULL DEFAULT false,
     "isActive" BOOLEAN NOT NULL DEFAULT true,
-    "createdAt" DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
-    "updatedAt" DATETIME NOT NULL,
+    "createdAt" TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP,
+    "updatedAt" TIMESTAMP NOT NULL,
     CONSTRAINT "customer_addresses_customerId_fkey" FOREIGN KEY ("customerId") REFERENCES "customers" ("id") ON DELETE RESTRICT ON UPDATE CASCADE
 );
 
@@ -141,8 +141,8 @@ CREATE TABLE "customer_insurance" (
     "planType" TEXT NOT NULL,
     "memberId" TEXT NOT NULL,
     "groupNumber" TEXT,
-    "effectiveDate" DATETIME NOT NULL,
-    "expirationDate" DATETIME,
+    "effectiveDate" TIMESTAMP NOT NULL,
+    "expirationDate" TIMESTAMP,
     "copayAmount" REAL,
     "deductible" REAL,
     "isPrimary" BOOLEAN NOT NULL DEFAULT false,
@@ -150,8 +150,8 @@ CREATE TABLE "customer_insurance" (
     "subscriberName" TEXT,
     "relationshipToSubscriber" TEXT,
     "coverageDetails" JSONB NOT NULL,
-    "createdAt" DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
-    "updatedAt" DATETIME NOT NULL,
+    "createdAt" TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP,
+    "updatedAt" TIMESTAMP NOT NULL,
     CONSTRAINT "customer_insurance_customerId_fkey" FOREIGN KEY ("customerId") REFERENCES "customers" ("id") ON DELETE RESTRICT ON UPDATE CASCADE
 );
 
@@ -164,16 +164,16 @@ CREATE TABLE "customer_preferences" (
     "promotionalEmails" BOOLEAN NOT NULL DEFAULT false,
     "language" TEXT NOT NULL DEFAULT 'en',
     "timezone" TEXT NOT NULL DEFAULT 'America/New_York',
-    "preferredBrands" JSONB NOT NULL DEFAULT [],
+    "preferredBrands" JSONB NOT NULL DEFAULT '[]',
     "budgetRange" JSONB,
     "largeFont" BOOLEAN NOT NULL DEFAULT false,
     "audioAssistance" BOOLEAN NOT NULL DEFAULT false,
     "wheelchairAccessible" BOOLEAN NOT NULL DEFAULT false,
-    "preferredProviders" JSONB NOT NULL DEFAULT [],
-    "preferredAppointmentTimes" JSONB NOT NULL DEFAULT [],
+    "preferredProviders" JSONB NOT NULL DEFAULT '[]',
+    "preferredAppointmentTimes" JSONB NOT NULL DEFAULT '[]',
     "specialInstructions" TEXT,
-    "createdAt" DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
-    "updatedAt" DATETIME NOT NULL,
+    "createdAt" TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP,
+    "updatedAt" TIMESTAMP NOT NULL,
     CONSTRAINT "customer_preferences_customerId_fkey" FOREIGN KEY ("customerId") REFERENCES "customers" ("id") ON DELETE RESTRICT ON UPDATE CASCADE
 );
 
@@ -181,13 +181,13 @@ CREATE TABLE "customer_preferences" (
 CREATE TABLE "eyewear_preferences" (
     "id" TEXT NOT NULL PRIMARY KEY,
     "customerId" TEXT NOT NULL,
-    "frameStyles" JSONB NOT NULL DEFAULT [],
-    "frameMaterials" JSONB NOT NULL DEFAULT [],
-    "frameColors" JSONB NOT NULL DEFAULT [],
-    "lensTypes" JSONB NOT NULL DEFAULT [],
-    "lensCoatings" JSONB NOT NULL DEFAULT [],
-    "contactLensBrands" JSONB NOT NULL DEFAULT [],
-    "contactLensTypes" JSONB NOT NULL DEFAULT [],
+    "frameStyles" JSONB NOT NULL DEFAULT '[]',
+    "frameMaterials" JSONB NOT NULL DEFAULT '[]',
+    "frameColors" JSONB NOT NULL DEFAULT '[]',
+    "lensTypes" JSONB NOT NULL DEFAULT '[]',
+    "lensCoatings" JSONB NOT NULL DEFAULT '[]',
+    "contactLensBrands" JSONB NOT NULL DEFAULT '[]',
+    "contactLensTypes" JSONB NOT NULL DEFAULT '[]',
     "framesBudget" REAL,
     "contactsBudget" REAL,
     "safetyRequirements" BOOLEAN NOT NULL DEFAULT false,
@@ -195,8 +195,8 @@ CREATE TABLE "eyewear_preferences" (
     "sportsEyewear" BOOLEAN NOT NULL DEFAULT false,
     "fashionPriority" TEXT NOT NULL DEFAULT 'MEDIUM',
     "comfortPriority" TEXT NOT NULL DEFAULT 'HIGH',
-    "createdAt" DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
-    "updatedAt" DATETIME NOT NULL,
+    "createdAt" TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP,
+    "updatedAt" TIMESTAMP NOT NULL,
     CONSTRAINT "eyewear_preferences_customerId_fkey" FOREIGN KEY ("customerId") REFERENCES "customers" ("id") ON DELETE RESTRICT ON UPDATE CASCADE
 );
 
@@ -217,8 +217,8 @@ CREATE TABLE "communication_preferences" (
     "mailingStatements" BOOLEAN NOT NULL DEFAULT true,
     "mailingPromotions" BOOLEAN NOT NULL DEFAULT false,
     "mailingCatalogs" BOOLEAN NOT NULL DEFAULT false,
-    "createdAt" DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
-    "updatedAt" DATETIME NOT NULL,
+    "createdAt" TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP,
+    "updatedAt" TIMESTAMP NOT NULL,
     CONSTRAINT "communication_preferences_customerId_fkey" FOREIGN KEY ("customerId") REFERENCES "customers" ("id") ON DELETE RESTRICT ON UPDATE CASCADE
 );
 
@@ -230,7 +230,7 @@ CREATE TABLE "customer_relationships" (
     "relationshipType" TEXT NOT NULL,
     "isActive" BOOLEAN NOT NULL DEFAULT true,
     "notes" TEXT,
-    "createdAt" DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
+    "createdAt" TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP,
     CONSTRAINT "customer_relationships_primaryCustomerId_fkey" FOREIGN KEY ("primaryCustomerId") REFERENCES "customers" ("id") ON DELETE RESTRICT ON UPDATE CASCADE,
     CONSTRAINT "customer_relationships_relatedCustomerId_fkey" FOREIGN KEY ("relatedCustomerId") REFERENCES "customers" ("id") ON DELETE RESTRICT ON UPDATE CASCADE
 );
@@ -240,13 +240,13 @@ CREATE TABLE "customer_purchase_history" (
     "id" TEXT NOT NULL PRIMARY KEY,
     "customerId" TEXT NOT NULL,
     "transactionId" TEXT NOT NULL,
-    "orderDate" DATETIME NOT NULL,
+    "orderDate" TIMESTAMP NOT NULL,
     "totalAmount" REAL NOT NULL,
     "paymentMethod" TEXT NOT NULL,
     "prescriptionUsed" TEXT,
     "providerId" TEXT,
     "itemsJson" TEXT NOT NULL DEFAULT '[]',
-    "createdAt" DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
+    "createdAt" TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP,
     CONSTRAINT "customer_purchase_history_customerId_fkey" FOREIGN KEY ("customerId") REFERENCES "customers" ("id") ON DELETE RESTRICT ON UPDATE CASCADE
 );
 
@@ -254,7 +254,7 @@ CREATE TABLE "customer_purchase_history" (
 CREATE TABLE "customer_visits" (
     "id" TEXT NOT NULL PRIMARY KEY,
     "customerId" TEXT NOT NULL,
-    "visitDate" DATETIME NOT NULL,
+    "visitDate" TIMESTAMP NOT NULL,
     "visitType" TEXT NOT NULL,
     "providerId" TEXT,
     "providerName" TEXT,
@@ -262,7 +262,7 @@ CREATE TABLE "customer_visits" (
     "notes" TEXT,
     "outcome" TEXT,
     "nextAppointmentRecommended" BOOLEAN NOT NULL DEFAULT false,
-    "createdAt" DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
+    "createdAt" TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP,
     CONSTRAINT "customer_visits_customerId_fkey" FOREIGN KEY ("customerId") REFERENCES "customers" ("id") ON DELETE RESTRICT ON UPDATE CASCADE
 );
 
@@ -270,7 +270,7 @@ CREATE TABLE "customer_visits" (
 CREATE TABLE "eye_prescriptions" (
     "id" TEXT NOT NULL PRIMARY KEY,
     "customerId" TEXT NOT NULL,
-    "prescriptionDate" DATETIME NOT NULL,
+    "prescriptionDate" TIMESTAMP NOT NULL,
     "providerId" TEXT,
     "providerName" TEXT,
     "rightEyeJson" TEXT NOT NULL DEFAULT '{}',
@@ -279,10 +279,10 @@ CREATE TABLE "eye_prescriptions" (
     "bifocalHeight" REAL,
     "prescriptionType" TEXT NOT NULL,
     "notes" TEXT,
-    "expirationDate" DATETIME,
+    "expirationDate" TIMESTAMP,
     "isActive" BOOLEAN NOT NULL DEFAULT true,
-    "createdAt" DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
-    "updatedAt" DATETIME NOT NULL,
+    "createdAt" TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP,
+    "updatedAt" TIMESTAMP NOT NULL,
     CONSTRAINT "eye_prescriptions_customerId_fkey" FOREIGN KEY ("customerId") REFERENCES "customers" ("id") ON DELETE RESTRICT ON UPDATE CASCADE
 );
 
@@ -292,8 +292,8 @@ CREATE TABLE "customer_tags" (
     "name" TEXT NOT NULL,
     "color" TEXT,
     "category" TEXT,
-    "createdAt" DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
-    "updatedAt" DATETIME NOT NULL
+    "createdAt" TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP,
+    "updatedAt" TIMESTAMP NOT NULL
 );
 
 -- CreateTable
@@ -301,7 +301,7 @@ CREATE TABLE "customer_tag_assignments" (
     "id" TEXT NOT NULL PRIMARY KEY,
     "customerId" TEXT NOT NULL,
     "tagId" TEXT NOT NULL,
-    "createdAt" DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
+    "createdAt" TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP,
     CONSTRAINT "customer_tag_assignments_customerId_fkey" FOREIGN KEY ("customerId") REFERENCES "customers" ("id") ON DELETE RESTRICT ON UPDATE CASCADE,
     CONSTRAINT "customer_tag_assignments_tagId_fkey" FOREIGN KEY ("tagId") REFERENCES "customer_tags" ("id") ON DELETE RESTRICT ON UPDATE CASCADE
 );
@@ -321,8 +321,8 @@ CREATE TABLE "transactions" (
     "patientPortion" REAL NOT NULL,
     "status" TEXT NOT NULL DEFAULT 'PENDING',
     "paymentMethod" TEXT,
-    "createdAt" DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
-    "updatedAt" DATETIME NOT NULL,
+    "createdAt" TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP,
+    "updatedAt" TIMESTAMP NOT NULL,
     CONSTRAINT "transactions_customerId_fkey" FOREIGN KEY ("customerId") REFERENCES "customers" ("id") ON DELETE RESTRICT ON UPDATE CASCADE,
     CONSTRAINT "transactions_userId_fkey" FOREIGN KEY ("userId") REFERENCES "users" ("id") ON DELETE RESTRICT ON UPDATE CASCADE,
     CONSTRAINT "transactions_locationId_fkey" FOREIGN KEY ("locationId") REFERENCES "locations" ("id") ON DELETE RESTRICT ON UPDATE CASCADE
@@ -339,8 +339,8 @@ CREATE TABLE "transaction_items" (
     "total" REAL NOT NULL,
     "insuranceTier" TEXT,
     "insuranceDiscount" REAL NOT NULL DEFAULT 0,
-    "createdAt" DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
-    "updatedAt" DATETIME NOT NULL,
+    "createdAt" TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP,
+    "updatedAt" TIMESTAMP NOT NULL,
     CONSTRAINT "transaction_items_transactionId_fkey" FOREIGN KEY ("transactionId") REFERENCES "transactions" ("id") ON DELETE RESTRICT ON UPDATE CASCADE,
     CONSTRAINT "transaction_items_productId_fkey" FOREIGN KEY ("productId") REFERENCES "products" ("id") ON DELETE RESTRICT ON UPDATE CASCADE
 );
@@ -358,10 +358,10 @@ CREATE TABLE "inventory" (
     "maxStock" INTEGER,
     "costPrice" REAL,
     "lastCostPrice" REAL,
-    "lastRestocked" DATETIME,
-    "lastSold" DATETIME,
-    "createdAt" DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
-    "updatedAt" DATETIME NOT NULL,
+    "lastRestocked" TIMESTAMP,
+    "lastSold" TIMESTAMP,
+    "createdAt" TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP,
+    "updatedAt" TIMESTAMP NOT NULL,
     CONSTRAINT "inventory_productId_fkey" FOREIGN KEY ("productId") REFERENCES "products" ("id") ON DELETE RESTRICT ON UPDATE CASCADE,
     CONSTRAINT "inventory_locationId_fkey" FOREIGN KEY ("locationId") REFERENCES "locations" ("id") ON DELETE RESTRICT ON UPDATE CASCADE
 );
@@ -378,7 +378,7 @@ CREATE TABLE "inventory_movements" (
     "unitCost" REAL,
     "userId" TEXT,
     "notes" TEXT,
-    "createdAt" DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
+    "createdAt" TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP,
     CONSTRAINT "inventory_movements_inventoryId_fkey" FOREIGN KEY ("inventoryId") REFERENCES "inventory" ("id") ON DELETE RESTRICT ON UPDATE CASCADE,
     CONSTRAINT "inventory_movements_userId_fkey" FOREIGN KEY ("userId") REFERENCES "users" ("id") ON DELETE SET NULL ON UPDATE CASCADE
 );
@@ -399,8 +399,8 @@ CREATE TABLE "suppliers" (
     "taxId" TEXT,
     "paymentTerms" TEXT,
     "active" BOOLEAN NOT NULL DEFAULT true,
-    "createdAt" DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
-    "updatedAt" DATETIME NOT NULL
+    "createdAt" TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP,
+    "updatedAt" TIMESTAMP NOT NULL
 );
 
 -- CreateTable
@@ -414,8 +414,8 @@ CREATE TABLE "product_suppliers" (
     "minimumOrder" INTEGER NOT NULL DEFAULT 1,
     "isPrimary" BOOLEAN NOT NULL DEFAULT false,
     "active" BOOLEAN NOT NULL DEFAULT true,
-    "createdAt" DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
-    "updatedAt" DATETIME NOT NULL,
+    "createdAt" TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP,
+    "updatedAt" TIMESTAMP NOT NULL,
     CONSTRAINT "product_suppliers_productId_fkey" FOREIGN KEY ("productId") REFERENCES "products" ("id") ON DELETE RESTRICT ON UPDATE CASCADE,
     CONSTRAINT "product_suppliers_supplierId_fkey" FOREIGN KEY ("supplierId") REFERENCES "suppliers" ("id") ON DELETE RESTRICT ON UPDATE CASCADE
 );
@@ -432,12 +432,12 @@ CREATE TABLE "purchase_orders" (
     "tax" REAL NOT NULL DEFAULT 0,
     "shipping" REAL NOT NULL DEFAULT 0,
     "total" REAL NOT NULL,
-    "orderDate" DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
-    "expectedDate" DATETIME,
-    "receivedDate" DATETIME,
+    "orderDate" TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP,
+    "expectedDate" TIMESTAMP,
+    "receivedDate" TIMESTAMP,
     "notes" TEXT,
-    "createdAt" DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
-    "updatedAt" DATETIME NOT NULL,
+    "createdAt" TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP,
+    "updatedAt" TIMESTAMP NOT NULL,
     CONSTRAINT "purchase_orders_supplierId_fkey" FOREIGN KEY ("supplierId") REFERENCES "suppliers" ("id") ON DELETE RESTRICT ON UPDATE CASCADE,
     CONSTRAINT "purchase_orders_locationId_fkey" FOREIGN KEY ("locationId") REFERENCES "locations" ("id") ON DELETE RESTRICT ON UPDATE CASCADE,
     CONSTRAINT "purchase_orders_userId_fkey" FOREIGN KEY ("userId") REFERENCES "users" ("id") ON DELETE RESTRICT ON UPDATE CASCADE
@@ -453,8 +453,8 @@ CREATE TABLE "purchase_order_items" (
     "unitCost" REAL NOT NULL,
     "total" REAL NOT NULL,
     "notes" TEXT,
-    "createdAt" DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
-    "updatedAt" DATETIME NOT NULL,
+    "createdAt" TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP,
+    "updatedAt" TIMESTAMP NOT NULL,
     CONSTRAINT "purchase_order_items_purchaseOrderId_fkey" FOREIGN KEY ("purchaseOrderId") REFERENCES "purchase_orders" ("id") ON DELETE RESTRICT ON UPDATE CASCADE,
     CONSTRAINT "purchase_order_items_productId_fkey" FOREIGN KEY ("productId") REFERENCES "products" ("id") ON DELETE RESTRICT ON UPDATE CASCADE
 );

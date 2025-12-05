@@ -162,6 +162,7 @@ model Customer {
   insuranceDocuments       InsuranceDocument[]
   quotes                   Quote[]
   transactions             Transaction[]
+  orders                   Order[]                   @relation("CustomerOrders")
 
   @@map("customers")
 }
@@ -1446,4 +1447,228 @@ enum ProductType {
   LENS
   CONTACT
   SERVICE
+}
+
+// ============================================
+// ORDER TRACKING SYSTEM
+// ============================================
+
+model Order {
+  id                       String                  @id @default(cuid())
+  orderNumber              String                  @unique
+  customerId               String
+  prescriptionId           String?
+  
+  // Status tracking
+  status                   OrderStatus             @default(DRAFT)
+  statusUpdatedAt          DateTime                @default(now())
+  statusUpdatedBy          String?
+  
+  // Dates
+  orderDate                DateTime                @default(now())
+  estimatedCompletionDate  DateTime
+  actualCompletionDate     DateTime?
+  
+  // Lab information
+  labId                    String?
+  labName                  String?
+  labOrderNumber           String?
+  labTrackingNumber        String?
+  labEstimatedDelivery     DateTime?
+  
+  // Delivery
+  deliveryMethod           DeliveryMethod          @default(PICKUP)
+  deliveryAddress          Json?
+  deliveryInstructions     String?
+  
+  // Pricing
+  subtotal                 Decimal                 @db.Decimal(10, 2)
+  taxAmount                Decimal                 @db.Decimal(10, 2)
+  discountAmount           Decimal?                @db.Decimal(10, 2)
+  insuranceAmount          Decimal?                @db.Decimal(10, 2)
+  shippingAmount           Decimal?                @db.Decimal(10, 2)
+  totalAmount              Decimal                 @db.Decimal(10, 2)
+  amountPaid               Decimal                 @default(0) @db.Decimal(10, 2)
+  
+  // Notes
+  notes                    String?
+  internalNotes            String?
+  
+  // Relations
+  customer                 Customer                @relation("CustomerOrders", fields: [customerId], references: [id])
+  items                    OrderItem[]
+  statusHistory            OrderStatusHistory[]
+  communications           OrderCommunication[]
+  qualityChecks            OrderQualityCheck[]
+  
+  createdAt                DateTime                @default(now())
+  updatedAt                DateTime                @updatedAt
+  createdBy                String
+  
+  @@index([customerId])
+  @@index([status])
+  @@index([orderDate])
+  @@index([orderNumber])
+  @@map("orders")
+}
+
+model OrderItem {
+  id                    String         @id @default(cuid())
+  orderId               String
+  type                  OrderItemType
+  productId             String?
+  
+  // Product details
+  productName           String
+  sku                   String
+  description           String?
+  
+  // Lens specifics
+  lensType              String?
+  lensCoatings          String[]
+  prescriptionId        String?
+  
+  // Frame specifics
+  frameColor            String?
+  frameSize             String?
+  
+  // Pricing
+  unitPrice             Decimal        @db.Decimal(10, 2)
+  discountAmount        Decimal?       @db.Decimal(10, 2)
+  insuranceCoverage     Decimal?       @db.Decimal(10, 2)
+  finalPrice            Decimal        @db.Decimal(10, 2)
+  quantity              Int            @default(1)
+  
+  // Status
+  status                OrderItemStatus @default(PENDING)
+  estimatedDelivery     DateTime?
+  actualDelivery        DateTime?
+  
+  // Lab tracking
+  labId                 String?
+  labOrderNumber        String?
+  trackingNumber        String?
+  
+  // Customizations
+  customizations        Json?
+  isCustom              Boolean        @default(false)
+  
+  order                 Order          @relation(fields: [orderId], references: [id], onDelete: Cascade)
+  
+  createdAt             DateTime       @default(now())
+  updatedAt             DateTime       @updatedAt
+  
+  @@index([orderId])
+  @@index([status])
+  @@index([productId])
+  @@map("order_items")
+}
+
+model OrderStatusHistory {
+  id              String      @id @default(cuid())
+  orderId         String
+  status          OrderStatus
+  previousStatus  OrderStatus?
+  updatedBy       String
+  updatedByName   String?
+  notes           String?
+  timestamp       DateTime    @default(now())
+  
+  order           Order       @relation(fields: [orderId], references: [id], onDelete: Cascade)
+  
+  @@index([orderId])
+  @@index([timestamp])
+  @@map("order_status_history")
+}
+
+model OrderCommunication {
+  id              String              @id @default(cuid())
+  orderId         String
+  type            CommunicationType
+  direction       CommunicationDirection
+  subject         String?
+  message         String
+  sentBy          String?
+  sentByName      String?
+  sentTo          String?
+  sentToName      String?
+  timestamp       DateTime            @default(now())
+  metadata        Json?
+  
+  order           Order               @relation(fields: [orderId], references: [id], onDelete: Cascade)
+  
+  @@index([orderId])
+  @@index([timestamp])
+  @@index([type])
+  @@map("order_communications")
+}
+
+model OrderQualityCheck {
+  id              String    @id @default(cuid())
+  orderId         String
+  performedBy     String
+  performedByName String?
+  performedAt     DateTime  @default(now())
+  passed          Boolean
+  notes           String?
+  issues          String[]
+  checklist       Json?
+  
+  order           Order     @relation(fields: [orderId], references: [id], onDelete: Cascade)
+  
+  @@index([orderId])
+  @@index([performedAt])
+  @@map("order_quality_checks")
+}
+
+enum OrderStatus {
+  DRAFT
+  SUBMITTED
+  CONFIRMED
+  IN_PRODUCTION
+  QUALITY_CHECK
+  READY_FOR_PICKUP
+  READY_FOR_SHIPPING
+  SHIPPED
+  DELIVERED
+  CANCELLED
+  ON_HOLD
+}
+
+enum OrderItemStatus {
+  PENDING
+  IN_PRODUCTION
+  QUALITY_CHECK
+  READY
+  COMPLETED
+  CANCELLED
+}
+
+enum OrderItemType {
+  FRAME
+  LENS
+  COATING
+  SERVICE
+  ACCESSORY
+  ADDON
+}
+
+enum DeliveryMethod {
+  PICKUP
+  SHIPPING
+  HAND_DELIVERY
+}
+
+enum CommunicationType {
+  EMAIL
+  SMS
+  NOTE
+  CALL
+  SYSTEM
+}
+
+enum CommunicationDirection {
+  INBOUND
+  OUTBOUND
+  INTERNAL
 }
