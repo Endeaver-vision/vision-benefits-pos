@@ -298,25 +298,65 @@ curl /api/quote -d '{"customerId":"...", "items":[{"sku":"preferred-eyezen"}]}'
 
 ---
 
-## Phase 5: Contact Lens Pricing Through API
+## Phase 5: Contact Lens Pricing Through API ✅ COMPLETE
 **Goal:** Contact lens pricing calculated server-side like glasses, not client-side.
 
 | # | Task | Status |
 |---|------|--------|
-| 5.1 | Extend `/api/quote` to handle contact lens items | ⬜ |
-| 5.2 | Move CL allowance logic from component to API | ⬜ |
-| 5.3 | Move annual supply discount calculation to API | ⬜ |
-| 5.4 | Apply rebates server-side | ⬜ |
-| 5.5 | Update `ContactLensCalculator` to call API instead of local calculation | ⬜ |
-| 5.6 | Return itemized CL pricing in quote response | ⬜ |
+| 5.1 | Create dedicated `/api/pricing/contact-lenses` endpoint | ✅ |
+| 5.2 | Move CL allowance logic from component to API | ✅ |
+| 5.3 | Move annual supply discount calculation to API | ✅ |
+| 5.4 | Apply rebates server-side | ✅ |
+| 5.5 | Update `ContactLensCalculator` to call API instead of local calculation | ✅ |
+| 5.6 | Return itemized CL pricing in quote response | ✅ |
+
+**Completed Dec 6, 2025:**
+
+**New API Endpoint (`/src/app/api/pricing/contact-lenses/route.ts`):**
+- POST endpoint accepting: customerId, lensId, boxesRight, boxesLeft, rebateAmount, useInsurance
+- Fetches ContactLens from database with modality (daily/biweekly/monthly)
+- Applies annual supply discount: $30 daily, $10 biweekly/monthly
+- Looks up customer authorization for insurance allowance
+- Supports VSP (`contactLensAllowance`), EyeMed (`contactsDisposable/Conventional/MedicallyNecessary`), Spectera (selection/non-selection plans)
+- Returns full pricing breakdown including:
+  - Retail subtotal, annual supply discount, insurance applied, rebate applied, patient total
+  - Cost per box, total savings
+  - Line-by-line breakdown for display
+
+**Updated Contact Lens Calculator (`/src/components/quote-builder/layers/contact-lens-calculator.tsx`):**
+- Removed client-side `DISCOUNT_RULES` and `insuranceCredit` state
+- Added `apiPricing`, `pricingLoading`, `pricingError` state
+- Added debounced `fetchPricing()` callback that calls API
+- Insurance section now shows API-provided allowance (read-only)
+- Rebate input triggers API refetch
+- Price breakdown uses API data with loading indicator
+- Integrated with materials conflict via `useInsurance` flag
+
+**Key Design Decisions:**
+- Created new `/api/pricing/contact-lenses` instead of extending `/api/quote`
+- CL pricing is specialized (annual supply rules, box quantities) vs quote API's line-item copay model
+- API handles materials conflict by accepting `useInsurance` boolean
+- Debounced API calls (500ms) to avoid excessive requests while user adjusts quantities
 
 **Checkpoint Test:**
 ```bash
-curl /api/quote -d '{
+# Monthly lens (4 boxes = annual supply, $10 discount)
+curl -X POST /api/pricing/contact-lenses -d '{
   "customerId": "...",
-  "items": [{"sku": "acuvue-oasys-1day-90", "quantity": 8}]
+  "lensId": "cmiol0qqq000njpu2yuja91un",
+  "boxesRight": 2,
+  "boxesLeft": 2
 }'
-# Should return: allowance applied, annual discount, final patient cost
+# Returns: retailSubtotal=$483.96, annualSupplyDiscount=$10, patientTotal=$473.96
+
+# Daily lens (8 boxes = annual supply, $30 discount)
+curl -X POST /api/pricing/contact-lenses -d '{
+  "customerId": "...",
+  "lensId": "cmiol0qiq000mjpu2xmifxkke",
+  "boxesRight": 4,
+  "boxesLeft": 4
+}'
+# Returns: retailSubtotal=$743.92, annualSupplyDiscount=$30, patientTotal=$713.92
 ```
 
 ---
@@ -417,8 +457,10 @@ Phase 6 (Mount Bug) ◄───────────────────
 - [x] No way to accidentally get insurance on both materials types
 
 **Phase 5 Complete When:**
-- [ ] CL pricing comes from API, not browser calculation
-- [ ] Allowance, discounts, rebates all server-side
+- [x] CL pricing comes from API, not browser calculation
+- [x] Allowance, discounts, rebates all server-side
+- [x] Supports VSP, EyeMed, Spectera insurance allowances
+- [x] Integrated with materials conflict system
 
 **Phase 6 Complete When:**
 - [ ] Mount selection persists through entire quote flow

@@ -1,6 +1,6 @@
 'use client'
 
-import { useState, useEffect, useMemo } from 'react'
+import { useState, useEffect, useMemo, useCallback } from 'react'
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
@@ -23,10 +23,44 @@ import {
   CheckCircle,
   XCircle,
   Package,
-  Shield
+  Shield,
+  Loader2
 } from 'lucide-react'
 import { Alert, AlertDescription } from '@/components/ui/alert'
 import { useQuotePricingContext } from '@/contexts/quote-pricing-context'
+
+// API pricing result type
+interface ContactLensPricingResult {
+  lensId: string
+  lensName: string
+  manufacturer: string
+  modality: string
+  boxSize: number
+  boxesRight: number
+  boxesLeft: number
+  totalBoxes: number
+  pricePerBox: number
+  retailSubtotal: number
+  meetsAnnualSupply: boolean
+  annualSupplyThreshold: number
+  annualSupplyDiscount: number
+  subtotalAfterDiscount: number
+  hasInsurance: boolean
+  carrier: string | null
+  insuranceAllowance: number
+  insuranceApplied: number
+  subtotalAfterInsurance: number
+  rebateAmount: number
+  rebateApplied: number
+  patientTotal: number
+  totalSavings: number
+  costPerBox: number
+  breakdown: {
+    label: string
+    amount: number
+    type: 'addition' | 'subtraction' | 'total'
+  }[]
+}
 
 interface ContactLens {
   id: string
@@ -52,13 +86,6 @@ interface ContactLensCalculatorProps {
   onBack?: () => void
 }
 
-// Annual supply discount rules
-const DISCOUNT_RULES = {
-  daily: 30,
-  biweekly: 10,
-  monthly: 10,
-}
-
 export function ContactLensCalculator({ className, onNext, onBack }: ContactLensCalculatorProps) {
   // State
   const [lenses, setLenses] = useState<ContactLens[]>([])
@@ -71,11 +98,16 @@ export function ContactLensCalculator({ className, onNext, onBack }: ContactLens
   const [selectedLens, setSelectedLens] = useState<ContactLens | null>(null)
   const [rightEyeBoxes, setRightEyeBoxes] = useState(4)
   const [leftEyeBoxes, setLeftEyeBoxes] = useState(4)
-  const [insuranceCredit, setInsuranceCredit] = useState(0)
   const [rebateAmount, setRebateAmount] = useState(0)
+
+  // API pricing state
+  const [apiPricing, setApiPricing] = useState<ContactLensPricingResult | null>(null)
+  const [pricingLoading, setPricingLoading] = useState(false)
+  const [pricingError, setPricingError] = useState<string | null>(null)
 
   // Get insurance context and selected items
   const {
+    customerId,
     authorization,
     updateContactLenses,
     selectedItems,
@@ -123,15 +155,61 @@ export function ContactLensCalculator({ className, onNext, onBack }: ContactLens
     fetchLenses()
   }, [selectedManufacturer, searchQuery])
 
-  // Initialize insurance credit from authorization - only if contacts benefit is selected
-  useEffect(() => {
-    if (authorization?.contactAllowance && isContactsInsured) {
-      setInsuranceCredit(authorization.contactAllowance)
-    } else {
-      // No insurance credit in retail-only mode
-      setInsuranceCredit(0)
+  // Fetch pricing from API when selection changes
+  const fetchPricing = useCallback(async () => {
+    if (!selectedLens || !customerId) {
+      setApiPricing(null)
+      return
     }
-  }, [authorization, isContactsInsured])
+
+    const totalBoxes = rightEyeBoxes + leftEyeBoxes
+    if (totalBoxes <= 0) {
+      setApiPricing(null)
+      return
+    }
+
+    setPricingLoading(true)
+    setPricingError(null)
+
+    try {
+      const response = await fetch('/api/pricing/contact-lenses', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          customerId,
+          lensId: selectedLens.id,
+          boxesRight: rightEyeBoxes,
+          boxesLeft: leftEyeBoxes,
+          rebateAmount,
+          useInsurance: isContactsInsured, // Only apply insurance if contacts benefit is active
+        }),
+      })
+
+      const data = await response.json()
+
+      if (data.success && data.pricing) {
+        setApiPricing(data.pricing)
+      } else {
+        setPricingError(data.error || 'Failed to calculate pricing')
+        setApiPricing(null)
+      }
+    } catch (error) {
+      console.error('Pricing API error:', error)
+      setPricingError('Failed to connect to pricing service')
+      setApiPricing(null)
+    } finally {
+      setPricingLoading(false)
+    }
+  }, [selectedLens, customerId, rightEyeBoxes, leftEyeBoxes, rebateAmount, isContactsInsured])
+
+  // Debounced API call when inputs change
+  useEffect(() => {
+    const timeoutId = setTimeout(() => {
+      fetchPricing()
+    }, 300) // Debounce to avoid too many API calls
+
+    return () => clearTimeout(timeoutId)
+  }, [fetchPricing])
 
   // Filter lenses by manufacturer
   const filteredLenses = useMemo(() => {
@@ -155,12 +233,12 @@ export function ContactLensCalculator({ className, onNext, onBack }: ContactLens
     return groups
   }, [filteredLenses])
 
-  // Calculate pricing
+  // Calculation derived from API pricing (for backward compatibility with UI)
   const calculation = useMemo(() => {
-    if (!selectedLens) {
+    if (!apiPricing) {
       return {
-        totalBoxes: 0,
-        retailPrice: 0,
+        totalBoxes: rightEyeBoxes + leftEyeBoxes,
+        retailPrice: selectedLens ? (selectedLens.retailPrice * (rightEyeBoxes + leftEyeBoxes)) : 0,
         meetsAnnualThreshold: false,
         annualDiscount: 0,
         subtotal: 0,
@@ -171,65 +249,37 @@ export function ContactLensCalculator({ className, onNext, onBack }: ContactLens
       }
     }
 
-    const totalBoxes = rightEyeBoxes + leftEyeBoxes
-    const pricePerBox = selectedLens.officePrice || selectedLens.retailPrice
-    const retailPrice = totalBoxes * pricePerBox
-
-    // Check if meets annual supply threshold
-    const annualThreshold = selectedLens.annualSupplyBothEyes || 8 // Default to 8 for daily lenses
-    const meetsAnnualThreshold = totalBoxes >= annualThreshold
-
-    // Calculate annual supply discount
-    const modality = selectedLens.modality || 'daily'
-    const annualDiscount = meetsAnnualThreshold ? (DISCOUNT_RULES[modality as keyof typeof DISCOUNT_RULES] || 0) : 0
-
-    // Calculate subtotal after discount
-    const subtotal = retailPrice - annualDiscount
-
-    // Apply insurance credit
-    const appliedInsurance = Math.min(insuranceCredit, subtotal)
-
-    // Apply rebate
-    const afterInsurance = subtotal - appliedInsurance
-    const appliedRebate = Math.min(rebateAmount, afterInsurance)
-
-    // Final cost
-    const finalCost = Math.max(0, afterInsurance - appliedRebate)
-
-    // Cost per box
-    const costPerBox = totalBoxes > 0 ? finalCost / totalBoxes : 0
-
     return {
-      totalBoxes,
-      retailPrice,
-      meetsAnnualThreshold,
-      annualDiscount,
-      subtotal,
-      insuranceCredit: appliedInsurance,
-      rebate: appliedRebate,
-      finalCost,
-      costPerBox,
+      totalBoxes: apiPricing.totalBoxes,
+      retailPrice: apiPricing.retailSubtotal,
+      meetsAnnualThreshold: apiPricing.meetsAnnualSupply,
+      annualDiscount: apiPricing.annualSupplyDiscount,
+      subtotal: apiPricing.subtotalAfterDiscount,
+      insuranceCredit: apiPricing.insuranceApplied,
+      rebate: apiPricing.rebateApplied,
+      finalCost: apiPricing.patientTotal,
+      costPerBox: apiPricing.costPerBox,
     }
-  }, [selectedLens, rightEyeBoxes, leftEyeBoxes, insuranceCredit, rebateAmount])
+  }, [apiPricing, selectedLens, rightEyeBoxes, leftEyeBoxes])
 
-  // Update context when pricing changes
+  // Update context when API pricing changes
   useEffect(() => {
-    if (selectedLens && calculation.totalBoxes > 0) {
+    if (selectedLens && apiPricing) {
       updateContactLenses({
         enabled: true,
-        lensName: selectedLens.lensName,
-        manufacturer: selectedLens.manufacturer,
-        boxesRight: rightEyeBoxes,
-        boxesLeft: leftEyeBoxes,
-        pricePerBox: selectedLens.officePrice || selectedLens.retailPrice,
-        subtotal: calculation.retailPrice,
-        meetsAnnualSupply: calculation.meetsAnnualThreshold,
-        annualSupplyDiscount: calculation.annualDiscount,
-        insuranceCredit: calculation.insuranceCredit,
-        rebate: calculation.rebate,
-        totalDue: calculation.finalCost,
+        lensName: apiPricing.lensName,
+        manufacturer: apiPricing.manufacturer,
+        boxesRight: apiPricing.boxesRight,
+        boxesLeft: apiPricing.boxesLeft,
+        pricePerBox: apiPricing.pricePerBox,
+        subtotal: apiPricing.retailSubtotal,
+        meetsAnnualSupply: apiPricing.meetsAnnualSupply,
+        annualSupplyDiscount: apiPricing.annualSupplyDiscount,
+        insuranceCredit: apiPricing.insuranceApplied,
+        rebate: apiPricing.rebateApplied,
+        totalDue: apiPricing.patientTotal,
       })
-    } else {
+    } else if (!selectedLens) {
       updateContactLenses({
         enabled: false,
         lensName: '',
@@ -245,7 +295,7 @@ export function ContactLensCalculator({ className, onNext, onBack }: ContactLens
         totalDue: 0,
       })
     }
-  }, [selectedLens, rightEyeBoxes, leftEyeBoxes, calculation, updateContactLenses])
+  }, [selectedLens, apiPricing, updateContactLenses])
 
   const formatPrice = (price: number) => {
     return new Intl.NumberFormat('en-US', {
@@ -511,20 +561,32 @@ export function ContactLensCalculator({ className, onNext, onBack }: ContactLens
           <CardContent>
             <div className="grid grid-cols-2 gap-6">
               <div className="space-y-2">
-                <label className="text-sm font-medium text-white">Insurance Credit</label>
-                <div className="relative">
-                  <span className="absolute left-3 top-1/2 -translate-y-1/2 text-white/50">$</span>
-                  <Input
-                    type="number"
-                    value={insuranceCredit}
-                    onChange={(e) => setInsuranceCredit(parseFloat(e.target.value) || 0)}
-                    className="pl-7 bg-white/10 border-white/30 text-white"
-                  />
-                </div>
-                {authorization?.contactAllowance && (
-                  <p className="text-xs text-emerald-400">
-                    {authorization.carrier} allowance: ${authorization.contactAllowance}
-                  </p>
+                <label className="text-sm font-medium text-white">Insurance Allowance</label>
+                {apiPricing?.hasInsurance ? (
+                  <div className="p-3 rounded-lg bg-emerald-500/20 border border-emerald-500/30">
+                    <div className="text-2xl font-bold text-emerald-400">
+                      {formatPrice(apiPricing.insuranceAllowance)}
+                    </div>
+                    <div className="text-xs text-emerald-300 mt-1">
+                      {apiPricing.carrier} contact lens allowance
+                    </div>
+                    {apiPricing.insuranceApplied < apiPricing.insuranceAllowance && (
+                      <div className="text-xs text-white/60 mt-1">
+                        Applied: {formatPrice(apiPricing.insuranceApplied)} (limited by subtotal)
+                      </div>
+                    )}
+                  </div>
+                ) : (
+                  <div className="p-3 rounded-lg bg-white/10 border border-white/20">
+                    <div className="text-lg font-medium text-white/60">
+                      {showRetailOnlyBanner ? 'Used for Eyeglasses' : 'No Insurance'}
+                    </div>
+                    <div className="text-xs text-white/40 mt-1">
+                      {showRetailOnlyBanner
+                        ? 'Switch benefit in banner above to use here'
+                        : 'No contact lens allowance available'}
+                    </div>
+                  </div>
                 )}
               </div>
               <div className="space-y-2">
@@ -536,8 +598,12 @@ export function ContactLensCalculator({ className, onNext, onBack }: ContactLens
                     value={rebateAmount}
                     onChange={(e) => setRebateAmount(parseFloat(e.target.value) || 0)}
                     className="pl-7 bg-white/10 border-white/30 text-white"
+                    placeholder="0"
                   />
                 </div>
+                <p className="text-xs text-white/50">
+                  Enter any manufacturer rebate amount
+                </p>
               </div>
             </div>
           </CardContent>
@@ -548,12 +614,22 @@ export function ContactLensCalculator({ className, onNext, onBack }: ContactLens
       {selectedLens && (
         <Card className="glass-card border-white/20 bg-white/10">
           <CardHeader>
-            <CardTitle className="text-white">Price Breakdown</CardTitle>
+            <CardTitle className="flex items-center gap-2 text-white">
+              Price Breakdown
+              {pricingLoading && <Loader2 className="h-4 w-4 animate-spin text-white/60" />}
+            </CardTitle>
           </CardHeader>
           <CardContent>
+            {pricingError && (
+              <Alert className="mb-4 bg-red-500/20 border-red-400/50">
+                <AlertDescription className="text-red-200">
+                  {pricingError}
+                </AlertDescription>
+              </Alert>
+            )}
             <div className="space-y-3">
               <div className="flex justify-between text-white/70">
-                <span>Retail Price ({calculation.totalBoxes} × {formatPrice(selectedLens.officePrice || selectedLens.retailPrice)})</span>
+                <span>Retail Price ({calculation.totalBoxes} × {formatPrice(selectedLens.retailPrice)})</span>
                 <span className="text-white">{formatPrice(calculation.retailPrice)}</span>
               </div>
 
@@ -566,7 +642,7 @@ export function ContactLensCalculator({ className, onNext, onBack }: ContactLens
 
               {calculation.insuranceCredit > 0 && (
                 <div className="flex justify-between text-emerald-400">
-                  <span>Insurance Credit ({authorization?.carrier || 'Insurance'})</span>
+                  <span>Insurance Credit ({apiPricing?.carrier || 'Insurance'})</span>
                   <span>-{formatPrice(calculation.insuranceCredit)}</span>
                 </div>
               )}
