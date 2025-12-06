@@ -67,11 +67,18 @@ export function EyeglassesLayerSimple({ className, onNext, onBack }: EyeglassesL
     pricedItems,
     pricingSummary,
     isCalculating,
-    contactLenses
+    contactLenses,
+    materialsConflict,
+    usesMaterialsAllowance,
   } = useQuotePricingContext()
 
-  // Check if contact lenses have been selected
-  const hasContactsSelected = contactLenses?.enabled === true
+  // Check if glasses benefit is getting the insurance allowance
+  // This uses the automatic conflict detection system
+  const isGlassesInsured = usesMaterialsAllowance('glasses')
+
+  // Show retail-only mode banner ONLY when there's a conflict AND contacts is active
+  // This means the user has both glasses and contacts in the quote, and chose contacts for the allowance
+  const showRetailOnlyBanner = materialsConflict.hasConflict && materialsConflict.activeBenefit === 'contacts'
 
   // Products from database
   const [products, setProducts] = useState<ProductsData | null>(null)
@@ -464,17 +471,28 @@ export function EyeglassesLayerSimple({ className, onNext, onBack }: EyeglassesL
 
   return (
     <div className={`space-y-6 ${className}`}>
-      {/* Glasses/Contacts Exclusion Warning */}
-      {authorization?.glassesContactsExclusive && hasContactsSelected && (
-        <Alert className="bg-amber-500/20 border-amber-400/50">
-          <AlertTriangle className="h-4 w-4 text-amber-400" />
-          <AlertDescription className="text-amber-200">
-            <strong className="text-amber-300">Important:</strong> This plan covers glasses OR contacts per benefit year, not both.
-            You already have contact lenses selected. If you proceed with eyeglasses, your insurance will only cover one.
-            The other will be at full retail price.
+      {/* Retail-Only Mode Banner - When contacts benefit is using the allowance */}
+      {showRetailOnlyBanner && (
+        <Alert className="bg-blue-500/20 border-blue-400/50">
+          <Shield className="h-4 w-4 text-blue-400" />
+          <AlertDescription className="text-blue-200">
+            <strong className="text-blue-300">Retail Pricing Mode:</strong> Your insurance allowance is being applied to <span className="font-semibold">Contact Lenses</span>.
+            Eyeglasses materials will be priced at <span className="font-semibold">retail</span>. You can switch the benefit in the conflict banner above.
           </AlertDescription>
         </Alert>
       )}
+
+      {/* Insurance Mode Banner - When glasses benefit is selected */}
+      {isGlassesInsured && authorization && (
+        <Alert className="bg-emerald-500/20 border-emerald-400/50">
+          <Shield className="h-4 w-4 text-emerald-400" />
+          <AlertDescription className="text-emerald-200">
+            <strong className="text-emerald-300">Insurance Active:</strong> {authorization.carrier} coverage applies to eyeglasses.
+            Frame allowance: ${authorization.frameAllowance ?? 0} • Materials copay: ${authorization.materialsCopay ?? 0}
+          </AlertDescription>
+        </Alert>
+      )}
+
 
       {/* Reset Button */}
       <div className="flex justify-end">

@@ -13,8 +13,7 @@ import {
   CheckCircle,
   Eye,
   Glasses,
-  Shield,
-  AlertCircle
+  Shield
 } from 'lucide-react'
 
 // Import the simplified layer components
@@ -23,6 +22,7 @@ import { EyeglassesLayerSimple } from '@/components/quote-builder/layers/eyeglas
 import { ContactLensCalculator } from '@/components/quote-builder/layers/contact-lens-calculator'
 import { QuoteReviewLayer } from '@/components/quote-builder/layers/quote-review-layer'
 import { InsuranceVerificationLayer } from '@/components/quote-builder/layers/insurance-verification-layer'
+import { MaterialsConflictBanner } from '@/components/quote-builder/materials-conflict-banner'
 
 // Import pricing context
 import { QuotePricingProvider, useQuotePricingContext, usePricingSummary } from '@/contexts/quote-pricing-context'
@@ -52,6 +52,7 @@ function QuoteBuilderContent() {
     clearCustomer,
     authorization,
     authorizationLoading,
+    materialsConflict,
     pricingSummary,
     isCalculating
   } = useQuotePricingContext()
@@ -473,6 +474,11 @@ function QuoteBuilderContent() {
                 onNext={() => setCurrentLayer('exam-services')}
                 onBack={() => setCurrentLayer('customer')}
               />
+            )}
+
+            {/* Materials Conflict Banner - shown when both glasses and contacts are in the quote */}
+            {selectedCustomer && materialsConflict.hasConflict && (
+              <MaterialsConflictBanner />
             )}
 
             {/* Exam Services Layer */}
