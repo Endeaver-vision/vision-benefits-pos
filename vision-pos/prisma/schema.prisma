@@ -18,6 +18,7 @@ model Location {
   createdAt       DateTime                  @default(now())
   updatedAt       DateTime                  @updatedAt
   customers       Customer[]
+  frameInventory  FrameInventory[]
   inventory       Inventory[]
   productSettings LocationProductSettings[]
   products        ProductLocation[]
@@ -842,7 +843,7 @@ model LensCarrierTier {
 }
 
 model Frame {
-  id              String       @id @default(cuid())
+  id              String           @id @default(cuid())
   manufacturer    String
   brand           String
   collection      String?
@@ -853,19 +854,20 @@ model Frame {
   bridge          Int?
   temple          Int?
   upc             String?
-  sku             String?      @unique
+  sku             String?          @unique
   internalId      String?
   wholesaleCost   Float
   retailPrice     Float
-  stockQuantity   Int          @default(0)
+  stockQuantity   Int              @default(0)
   gender          FrameGender?
   description     String?
-  isActive        Boolean      @default(true)
-  createdAt       DateTime     @default(now())
-  updatedAt       DateTime     @updatedAt
-  showInPos       Boolean      @default(true)
-  isFeatured      Boolean      @default(false)
-  posDisplayOrder Int          @default(999)
+  isActive        Boolean          @default(true)
+  createdAt       DateTime         @default(now())
+  updatedAt       DateTime         @updatedAt
+  showInPos       Boolean          @default(true)
+  isFeatured      Boolean          @default(false)
+  posDisplayOrder Int              @default(999)
+  inventory       FrameInventory[]
 
   @@index([manufacturer])
   @@index([brand])
@@ -873,6 +875,23 @@ model Frame {
   @@index([brand, model])
   @@index([showInPos, isFeatured, posDisplayOrder])
   @@map("frames")
+}
+
+model FrameInventory {
+  id           String   @id @default(cuid())
+  frameId      String
+  locationId   String
+  quantity     Int      @default(0)
+  lastUpdated  DateTime @default(now())
+  createdAt    DateTime @default(now())
+  updatedAt    DateTime @updatedAt
+  frame        Frame    @relation(fields: [frameId], references: [id], onDelete: Cascade)
+  location     Location @relation(fields: [locationId], references: [id], onDelete: Cascade)
+
+  @@unique([frameId, locationId])
+  @@index([locationId])
+  @@index([frameId])
+  @@map("frame_inventory")
 }
 
 model ContactLens {
@@ -1469,6 +1488,16 @@ model Order {
   estimatedCompletionDate  DateTime
   actualCompletionDate     DateTime?
   
+  // Timeline tracking (8-day workflow)
+  vendorPlacementDeadline  DateTime?               // Day 0 - Must place order with vendor by end of day
+  vendorProcessingStart    DateTime?               // Day 1 - Vendor begins processing
+  vendorProcessingEnd      DateTime?               // Day 5 - Vendor completes processing
+  shipmentStart            DateTime?               // Day 6 - Item ships from vendor
+  shipmentEnd              DateTime?               // Day 7 - Item arrives at office
+  patientDeliveryDate      DateTime?               // Day 8 - Patient notified/distributed
+  isOverdue                Boolean                 @default(false)
+  overdueReason            String?
+  
   // Lab information
   labId                    String?
   labName                  String?
@@ -1500,6 +1529,7 @@ model Order {
   statusHistory            OrderStatusHistory[]
   communications           OrderCommunication[]
   qualityChecks            OrderQualityCheck[]
+  alerts                   OrderAlert[]            @relation("OrderAlerts")
   
   createdAt                DateTime                @default(now())
   updatedAt                DateTime                @updatedAt
@@ -1621,14 +1651,77 @@ model OrderQualityCheck {
   @@map("order_quality_checks")
 }
 
+model OrderStageConfig {
+  id                    String   @id @default(cuid())
+  stage                 OrderStatus
+  expectedDurationHours Int      // Expected hours to complete this stage
+  warningThresholdHours Int      // Warn when stage takes this long
+  criticalThresholdHours Int     // Critical alert when stage takes this long
+  autoNotify            Boolean  @default(true)
+  notifyRoles           String[] // Roles to notify (JSON array: ["ADMIN", "MANAGER"])
+  active                Boolean  @default(true)
+  createdAt             DateTime @default(now())
+  updatedAt             DateTime @updatedAt
+  
+  @@unique([stage])
+  @@map("order_stage_configs")
+}
+
+model OrderAlert {
+  id              String          @id @default(cuid())
+  orderId         String
+  orderNumber     String
+  stage           OrderStatus
+  alertType       OrderAlertType
+  severity        AlertSeverity
+  message         String
+  notifiedAt      DateTime?
+  acknowledgedAt  DateTime?
+  acknowledgedBy  String?
+  resolved        Boolean         @default(false)
+  resolvedAt      DateTime?
+  resolvedBy      String?
+  resolutionNotes String?
+  createdAt       DateTime        @default(now())
+  
+  order           Order           @relation("OrderAlerts", fields: [orderId], references: [id], onDelete: Cascade)
+  
+  @@index([orderId])
+  @@index([stage])
+  @@index([severity])
+  @@index([resolved])
+  @@index([createdAt])
+  @@map("order_alerts")
+}
+
+enum OrderAlertType {
+  STAGE_OVERDUE
+  EXPECTED_COMPLETION_PASSED
+  VENDOR_DELAY
+  QUALITY_ISSUE
+  CUSTOM
+}
+
+enum AlertSeverity {
+  INFO
+  WARNING
+  CRITICAL
+  URGENT
+}
+
 enum OrderStatus {
   DRAFT
   SUBMITTED
   CONFIRMED
+  SHIPPED_TO_VENDOR
+  VENDOR_PROCESSING
+  VENDOR_SHIPPED
+  RECEIVED
   IN_PRODUCTION
   QUALITY_CHECK
   READY_FOR_PICKUP
   READY_FOR_SHIPPING
+  PATIENT_NOTIFIED
   SHIPPED
   DELIVERED
   CANCELLED

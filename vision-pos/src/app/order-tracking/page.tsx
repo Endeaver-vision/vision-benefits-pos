@@ -1,9 +1,10 @@
 import { prisma } from '@/lib/prisma'
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card'
-import { Badge } from '@/components/ui/badge'
+import { Card } from '@/components/ui/card'
 import { Button } from '@/components/ui/button'
-import { Package, Truck, CheckCircle, Clock, AlertCircle } from 'lucide-react'
+import { Package, AlertTriangle } from 'lucide-react'
 import Link from 'next/link'
+import { DominosStyleTracker } from '@/components/order-tracking/dominos-style-tracker'
+import { OrderStatus } from '@/types/order-tracking'
 
 export const dynamic = 'force-dynamic'
 
@@ -39,40 +40,108 @@ async function getOrders() {
   }
 }
 
+async function getAlertSummary() {
+  try {
+    const alerts = await prisma.orderAlert.findMany({
+      where: { resolved: false },
+      include: {
+        order: {
+          select: {
+            orderNumber: true,
+            status: true,
+          }
+        }
+      },
+      orderBy: [
+        { severity: 'desc' },
+        { createdAt: 'asc' }
+      ]
+    })
+
+    const bySeverity = {
+      URGENT: alerts.filter(a => a.severity === 'URGENT'),
+      CRITICAL: alerts.filter(a => a.severity === 'CRITICAL'),
+      WARNING: alerts.filter(a => a.severity === 'WARNING'),
+      INFO: alerts.filter(a => a.severity === 'INFO'),
+    }
+
+    return {
+      total: alerts.length,
+      bySeverity,
+      topAlerts: alerts.slice(0, 5) // Top 5 most critical
+    }
+  } catch (error) {
+    console.error('Failed to fetch alert summary:', error)
+    return {
+      total: 0,
+      bySeverity: { URGENT: [], CRITICAL: [], WARNING: [], INFO: [] },
+      topAlerts: []
+    }
+  }
+}
+
 export default async function OrderTrackingPage() {
-  const orders = await getOrders()
-
-  const getStatusColor = (status: string) => {
-    const colors: Record<string, string> = {
-      DRAFT: 'bg-gray-500',
-      SUBMITTED: 'bg-blue-500',
-      IN_PRODUCTION: 'bg-yellow-500',
-      QUALITY_CHECK: 'bg-purple-500',
-      READY_FOR_PICKUP: 'bg-green-500',
-      SHIPPED: 'bg-blue-600',
-      DELIVERED: 'bg-green-600',
-      CANCELLED: 'bg-red-500',
-    }
-    return colors[status] || 'bg-gray-500'
-  }
-
-  const getStatusIcon = (status: string) => {
-    switch (status) {
-      case 'IN_PRODUCTION':
-        return <Clock className="h-4 w-4" />
-      case 'READY_FOR_PICKUP':
-        return <Package className="h-4 w-4" />
-      case 'SHIPPED':
-        return <Truck className="h-4 w-4" />
-      case 'DELIVERED':
-        return <CheckCircle className="h-4 w-4" />
-      default:
-        return <AlertCircle className="h-4 w-4" />
-    }
-  }
+  const [orders, alertSummary] = await Promise.all([
+    getOrders(),
+    getAlertSummary()
+  ])
 
   return (
     <div className="container mx-auto p-6">
+      {/* Alert Banner - Always visible with summary */}
+      {alertSummary.total > 0 && (
+        <div className="mb-6 bg-gradient-to-r from-red-900/20 to-orange-900/20 border border-red-500/30 rounded-lg p-4">
+          <div className="flex items-start justify-between gap-4">
+            <div className="flex-1">
+              <div className="flex items-center gap-3 mb-3">
+                <AlertTriangle className="h-5 w-5 text-red-400" />
+                <h3 className="text-lg font-bold text-red-400">
+                  {alertSummary.total} Order{alertSummary.total !== 1 ? 's' : ''} Out of Timeline
+                </h3>
+              </div>
+              
+              {/* Severity Breakdown */}
+              <div className="flex gap-4 mb-3 text-sm">
+                {alertSummary.bySeverity.URGENT.length > 0 && (
+                  <span className="px-3 py-1 bg-red-900/40 text-red-300 rounded-full font-medium">
+                    🚨 {alertSummary.bySeverity.URGENT.length} Urgent
+                  </span>
+                )}
+                {alertSummary.bySeverity.CRITICAL.length > 0 && (
+                  <span className="px-3 py-1 bg-orange-900/40 text-orange-300 rounded-full font-medium">
+                    ⚠️ {alertSummary.bySeverity.CRITICAL.length} Critical
+                  </span>
+                )}
+                {alertSummary.bySeverity.WARNING.length > 0 && (
+                  <span className="px-3 py-1 bg-yellow-900/40 text-yellow-300 rounded-full font-medium">
+                    ⏰ {alertSummary.bySeverity.WARNING.length} Warning
+                  </span>
+                )}
+              </div>
+
+              {/* Top Alerts Preview */}
+              <div className="space-y-1.5">
+                {alertSummary.topAlerts.map(alert => (
+                  <div key={alert.id} className="text-sm text-white/80 flex items-center gap-2">
+                    <span className="font-mono text-white/60">#{alert.orderNumber}</span>
+                    <span className="text-xs px-2 py-0.5 bg-white/10 rounded">
+                      {alert.order.status.replace(/_/g, ' ')}
+                    </span>
+                    <span className="text-white/70">{alert.message}</span>
+                  </div>
+                ))}
+              </div>
+            </div>
+
+            <Link href="/order-monitoring">
+              <Button variant="destructive" size="sm">
+                View All Alerts →
+              </Button>
+            </Link>
+          </div>
+        </div>
+      )}
+
       <div className="mb-8 flex items-center justify-between">
         <div>
           <h1 className="text-3xl font-bold mb-2">Order Tracking System</h1>
@@ -101,80 +170,22 @@ export default async function OrderTrackingPage() {
           </CardContent>
         </Card>
       ) : (
-        <div className="grid gap-4">
+        <div className="space-y-6">
           {orders.map((order) => (
-            <Card key={order.id}>
-              <CardHeader>
-                <div className="flex items-center justify-between">
-                  <div>
-                    <CardTitle className="text-lg">{order.orderNumber}</CardTitle>
-                    <CardDescription>
-                      {order.customer.firstName} {order.customer.lastName}
-                    </CardDescription>
-                  </div>
-                  <Badge className={`${getStatusColor(order.status)} text-white flex items-center gap-2`}>
-                    {getStatusIcon(order.status)}
-                    {order.status.replace(/_/g, ' ')}
-                  </Badge>
-                </div>
-              </CardHeader>
-              <CardContent>
-                <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
-                  <div>
-                    <p className="text-sm text-muted-foreground">Order Date</p>
-                    <p className="font-medium">
-                      {order.orderDate.toLocaleDateString()}
-                    </p>
-                  </div>
-                  <div>
-                    <p className="text-sm text-muted-foreground">Est. Completion</p>
-                    <p className="font-medium">
-                      {order.estimatedCompletion 
-                        ? order.estimatedCompletion.toLocaleDateString()
-                        : 'Not set'}
-                    </p>
-                  </div>
-                  <div>
-                    <p className="text-sm text-muted-foreground">Items</p>
-                    <p className="font-medium">{order.items.length} items</p>
-                  </div>
-                  <div>
-                    <p className="text-sm text-muted-foreground">Total</p>
-                    <p className="font-medium">
-                      ${order.totalAmount?.toFixed(2) || '0.00'}
-                    </p>
-                  </div>
-                </div>
-                
-                {order.items.length > 0 && (
-                  <div className="mt-4 pt-4 border-t">
-                    <p className="text-sm font-medium mb-2">Order Items:</p>
-                    <div className="flex flex-wrap gap-2">
-                      {order.items.map((item) => (
-                        <Badge key={item.id} variant="outline">
-                          {item.description || item.type}
-                        </Badge>
-                      ))}
-                    </div>
-                  </div>
-                )}
-
-                <div className="mt-4 flex gap-2">
-                  <Link href={`/order-tracking/${order.id}`}>
-                    <Button size="sm" variant="outline">View Details</Button>
-                  </Link>
-                  <Button size="sm" variant="outline">Update Status</Button>
-                  <Button size="sm" variant="outline">Add Note</Button>
-                </div>
-
-                {order._count && (
-                  <div className="mt-4 flex gap-4 text-sm text-muted-foreground">
-                    <span>{order._count.statusHistory} status updates</span>
-                    <span>{order._count.communications} communications</span>
-                    <span>{order._count.qualityChecks} QC checks</span>
-                  </div>
-                )}
-              </CardContent>
+            <Card key={order.id} className="overflow-hidden">
+              <DominosStyleTracker
+                orderId={order.id}
+                currentStatus={order.status as OrderStatus}
+                orderNumber={order.orderNumber}
+                customerName={`${order.customer.firstName} ${order.customer.lastName}`}
+                items={order.items.map(item => ({
+                  description: item.description,
+                  type: item.type
+                }))}
+                totalAmount={order.totalAmount ? Number(order.totalAmount) : null}
+                estimatedCompletion={order.estimatedCompletion}
+                orderDate={order.orderDate}
+              />
             </Card>
           ))}
         </div>

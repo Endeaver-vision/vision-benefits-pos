@@ -5,8 +5,13 @@ export type OrderStatus =
   | 'DRAFT'
   | 'SUBMITTED'
   | 'CONFIRMED'
+  | 'SHIPPED_TO_VENDOR'
+  | 'VENDOR_PROCESSING'
+  | 'VENDOR_SHIPPED'
+  | 'RECEIVED'
   | 'IN_PRODUCTION'
   | 'QUALITY_CHECK'
+  | 'PATIENT_NOTIFIED'
   | 'READY_FOR_PICKUP'
   | 'READY_FOR_SHIPPING'
   | 'SHIPPED'
@@ -258,6 +263,7 @@ export interface UpdateOrderStatusRequest {
   notes?: string
   updatedBy: string
   updatedByName?: string
+  metadata?: Record<string, string | number | boolean>
 }
 
 export interface CreateCommunicationRequest {
