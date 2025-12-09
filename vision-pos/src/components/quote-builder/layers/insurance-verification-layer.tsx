@@ -1,6 +1,7 @@
 'use client'
 
 import { useState, useEffect } from 'react'
+import { useRouter } from 'next/navigation'
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
 import { Button } from '@/components/ui/button'
 import { Badge } from '@/components/ui/badge'
@@ -22,10 +23,12 @@ import {
   Eye,
   Glasses,
   X,
-  FileText
+  FileText,
+  RefreshCw,
+  ExternalLink
 } from 'lucide-react'
 import { useQuotePricingContext } from '@/contexts/quote-pricing-context'
-import { InlineScanner } from '@/components/scanner'
+import { AuthorizationEditor } from '@/components/quote-builder/authorization-editor'
 
 interface InsuranceVerificationLayerProps {
   customerId: string
@@ -54,11 +57,14 @@ export function InsuranceVerificationLayer({
   onNext,
   onBack
 }: InsuranceVerificationLayerProps) {
+  const router = useRouter()
+
   // Get authorization from pricing context
   const {
     authorization,
     authorizationLoading,
-    setCustomer
+    setCustomer,
+    refreshAuthorization
   } = useQuotePricingContext()
 
   // Local state
@@ -69,50 +75,36 @@ export function InsuranceVerificationLayer({
   const [verificationResult, setVerificationResult] = useState<VerificationResult | null>(null)
   const [showManualEntry, setShowManualEntry] = useState(false)
   const [isSelfPay, setIsSelfPay] = useState(false)
-  const [showScanner, setShowScanner] = useState(false)
+  const [isChangingInsurance, setIsChangingInsurance] = useState(false)
+
+  // Track the authorization ID to detect when a NEW authorization comes in
+  const [lastAuthId, setLastAuthId] = useState<string | null>(null)
 
   // Initialize from existing authorization
   useEffect(() => {
     if (authorization) {
-      setSelectedCarrier(authorization.carrier.toLowerCase() as CarrierType)
-      setVerificationResult({
-        success: true,
-        carrier: authorization.carrier,
-        planName: authorization.planName,
-        examCopay: authorization.examCopay || undefined,
-        materialsCopay: authorization.materialsCopay || undefined,
-        frameAllowance: authorization.frameAllowance || undefined,
-        contactAllowance: authorization.contactAllowance || undefined,
-      })
-      // If scanner was open and we got an authorization, close the scanner
-      if (showScanner) {
-        setShowScanner(false)
+      // Only run initialization logic if this is a different authorization
+      const isNewAuth = authorization.id !== lastAuthId
+
+      if (isNewAuth) {
+        setLastAuthId(authorization.id)
+        setSelectedCarrier(authorization.carrier.toLowerCase() as CarrierType)
+        setVerificationResult({
+          success: true,
+          carrier: authorization.carrier,
+          planName: authorization.planName,
+          examCopay: authorization.examCopay || undefined,
+          materialsCopay: authorization.materialsCopay || undefined,
+          frameAllowance: authorization.frameAllowance || undefined,
+          contactAllowance: authorization.contactAllowance || undefined,
+        })
+        // If we were changing insurance and got a NEW one, exit change mode
+        if (isChangingInsurance) {
+          setIsChangingInsurance(false)
+        }
       }
     }
-  }, [authorization, showScanner])
-
-  // Poll for new authorizations when scanner is open
-  useEffect(() => {
-    if (!showScanner || !customerId || authorization) return
-
-    const pollInterval = setInterval(async () => {
-      try {
-        // Check for new authorization for this customer
-        const response = await fetch(`/api/customers/${customerId}/authorization`)
-        if (response.ok) {
-          const data = await response.json()
-          if (data.authorization) {
-            // Trigger a refresh of the authorization in the context
-            setCustomer(customerId, customerName)
-          }
-        }
-      } catch (error) {
-        console.error('Error polling for authorization:', error)
-      }
-    }, 3000) // Poll every 3 seconds
-
-    return () => clearInterval(pollInterval)
-  }, [showScanner, customerId, authorization, customerName, setCustomer])
+  }, [authorization, isChangingInsurance, lastAuthId])
 
   // Sync customer with pricing context
   useEffect(() => {
@@ -196,8 +188,26 @@ export function InsuranceVerificationLayer({
     })
   }
 
+  // Navigate to scanner page with return URL (includes customerId for persistence)
   const handleOpenScanner = () => {
-    setShowScanner(true)
+    const returnUrl = encodeURIComponent(`/quote-builder?customerId=${customerId}`)
+    const encodedName = encodeURIComponent(customerName)
+    router.push(`/scanner?customerId=${customerId}&customerName=${encodedName}&returnTo=${returnUrl}`)
+  }
+
+  // Handle changing insurance - show options even when authorization exists
+  const handleChangeInsurance = () => {
+    setIsChangingInsurance(true)
+    setVerificationResult(null)
+    setSelectedCarrier(null)
+    setMemberId('')
+    setGroupNumber('')
+    setIsSelfPay(false)
+  }
+
+  // Cancel changing insurance - go back to showing current authorization
+  const handleCancelChangeInsurance = () => {
+    setIsChangingInsurance(false)
     setShowManualEntry(false)
   }
 
@@ -228,7 +238,7 @@ export function InsuranceVerificationLayer({
             <p className="text-white/70">Checking existing insurance authorization...</p>
           </CardContent>
         </Card>
-      ) : authorization ? (
+      ) : authorization && !isChangingInsurance ? (
         <Card className="glass-card border-emerald-400/30">
           <CardHeader>
             <div className="flex items-center justify-between">
@@ -236,9 +246,28 @@ export function InsuranceVerificationLayer({
                 <CheckCircle className="h-5 w-5 text-emerald-400" />
                 Active Authorization Found
               </CardTitle>
-              <Badge className="bg-emerald-500/30 text-emerald-300">
-                {authorization.carrier.toUpperCase()}
-              </Badge>
+              <div className="flex items-center gap-2">
+                <Badge className="bg-emerald-500/30 text-emerald-300">
+                  {authorization.carrier.toUpperCase()}
+                </Badge>
+                <AuthorizationEditor
+                  customerId={customerId}
+                  authorization={{
+                    id: authorization.id,
+                    carrier: authorization.carrier,
+                    planName: authorization.planName,
+                    examCopay: authorization.examCopay,
+                    materialsCopay: authorization.materialsCopay,
+                    frameAllowance: authorization.frameAllowance,
+                    frameOverageDiscount: authorization.frameOverageDiscount,
+                    contactAllowance: authorization.contactAllowance,
+                  }}
+                  onUpdate={() => {
+                    // Refresh authorization data after update
+                    refreshAuthorization()
+                  }}
+                />
+              </div>
             </div>
           </CardHeader>
           <CardContent className="space-y-4">
@@ -275,11 +304,27 @@ export function InsuranceVerificationLayer({
                   </div>
                 </div>
               )}
+              {authorization.contactAllowance !== null && (
+                <div className="bg-white/10 rounded-lg p-3">
+                  <div className="text-xs text-white/60 mb-1">Contact Allowance</div>
+                  <div className="text-emerald-400 font-bold text-lg">
+                    ${authorization.contactAllowance}
+                  </div>
+                </div>
+              )}
             </div>
 
             <div className="flex gap-3 pt-4">
               <Button onClick={onBack} variant="outline" className="border-white/30 text-white">
                 Back
+              </Button>
+              <Button
+                variant="outline"
+                onClick={handleChangeInsurance}
+                className="border-yellow-400/50 text-yellow-300 hover:bg-yellow-500/20"
+              >
+                <RefreshCw className="h-4 w-4 mr-2" />
+                Change Insurance
               </Button>
               <Button onClick={onNext} className="flex-1">
                 Continue with This Insurance
@@ -289,20 +334,51 @@ export function InsuranceVerificationLayer({
         </Card>
       ) : (
         <>
+          {/* Changing Insurance Banner */}
+          {isChangingInsurance && authorization && (
+            <Card className="glass-card border-yellow-400/30 bg-yellow-500/10">
+              <CardContent className="py-4">
+                <div className="flex items-center justify-between">
+                  <div className="flex items-center gap-3">
+                    <RefreshCw className="h-5 w-5 text-yellow-400" />
+                    <div>
+                      <p className="text-white font-medium">Changing Insurance</p>
+                      <p className="text-sm text-white/60">
+                        Current: {authorization.carrier.toUpperCase()} - {authorization.planName}
+                      </p>
+                    </div>
+                  </div>
+                  <Button
+                    variant="outline"
+                    size="sm"
+                    onClick={handleCancelChangeInsurance}
+                    className="border-white/30 text-white hover:bg-white/10"
+                  >
+                    Cancel
+                  </Button>
+                </div>
+              </CardContent>
+            </Card>
+          )}
+
           {/* No Authorization - Show Options */}
           <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
             {/* Scan Document Option */}
             <Card
-              className={`glass-card cursor-pointer transition-colors ${
-                showScanner ? 'border-emerald-400' : 'border-white/20 hover:border-emerald-400/50'
-              }`}
+              className="glass-card cursor-pointer transition-colors border-white/20 hover:border-emerald-400/50"
               onClick={handleOpenScanner}
             >
               <CardContent className="py-8 text-center">
                 <Shield className="h-12 w-12 text-emerald-400 mx-auto mb-4" />
-                <h3 className="text-lg font-semibold text-white mb-2">Scan Insurance Document</h3>
+                <h3 className="text-lg font-semibold text-white mb-2 flex items-center justify-center gap-2">
+                  Scan Insurance Document
+                  <ExternalLink className="h-4 w-4 text-white/40" />
+                </h3>
                 <p className="text-sm text-white/60">
-                  Scan authorization or eligibility documents
+                  Opens scanner with review & verification
+                </p>
+                <p className="text-xs text-white/50 mt-2">
+                  Upload authorization and benefit documents
                 </p>
               </CardContent>
             </Card>
@@ -312,7 +388,7 @@ export function InsuranceVerificationLayer({
               className={`glass-card cursor-pointer transition-colors ${
                 showManualEntry ? 'border-blue-400' : 'border-white/20 hover:border-blue-400/50'
               }`}
-              onClick={() => { setShowManualEntry(true); setShowScanner(false); }}
+              onClick={() => setShowManualEntry(true)}
             >
               <CardContent className="py-8 text-center">
                 <FileText className="h-12 w-12 text-blue-400 mx-auto mb-4" />
@@ -323,41 +399,6 @@ export function InsuranceVerificationLayer({
               </CardContent>
             </Card>
           </div>
-
-          {/* Scanner */}
-          {showScanner && (
-            <Card className="glass-card border-emerald-400/50">
-              <CardHeader>
-                <div className="flex items-center justify-between">
-                  <CardTitle className="text-lg text-white flex items-center gap-2">
-                    <Shield className="h-5 w-5 text-emerald-400" />
-                    Insurance Document Scanner
-                  </CardTitle>
-                  <Button
-                    variant="ghost"
-                    size="sm"
-                    onClick={() => setShowScanner(false)}
-                    className="text-white/60 hover:text-white"
-                  >
-                    <X className="h-4 w-4" />
-                  </Button>
-                </div>
-              </CardHeader>
-              <CardContent>
-                <InlineScanner
-                  customerId={customerId}
-                  onDocumentProcessed={(result) => {
-                    if (result.success) {
-                      // Refresh authorization from context
-                      setCustomer(customerId, customerName)
-                      setShowScanner(false)
-                    }
-                  }}
-                  onClose={() => setShowScanner(false)}
-                />
-              </CardContent>
-            </Card>
-          )}
 
           {/* Manual Entry Form */}
           {showManualEntry && (

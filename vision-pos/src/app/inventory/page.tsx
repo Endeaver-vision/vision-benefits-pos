@@ -22,9 +22,16 @@ import {
   TrendingUp,
   Edit,
   Eye,
-  BarChart3
+  BarChart3,
+  ChevronLeft,
+  ChevronRight,
+  ChevronsLeft,
+  ChevronsRight,
+  ArrowUp,
+  Plus
 } from 'lucide-react'
 import PageLayout from '@/components/layout/page-layout'
+import { FrameLookupModal } from '@/components/inventory/FrameLookupModal'
 
 interface Product {
   id: string
@@ -32,10 +39,18 @@ interface Product {
   sku: string | null
   manufacturer: string | null
   basePrice: number
+  color?: string
   category: {
     id: string
     name: string
   }
+}
+
+interface LocationStock {
+  locationId: string
+  locationName: string
+  shortName: string
+  quantity: number
 }
 
 interface InventoryItem {
@@ -50,10 +65,7 @@ interface InventoryItem {
   lastRestocked: string | null
   lastSold: string | null
   product: Product
-  location: {
-    id: string
-    name: string
-  }
+  stockByLocation: LocationStock[]
   movements: Array<{
     id: string
     type: string
@@ -73,8 +85,15 @@ interface Category {
   code: string
 }
 
+interface LocationInfo {
+  id: string
+  name: string
+  shortName: string
+}
+
 interface InventoryResponse {
   data: InventoryItem[]
+  locations: LocationInfo[]
   summary: {
     totalItems: number
     lowStockCount: number
@@ -97,6 +116,40 @@ export default function InventoryPage() {
   const [searchTerm, setSearchTerm] = useState('')
   const [selectedCategory, setSelectedCategory] = useState<string>('all')
   const [showLowStockOnly, setShowLowStockOnly] = useState(false)
+
+  // Pagination state
+  const [currentPage, setCurrentPage] = useState(1)
+  const [itemsPerPage, setItemsPerPage] = useState(25)
+  const [showScrollTop, setShowScrollTop] = useState(false)
+
+  // Stock management modal state
+  const [stockModalOpen, setStockModalOpen] = useState(false)
+  const [editingFrame, setEditingFrame] = useState<{
+    id: string
+    brand: string
+    model: string
+    color: string
+    sku: string | null
+    upc: string | null
+    locations: string[]
+    locationStock: Record<string, number>
+    stockQuantity: number
+    retailPrice: number
+    wholesaleCost: number
+  } | null>(null)
+
+  // Handle scroll to show/hide scroll-to-top button
+  useEffect(() => {
+    const handleScroll = () => {
+      setShowScrollTop(window.scrollY > 300)
+    }
+    window.addEventListener('scroll', handleScroll)
+    return () => window.removeEventListener('scroll', handleScroll)
+  }, [])
+
+  const scrollToTop = () => {
+    window.scrollTo({ top: 0, behavior: 'smooth' })
+  }
 
   useEffect(() => {
   }, [router])
@@ -163,6 +216,58 @@ export default function InventoryPage() {
   const formatDate = (dateString: string | null) => {
     if (!dateString) return 'Never'
     return new Date(dateString).toLocaleDateString()
+  }
+
+  // Pagination calculations
+  const totalPages = Math.ceil(inventory.length / itemsPerPage)
+  const startIndex = (currentPage - 1) * itemsPerPage
+  const endIndex = startIndex + itemsPerPage
+  const paginatedInventory = inventory.slice(startIndex, endIndex)
+
+  // Reset to page 1 when filters change
+  useEffect(() => {
+    setCurrentPage(1)
+  }, [searchTerm, selectedCategory, showLowStockOnly])
+
+  const goToPage = (page: number) => {
+    setCurrentPage(Math.max(1, Math.min(page, totalPages)))
+    scrollToTop()
+  }
+
+  // Open the lookup modal for new frame
+  const openStockModal = () => {
+    setEditingFrame(null)
+    setStockModalOpen(true)
+  }
+
+  // Open the editor for a specific frame
+  const editFrameStock = (item: InventoryItem) => {
+    // Extract frame data from inventory item
+    const stockByLoc: Record<string, number> = {}
+    item.stockByLocation?.forEach(loc => {
+      stockByLoc[loc.locationName] = loc.quantity
+    })
+
+    setEditingFrame({
+      id: item.id,
+      brand: item.product.name.split(' ')[0] || '',
+      model: item.product.name.split(' ').slice(1).join(' ') || '',
+      color: item.product.color || '',
+      sku: item.product.sku,
+      upc: null,
+      locations: item.stockByLocation?.map(l => l.locationName) || [],
+      locationStock: stockByLoc,
+      stockQuantity: item.currentStock,
+      retailPrice: item.product.basePrice,
+      wholesaleCost: item.costPrice || 0
+    })
+    setStockModalOpen(true)
+  }
+
+  // Handle stock update complete
+  const handleStockUpdated = () => {
+    loadInventory()
+    setEditingFrame(null)
   }
 
   if (loading) {
@@ -278,14 +383,37 @@ export default function InventoryPage() {
                 <AlertTriangle className="h-4 w-4 mr-2" />
                 Low Stock Only
               </Button>
+              <Button
+                onClick={openStockModal}
+                className="whitespace-nowrap"
+              >
+                <Plus className="h-4 w-4 mr-2" />
+                Manage Stock
+              </Button>
             </div>
           </CardContent>
         </Card>
 
         {/* Inventory Table */}
         <Card>
-          <CardHeader>
+          <CardHeader className="flex flex-row items-center justify-between">
             <CardTitle>Inventory Items</CardTitle>
+            <div className="flex items-center gap-4">
+              <span className="text-sm text-white/70">
+                Showing {startIndex + 1}-{Math.min(endIndex, inventory.length)} of {inventory.length}
+              </span>
+              <Select value={itemsPerPage.toString()} onValueChange={(v) => { setItemsPerPage(Number(v)); setCurrentPage(1); }}>
+                <SelectTrigger className="w-24">
+                  <SelectValue />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="10">10</SelectItem>
+                  <SelectItem value="25">25</SelectItem>
+                  <SelectItem value="50">50</SelectItem>
+                  <SelectItem value="100">100</SelectItem>
+                </SelectContent>
+              </Select>
+            </div>
           </CardHeader>
           <CardContent>
             {inventory.length === 0 ? (
@@ -302,19 +430,24 @@ export default function InventoryPage() {
                   <thead>
                     <tr className="border-b border-white/20">
                       <th className="text-left p-4 font-medium text-white">Product</th>
-                      <th className="text-left p-4 font-medium text-white">Category</th>
-                      <th className="text-right p-4 font-medium text-white">Current Stock</th>
-                      <th className="text-right p-4 font-medium text-white">Available</th>
-                      <th className="text-right p-4 font-medium text-white">Reorder Point</th>
+                      <th className="text-left p-4 font-medium text-white">Stock by Location</th>
+                      <th className="text-right p-4 font-medium text-white">Total</th>
+                      <th className="text-right p-4 font-medium text-white">Retail Price</th>
                       <th className="text-center p-4 font-medium text-white">Status</th>
-                      <th className="text-right p-4 font-medium text-white">Value</th>
                       <th className="text-center p-4 font-medium text-white">Actions</th>
                     </tr>
                   </thead>
                   <tbody>
-                    {inventory.map((item) => {
+                    {paginatedInventory.map((item) => {
                       const stockStatus = getStockStatus(item)
-                      const itemValue = item.currentStock * (item.costPrice || 0)
+
+                      // Format stock by location for display
+                      const stockDisplay = item.stockByLocation?.map(loc => ({
+                        name: loc.shortName,
+                        qty: loc.quantity,
+                        isInsight: loc.shortName.toLowerCase().includes('insight'),
+                        isSpectrum: loc.shortName.toLowerCase().includes('spectrum')
+                      })) || []
 
                       return (
                         <tr key={item.id} className="border-b border-white/10 hover:bg-white/5">
@@ -322,43 +455,56 @@ export default function InventoryPage() {
                             <div>
                               <div className="font-medium text-white">{item.product.name}</div>
                               <div className="text-sm text-white/70">
+                                {item.product.color && <span className="mr-2">{item.product.color}</span>}
                                 SKU: {item.product.sku || 'N/A'}
                               </div>
-                              {item.product.manufacturer && (
-                                <div className="text-xs text-white/50">
-                                  {item.product.manufacturer}
-                                </div>
-                              )}
                             </div>
                           </td>
                           <td className="p-4">
-                            <Badge variant="outline">
-                              {item.product.category.name}
-                            </Badge>
+                            <div className="flex flex-wrap gap-2">
+                              {stockDisplay.map((loc, idx) => (
+                                <Badge
+                                  key={idx}
+                                  variant="outline"
+                                  className={
+                                    loc.isSpectrum
+                                      ? 'border-blue-500 text-blue-400 bg-blue-500/10'
+                                      : loc.isInsight
+                                      ? 'border-purple-500 text-purple-400 bg-purple-500/10'
+                                      : 'border-gray-500 text-gray-400'
+                                  }
+                                >
+                                  <span className={loc.qty === 0 ? 'text-red-400' : ''}>
+                                    {loc.qty}
+                                  </span>
+                                  <span className="mx-1">@</span>
+                                  {loc.name}
+                                </Badge>
+                              ))}
+                            </div>
                           </td>
-                          <td className="p-4 text-right font-medium">
+                          <td className="p-4 text-right font-bold text-lg">
                             {item.currentStock}
                           </td>
-                          <td className="p-4 text-right">
-                            {item.availableStock}
-                          </td>
-                          <td className="p-4 text-right">
-                            {item.reorderPoint}
+                          <td className="p-4 text-right font-medium">
+                            {formatCurrency(item.product.basePrice)}
                           </td>
                           <td className="p-4 text-center">
                             <Badge variant={stockStatus.variant}>
                               {stockStatus.label}
                             </Badge>
                           </td>
-                          <td className="p-4 text-right font-medium">
-                            {formatCurrency(itemValue)}
-                          </td>
                           <td className="p-4">
                             <div className="flex justify-center space-x-2">
-                              <Button size="sm" variant="outline">
+                              <Button size="sm" variant="outline" title="View details">
                                 <Eye className="h-4 w-4" />
                               </Button>
-                              <Button size="sm" variant="outline">
+                              <Button
+                                size="sm"
+                                variant="outline"
+                                title="Edit stock"
+                                onClick={() => editFrameStock(item)}
+                              >
                                 <Edit className="h-4 w-4" />
                               </Button>
                             </div>
@@ -370,9 +516,99 @@ export default function InventoryPage() {
                 </table>
               </div>
             )}
+
+            {/* Pagination Controls */}
+            {totalPages > 1 && (
+              <div className="flex items-center justify-between mt-6 pt-4 border-t border-white/10">
+                <div className="text-sm text-white/70">
+                  Page {currentPage} of {totalPages}
+                </div>
+                <div className="flex items-center gap-2">
+                  <Button
+                    variant="outline"
+                    size="sm"
+                    onClick={() => goToPage(1)}
+                    disabled={currentPage === 1}
+                  >
+                    <ChevronsLeft className="h-4 w-4" />
+                  </Button>
+                  <Button
+                    variant="outline"
+                    size="sm"
+                    onClick={() => goToPage(currentPage - 1)}
+                    disabled={currentPage === 1}
+                  >
+                    <ChevronLeft className="h-4 w-4" />
+                  </Button>
+
+                  {/* Page number buttons */}
+                  <div className="flex gap-1">
+                    {Array.from({ length: Math.min(5, totalPages) }, (_, i) => {
+                      let pageNum: number
+                      if (totalPages <= 5) {
+                        pageNum = i + 1
+                      } else if (currentPage <= 3) {
+                        pageNum = i + 1
+                      } else if (currentPage >= totalPages - 2) {
+                        pageNum = totalPages - 4 + i
+                      } else {
+                        pageNum = currentPage - 2 + i
+                      }
+                      return (
+                        <Button
+                          key={pageNum}
+                          variant={currentPage === pageNum ? "default" : "outline"}
+                          size="sm"
+                          onClick={() => goToPage(pageNum)}
+                          className="w-8"
+                        >
+                          {pageNum}
+                        </Button>
+                      )
+                    })}
+                  </div>
+
+                  <Button
+                    variant="outline"
+                    size="sm"
+                    onClick={() => goToPage(currentPage + 1)}
+                    disabled={currentPage === totalPages}
+                  >
+                    <ChevronRight className="h-4 w-4" />
+                  </Button>
+                  <Button
+                    variant="outline"
+                    size="sm"
+                    onClick={() => goToPage(totalPages)}
+                    disabled={currentPage === totalPages}
+                  >
+                    <ChevronsRight className="h-4 w-4" />
+                  </Button>
+                </div>
+              </div>
+            )}
           </CardContent>
         </Card>
       </main>
+
+      {/* Scroll to top button */}
+      {showScrollTop && (
+        <Button
+          className="fixed bottom-6 right-6 rounded-full shadow-lg"
+          size="icon"
+          onClick={scrollToTop}
+        >
+          <ArrowUp className="h-5 w-5" />
+        </Button>
+      )}
+
+      {/* Stock Management Modal */}
+      <FrameLookupModal
+        open={stockModalOpen}
+        onOpenChange={setStockModalOpen}
+        onStockUpdated={handleStockUpdated}
+        initialFrame={editingFrame}
+      />
     </PageLayout>
   )
 }

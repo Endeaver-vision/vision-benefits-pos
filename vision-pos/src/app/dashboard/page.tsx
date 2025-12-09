@@ -3,21 +3,17 @@
 import Link from 'next/link'
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
 import { Store, Users, Package, DollarSign, BarChart3, Box, Shield, FileSearch, ArrowRight } from 'lucide-react'
+import AppNavigation from '@/components/layout/app-navigation'
 
 export default function DashboardPage() {
   return (
     <div className="min-h-screen">
       {/* Header */}
-      <header className="glass-card border-b border-white/20">
-        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-          <div className="flex justify-between items-center py-4">
-            <div>
-              <h1 className="text-2xl font-bold text-white">Vision Benefits POS</h1>
-              <p className="text-sm text-blue-200">Welcome</p>
-            </div>
-          </div>
-        </div>
-      </header>
+      <AppNavigation
+        title="Vision Benefits POS"
+        subtitle="Welcome"
+        showNavigation={false}
+      />
 
       {/* Main Content */}
       <main className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
@@ -137,6 +133,26 @@ export default function DashboardPage() {
               </CardHeader>
               <CardContent>
                 <p className="text-sm text-white/70">Performance metrics, sales analytics, and data exports</p>
+              </CardContent>
+            </Card>
+          </Link>
+        </div>
+
+        {/* Order Tracking Section - NEW */}
+        <div className="mb-8">
+          <Link href="/order-tracking" className="block">
+            <Card className="glass-card border-white/20 cursor-pointer hover:shadow-lg transition-all hover:scale-[1.01] hover:bg-white/20">
+              <CardContent className="py-8">
+                <div className="flex items-center gap-6">
+                  <div className="h-16 w-16 rounded-2xl bg-blue-500/20 flex items-center justify-center">
+                    <Package className="h-8 w-8 text-blue-400" />
+                  </div>
+                  <div className="flex-1">
+                    <h3 className="text-2xl font-bold text-white mb-2">Order Tracking</h3>
+                    <p className="text-white/70">Track orders from vendor to patient delivery • Timeline monitoring • Overdue alerts</p>
+                  </div>
+                  <ArrowRight className="h-6 w-6 text-white/50" />
+                </div>
               </CardContent>
             </Card>
           </Link>

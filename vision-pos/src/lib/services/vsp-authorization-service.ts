@@ -35,6 +35,8 @@ export interface VspAuthorizationData {
   serviceYear: number | null
   isActive: boolean
   lensEnhancementCopays: VspLensEnhancementCopayData[]
+  // Raw OCR data for additional fields not in main columns
+  rawPatientReport?: Record<string, unknown> | null
 }
 
 export interface VspLensEnhancementCopayData {
@@ -106,7 +108,12 @@ export function convertToVspBenefitAuth(
       polarized: enhancementCopays['DA'] ?? 77,
       blueLightFilter: enhancementCopays['LF'] ?? 15,
       tint: enhancementCopays['MN'] ?? 15,
+      rimlessDrill: enhancementCopays['SW'] ?? 30,
+      edgePolish: enhancementCopays['SP'] ?? 16,
+      edgeCoating: enhancementCopays['SQ'] ?? 36,
     },
+    // Raw enhancement copays keyed by VSP code for tier-based lookups
+    lensEnhancementCopays: enhancementCopays,
   }
 
   return {
@@ -122,8 +129,14 @@ export function convertToVspBenefitAuth(
       materials: authData.materialsCopay ?? 25,
       frameAllowanceFeatured: authData.frameAllowanceMarchon ?? 220,
       frameAllowanceNonFeatured: authData.frameAllowanceRetail ?? 200,
-      frameOverageDiscount: (authData.frameOverageDiscount ?? 20) / 100, // Convert percentage to decimal
+      // Normalize frameOverageDiscount to decimal (0.20 = 20%)
+      // Database may store as integer (20) or decimal (0.20) depending on source
+      frameOverageDiscount: normalizeOverageDiscount(authData.frameOverageDiscount),
       contactLensAllowance: authData.contactAllowance ?? undefined,
+      contactFittingCovered: authData.contactFittingCovered,
+      // Extract contact lens exam copay from raw OCR data
+      // This is what patient pays for CL fitting (e.g., $60)
+      contactLensExamCopay: extractContactLensExamCopay(authData.rawPatientReport),
     },
     planTier,
     specialRules: {
@@ -161,6 +174,9 @@ const DEFAULT_VSP_CHOICE_COPAYS = {
     'DA': 77,   // Polarized
     'LF': 15,   // Blue light filter
     'MN': 15,   // Tint
+    'SW': 30,   // Rimless drill mount
+    'SP': 16,   // High luster edge polish
+    'SQ': 36,   // Edge coating
   },
 }
 
@@ -199,8 +215,8 @@ function buildCopayMaps(copays: VspLensEnhancementCopayData[]): {
   // Material codes (use SV copay for standalone, MF when combined)
   const materialModifierCodes = ['AD', 'AB', 'AH', 'AJ', 'AA', 'BA']
 
-  // Enhancement codes
-  const enhancementCodes = ['PR', 'DA', 'MN', 'MP', 'LF']
+  // Enhancement codes (including mount fees)
+  const enhancementCodes = ['PR', 'DA', 'MN', 'MP', 'LF', 'SW', 'SP', 'SQ']
 
   for (const copay of copays) {
     const code = copay.code
@@ -298,6 +314,57 @@ function mapPlanTypeToNetwork(planType: VspAuthorizationData['planType']): strin
 }
 
 /**
+ * Normalize frameOverageDiscount to decimal format (0.20 = 20%)
+ * Database may store as integer (20 for 20%) or decimal (0.20 for 20%)
+ * This function handles both cases and defaults to 0.20 (20%) if null
+ */
+function normalizeOverageDiscount(discount: number | null): number {
+  if (discount === null || discount === undefined) {
+    return 0.20 // Default 20% discount
+  }
+  // If discount > 1, assume it's stored as integer (20 = 20%)
+  // If discount <= 1, assume it's already decimal (0.20 = 20%)
+  if (discount > 1) {
+    return discount / 100
+  }
+  return discount
+}
+
+/**
+ * Extract contact lens exam copay from raw OCR patient report
+ *
+ * Tries multiple sources:
+ * 1. contacts.clExamOnlyPatientPaysOver.value (direct numeric extraction)
+ * 2. contacts.clExamDiscount.value (parse number from text like "60 copay")
+ *
+ * Represents what patient pays for contact lens fitting (e.g., $60)
+ */
+function extractContactLensExamCopay(rawPatientReport: Record<string, unknown> | null | undefined): number | undefined {
+  if (!rawPatientReport) return undefined
+
+  const contacts = rawPatientReport.contacts as Record<string, unknown> | undefined
+  if (!contacts) return undefined
+
+  // Try direct numeric field first
+  const clExamField = contacts.clExamOnlyPatientPaysOver as { value: number | null; confidence: number } | undefined
+  if (clExamField?.value !== null && clExamField?.value !== undefined) {
+    return clExamField.value
+  }
+
+  // Fallback: parse number from clExamDiscount text (e.g., "Charge the lesser of 60 copay or 85% U&C")
+  const clExamDiscount = contacts.clExamDiscount as { value: string | null; confidence: number } | undefined
+  if (clExamDiscount?.value) {
+    // Look for patterns like "60 copay", "$60", "60.00"
+    const match = clExamDiscount.value.match(/(\d+(?:\.\d{2})?)\s*(?:copay|co-pay)/i)
+    if (match) {
+      return parseFloat(match[1])
+    }
+  }
+
+  return undefined
+}
+
+/**
  * Calculate age from date of birth
  */
 function calculateAge(dob: Date): number {
@@ -335,7 +402,7 @@ export function exampleUsage() {
     materialsCopay: 25,
     frameAllowanceRetail: 200,
     frameAllowanceMarchon: 220,
-    frameOverageDiscount: 20,
+    frameOverageDiscount: 0.20, // 20% discount stored as decimal
     contactAllowance: null,
     contactFittingCovered: false,
     authDate: new Date('2025-12-01'),

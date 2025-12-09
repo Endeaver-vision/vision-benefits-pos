@@ -409,30 +409,55 @@
 }
 
 /* ===== SCROLLBAR STYLING ===== */
+/* Force scrollbars to always be visible in Chrome/Safari */
+html, body {
+  overflow-y: scroll !important;
+  overflow-x: hidden;
+}
+
 ::-webkit-scrollbar {
-  width: 8px;
-  height: 8px;
+  -webkit-appearance: none !important;
+  width: 16px !important;
+  height: 16px !important;
+  display: block !important;
 }
 
 ::-webkit-scrollbar-track {
-  background: transparent;
+  background: #1e293b !important;
+  border-radius: 0 !important;
 }
 
 ::-webkit-scrollbar-thumb {
-  background: rgba(255, 255, 255, 0.2);
-  border-radius: 4px;
+  background: #64748b !important;
+  border-radius: 8px !important;
+  border: 4px solid #1e293b !important;
+  min-height: 40px;
 }
 
 ::-webkit-scrollbar-thumb:hover {
-  background: rgba(255, 255, 255, 0.3);
+  background: #94a3b8 !important;
+}
+
+::-webkit-scrollbar-thumb:active {
+  background: #cbd5e1 !important;
+}
+
+/* Light theme scrollbar */
+.light ::-webkit-scrollbar-track {
+  background: #e2e8f0 !important;
 }
 
 .light ::-webkit-scrollbar-thumb {
-  background: rgba(0, 0, 0, 0.2);
+  background: #94a3b8 !important;
+  border: 4px solid #e2e8f0 !important;
 }
 
 .light ::-webkit-scrollbar-thumb:hover {
-  background: rgba(0, 0, 0, 0.3);
+  background: #64748b !important;
+}
+
+.light ::-webkit-scrollbar-thumb:active {
+  background: #475569 !important;
 }
 
 /* ===== SELECTION STYLING ===== */

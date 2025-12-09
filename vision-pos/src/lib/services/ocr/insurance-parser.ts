@@ -613,12 +613,46 @@ async function createVspAuthorization(
   }
 
   if (existing) {
+    // Merge rawPatientReport to preserve data from different documents
+    // (e.g., patient record has CL fitting data, lens enhancement has copay tiers)
+    const existingRaw = existing.rawPatientReport as Record<string, unknown> | null
+    const newRaw = extractedData as Record<string, unknown> | null
+
+    if (existingRaw && newRaw) {
+      // Merge contacts data - preserve non-null values from existing
+      const existingContacts = existingRaw.contacts as Record<string, unknown> | undefined
+      const newContacts = newRaw.contacts as Record<string, unknown> | undefined
+
+      if (existingContacts && newContacts) {
+        // Merge each field, preferring non-null new values, keeping existing if new is null
+        const mergedContacts: Record<string, unknown> = { ...existingContacts }
+        for (const [key, newVal] of Object.entries(newContacts)) {
+          const newValObj = newVal as { value: unknown; confidence: number } | undefined
+          const existingVal = existingContacts[key] as { value: unknown; confidence: number } | undefined
+
+          // Only overwrite if new value is non-null with good confidence
+          if (newValObj?.value !== null && newValObj?.value !== undefined && newValObj?.confidence > 0) {
+            mergedContacts[key] = newVal
+          } else if (existingVal?.value !== null && existingVal?.value !== undefined) {
+            // Keep existing non-null value
+            mergedContacts[key] = existingVal
+          }
+        }
+        newRaw.contacts = mergedContacts
+      } else if (existingContacts) {
+        // New doesn't have contacts, keep existing
+        newRaw.contacts = existingContacts
+      }
+
+      authData.rawPatientReport = newRaw as unknown as Prisma.InputJsonValue
+    }
+
     await prisma.vspAuthorization.update({
       where: { id: existing.id },
       data: authData,
     })
     console.log(
-      `Updated VSP authorization ${existing.id} for customer ${document.customerId}`
+      `Updated VSP authorization ${existing.id} for customer ${document.customerId} (merged data)`
     )
   } else {
     const newAuth = await prisma.vspAuthorization.create({

@@ -170,11 +170,24 @@ export function calculateExamServicePricing(
         notes = 'Medical/specialty exam - check coverage'
       }
     } else if (service.category === 'CONTACT_LENS_FIT') {
-      // VSP contact lens fitting - covered or copay
+      // VSP contact lens fitting pricing
+      // Priority: specific copay amount > covered flag > retail
       if (auth.copays.contactLensExamCopay !== undefined) {
+        // Use the specific copay amount from the authorization (e.g., $60)
         patientCopay = auth.copays.contactLensExamCopay
         pricingMethod = 'copay'
         tierUsed = 'contact_lens_exam'
+        notes = `Contact lens fitting copay: $${auth.copays.contactLensExamCopay}`
+      } else if (auth.copays.contactFittingCovered === true) {
+        // Fully covered with no copay
+        patientCopay = 0
+        pricingMethod = 'copay'
+        tierUsed = 'contact_fit_covered'
+        notes = 'Contact lens fitting covered by VSP'
+      } else {
+        // Not covered - full retail
+        patientCopay = service.retailPrice
+        notes = 'Contact lens fitting not covered'
       }
     }
   } else if (isEyemedAuth(auth)) {
@@ -184,14 +197,29 @@ export function calculateExamServicePricing(
       pricingMethod = 'copay'
       tierUsed = 'exam'
     } else if (service.category === 'CONTACT_LENS_FIT') {
-      // EyeMed contact fitting - check specific coverage
-      if (auth.copays.contactsDisposable !== undefined) {
-        patientCopay = 0 // Often included with contact allowance
+      // EyeMed contact fitting - use standard fitting copay
+      // clFitStandardCopay can be number, 'covered', or null
+      const fitCopay = auth.copays.clFitStandardCopay
+      if (fitCopay === 'covered') {
+        patientCopay = 0
         pricingMethod = 'copay'
-        tierUsed = 'contact_fit_included'
-        notes = 'Fitting included with contact lens benefit'
+        tierUsed = 'contact_fit_covered'
+        notes = 'Contact lens fitting covered by EyeMed'
+      } else if (typeof fitCopay === 'number') {
+        patientCopay = fitCopay
+        pricingMethod = 'copay'
+        tierUsed = 'contact_fit_standard'
+        notes = `Contact lens fitting copay: $${fitCopay}`
+      } else if (auth.copays.clFitEligible) {
+        // Eligible but no specific copay - assume included
+        patientCopay = 0
+        pricingMethod = 'copay'
+        tierUsed = 'contact_fit_eligible'
+        notes = 'Contact lens fitting included with benefit'
       } else {
+        // Not eligible or no coverage
         patientCopay = service.retailPrice
+        notes = 'Contact lens fitting not covered'
       }
     }
   } else if (isSpecteraAuth(auth)) {
@@ -515,6 +543,7 @@ export interface ContactLensFitting {
   name: string
   retailPrice: number
   fittingType: 'sphere' | 'toric' | 'multifocal' | 'rgp' | 'specialty' | 'other'
+  pricingCategory: string | null
 }
 
 /**
@@ -535,6 +564,7 @@ export async function getContactLensFittings(): Promise<ContactLensFitting[]> {
     name: f.name,
     retailPrice: f.retailPrice,
     fittingType: detectFittingType(f.name),
+    pricingCategory: f.pricingCategory,
   }))
 }
 
@@ -550,11 +580,35 @@ function detectFittingType(name: string): ContactLensFitting['fittingType'] {
 
 /**
  * Calculate fitting fee pricing
+ * Only CL_FIT_STANDARD gets insurance copay
+ * Specialty, Premium, and Myopia Management fittings are full retail
  */
 export function calculateFittingPricing(
   fitting: ContactLensFitting,
   auth: BenefitAuthorization | null
 ): PricedProduct {
+  // Check if this is a specialty/premium fitting that doesn't get insurance coverage
+  const pricingCat = fitting.pricingCategory
+  const isSpecialtyFitting = pricingCat === 'CL_FIT_SPECIALTY' ||
+                              pricingCat === 'CL_FIT_PREMIUM' ||
+                              pricingCat === 'CL_FIT_MYOPIA_MGMT'
+
+  // Specialty fittings are NOT covered by insurance - patient pays full retail
+  if (isSpecialtyFitting) {
+    return {
+      sku: fitting.sku,
+      name: fitting.name,
+      category: 'service',
+      retailPrice: fitting.retailPrice,
+      patientPays: fitting.retailPrice,
+      insurancePays: 0,
+      savings: 0,
+      pricingMethod: 'retail',
+      notes: 'Specialty fitting - not covered by insurance',
+    }
+  }
+
+  // Standard fittings go through normal insurance pricing
   const service: ExamServiceProduct = {
     sku: fitting.sku,
     name: fitting.name,
@@ -566,6 +620,6 @@ export function calculateFittingPricing(
     specteraAllowance: null,
     isCoveredByVision: true,
   }
-  
+
   return calculateExamServicePricing(service, auth)
 }

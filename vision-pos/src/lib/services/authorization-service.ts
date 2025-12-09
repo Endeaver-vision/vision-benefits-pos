@@ -148,6 +148,8 @@ async function getVspAuthorization(customerId: string): Promise<AuthorizationRes
       isAddonCode: c.isAddonCode,
       baseCode: c.baseCode,
     })),
+    // Pass raw OCR data for additional fields like contactLensExamCopay
+    rawPatientReport: auth.rawPatientReport as Record<string, unknown> | null,
   }
 
   return {

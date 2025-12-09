@@ -101,6 +101,11 @@ export interface EyemedCopays {
   contactsConventional?: number
   contactsDisposable?: number
   contactsMedicallyNecessary?: number
+
+  // Contact lens fitting copays
+  clFitEligible?: boolean           // Whether CL fitting benefit is eligible
+  clFitStandardCopay?: number | 'covered' | null  // Standard fitting copay (may be "covered")
+  clFitPremiumCopay?: number | 'covered' | null   // Premium/specialty fitting copay
 }
 
 export interface EyemedSpecialRules {
@@ -240,6 +245,7 @@ export interface VspCopays {
   // Contact lens
   contactLensAllowance?: number
   contactLensExamCopay?: number
+  contactFittingCovered?: boolean      // If true, standard CL fitting is $0
 
   // Note: VSP progressive/AR copays are code-based, looked up from tier tables
   // The plan tier (signature/choice/advantage) determines which table to use

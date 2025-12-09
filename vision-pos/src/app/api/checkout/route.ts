@@ -8,10 +8,8 @@
 
 import { NextRequest, NextResponse } from 'next/server'
 import { prisma } from '@/lib/prisma'
-
-// Default location and user for transactions (will be replaced with auth later)
-const DEFAULT_LOCATION_ID = 'cmi990a9l00000b065hm0sb0a' // Main Office
-const DEFAULT_USER_ID = 'cmi990avd00020b06kzou7gyq' // Admin user
+import { getServerSession } from 'next-auth'
+import { authOptions } from '@/app/api/auth/[...nextauth]/route'
 
 interface CheckoutItem {
   sku: string
@@ -62,6 +60,11 @@ interface CheckoutRequest {
  */
 export async function POST(request: NextRequest) {
   try {
+    const session = await getServerSession(authOptions)
+    if (!session) {
+      return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
+    }
+
     const body: CheckoutRequest = await request.json()
 
     // Validate required fields
@@ -92,8 +95,9 @@ export async function POST(request: NextRequest) {
       )
     }
 
-    const locationId = body.locationId || DEFAULT_LOCATION_ID
-    const userId = body.userId || DEFAULT_USER_ID
+    // Use location from request body (selected location), fall back to session location
+    const locationId = body.locationId || session.user.locationId
+    const userId = session.user.id
 
     // Calculate tax (assuming 8% for now - should be configurable)
     const TAX_RATE = 0.08

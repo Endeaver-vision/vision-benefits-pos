@@ -1,10 +1,11 @@
 import { prisma } from '@/lib/prisma'
-import { Card } from '@/components/ui/card'
+import { Card, CardContent } from '@/components/ui/card'
 import { Button } from '@/components/ui/button'
-import { Package, AlertTriangle } from 'lucide-react'
+import { Package, AlertTriangle, Home, Clock, ArrowLeft } from 'lucide-react'
 import Link from 'next/link'
 import { DominosStyleTracker } from '@/components/order-tracking/dominos-style-tracker'
 import { OrderStatus } from '@/types/order-tracking'
+import { OrderTrackingNavigation, OrderTrackingFooter } from '@/components/order-tracking/order-tracking-navigation'
 
 export const dynamic = 'force-dynamic'
 
@@ -17,9 +18,22 @@ async function getOrders() {
             firstName: true,
             lastName: true,
             email: true,
+            phone: true,
           }
         },
         items: true,
+        statusHistory: {
+          orderBy: { timestamp: 'desc' },
+          take: 10
+        },
+        communications: {
+          orderBy: { timestamp: 'desc' },
+          take: 5
+        },
+        qualityChecks: {
+          orderBy: { performedAt: 'desc' },
+          take: 3
+        },
         _count: {
           select: {
             statusHistory: true,
@@ -88,33 +102,35 @@ export default async function OrderTrackingPage() {
 
   return (
     <div className="container mx-auto p-6">
-      {/* Alert Banner - Always visible with summary */}
+      <OrderTrackingNavigation />
+
+      {/* Alert Banner - Timeline Status Updates */}
       {alertSummary.total > 0 && (
-        <div className="mb-6 bg-gradient-to-r from-red-900/20 to-orange-900/20 border border-red-500/30 rounded-lg p-4">
+        <div className="mb-6 bg-gradient-to-r from-blue-900/20 to-slate-800/20 border border-blue-500/30 rounded-lg p-4">
           <div className="flex items-start justify-between gap-4">
             <div className="flex-1">
               <div className="flex items-center gap-3 mb-3">
-                <AlertTriangle className="h-5 w-5 text-red-400" />
-                <h3 className="text-lg font-bold text-red-400">
-                  {alertSummary.total} Order{alertSummary.total !== 1 ? 's' : ''} Out of Timeline
+                <Clock className="h-5 w-5 text-blue-400" />
+                <h3 className="text-lg font-bold text-blue-300">
+                  Timeline Status Updates - {alertSummary.total} Order{alertSummary.total !== 1 ? 's' : ''} Requiring Attention
                 </h3>
               </div>
               
               {/* Severity Breakdown */}
               <div className="flex gap-4 mb-3 text-sm">
                 {alertSummary.bySeverity.URGENT.length > 0 && (
-                  <span className="px-3 py-1 bg-red-900/40 text-red-300 rounded-full font-medium">
-                    🚨 {alertSummary.bySeverity.URGENT.length} Urgent
+                  <span className="px-3 py-1 bg-purple-900/40 text-purple-300 rounded-full font-medium">
+                    🔔 {alertSummary.bySeverity.URGENT.length} Needs Attention
                   </span>
                 )}
                 {alertSummary.bySeverity.CRITICAL.length > 0 && (
-                  <span className="px-3 py-1 bg-orange-900/40 text-orange-300 rounded-full font-medium">
-                    ⚠️ {alertSummary.bySeverity.CRITICAL.length} Critical
+                  <span className="px-3 py-1 bg-amber-900/40 text-amber-300 rounded-full font-medium">
+                    ⏰ {alertSummary.bySeverity.CRITICAL.length} Review Soon
                   </span>
                 )}
                 {alertSummary.bySeverity.WARNING.length > 0 && (
-                  <span className="px-3 py-1 bg-yellow-900/40 text-yellow-300 rounded-full font-medium">
-                    ⏰ {alertSummary.bySeverity.WARNING.length} Warning
+                  <span className="px-3 py-1 bg-cyan-900/40 text-cyan-300 rounded-full font-medium">
+                    📋 {alertSummary.bySeverity.WARNING.length} Monitor
                   </span>
                 )}
               </div>
@@ -134,8 +150,8 @@ export default async function OrderTrackingPage() {
             </div>
 
             <Link href="/order-monitoring">
-              <Button variant="destructive" size="sm">
-                View All Alerts →
+              <Button variant="default" size="sm" className="bg-blue-600 hover:bg-blue-700">
+                View Details →
               </Button>
             </Link>
           </div>
@@ -149,7 +165,7 @@ export default async function OrderTrackingPage() {
             Live orders from your database
           </p>
         </div>
-        <Link href="/order-tracking/new">
+        <Link href="/quotes/new">
           <Button>Create New Order</Button>
         </Link>
       </div>
@@ -178,6 +194,8 @@ export default async function OrderTrackingPage() {
                 currentStatus={order.status as OrderStatus}
                 orderNumber={order.orderNumber}
                 customerName={`${order.customer.firstName} ${order.customer.lastName}`}
+                customerEmail={order.customer.email || undefined}
+                customerPhone={order.customer.phone || undefined}
                 items={order.items.map(item => ({
                   description: item.description,
                   type: item.type
@@ -185,11 +203,16 @@ export default async function OrderTrackingPage() {
                 totalAmount={order.totalAmount ? Number(order.totalAmount) : null}
                 estimatedCompletion={order.estimatedCompletion}
                 orderDate={order.orderDate}
+                statusHistory={order.statusHistory}
+                communications={order.communications}
+                qualityChecks={order.qualityChecks}
               />
             </Card>
           ))}
         </div>
       )}
+
+      <OrderTrackingFooter />
     </div>
   )
 }

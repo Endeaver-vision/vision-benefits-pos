@@ -1,7 +1,7 @@
 import { create } from 'zustand'
 import { devtools } from 'zustand/middleware'
-import { 
-  QuoteData, 
+import {
+  QuoteData,
   LayerId,
   PatientInfo,
   InsuranceInfo,
@@ -10,6 +10,11 @@ import {
   ContactLensSelection,
   PricingBreakdown
 } from '../types/quote-builder'
+import {
+  QuoteAuthorizationContext,
+  QuoteInitializationState,
+  AuthorizationApiResponse,
+} from '../types/quote-authorization'
 
 // Initial state for a new quote
 const initialQuoteData: QuoteData = {
@@ -86,7 +91,11 @@ interface QuoteBuilderState {
     lastSaved: Date | null
     isDirty: boolean
   }
-  
+
+  // Authorization context - loaded when quote is initialized with a customer
+  authorization: QuoteAuthorizationContext | null
+  initState: QuoteInitializationState
+
   // Actions
   setCurrentLayer: (layer: LayerId) => void
   markLayerComplete: (layer: LayerId) => void
@@ -120,6 +129,11 @@ interface QuoteBuilderState {
   loadQuote: (id: string) => Promise<void>
   resetQuote: () => void
   setAutoSaveEnabled: (enabled: boolean) => void
+
+  // Authorization actions
+  initializeQuoteWithCustomer: (customerId: string) => Promise<void>
+  clearAuthorization: () => void
+  getAuthorizationContext: () => QuoteAuthorizationContext | null
 }
 
 export const useQuoteStore = create<QuoteBuilderState>()(
@@ -134,6 +148,15 @@ export const useQuoteStore = create<QuoteBuilderState>()(
         intervalMs: 30000, // 30 seconds
         lastSaved: null,
         isDirty: false
+      },
+
+      // Authorization context - null until initialized with customer
+      authorization: null,
+      initState: {
+        isLoading: false,
+        isInitialized: false,
+        error: null,
+        customerId: null,
       },
 
       // Layer navigation actions
@@ -284,6 +307,14 @@ export const useQuoteStore = create<QuoteBuilderState>()(
             intervalMs: 30000,
             lastSaved: null,
             isDirty: false
+          },
+          // Also clear authorization context
+          authorization: null,
+          initState: {
+            isLoading: false,
+            isInitialized: false,
+            error: null,
+            customerId: null,
           }
         }, false, 'resetQuote')
       },
@@ -335,8 +366,9 @@ export const useQuoteStore = create<QuoteBuilderState>()(
 
       getExamServicesPricing: () => {
         const services = get().quote.exam.selectedServices
-        const { carrier } = get().quote.insurance
-        
+        const authorization = get().authorization
+
+        // Retail prices for exam services
         const servicePrices: Record<string, number> = {
           'comprehensive-exam': 275.00,
           'contact-lens-fitting': 125.00,
@@ -351,13 +383,30 @@ export const useQuoteStore = create<QuoteBuilderState>()(
           'corneal-topography': 95.00
         }
 
-        // Mock insurance coverage - in real app would come from API
-        const insuranceCoverage: Record<string, { copay?: number; covered: boolean }> = {
-          'comprehensive-exam': { copay: carrier === 'VSP' ? 25 : carrier === 'EyeMed' ? 20 : 30, covered: true },
-          'visual-field-testing': { copay: 15, covered: true },
-          'dilation': { copay: 10, covered: true },
-          'oct-glaucoma': { copay: 25, covered: true },
-          'visual-field-extended': { copay: 15, covered: true }
+        // Build insurance coverage from authorization data
+        const insuranceCoverage: Record<string, { copay?: number; covered: boolean }> = {}
+
+        if (authorization) {
+          // Comprehensive exam - use the exam copay from authorization
+          if (authorization.examCopay !== null) {
+            insuranceCoverage['comprehensive-exam'] = {
+              copay: authorization.examCopay,
+              covered: true
+            }
+          }
+
+          // Contact lens fitting - use contact fitting copay if covered
+          if (authorization.contactFittingCovered) {
+            insuranceCoverage['contact-lens-fitting'] = {
+              copay: authorization.contactFittingCopay ?? 0,
+              covered: true
+            }
+          }
+
+          // Note: Other services (retinal imaging, OCT, visual fields) are typically
+          // medical benefits, not vision plan benefits. They would need separate
+          // medical insurance processing. For now, we mark them as not covered
+          // by the vision plan unless we have specific data.
         }
 
         const subtotal = services.reduce((total, serviceId) => {
@@ -366,9 +415,10 @@ export const useQuoteStore = create<QuoteBuilderState>()(
 
         const insuranceApplied = services.reduce((total, serviceId) => {
           const coverage = insuranceCoverage[serviceId]
-          if (coverage?.covered && coverage.copay) {
+          if (coverage?.covered && coverage.copay !== undefined) {
             const servicePrice = servicePrices[serviceId] || 0
-            return total + (servicePrice - coverage.copay)
+            // Insurance pays the difference between retail and copay
+            return total + Math.max(0, servicePrice - coverage.copay)
           }
           return total
         }, 0)
@@ -384,6 +434,165 @@ export const useQuoteStore = create<QuoteBuilderState>()(
             price: servicePrices[serviceId] || 0,
             coverage: insuranceCoverage[serviceId]
           }))
+        }
+      },
+
+      // ===== AUTHORIZATION ACTIONS =====
+
+      /**
+       * Initialize a quote with a customer - fetches their authorization data
+       */
+      initializeQuoteWithCustomer: async (customerId: string) => {
+        // Set loading state
+        set({
+          initState: {
+            isLoading: true,
+            isInitialized: false,
+            error: null,
+            customerId,
+          }
+        }, false, 'initializeQuote:start')
+
+        try {
+          // Fetch customer's active authorization
+          const response = await fetch(`/api/customers/${customerId}/authorization`)
+          const data: AuthorizationApiResponse = await response.json()
+
+          if (!response.ok) {
+            throw new Error(data.error || 'Failed to fetch authorization')
+          }
+
+          if (data.success && data.authorization) {
+            // We have authorization data - populate the quote context
+            const auth = data.authorization
+
+            set((state) => ({
+              authorization: auth,
+              initState: {
+                isLoading: false,
+                isInitialized: true,
+                error: null,
+                customerId,
+              },
+              // Also update the basic insurance info in the quote
+              quote: {
+                ...state.quote,
+                insurance: {
+                  carrier: auth.carrier.toUpperCase() as 'VSP' | 'EyeMed' | 'Spectera',
+                  planName: auth.planName,
+                  memberId: auth.memberId,
+                  groupNumber: auth.groupNumber ?? undefined,
+                  effectiveDate: auth.effectiveDate ?? undefined,
+                  copayExam: auth.examCopay ?? undefined,
+                  copayMaterials: auth.materialsCopay ?? undefined,
+                  allowanceFrame: auth.frameAllowance ?? undefined,
+                  allowanceContact: auth.contactAllowance ?? undefined,
+                },
+                patient: {
+                  ...state.quote.patient,
+                  name: auth.patientName,
+                }
+              }
+            }), false, 'initializeQuote:success')
+          } else {
+            // No authorization found - quote will use retail pricing
+            set({
+              authorization: null,
+              initState: {
+                isLoading: false,
+                isInitialized: true,
+                error: null,
+                customerId,
+              }
+            }, false, 'initializeQuote:noAuth')
+          }
+        } catch (error) {
+          console.error('[QuoteStore] Failed to initialize quote:', error)
+          set({
+            authorization: null,
+            initState: {
+              isLoading: false,
+              isInitialized: true,
+              error: error instanceof Error ? error.message : 'Failed to load authorization',
+              customerId,
+            }
+          }, false, 'initializeQuote:error')
+        }
+      },
+
+      /**
+       * Clear the authorization context (e.g., when changing customers)
+       */
+      clearAuthorization: () => {
+        set({
+          authorization: null,
+          initState: {
+            isLoading: false,
+            isInitialized: false,
+            error: null,
+            customerId: null,
+          }
+        }, false, 'clearAuthorization')
+      },
+
+      /**
+       * Get the current authorization context
+       */
+      getAuthorizationContext: () => {
+        return get().authorization
+      },
+
+      /**
+       * Get exam layer validation (uses authorization for accurate coverage info)
+       */
+      getExamLayerValidation: () => {
+        const { exam } = get().quote
+        const selectedServices = exam.selectedServices
+        const errors: string[] = []
+        const warnings: string[] = []
+
+        // Required service validation
+        if (!selectedServices.includes('comprehensive-exam')) {
+          errors.push('Comprehensive eye examination is required')
+        }
+
+        // Logical service combinations
+        if (selectedServices.includes('contact-lens-fitting') && !selectedServices.includes('comprehensive-exam')) {
+          errors.push('Contact lens fitting requires a comprehensive eye examination')
+        }
+
+        if (selectedServices.includes('oct-glaucoma') && !selectedServices.includes('visual-field-testing')) {
+          warnings.push('OCT glaucoma analysis is often paired with visual field testing for complete assessment')
+        }
+
+        // Duration warnings
+        const serviceDurations: Record<string, number> = {
+          'comprehensive-exam': 60,
+          'contact-lens-fitting': 45,
+          'retinal-imaging': 15,
+          'visual-field-testing': 30,
+          'oct-scan': 20,
+          'dilation': 20,
+          'retinal-photos': 10,
+          'oct-macula': 15,
+          'oct-glaucoma': 15,
+          'visual-field-extended': 25,
+          'corneal-topography': 10
+        }
+
+        const totalDuration = selectedServices.reduce((total, serviceId) => {
+          return total + (serviceDurations[serviceId] || 0)
+        }, 0)
+
+        if (totalDuration > 120) {
+          warnings.push(`Total appointment time (${totalDuration} min) may require scheduling in multiple sessions`)
+        }
+
+        return {
+          isValid: errors.length === 0,
+          errors,
+          warnings,
+          totalDuration
         }
       }
     }),

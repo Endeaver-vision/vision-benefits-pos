@@ -176,6 +176,19 @@ export class EyemedPricingCalculator implements IPricingCalculator {
         tierUsed = 'tint'
         break
 
+      case 'mount_fee':
+        // Mount fees for EyeMed: standard = $0, rimless/semi_rimless = retail
+        const eyemedMountCode = eyemedMapping?.materialType || 'standard'
+        if (eyemedMountCode === 'standard') {
+          patientCopay = 0
+          tierUsed = 'standard'
+        } else {
+          // Rimless and semi-rimless typically patient responsibility
+          patientCopay = retailPrice
+          tierUsed = eyemedMountCode
+        }
+        break
+
       default:
         warnings.push(`No pricing rule for category: ${product.category}`)
     }
@@ -206,7 +219,11 @@ export class EyemedPricingCalculator implements IPricingCalculator {
     }
 
     const allowance = auth.copays.frameAllowance
-    const overageDiscount = auth.copays.frameOverageDiscount
+    // Normalize discount to decimal (0.20 = 20%) in case stored as integer (20)
+    let overageDiscount = auth.copays.frameOverageDiscount
+    if (overageDiscount > 1) {
+      overageDiscount = overageDiscount / 100
+    }
 
     let overage = 0
     let overageAfterDiscount = 0
@@ -465,6 +482,19 @@ export class SpecteraPricingCalculator implements IPricingCalculator {
       case 'tint':
         patientCopay = auth.copays.tint
         tierUsed = 'tint'
+        break
+
+      case 'mount_fee':
+        // Mount fees for Spectera: standard = $0, rimless/semi_rimless = retail
+        const specteraMountCode = specteraMapping?.materialType || 'standard'
+        if (specteraMountCode === 'standard') {
+          patientCopay = 0
+          tierUsed = 'standard'
+        } else {
+          // Rimless and semi-rimless typically patient responsibility
+          patientCopay = retailPrice
+          tierUsed = specteraMountCode
+        }
         break
 
       default:
@@ -768,6 +798,58 @@ export class VspPricingCalculator implements IPricingCalculator {
         tierUsed = 'tint'
         break
 
+      case 'mount_fee':
+        // Mount fees: standard (full rim) = $0, semi_rimless = retail, SW (rimless) = $30
+        const mountCode = product.vsp?.baseCode
+        if (mountCode === 'standard') {
+          // Full rim - no charge
+          patientCopay = 0
+          tierUsed = 'standard'
+          notes = 'Full rim mount - no charge'
+        } else if (mountCode === 'SW') {
+          // Rimless drill - VSP code SW ($30)
+          patientCopay = 30
+          tierUsed = 'SW'
+          notes = 'Rimless drill mount'
+        } else if (mountCode === 'semi_rimless') {
+          // Semi-rimless - typically retail/U&C
+          patientCopay = retailPrice
+          tierUsed = 'semi_rimless'
+          notes = 'Semi-rimless mount'
+        } else {
+          // Unknown mount type - charge retail
+          patientCopay = retailPrice
+        }
+        break
+
+      case 'addon':
+        // For add-ons with enhancement codes (polarized, tint, blue light), look up copay
+        const vspEnhancement = product.vsp as { enhancementCode?: string } | undefined
+        if (vspEnhancement?.enhancementCode) {
+          const code = vspEnhancement.enhancementCode
+          // Map enhancement codes to copays
+          if (code === 'DA') {
+            patientCopay = auth.planTier.enhancementCopays.polarized
+            tierUsed = 'DA'
+          } else if (code === 'PR') {
+            patientCopay = auth.planTier.enhancementCopays.photochromic
+            tierUsed = 'PR'
+          } else if (code === 'LF') {
+            patientCopay = auth.planTier.enhancementCopays.blueLightFilter
+            tierUsed = 'LF'
+          } else if (code === 'MN' || code === 'MP') {
+            patientCopay = auth.planTier.enhancementCopays.tint
+            tierUsed = code
+          } else {
+            // Unknown enhancement code, charge retail
+            patientCopay = retailPrice
+          }
+        } else {
+          // No enhancement code, charge retail (mount fees, prism, etc.)
+          patientCopay = retailPrice
+        }
+        break
+
       default:
         warnings.push(`No pricing rule for category: ${product.category}`)
     }
@@ -804,7 +886,11 @@ export class VspPricingCalculator implements IPricingCalculator {
     const allowance = featured
       ? auth.copays.frameAllowanceFeatured
       : auth.copays.frameAllowanceNonFeatured
-    const overageDiscount = auth.copays.frameOverageDiscount
+    // Normalize discount to decimal (0.20 = 20%) in case stored as integer (20)
+    let overageDiscount = auth.copays.frameOverageDiscount
+    if (overageDiscount > 1) {
+      overageDiscount = overageDiscount / 100
+    }
 
     let overage = 0
     let overageAfterDiscount = 0

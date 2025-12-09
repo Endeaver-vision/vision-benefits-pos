@@ -1,7 +1,6 @@
 'use client'
 
 import { useState, useEffect, useCallback } from 'react'
-import { useSession } from 'next-auth/react'
 import { useRouter } from 'next/navigation'
 import PageLayout from '@/components/layout/page-layout'
 import { Button } from '@/components/ui/button'
@@ -49,7 +48,6 @@ interface Location {
 }
 
 export default function UsersAdminPage() {
-  const { data: session } = useSession()
   const router = useRouter()
 
   const [users, setUsers] = useState<User[]>([])
@@ -75,9 +73,10 @@ export default function UsersAdminPage() {
   const [saving, setSaving] = useState(false)
   const [error, setError] = useState('')
 
-  const userRole = session?.user?.role
-  const userLocationId = session?.user?.locationId
-  const isAdmin = userRole === 'ADMIN'
+  // Auth disabled - default to admin for now
+  const userLocationId = null as string | null
+  const isAdmin = true
+  const currentUserId = null as string | null // No session, no current user ID
 
   // Load locations
   useEffect(() => {
@@ -490,7 +489,7 @@ export default function UsersAdminPage() {
                             size="sm"
                             className="text-red-600"
                             onClick={() => handleDeactivate(user.id)}
-                            disabled={user.id === session?.user?.id}
+                            disabled={user.id === currentUserId}
                           >
                             <UserX className="h-4 w-4" />
                           </Button>

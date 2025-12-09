@@ -375,26 +375,27 @@ model CustomerTagAssignment {
 }
 
 model Quote {
-  id              String      @id @default(cuid())
-  customerId      String
-  authorizationId String?
-  status          QuoteStatus @default(DRAFT)
-  quoteNumber     String      @unique @default(cuid())
-  retailTotal     Float
-  insuranceTotal  Float       @default(0)
-  patientTotal    Float
-  tax             Float       @default(0)
-  grandTotal      Float
-  items           Json
-  examItems       Json?
-  secondPair      Json?
-  contactLenses   Json?
-  notes           String?
-  expiresAt       DateTime?
-  createdAt       DateTime    @default(now())
-  updatedAt       DateTime    @updatedAt
-  createdBy       String?
-  customer        Customer    @relation(fields: [customerId], references: [id])
+  id                   String      @id @default(cuid())
+  customerId           String
+  authorizationId      String?
+  status               QuoteStatus @default(DRAFT)
+  quoteNumber          String      @unique @default(cuid())
+  retailTotal          Float
+  insuranceTotal       Float       @default(0)
+  patientTotal         Float
+  tax                  Float       @default(0)
+  grandTotal           Float
+  items                Json
+  examItems            Json?
+  secondPair           Json?
+  contactLenses        Json?
+  materialsBenefitUsed String?     // 'glasses' or 'contacts' - which got the insurance allowance
+  notes                String?
+  expiresAt            DateTime?
+  createdAt            DateTime    @default(now())
+  updatedAt            DateTime    @updatedAt
+  createdBy            String?
+  customer             Customer    @relation(fields: [customerId], references: [id])
 
   @@index([customerId])
   @@index([status])
@@ -805,6 +806,7 @@ model LensProduct {
   id              String            @id @default(cuid())
   name            String
   category        LensCategory
+  pricingCategory String?           // PROGRESSIVE, SINGLE_VISION, BIFOCAL, AR_COATING, etc.
   wholesaleCost   Float?
   multiplier      Float             @default(3.0)
   retailPrice     Float
@@ -821,6 +823,7 @@ model LensProduct {
   carrierTiers    LensCarrierTier[]
 
   @@index([category])
+  @@index([pricingCategory])
   @@index([name])
   @@index([showInPos, isFeatured, posDisplayOrder])
   @@map("lens_products")
@@ -860,6 +863,7 @@ model Frame {
   retailPrice     Float
   stockQuantity   Int              @default(0)
   gender          FrameGender?
+  pricingCategory String?          // FRAME (all frames use allowance + overage pricing)
   description     String?
   isActive        Boolean          @default(true)
   createdAt       DateTime         @default(now())
@@ -873,6 +877,7 @@ model Frame {
   @@index([brand])
   @@index([model])
   @@index([brand, model])
+  @@index([pricingCategory])
   @@index([showInPos, isFeatured, posDisplayOrder])
   @@map("frames")
 }
@@ -922,11 +927,13 @@ model ContactLens {
   isFeatured           Boolean  @default(false)
   posDisplayOrder      Int      @default(999)
   modality             String?
+  pricingCategory      String?  // CL_SPHERE, CL_TORIC, CL_MULTIFOCAL, CL_MULTIFOCAL_TORIC (all use allowance + overage)
 
   @@unique([manufacturer, lensName, boxSize])
   @@index([manufacturer])
   @@index([lensName])
   @@index([isActive])
+  @@index([pricingCategory])
   @@index([showInPos, isFeatured, posDisplayOrder])
   @@map("contact_lenses")
 }
@@ -937,6 +944,7 @@ model ServicePrice {
   code               String?
   retailPrice        Float
   category           ServiceCategory?
+  pricingCategory    String?          // VISION_EXAM, CL_FIT_STANDARD, DIAGNOSTIC_ADDON, etc.
   description        String?
   isActive           Boolean          @default(true)
   createdAt          DateTime         @default(now())
@@ -957,6 +965,7 @@ model ServicePrice {
   @@index([name])
   @@index([code])
   @@index([category])
+  @@index([pricingCategory])
   @@index([billingBucket])
   @@index([showInPos, isFeatured, posDisplayOrder])
   @@map("service_prices")
@@ -1128,6 +1137,15 @@ model EyemedAuthorization {
   progressiveTier4Copay      Float?
   arCoatingCopays            EyemedArCoatingCopay[]
   lensOptionCopays           EyemedLensOptionCopay[]
+
+  // Declining Balance / Flex Plan Support
+  benefitStructure           String?                 // 'COPAY_ALLOWANCE' | 'DECLINING_BALANCE' | 'PACKAGE'
+  totalMaterialsCredit       Float?                  // Lump sum credit for declining balance plans
+  creditAppliesToFrames      Boolean                 @default(true)
+  creditAppliesToLenses      Boolean                 @default(true)
+  creditAppliesToContacts    Boolean                 @default(false)
+  creditAppliesToCoatings    Boolean                 @default(true)
+  overageDiscountPercent     Float?                  // Discount % after credit exhausted (e.g., 0.20 = 20%)
 
   @@index([customerId])
   @@index([memberId])

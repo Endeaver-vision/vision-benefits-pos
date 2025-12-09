@@ -50,6 +50,7 @@ interface CreateQuoteBody {
     rebate: number
     totalDue: number
   }
+  materialsBenefitUsed?: string // 'glasses' or 'contacts'
   retailTotal: number
   insuranceTotal: number
   patientTotal: number
@@ -120,6 +121,7 @@ export async function POST(request: NextRequest) {
         examItems: body.examItems || null,
         secondPair: body.secondPair || null,
         contactLenses: body.contactLenses || null,
+        materialsBenefitUsed: body.materialsBenefitUsed || null,
         notes: body.notes,
         expiresAt,
       },

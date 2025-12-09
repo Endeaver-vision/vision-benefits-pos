@@ -11,6 +11,8 @@ type ToastActionElement = React.ReactElement
 export interface Toast extends ToastProps {
   id: string
   action?: ToastActionElement
+  open?: boolean
+  onOpenChange?: (open: boolean) => void
 }
 
 const TOAST_LIMIT = 3
@@ -138,7 +140,7 @@ function dispatch(action: Action) {
   })
 }
 
-export function toast({ ...props }: Toast) {
+export function toast({ ...props }: Omit<Toast, 'id'>) {
   const id = genId()
 
   const update = (props: ToasterToast) =>

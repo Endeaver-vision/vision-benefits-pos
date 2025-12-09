@@ -255,7 +255,7 @@ export function MultiDocumentUpload({ customerId, onUploadComplete }: MultiDocum
           Upload Insurance Documents
         </CardTitle>
         <CardDescription>
-          Upload VSP authorization, lens enhancement forms, or other insurance documents.
+          Upload insurance authorization and benefit documents.
           You can select multiple files or add them one at a time.
         </CardDescription>
       </CardHeader>

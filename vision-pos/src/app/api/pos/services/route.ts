@@ -15,6 +15,7 @@ import { NextRequest, NextResponse } from 'next/server'
 import { prisma } from '@/lib/prisma'
 import { getActiveAuthorizationForCustomer } from '@/lib/services/authorization-service'
 import { getLocationSettings, mergeVisibilitySettings } from '@/lib/services/product-visibility'
+import { calculateServicePricingByCategory } from '@/lib/services/pricing-by-category'
 
 type ServiceCategory = 'EXAM' | 'PROCEDURE' | 'DIAGNOSTIC' | 'CONTACT_LENS_FIT' | 'all'
 
@@ -32,14 +33,12 @@ export async function GET(request: NextRequest) {
     // Get customer's authorization if customerId provided
     let authorization = null
     let carrier: string | null = null
-    let examCopay: number | null = null
 
     if (customerId) {
       const authResult = await getActiveAuthorizationForCustomer(customerId)
       if (authResult) {
         authorization = authResult.authorization
         carrier = authResult.carrier
-        examCopay = authResult.authorization.copays?.exam ?? null
       }
     }
 
@@ -96,9 +95,13 @@ export async function GET(request: NextRequest) {
     // Apply pagination
     const paginatedServices = visibleServices.slice(0, limit)
 
-    // Calculate pricing for each service
+    // Calculate pricing for each service using pricingCategory
     const posServices = paginatedServices.map(service => {
-      const pricing = calculateServicePricing(service, carrier, examCopay, authorization)
+      const pricing = calculateServicePricingByCategory(
+        service.pricingCategory,
+        service.retailPrice,
+        authorization
+      )
 
       return {
         id: service.id,
@@ -107,9 +110,11 @@ export async function GET(request: NextRequest) {
         code: service.code,
         description: service.description,
         category: service.category || 'OTHER',
+        pricingCategory: service.pricingCategory,
         retailPrice: service.retailPrice,
         patientPays: pricing.patientPays,
         insurancePays: pricing.insurancePays,
+        pricingNotes: pricing.notes,
         isCoveredByVision: service.isCoveredByVision,
         isCoveredByMedical: service.isCoveredByMedical,
         billingBucket: service.billingBucket,
@@ -138,7 +143,6 @@ export async function GET(request: NextRequest) {
         id: customerId,
         carrier,
         hasAuthorization: !!authorization,
-        examCopay,
       } : null,
       pagination: {
         page,
@@ -219,75 +223,3 @@ export async function POST(request: NextRequest) {
   }
 }
 
-/**
- * Calculate service pricing based on authorization
- */
-function calculateServicePricing(
-  service: {
-    retailPrice: number
-    category: string | null
-    isCoveredByVision: boolean
-    vspAllowance: number | null
-    eyemedAllowance: number | null
-    specteraAllowance: number | null
-  },
-  carrier: string | null,
-  examCopay: number | null,
-  authorization: unknown
-): { patientPays: number; insurancePays: number } {
-  // No insurance - patient pays full retail
-  if (!carrier || !authorization) {
-    return { patientPays: service.retailPrice, insurancePays: 0 }
-  }
-
-  // Exam services - use exam copay from authorization
-  if (service.category === 'EXAM' && service.isCoveredByVision) {
-    // "Routine Vision Exam" typically uses exam copay
-    if (service.retailPrice <= 150 && examCopay !== null) {
-      return {
-        patientPays: examCopay,
-        insurancePays: service.retailPrice - examCopay,
-      }
-    }
-  }
-
-  // Contact lens fitting - check authorization
-  if (service.category === 'CONTACT_LENS_FIT' && service.isCoveredByVision) {
-    // Standard CL fit is often covered with copay
-    const carrierLower = carrier.toLowerCase()
-    if (carrierLower === 'vsp' && service.vspAllowance) {
-      const covered = Math.min(service.vspAllowance, service.retailPrice)
-      return {
-        patientPays: service.retailPrice - covered,
-        insurancePays: covered,
-      }
-    }
-    if (carrierLower === 'eyemed' && service.eyemedAllowance) {
-      const covered = Math.min(service.eyemedAllowance, service.retailPrice)
-      return {
-        patientPays: service.retailPrice - covered,
-        insurancePays: covered,
-      }
-    }
-    if (carrierLower === 'spectera' && service.specteraAllowance) {
-      const covered = Math.min(service.specteraAllowance, service.retailPrice)
-      return {
-        patientPays: service.retailPrice - covered,
-        insurancePays: covered,
-      }
-    }
-  }
-
-  // Procedures and diagnostics - typically not covered by vision insurance
-  // Patient pays full retail unless medical billing applies
-  if (service.category === 'PROCEDURE' || service.category === 'DIAGNOSTIC') {
-    if (service.isCoveredByMedical) {
-      // Could apply medical insurance logic here
-      // For now, show as patient responsibility
-    }
-    return { patientPays: service.retailPrice, insurancePays: 0 }
-  }
-
-  // Default - not covered
-  return { patientPays: service.retailPrice, insurancePays: 0 }
-}

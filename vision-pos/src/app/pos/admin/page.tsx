@@ -1,7 +1,6 @@
 'use client'
 
 import { useState, useEffect, useCallback } from 'react'
-import { useSession } from 'next-auth/react'
 import { useRouter } from 'next/navigation'
 import PageLayout from '@/components/layout/page-layout'
 import { Button } from '@/components/ui/button'
@@ -55,7 +54,6 @@ interface Location {
 }
 
 export default function POSAdminPage() {
-  const { data: session } = useSession()
   const router = useRouter()
 
   const [activeTab, setActiveTab] = useState('services')
@@ -74,9 +72,10 @@ export default function POSAdminPage() {
 
   const [pendingChanges, setPendingChanges] = useState<Map<string, Record<string, unknown>>>(new Map())
 
-  const userRole = session?.user?.role
-  const userLocationId = session?.user?.locationId
-  const isAdmin = userRole === 'ADMIN'
+  // Auth disabled - default to admin for now
+  const userLocationId = null as string | null
+  const isAdmin = true
+  const userLocationName = 'All Locations'
 
   // Load locations for admin users
   useEffect(() => {
@@ -220,7 +219,7 @@ export default function POSAdminPage() {
 
   const selectedLocationName = isAdmin
     ? locations.find(l => l.id === selectedLocationId)?.name
-    : session?.user?.locationName
+    : userLocationName
 
   return (
     <PageLayout

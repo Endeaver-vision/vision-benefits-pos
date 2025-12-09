@@ -4,7 +4,7 @@ import { useState, useEffect, useCallback, useMemo } from 'react'
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
 import { Button } from '@/components/ui/button'
 import { Badge } from '@/components/ui/badge'
-import { Check, Loader2, Shield, AlertTriangle, Search, X } from 'lucide-react'
+import { Check, Loader2, Shield, AlertTriangle, Search, X, Glasses } from 'lucide-react'
 import { Input } from '@/components/ui/input'
 import { Alert, AlertDescription } from '@/components/ui/alert'
 import { useQuotePricingContext } from '@/contexts/quote-pricing-context'
@@ -20,6 +20,7 @@ interface Product {
   model?: string
   color?: string
   isFeatured?: boolean
+  pricingCategory?: string  // For determining SV vs MF tech addon
 }
 
 // Frame from search API
@@ -92,12 +93,14 @@ export function EyeglassesLayerSimple({ className, onNext, onBack }: EyeglassesL
   const [polarized, setPolarized] = useState<string | null>(null)
   const [mountFee, setMountFee] = useState<string | null>(null)
   const [addons, setAddons] = useState<string[]>([])
+  const [techAddon, setTechAddon] = useState<string | null>(null)  // VSP tech addon
 
   // Frame search state
   const [frameSearch, setFrameSearch] = useState('')
   const [frameSearchResults, setFrameSearchResults] = useState<FrameResult[]>([])
   const [frameSearchLoading, setFrameSearchLoading] = useState(false)
   const [selectedFrame, setSelectedFrame] = useState<FrameResult | null>(null)
+  const [isPatientOwnedFrame, setIsPatientOwnedFrame] = useState(false)
 
   // Get existing eyeglasses items from pricing context
   const existingEyeglassItems = useMemo(() => {
@@ -273,6 +276,7 @@ export function EyeglassesLayerSimple({ className, onNext, onBack }: EyeglassesL
   const handleReset = () => {
     setFrame(null)
     setSelectedFrame(null)
+    setIsPatientOwnedFrame(false)
     setFrameSearch('')
     setFrameSearchResults([])
     setLensType(null)
@@ -282,6 +286,7 @@ export function EyeglassesLayerSimple({ className, onNext, onBack }: EyeglassesL
     setPolarized(null)
     setMountFee(null)
     setAddons([])
+    setTechAddon(null)  // Clear VSP tech addon
     // Clear all eyeglasses items from pricing context
     clearItemsByCategory('frame')
     clearItemsByCategory('lens')
@@ -347,17 +352,57 @@ export function EyeglassesLayerSimple({ className, onNext, onBack }: EyeglassesL
     if (selectedFrame) {
       removeProductFromQuote(selectedFrame.sku || selectedFrame.id)
     }
+    // If POF was selected, also remove the POF mount fee
+    if (isPatientOwnedFrame) {
+      removeProductFromQuote('MOUNT-POF')
+      setMountFee(null)
+    }
     setSelectedFrame(null)
     setFrame(null)
+    setIsPatientOwnedFrame(false)
   }
 
-  // Calculate patient cost for frame (simple: retail - allowance, with 20% discount on overage)
+  // Handle patient owned frame selection
+  const handlePatientOwnedFrame = () => {
+    // Clear any existing frame selection
+    if (selectedFrame) {
+      removeProductFromQuote(selectedFrame.sku || selectedFrame.id)
+    }
+    // Clear any existing mount fee
+    if (mountFee && products?.mountFee) {
+      const oldMountProduct = products.mountFee.find(p => p.id === mountFee)
+      if (oldMountProduct) removeProductFromQuote(oldMountProduct.sku || oldMountProduct.id)
+    }
+
+    setSelectedFrame(null)
+    setFrame('patient-owned')
+    setIsPatientOwnedFrame(true)
+    setFrameSearch('')
+    setFrameSearchResults([])
+
+    // Automatically add the POF mount fee ($75)
+    setMountFee('pof-mount-fee')
+    addItem({
+      sku: 'MOUNT-POF',
+      displayName: 'Patient Owned Frame Mount',
+      category: 'addon',
+      retailPrice: 75,
+    })
+  }
+
+  // Calculate patient cost for frame (simple: retail - allowance, with discount on overage)
+  // Overage discount is typically 20% (patient pays 80% of amount over allowance)
   const calculateFramePatientCost = (framePrice: number) => {
     if (!authorization || !authorization.frameAllowance) return framePrice
     const allowance = authorization.frameAllowance
     if (framePrice <= allowance) return 0
     const overage = framePrice - allowance
-    const overageDiscount = authorization.frameOverageDiscount ?? 0.20
+    // Normalize discount to decimal (0.20 = 20%) in case stored as integer (20)
+    let overageDiscount = authorization.frameOverageDiscount ?? 0.20
+    if (overageDiscount > 1) {
+      overageDiscount = overageDiscount / 100
+    }
+    // Patient pays (1 - discount) of the overage (e.g., 80% if discount is 20%)
     return Math.round(overage * (1 - overageDiscount) * 100) / 100
   }
 
@@ -377,8 +422,44 @@ export function EyeglassesLayerSimple({ className, onNext, onBack }: EyeglassesL
       const oldProduct = products.lensType.find(p => p.id === lensType)
       if (oldProduct) removeProductFromQuote(oldProduct.sku || oldProduct.id)
     }
+
+    // Remove old tech addon if any
+    if (techAddon) {
+      removeProductFromQuote(techAddon)
+      setTechAddon(null)
+    }
+
     setLensType(product.id)
     addProductToQuote(product, 'lens')
+
+    // Auto-add VSP tech addon based on lens pricing category
+    const isVsp = authorization?.carrier?.toUpperCase() === 'VSP'
+    if (isVsp && product.pricingCategory) {
+      const isSingleVision = product.pricingCategory === 'SINGLE_VISION'
+      const isMultifocal = ['PROGRESSIVE', 'BIFOCAL', 'TRIFOCAL', 'LINED_MULTIFOCAL'].includes(product.pricingCategory)
+
+      if (isSingleVision) {
+        // Add SV tech addon ($10)
+        const techSku = 'ADDON-TECH-SV'
+        setTechAddon(techSku)
+        addItem({
+          sku: techSku,
+          displayName: 'Tech Add-on Single Vision (VSP)',
+          category: 'addon',
+          retailPrice: 10,
+        })
+      } else if (isMultifocal) {
+        // Add MF tech addon ($40)
+        const techSku = 'ADDON-TECH-MF'
+        setTechAddon(techSku)
+        addItem({
+          sku: techSku,
+          displayName: 'Tech Add-on Multifocal (VSP)',
+          category: 'addon',
+          retailPrice: 40,
+        })
+      }
+    }
   }
 
   const handleLensMaterialSelect = (product: Product) => {
@@ -547,8 +628,39 @@ export function EyeglassesLayerSimple({ className, onNext, onBack }: EyeglassesL
           </CardTitle>
         </CardHeader>
         <CardContent className="space-y-4">
-          {/* Selected Frame Display */}
-          {selectedFrame ? (
+          {/* Patient Owned Frame Display */}
+          {isPatientOwnedFrame ? (
+            <div className="p-4 rounded-lg border-2 border-cyan-400 bg-cyan-500/20">
+              <div className="flex items-start justify-between">
+                <div className="flex-1">
+                  <div className="flex items-center gap-2 mb-1">
+                    <Check className="h-5 w-5 text-cyan-400" />
+                    <span className="text-lg font-semibold text-white">
+                      Patient Owned Frame
+                    </span>
+                  </div>
+                  <div className="text-sm text-white/70">
+                    Customer is using their own frame for new lenses
+                  </div>
+                  <div className="mt-3">
+                    <div className="flex items-center justify-between">
+                      <span className="text-white/70">Mounting fee:</span>
+                      <span className="text-lg font-bold text-amber-400">$75.00</span>
+                    </div>
+                  </div>
+                </div>
+                <Button
+                  variant="ghost"
+                  size="sm"
+                  onClick={handleClearFrame}
+                  className="text-white/60 hover:text-white hover:bg-white/10"
+                >
+                  <X className="h-4 w-4" />
+                </Button>
+              </div>
+            </div>
+          ) : selectedFrame ? (
+            /* Selected Frame Display */
             <div className="p-4 rounded-lg border-2 border-amber-400 bg-amber-500/20">
               <div className="flex items-start justify-between">
                 <div className="flex-1">
@@ -667,13 +779,36 @@ export function EyeglassesLayerSimple({ className, onNext, onBack }: EyeglassesL
                   Enter a model code (e.g., TF5401, OX8046) or brand name to search
                 </div>
               )}
+
+              {/* Patient Owned Frame Option */}
+              <div className="pt-4 border-t border-white/20">
+                <button
+                  onClick={handlePatientOwnedFrame}
+                  className="w-full p-4 rounded-lg border-2 border-dashed border-cyan-400/50 hover:border-cyan-400 hover:bg-cyan-500/10 transition-all text-left"
+                >
+                  <div className="flex items-center gap-3">
+                    <div className="h-10 w-10 rounded-full bg-cyan-500/20 flex items-center justify-center">
+                      <Glasses className="h-5 w-5 text-cyan-400" />
+                    </div>
+                    <div>
+                      <div className="font-medium text-white">Patient Owned Frame</div>
+                      <div className="text-sm text-white/60">
+                        Customer is bringing their own frame for new lenses
+                      </div>
+                    </div>
+                    <div className="ml-auto text-amber-400 font-semibold">
+                      $75 mounting
+                    </div>
+                  </div>
+                </button>
+              </div>
             </>
           )}
         </CardContent>
       </Card>
 
       {/* Step 2: Lens Type */}
-      {frame && (
+      {(frame || isPatientOwnedFrame || lensType) && (
         <Card>
           <CardHeader>
             <CardTitle className="text-lg text-white flex items-center justify-between">
@@ -687,8 +822,9 @@ export function EyeglassesLayerSimple({ className, onNext, onBack }: EyeglassesL
             </CardTitle>
           </CardHeader>
           <CardContent className="space-y-3">
+            {/* Regular Lens Types */}
             <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
-              {products.lensType?.map((product) => {
+              {products.lensType?.filter(p => !p.name.toLowerCase().includes('neurolens')).map((product) => {
                 const insurancePricing = getInsurancePricing(product.sku || product.id)
                 const isSelected = lensType === product.id
                 return (
@@ -749,12 +885,69 @@ export function EyeglassesLayerSimple({ className, onNext, onBack }: EyeglassesL
                 )
               })}
             </div>
+
+            {/* Neurolens Section */}
+            {products.lensType?.some(p => p.name.toLowerCase().includes('neurolens')) && (
+              <div className="mt-6 pt-4 border-t border-amber-500/30">
+                <div className="flex items-center gap-2 mb-4">
+                  <div className="h-6 w-1 bg-amber-500 rounded-full"></div>
+                  <span className="text-amber-400 font-semibold text-sm uppercase tracking-wide">Neurolens</span>
+                  <span className="text-amber-400/60 text-xs">(Cash Pay Only)</span>
+                </div>
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                  {products.lensType?.filter(p => p.name.toLowerCase().includes('neurolens')).map((product) => {
+                    const insurancePricing = getInsurancePricing(product.sku || product.id)
+                    const isSelected = lensType === product.id
+                    return (
+                      <button
+                        key={product.id}
+                        onClick={() => handleLensTypeSelect(product)}
+                        className={`relative p-5 rounded-lg border-2 transition-all text-left ${
+                          isSelected
+                            ? 'border-amber-400 bg-amber-500/30'
+                            : 'border-amber-500/30 hover:border-amber-400/50 bg-amber-500/10'
+                        }`}
+                      >
+                        {isSelected && (
+                          <div className="absolute top-3 right-3">
+                            <div className="bg-amber-500 rounded-full p-1">
+                              <Check className="h-4 w-4 text-white" />
+                            </div>
+                          </div>
+                        )}
+                        <div className="text-lg font-semibold mb-1 text-white">{product.name}</div>
+                        <div className="text-xs text-amber-400 mb-2">Cash pay only - no vision plans</div>
+                        <div className="text-2xl font-bold text-amber-400">
+                          {formatPrice(product.price)}
+                        </div>
+                      </button>
+                    )
+                  })}
+                </div>
+              </div>
+            )}
+            {/* VSP Tech Add-on indicator */}
+            {techAddon && (
+              <div className="mt-4 p-3 rounded-lg bg-purple-500/20 border border-purple-400/50">
+                <div className="flex items-center justify-between">
+                  <div className="flex items-center gap-2">
+                    <Check className="h-4 w-4 text-purple-400" />
+                    <span className="text-purple-300 font-medium">
+                      {techAddon === 'ADDON-TECH-SV' ? 'VSP Tech Add-on (SV)' : 'VSP Tech Add-on (MF)'} auto-added
+                    </span>
+                  </div>
+                  <span className="text-purple-400 font-semibold">
+                    +{techAddon === 'ADDON-TECH-SV' ? '$10' : '$40'}
+                  </span>
+                </div>
+              </div>
+            )}
           </CardContent>
         </Card>
       )}
 
       {/* Step 3: Lens Material */}
-      {lensType && (
+      {(lensType || lensMaterial) && (
         <Card>
           <CardHeader>
             <CardTitle className="text-lg text-white">Step 3: Select Lens Material</CardTitle>
@@ -821,14 +1014,15 @@ export function EyeglassesLayerSimple({ className, onNext, onBack }: EyeglassesL
       )}
 
       {/* Step 4: AR Coating */}
-      {lensMaterial && (
+      {(lensMaterial || arCoating) && (
         <Card>
           <CardHeader>
             <CardTitle className="text-lg text-white">Step 4: Select AR Coating</CardTitle>
           </CardHeader>
           <CardContent className="space-y-3">
+            {/* Regular AR Coatings */}
             <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
-              {products.arCoating?.map((product) => {
+              {products.arCoating?.filter(p => !p.name.toLowerCase().includes('neurolens')).map((product) => {
                 const insurancePricing = getInsurancePricing(product.sku || product.id)
                 const isSelected = arCoating === product.id
                 return (
@@ -886,12 +1080,52 @@ export function EyeglassesLayerSimple({ className, onNext, onBack }: EyeglassesL
                 )
               })}
             </div>
+
+            {/* Neurolens AR Section */}
+            {products.arCoating?.some(p => p.name.toLowerCase().includes('neurolens')) && (
+              <div className="mt-6 pt-4 border-t border-amber-500/30">
+                <div className="flex items-center gap-2 mb-4">
+                  <div className="h-6 w-1 bg-amber-500 rounded-full"></div>
+                  <span className="text-amber-400 font-semibold text-sm uppercase tracking-wide">Neurolens AR</span>
+                  <span className="text-amber-400/60 text-xs">(Cash Pay Only)</span>
+                </div>
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                  {products.arCoating?.filter(p => p.name.toLowerCase().includes('neurolens')).map((product) => {
+                    const isSelected = arCoating === product.id
+                    return (
+                      <button
+                        key={product.id}
+                        onClick={() => handleArCoatingSelect(product)}
+                        className={`relative p-5 rounded-lg border-2 transition-all text-left ${
+                          isSelected
+                            ? 'border-amber-400 bg-amber-500/30'
+                            : 'border-amber-500/30 hover:border-amber-400/50 bg-amber-500/10'
+                        }`}
+                      >
+                        {isSelected && (
+                          <div className="absolute top-3 right-3">
+                            <div className="bg-amber-500 rounded-full p-1">
+                              <Check className="h-4 w-4 text-white" />
+                            </div>
+                          </div>
+                        )}
+                        <div className="text-lg font-semibold mb-1 text-white">{product.name}</div>
+                        <div className="text-xs text-amber-400 mb-2">Cash pay only - no vision plans</div>
+                        <div className="text-2xl font-bold text-amber-400">
+                          {formatPrice(product.price)}
+                        </div>
+                      </button>
+                    )
+                  })}
+                </div>
+              </div>
+            )}
           </CardContent>
         </Card>
       )}
 
       {/* Step 5: Transitions */}
-      {arCoating && (
+      {(arCoating || transitions) && (
         <Card>
           <CardHeader>
             <CardTitle className="text-lg text-white">Step 5: Select Transitions</CardTitle>
@@ -958,115 +1192,208 @@ export function EyeglassesLayerSimple({ className, onNext, onBack }: EyeglassesL
       )}
 
       {/* Step 6: Polarized */}
-      {transitions && (
+      {(transitions || polarized) && (
         <Card>
           <CardHeader>
             <CardTitle className="text-lg text-white">Step 6: Polarized</CardTitle>
           </CardHeader>
           <CardContent className="space-y-3">
             <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-              {products.polarized?.map((product) => (
-                <button
-                  key={product.id}
-                  onClick={() => handlePolarizedSelect(product)}
-                  className={`relative p-5 rounded-lg border-2 transition-all text-left ${
-                    polarized === product.id
-                      ? 'border-cyan-400 bg-cyan-500/30'
-                      : 'border-white/20 hover:border-white/40 bg-white/10'
-                  }`}
-                >
-                  {polarized === product.id && (
-                    <div className="absolute top-3 right-3">
-                      <div className="bg-cyan-500 rounded-full p-1">
-                        <Check className="h-4 w-4 text-white" />
+              {products.polarized?.map((product) => {
+                const insurancePricing = getInsurancePricing(product.sku || product.id)
+                const isSelected = polarized === product.id
+                return (
+                  <button
+                    key={product.id}
+                    onClick={() => handlePolarizedSelect(product)}
+                    className={`relative p-5 rounded-lg border-2 transition-all text-left ${
+                      isSelected
+                        ? 'border-cyan-400 bg-cyan-500/30'
+                        : 'border-white/20 hover:border-white/40 bg-white/10'
+                    }`}
+                  >
+                    {isSelected && (
+                      <div className="absolute top-3 right-3">
+                        <div className="bg-cyan-500 rounded-full p-1">
+                          <Check className="h-4 w-4 text-white" />
+                        </div>
                       </div>
-                    </div>
-                  )}
-                  <div className="text-lg font-semibold mb-2 text-white">{product.name}</div>
-                  <div className="text-2xl font-bold text-cyan-400">
-                    {product.price === 0 ? 'No charge' : formatPrice(product.price)}
-                  </div>
-                </button>
-              ))}
+                    )}
+                    <div className="text-lg font-semibold mb-2 text-white">{product.name}</div>
+                    {product.price === 0 ? (
+                      <div className="text-2xl font-bold text-cyan-400">No charge</div>
+                    ) : authorization ? (
+                      <div className="space-y-1">
+                        <div className="text-sm text-white/60 line-through">
+                          {formatPrice(product.price)}
+                        </div>
+                        {isSelected && insurancePricing ? (
+                          <div className="text-2xl font-bold text-emerald-400">
+                            {formatPrice(insurancePricing.patientPays)}
+                          </div>
+                        ) : (
+                          <div className="text-2xl font-bold text-cyan-400">
+                            Select to see price
+                          </div>
+                        )}
+                      </div>
+                    ) : (
+                      <div className="text-2xl font-bold text-cyan-400">
+                        {formatPrice(product.price)}
+                      </div>
+                    )}
+                    {/* Show insurance savings if selected */}
+                    {isSelected && insurancePricing && insurancePricing.savings > 0 && (
+                      <div className="mt-2 pt-2 border-t border-white/20">
+                        <div className="text-xs text-emerald-400">
+                          Insurance pays: {formatPrice(insurancePricing.insurancePays)}
+                        </div>
+                      </div>
+                    )}
+                  </button>
+                )
+              })}
             </div>
           </CardContent>
         </Card>
       )}
 
       {/* Step 7: Mount Fee */}
-      {polarized && (
+      {(polarized || mountFee) && (
         <Card>
           <CardHeader>
             <CardTitle className="text-lg text-white">Step 7: Select Mount Type</CardTitle>
           </CardHeader>
           <CardContent className="space-y-3">
             <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-              {products.mountFee?.map((product) => (
-                <button
-                  key={product.id}
-                  onClick={() => handleMountFeeSelect(product)}
-                  className={`relative p-5 rounded-lg border-2 transition-all text-left ${
-                    mountFee === product.id
-                      ? 'border-pink-400 bg-pink-500/30'
-                      : 'border-white/20 hover:border-white/40 bg-white/10'
-                  }`}
-                >
-                  {mountFee === product.id && (
-                    <div className="absolute top-3 right-3">
-                      <div className="bg-pink-500 rounded-full p-1">
-                        <Check className="h-4 w-4 text-white" />
+              {products.mountFee?.map((product) => {
+                const insurancePricing = getInsurancePricing(product.sku || product.id)
+                const isSelected = mountFee === product.id
+                return (
+                  <button
+                    key={product.id}
+                    onClick={() => handleMountFeeSelect(product)}
+                    className={`relative p-5 rounded-lg border-2 transition-all text-left ${
+                      isSelected
+                        ? 'border-pink-400 bg-pink-500/30'
+                        : 'border-white/20 hover:border-white/40 bg-white/10'
+                    }`}
+                  >
+                    {isSelected && (
+                      <div className="absolute top-3 right-3">
+                        <div className="bg-pink-500 rounded-full p-1">
+                          <Check className="h-4 w-4 text-white" />
+                        </div>
                       </div>
-                    </div>
-                  )}
-                  <div className="text-lg font-semibold mb-2 text-white">{product.name}</div>
-                  <div className="text-2xl font-bold text-pink-400">
-                    {product.price === 0 ? 'Included' : formatPrice(product.price)}
-                  </div>
-                </button>
-              ))}
+                    )}
+                    <div className="text-lg font-semibold mb-2 text-white">{product.name}</div>
+                    {product.price === 0 ? (
+                      <div className="text-2xl font-bold text-pink-400">Included</div>
+                    ) : authorization ? (
+                      <div className="space-y-1">
+                        <div className="text-sm text-white/60 line-through">
+                          {formatPrice(product.price)}
+                        </div>
+                        {isSelected && insurancePricing ? (
+                          <div className="text-2xl font-bold text-emerald-400">
+                            {formatPrice(insurancePricing.patientPays)}
+                          </div>
+                        ) : (
+                          <div className="text-2xl font-bold text-pink-400">
+                            Select to see price
+                          </div>
+                        )}
+                      </div>
+                    ) : (
+                      <div className="text-2xl font-bold text-pink-400">
+                        {formatPrice(product.price)}
+                      </div>
+                    )}
+                    {/* Show insurance savings if selected */}
+                    {isSelected && insurancePricing && insurancePricing.savings > 0 && (
+                      <div className="mt-2 pt-2 border-t border-white/20">
+                        <div className="text-xs text-emerald-400">
+                          Insurance pays: {formatPrice(insurancePricing.insurancePays)}
+                        </div>
+                      </div>
+                    )}
+                  </button>
+                )
+              })}
             </div>
           </CardContent>
         </Card>
       )}
 
       {/* Step 8: Add-ons */}
-      {mountFee && (
+      {(mountFee || addons.length > 0) && (
         <Card>
           <CardHeader>
-            <CardTitle className="text-lg text-white">Step 8: Select Add-ons (Optional)</CardTitle>
+            <CardTitle className="text-lg text-white">Step 8: Select Add-ons</CardTitle>
           </CardHeader>
           <CardContent className="space-y-3">
             <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
-              {products.addons?.map((product) => (
-                <button
-                  key={product.id}
-                  onClick={() => handleAddonToggle(product)}
-                  className={`relative p-5 rounded-lg border-2 transition-all text-left ${
-                    addons.includes(product.id)
-                      ? 'border-emerald-400 bg-emerald-500/30'
-                      : 'border-white/20 hover:border-white/40 bg-white/10'
-                  }`}
-                >
-                  {addons.includes(product.id) && (
-                    <div className="absolute top-3 right-3">
-                      <div className="bg-emerald-500 rounded-full p-1">
-                        <Check className="h-4 w-4 text-white" />
+              {products.addons?.map((product) => {
+                const insurancePricing = getInsurancePricing(product.sku || product.id)
+                const isSelected = addons.includes(product.id)
+                return (
+                  <button
+                    key={product.id}
+                    onClick={() => handleAddonToggle(product)}
+                    className={`relative p-5 rounded-lg border-2 transition-all text-left ${
+                      isSelected
+                        ? 'border-emerald-400 bg-emerald-500/30'
+                        : 'border-white/20 hover:border-white/40 bg-white/10'
+                    }`}
+                  >
+                    {isSelected && (
+                      <div className="absolute top-3 right-3">
+                        <div className="bg-emerald-500 rounded-full p-1">
+                          <Check className="h-4 w-4 text-white" />
+                        </div>
                       </div>
-                    </div>
-                  )}
-                  <div className="text-lg font-semibold mb-2 text-white">{product.name}</div>
-                  <div className="text-2xl font-bold text-emerald-400">
-                    {product.price === 0 ? 'Included' : `+${formatPrice(product.price)}`}
-                  </div>
-                </button>
-              ))}
+                    )}
+                    <div className="text-lg font-semibold mb-2 text-white">{product.name}</div>
+                    {product.price === 0 ? (
+                      <div className="text-2xl font-bold text-emerald-400">Included</div>
+                    ) : authorization ? (
+                      <div className="space-y-1">
+                        <div className="text-sm text-white/60 line-through">
+                          +{formatPrice(product.price)}
+                        </div>
+                        {isSelected && insurancePricing ? (
+                          <div className="text-2xl font-bold text-emerald-400">
+                            +{formatPrice(insurancePricing.patientPays)}
+                          </div>
+                        ) : (
+                          <div className="text-2xl font-bold text-emerald-400">
+                            Select to see price
+                          </div>
+                        )}
+                      </div>
+                    ) : (
+                      <div className="text-2xl font-bold text-emerald-400">
+                        +{formatPrice(product.price)}
+                      </div>
+                    )}
+                    {/* Show insurance savings if selected */}
+                    {isSelected && insurancePricing && insurancePricing.savings > 0 && (
+                      <div className="mt-2 pt-2 border-t border-white/20">
+                        <div className="text-xs text-emerald-400">
+                          Insurance pays: {formatPrice(insurancePricing.insurancePays)}
+                        </div>
+                      </div>
+                    )}
+                  </button>
+                )
+              })}
             </div>
           </CardContent>
         </Card>
       )}
 
       {/* Total */}
-      {frame && (
+      {(frame || isPatientOwnedFrame) && (
         <Card className="bg-white/20">
           <CardContent className="p-6">
             <div className="flex items-center justify-between">
@@ -1120,11 +1447,44 @@ export function EyeglassesLayerSimple({ className, onNext, onBack }: EyeglassesL
                       onClick={onNext}
                       size="lg"
                     >
-                      Continue to Contacts
+                      Continue to Second Pair
                     </Button>
                   )}
                 </div>
               )}
+            </div>
+          </CardContent>
+        </Card>
+      )}
+
+      {/* Skip Eyeglasses - Show when no frame selected */}
+      {!frame && !isPatientOwnedFrame && onNext && (
+        <Card className="glass-card border-white/20 bg-white/10">
+          <CardContent className="p-6">
+            <div className="flex items-center justify-between">
+              <div className="text-white/70">
+                <div className="font-medium text-white">No eyeglasses selected</div>
+                <div className="text-sm">You can skip eyeglasses and proceed to contact lenses or review.</div>
+              </div>
+              <div className="flex gap-3">
+                {onBack && (
+                  <Button
+                    onClick={onBack}
+                    variant="outline"
+                    size="lg"
+                  >
+                    Back
+                  </Button>
+                )}
+                <Button
+                  onClick={onNext}
+                  variant="outline"
+                  size="lg"
+                  className="border-amber-400/50 text-amber-400 hover:bg-amber-500/20"
+                >
+                  Skip Eyeglasses →
+                </Button>
+              </div>
             </div>
           </CardContent>
         </Card>

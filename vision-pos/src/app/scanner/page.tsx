@@ -1,6 +1,7 @@
 'use client'
 
-import { useState, useCallback } from 'react'
+import { useState, useCallback, useEffect, Suspense } from 'react'
+import { useSearchParams, useRouter } from 'next/navigation'
 import PageLayout from '@/components/layout/page-layout'
 import { MultiDocumentUpload, DocumentSlot } from '@/components/scanner'
 import { ProcessingStatus } from '@/components/scanner/processing-status'
@@ -18,7 +19,8 @@ import {
   RotateCcw,
   User,
   ClipboardList,
-  Glasses
+  Glasses,
+  ArrowLeft
 } from 'lucide-react'
 
 type ScannerStep = 'select-customer' | 'upload' | 'processing' | 'review' | 'complete'
@@ -50,7 +52,15 @@ interface ProcessingResult {
   slot?: DocumentSlot
 }
 
-export default function ScannerPage() {
+function ScannerContent() {
+  const searchParams = useSearchParams()
+  const router = useRouter()
+
+  // URL parameters for return flow
+  const returnTo = searchParams.get('returnTo')
+  const preselectedCustomerId = searchParams.get('customerId')
+  const preselectedCustomerName = searchParams.get('customerName')
+
   const [step, setStep] = useState<ScannerStep>('select-customer')
   const [selectedCustomer, setSelectedCustomer] = useState<Customer | null>(null)
   const [uploadedDocuments, setUploadedDocuments] = useState<UploadedDocument[]>([])
@@ -58,6 +68,41 @@ export default function ScannerPage() {
   const [processingStatus, setProcessingStatus] = useState<{auth: string, lens: string}>({auth: 'pending', lens: 'pending'})
   const [isProcessing, setIsProcessing] = useState(false)
   const [error, setError] = useState<string | null>(null)
+  const [isLoadingCustomer, setIsLoadingCustomer] = useState(false)
+
+  // Auto-load customer if customerId is provided in URL
+  useEffect(() => {
+    if (preselectedCustomerId && !selectedCustomer) {
+      setIsLoadingCustomer(true)
+      fetch(`/api/customers/${preselectedCustomerId}`)
+        .then(res => res.json())
+        .then(data => {
+          // API returns { success: true, data: customer }
+          const customerData = data.data || data.customer
+          if (data.success && customerData) {
+            const customer: Customer = {
+              id: customerData.id,
+              firstName: customerData.firstName,
+              lastName: customerData.lastName,
+              email: customerData.email,
+              phone: customerData.phone,
+              insuranceCarrier: customerData.insuranceCarrier,
+            }
+            setSelectedCustomer(customer)
+            setStep('upload')
+          } else {
+            setError('Customer not found. Please select manually.')
+          }
+        })
+        .catch(err => {
+          console.error('Failed to load customer:', err)
+          setError('Failed to load customer. Please select manually.')
+        })
+        .finally(() => {
+          setIsLoadingCustomer(false)
+        })
+    }
+  }, [preselectedCustomerId, selectedCustomer])
 
   const handleCustomerSelect = useCallback((customer: Customer) => {
     setSelectedCustomer(customer)
@@ -237,18 +282,36 @@ export default function ScannerPage() {
   return (
     <PageLayout
       title="Insurance Document Scanner"
-      subtitle="Scan and process insurance cards and authorizations"
+      subtitle={returnTo ? `Scanning for ${preselectedCustomerName || 'customer'}` : "Scan and process insurance cards and authorizations"}
       actions={
-        step !== 'select-customer' && (
-          <Button variant="outline" size="sm" onClick={handleReset}>
-            <RotateCcw className="h-4 w-4 mr-2" />
-            Start Over
-          </Button>
-        )
+        <div className="flex gap-2">
+          {returnTo && (
+            <Button variant="outline" size="sm" onClick={() => router.push(returnTo)}>
+              <ArrowLeft className="h-4 w-4 mr-2" />
+              Back to Quote
+            </Button>
+          )}
+          {step !== 'select-customer' && (
+            <Button variant="outline" size="sm" onClick={handleReset}>
+              <RotateCcw className="h-4 w-4 mr-2" />
+              Start Over
+            </Button>
+          )}
+        </div>
       }
     >
       <div className="max-w-4xl mx-auto p-6 space-y-6">
-        {getStepIndicator()}
+        {/* Loading customer from URL */}
+        {isLoadingCustomer && (
+          <Card className="border-primary/30 bg-primary/5">
+            <CardContent className="flex items-center gap-3 py-4">
+              <Loader2 className="h-5 w-5 animate-spin text-primary" />
+              <span>Loading customer...</span>
+            </CardContent>
+          </Card>
+        )}
+
+        {!isLoadingCustomer && getStepIndicator()}
 
         {/* Error Display */}
         {error && (
@@ -477,21 +540,38 @@ export default function ScannerPage() {
                 </span>&apos;s record.
               </CardDescription>
               <div className="flex justify-center gap-3 pt-4">
-                <Button onClick={handleReset}>
-                  <Upload className="h-4 w-4 mr-2" />
-                  Scan More Documents
-                </Button>
-                <Button
-                  variant="outline"
-                  onClick={() => window.location.href = `/customers/${selectedCustomer?.id}`}
-                >
-                  View Customer Profile
-                </Button>
+                {returnTo ? (
+                  <Button onClick={() => router.push(returnTo)}>
+                    <ArrowLeft className="h-4 w-4 mr-2" />
+                    Return to Quote
+                  </Button>
+                ) : (
+                  <>
+                    <Button onClick={handleReset}>
+                      <Upload className="h-4 w-4 mr-2" />
+                      Scan More Documents
+                    </Button>
+                    <Button
+                      variant="outline"
+                      onClick={() => router.push(`/customers/${selectedCustomer?.id}`)}
+                    >
+                      View Customer Profile
+                    </Button>
+                  </>
+                )}
               </div>
             </CardContent>
           </Card>
         )}
       </div>
     </PageLayout>
+  )
+}
+
+export default function ScannerPage() {
+  return (
+    <Suspense fallback={<div className="flex items-center justify-center min-h-screen">Loading...</div>}>
+      <ScannerContent />
+    </Suspense>
   )
 }

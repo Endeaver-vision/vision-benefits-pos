@@ -200,6 +200,11 @@ export function convertToEyemedBenefitAuth(
     contactsConventional: authData.contactAllowance ?? undefined,
     contactsDisposable: authData.contactAllowance ?? undefined,
     contactsMedicallyNecessary: 0,
+
+    // CL fitting copays
+    clFitEligible: authData.clFitEligible,
+    clFitStandardCopay: parseClFitCopay(authData.clFitStandardCopay),
+    clFitPremiumCopay: parseClFitCopay(authData.clFitPremiumCopay),
   }
 
   return {
@@ -304,6 +309,17 @@ function parseNumericCopay(copay: string | null): number {
   const cleaned = copay.replace(/[$,]/g, '').trim()
   const num = parseFloat(cleaned)
   return isNaN(num) ? 0 : num
+}
+
+/**
+ * Parse CL fitting copay string - can be number, "covered", or null
+ */
+function parseClFitCopay(copay: string | null): number | 'covered' | null {
+  if (!copay) return null
+  const lower = copay.toLowerCase().trim()
+  if (lower === 'covered' || lower === '$0' || lower === '0') return 'covered'
+  const num = parseNumericCopay(copay)
+  return num
 }
 
 function parseNumericOrZero(value: string | number | null): number {

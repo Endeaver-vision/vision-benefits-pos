@@ -14,8 +14,12 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { prisma } from '@/lib/prisma'
 import { getActiveAuthorizationForCustomer } from '@/lib/services/authorization-service'
-import { createPricingCalculator } from '@/lib/services/pricing-calculator'
 import { getLocationSettings, mergeVisibilitySettings } from '@/lib/services/product-visibility'
+import {
+  calculateFramePricing,
+  calculateLensPricingByCategory,
+  calculateContactLensPricing
+} from '@/lib/services/pricing-by-category'
 
 type ProductCategory = 'frames' | 'lenses' | 'contacts' | 'all'
 
@@ -33,7 +37,6 @@ export async function GET(request: NextRequest) {
 
     // Get customer's authorization if customerId provided
     let authorization = null
-    let calculator = null
     let carrier: string | null = null
 
     if (customerId) {
@@ -41,7 +44,6 @@ export async function GET(request: NextRequest) {
       if (authResult) {
         authorization = authResult.authorization
         carrier = authResult.carrier
-        calculator = createPricingCalculator(authorization)
       }
     }
 
@@ -88,7 +90,7 @@ export async function GET(request: NextRequest) {
       const paginatedFrames = visibleFrames.slice(0, limit)
 
       for (const frame of paginatedFrames) {
-        const pricing = calculateFramePricing(frame, calculator, authorization, carrier)
+        const pricing = calculateFramePricing(frame.retailPrice, authorization)
         products.push({
           id: frame.id,
           sku: frame.sku || frame.id,
@@ -100,7 +102,7 @@ export async function GET(request: NextRequest) {
           retailPrice: frame.retailPrice,
           patientPays: pricing.patientPays,
           insurancePays: pricing.insurancePays,
-          tier: pricing.tier,
+          pricingNotes: pricing.notes,
           inStock: frame.stockQuantity > 0,
           stockQuantity: frame.stockQuantity,
           manufacturer: frame.manufacturer,
@@ -129,7 +131,16 @@ export async function GET(request: NextRequest) {
       const paginatedLenses = visibleLenses.slice(0, limit)
 
       for (const lens of paginatedLenses) {
-        const pricing = calculateLensPricing(lens, calculator, authorization, carrier)
+        // Get carrier tier code if available
+        const tierMapping = lens.carrierTiers?.find(t =>
+          t.carrier.toLowerCase() === (carrier || '').toLowerCase()
+        )
+        const pricing = calculateLensPricingByCategory(
+          lens.pricingCategory,
+          lens.retailPrice,
+          authorization,
+          tierMapping?.tierCode
+        )
         products.push({
           id: lens.id,
           sku: lens.sku || lens.id,
@@ -138,10 +149,12 @@ export async function GET(request: NextRequest) {
           description: lens.description || lens.category,
           category: 'lenses',
           subcategory: lens.category.toLowerCase(),
+          pricingCategory: lens.pricingCategory,
           retailPrice: lens.retailPrice,
           patientPays: pricing.patientPays,
           insurancePays: pricing.insurancePays,
           tier: pricing.tier,
+          pricingNotes: pricing.notes,
           inStock: true,
           manufacturer: lens.manufacturer,
         })
@@ -169,7 +182,7 @@ export async function GET(request: NextRequest) {
       const paginatedContacts = visibleContacts.slice(0, limit)
 
       for (const contact of paginatedContacts) {
-        const pricing = calculateContactPricing(contact, calculator, authorization, carrier)
+        const pricing = calculateContactLensPricing(contact.retailPrice, authorization)
         products.push({
           id: contact.id,
           sku: contact.id,
@@ -178,10 +191,11 @@ export async function GET(request: NextRequest) {
           description: `${contact.boxSize} pack${contact.isDaily ? ' - Daily' : contact.isMonthly ? ' - Monthly' : ''}`,
           category: 'contacts',
           subcategory: getContactSubcategory(contact),
+          pricingCategory: contact.pricingCategory,
           retailPrice: contact.retailPrice,
           patientPays: pricing.patientPays,
           insurancePays: pricing.insurancePays,
-          tier: pricing.tier,
+          pricingNotes: pricing.notes,
           inStock: true,
           manufacturer: contact.manufacturer,
           metadata: {
@@ -239,20 +253,16 @@ interface PosProduct {
   description: string
   category: 'frames' | 'lenses' | 'contacts'
   subcategory: string
+  pricingCategory?: string | null
   retailPrice: number
   patientPays: number
   insurancePays: number
   tier?: string
+  pricingNotes?: string
   inStock: boolean
   stockQuantity?: number
   manufacturer?: string
   metadata?: Record<string, unknown>
-}
-
-interface PricingResult {
-  patientPays: number
-  insurancePays: number
-  tier?: string
 }
 
 // =============================================================================
@@ -374,123 +384,8 @@ async function getAvailableBrands(category: ProductCategory) {
 }
 
 // =============================================================================
-// PRICING CALCULATORS
+// HELPERS
 // =============================================================================
-
-function calculateFramePricing(
-  frame: { retailPrice: number; manufacturer: string },
-  calculator: ReturnType<typeof createPricingCalculator> | null,
-  authorization: unknown,
-  carrier: string | null
-): PricingResult {
-  if (!calculator || !authorization || !carrier) {
-    return { patientPays: frame.retailPrice, insurancePays: 0 }
-  }
-
-  try {
-    // Check if featured brand (Marchon/Altair) for VSP
-    const featuredManufacturers = ['marchon', 'altair', 'nike', 'columbia', 'nautica', 'flexon', 'dragon']
-    const isFeaturedBrand = featuredManufacturers.some(m =>
-      frame.manufacturer.toLowerCase().includes(m)
-    )
-
-    const result = calculator.calculateFrame(
-      {
-        sku: '',
-        displayName: '',
-        category: 'frame',
-        retailPrice: frame.retailPrice,
-        isActive: true,
-        vsp: { isFeaturedBrand },
-      },
-      authorization as any,
-      frame.retailPrice,
-      isFeaturedBrand
-    )
-
-    return {
-      patientPays: result.patientCopay,
-      insurancePays: result.insurancePays,
-      tier: result.tierUsed,
-    }
-  } catch {
-    return { patientPays: frame.retailPrice, insurancePays: 0 }
-  }
-}
-
-function calculateLensPricing(
-  lens: { retailPrice: number; carrierTiers?: Array<{ carrier: string; tierCode: string }> },
-  calculator: ReturnType<typeof createPricingCalculator> | null,
-  authorization: unknown,
-  carrier: string | null
-): PricingResult {
-  if (!calculator || !authorization || !carrier) {
-    return { patientPays: lens.retailPrice, insurancePays: 0 }
-  }
-
-  try {
-    // Find tier for this carrier
-    const tierMapping = lens.carrierTiers?.find(t =>
-      t.carrier.toLowerCase() === carrier.toLowerCase()
-    )
-
-    const result = calculator.calculateProduct(
-      {
-        sku: '',
-        displayName: '',
-        category: 'lens_progressive',
-        retailPrice: lens.retailPrice,
-        isActive: true,
-        vsp: tierMapping?.carrier === 'VSP' ? { baseCode: tierMapping.tierCode } : undefined,
-        eyemed: tierMapping?.carrier === 'EyeMed' ? { progressiveTier: tierMapping.tierCode as any } : undefined,
-        spectera: tierMapping?.carrier === 'Spectera' ? { progressiveTier: tierMapping.tierCode as any } : undefined,
-      },
-      authorization as any,
-      lens.retailPrice
-    )
-
-    return {
-      patientPays: result.patientCopay,
-      insurancePays: result.insurancePays,
-      tier: result.tierUsed,
-    }
-  } catch {
-    return { patientPays: lens.retailPrice, insurancePays: 0 }
-  }
-}
-
-function calculateContactPricing(
-  contact: { retailPrice: number; vspCategory?: string | null },
-  calculator: ReturnType<typeof createPricingCalculator> | null,
-  authorization: unknown,
-  carrier: string | null
-): PricingResult {
-  if (!calculator || !authorization || !carrier) {
-    return { patientPays: contact.retailPrice, insurancePays: 0 }
-  }
-
-  try {
-    const result = calculator.calculateProduct(
-      {
-        sku: '',
-        displayName: '',
-        category: 'contact',
-        retailPrice: contact.retailPrice,
-        isActive: true,
-      },
-      authorization as any,
-      contact.retailPrice
-    )
-
-    return {
-      patientPays: result.patientCopay,
-      insurancePays: result.insurancePays,
-      tier: result.tierUsed,
-    }
-  } catch {
-    return { patientPays: contact.retailPrice, insurancePays: 0 }
-  }
-}
 
 function getContactSubcategory(contact: {
   isDaily?: boolean

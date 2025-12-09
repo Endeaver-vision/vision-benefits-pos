@@ -28,10 +28,12 @@ export type ProductCategory =
   | 'tint'
   | 'mirror'
   | 'edge_treatment'
+  | 'mount_fee'         // Full rim, semi-rimless, rimless mount
   | 'contact'           // Contact lenses
   | 'service'           // Exams, fittings, procedures
   | 'addon'             // General add-on products
   | 'other'
+  | 'unknown'           // Fallback for unmapped categories
 
 // =============================================================================
 // CARRIER-SPECIFIC TIER MAPPINGS
@@ -198,17 +200,18 @@ export interface QuoteLineItem {
   sku: string
   displayName: string
   category: ProductCategory
+  pricingCategory?: string | null  // e.g., "VISION_EXAM", "PROGRESSIVE", "FRAME"
   retailPrice: number
   patientCopay: number
   insurancePays: number
   savings: number
   tierUsed?: string  // e.g., "tier_4", "III", "FA"
-  notes?: string     // e.g., "80% of U&C applied"
+  notes?: string     // e.g., "80% of U&C applied", "Frame overage: $50"
 }
 
 export interface QuoteResult {
-  authorizationId: string
-  carrier: string
+  authorizationId: string | null
+  carrier: string | null
   planName: string
 
   // Line items
@@ -221,10 +224,14 @@ export interface QuoteResult {
   totalSavings: number
 
   // Copays (from authorization)
-  examCopay?: number
-  materialsCopay?: number
+  examCopay?: number | null
+  materialsCopay?: number | null
+
+  // Materials benefit exclusivity - which category is using the insurance allowance
+  // (glasses vs contacts - most plans only allow one per benefit period)
+  activeMaterialsBenefit?: 'glasses' | 'contacts' | null
 
   // Metadata
   calculatedAt: Date
-  warnings?: string[]  // e.g., "Frame exceeds allowance by $50"
+  warnings?: string[]  // e.g., "Both glasses and contacts in quote"
 }

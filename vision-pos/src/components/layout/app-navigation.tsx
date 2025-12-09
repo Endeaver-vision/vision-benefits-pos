@@ -1,6 +1,6 @@
 'use client'
 
-import { useSession, signOut } from 'next-auth/react'
+// import { useSession, signOut } from 'next-auth/react'
 import { useRouter } from 'next/navigation'
 import { Button } from '@/components/ui/button'
 import { Badge } from '@/components/ui/badge'
@@ -22,6 +22,7 @@ import {
   LogOut,
   ChevronDown
 } from 'lucide-react'
+import LocationSwitcher from './location-switcher'
 
 interface AppNavigationProps {
   title?: string
@@ -36,10 +37,11 @@ export default function AppNavigation({
   showNavigation = true,
   actions,
 }: AppNavigationProps) {
-  const { data: session } = useSession()
+  // const { data: session } = useSession()
   const router = useRouter()
 
-  const user = session?.user
+  // Dev mode - mock user
+  const user = { name: 'Dev User', email: 'dev@test.com', role: 'ADMIN' }
   const userRole = user?.role as string | undefined
   const canAccessAdmin = userRole === 'ADMIN' || userRole === 'MANAGER'
 
@@ -89,13 +91,8 @@ export default function AppNavigation({
             {/* Custom actions */}
             {actions}
 
-            {/* Location indicator */}
-            {user?.locationName && (
-              <Badge variant="outline" className="flex items-center gap-1">
-                <MapPin className="h-3 w-3" />
-                {user.locationName}
-              </Badge>
-            )}
+            {/* Location switcher */}
+            <LocationSwitcher />
 
             {/* User menu */}
             {user ? (
@@ -138,7 +135,7 @@ export default function AppNavigation({
                   )}
 
                   <DropdownMenuItem
-                    onClick={() => signOut({ callbackUrl: '/login' })}
+                    onClick={() => console.log('Sign out disabled in dev mode')}
                     className="text-red-400"
                   >
                     <LogOut className="h-4 w-4 mr-2" />

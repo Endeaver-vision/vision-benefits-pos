@@ -7,7 +7,8 @@ import { QuoteResult, QuoteLineItem } from '@/types/product-catalog'
 interface QuoteItem {
   sku: string
   displayName: string
-  category: 'exam' | 'frame' | 'lens' | 'coating' | 'addon' | 'contact'
+  category: 'exam' | 'frame' | 'lens' | 'coating' | 'addon' | 'contact' | 'service'
+  pricingCategory?: string | null  // e.g., "VISION_EXAM", "PROGRESSIVE", "FRAME"
   retailPrice: number
   quantity?: number
 }
@@ -24,6 +25,7 @@ interface SecondPairPricing {
   subtotal: number
   discountAmount: number
   totalDue: number
+  lineItems?: Array<{ name: string; price: number }>
 }
 
 // Contact lens pricing
@@ -65,6 +67,15 @@ interface Authorization {
   effectiveDate?: string | null
   expirationDate: string | null
   isActive?: boolean
+
+  // ===== DECLINING BALANCE / FLEX PLAN SUPPORT =====
+  benefitStructure?: 'COPAY_ALLOWANCE' | 'DECLINING_BALANCE' | 'PACKAGE' | null
+  totalMaterialsCredit?: number | null  // Lump sum credit for declining balance plans
+  creditAppliesToFrames?: boolean
+  creditAppliesToLenses?: boolean
+  creditAppliesToContacts?: boolean
+  creditAppliesToCoatings?: boolean
+  overageDiscountPercent?: number | null  // Discount after credit exhausted (e.g., 0.20 = 20%)
 
   // ===== PRICING TIERS FOR POS =====
   // Lens copays
@@ -188,6 +199,9 @@ interface QuotePricingActions {
   setCustomer: (customerId: string, customerName: string) => void
   clearCustomer: () => void
 
+  // Refresh authorization (re-fetch from API)
+  refreshAuthorization: () => Promise<void>
+
   // Materials benefit switching (only when conflict exists)
   // This allows user to choose which materials type gets the allowance when both are in the quote
   switchMaterialsBenefit: (type: MaterialsBenefitType) => void
@@ -244,6 +258,28 @@ export function QuotePricingProvider({ children }: { children: React.ReactNode }
   const [secondPair, setSecondPair] = useState<SecondPairPricing | null>(null)
   const [contactLenses, setContactLenses] = useState<ContactLensPricing | null>(null)
 
+  // Fetch authorization function (reusable for initial load and refresh)
+  const fetchAuthorizationForCustomer = useCallback(async (id: string) => {
+    setAuthorizationLoading(true)
+    setError(null)
+
+    try {
+      const response = await fetch(`/api/customers/${id}/authorization`)
+      const data = await response.json()
+
+      if (data.success && data.authorization) {
+        setAuthorization(data.authorization)
+      } else {
+        setAuthorization(null)
+      }
+    } catch (err) {
+      console.error('Failed to fetch authorization:', err)
+      setAuthorization(null)
+    } finally {
+      setAuthorizationLoading(false)
+    }
+  }, [])
+
   // Fetch authorization when customer changes
   useEffect(() => {
     if (!customerId) {
@@ -251,31 +287,18 @@ export function QuotePricingProvider({ children }: { children: React.ReactNode }
       return
     }
 
-    const fetchAuthorization = async () => {
-      setAuthorizationLoading(true)
-      setError(null)
+    fetchAuthorizationForCustomer(customerId)
+  }, [customerId, fetchAuthorizationForCustomer])
 
-      try {
-        const response = await fetch(`/api/customers/${customerId}/authorization`)
-        const data = await response.json()
-
-        if (data.success && data.authorization) {
-          setAuthorization(data.authorization)
-        } else {
-          setAuthorization(null)
-        }
-      } catch (err) {
-        console.error('Failed to fetch authorization:', err)
-        setAuthorization(null)
-      } finally {
-        setAuthorizationLoading(false)
-      }
-    }
-
-    fetchAuthorization()
-  }, [customerId])
+  // Refresh authorization (re-fetch from API) - pricing recalculation happens via useEffect
+  const refreshAuthorization = useCallback(async () => {
+    if (!customerId) return
+    await fetchAuthorizationForCustomer(customerId)
+    // Pricing will auto-recalculate via the useEffect that watches authorization changes
+  }, [customerId, fetchAuthorizationForCustomer])
 
   // Calculate pricing when items or authorization changes
+  // Also recalculates when activeMaterialsBenefit changes (user switches glasses/contacts)
   const calculatePricing = useCallback(async () => {
     if (!customerId || selectedItems.size === 0) {
       setPricedItems([])
@@ -292,12 +315,19 @@ export function QuotePricingProvider({ children }: { children: React.ReactNode }
         sku: item.sku,
         retailPrice: item.retailPrice,
         quantity: item.quantity || 1,
+        category: item.category,
+        pricingCategory: item.pricingCategory,
       }))
 
+      // Pass activeMaterialsBenefit so the API knows which category gets the allowance
       const response = await fetch('/api/quote', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ customerId, items }),
+        body: JSON.stringify({
+          customerId,
+          items,
+          activeMaterialsBenefit: materialsConflict.activeBenefit,
+        }),
       })
 
       const data = await response.json()
@@ -368,7 +398,7 @@ export function QuotePricingProvider({ children }: { children: React.ReactNode }
     } finally {
       setIsCalculating(false)
     }
-  }, [customerId, selectedItems])
+  }, [customerId, selectedItems, materialsConflict.activeBenefit, authorization])
 
   // Trigger recalculation when items change
   useEffect(() => {
@@ -594,6 +624,7 @@ export function QuotePricingProvider({ children }: { children: React.ReactNode }
     // Actions
     setCustomer,
     clearCustomer,
+    refreshAuthorization,
     switchMaterialsBenefit,
     usesMaterialsAllowance,
     addItem,
@@ -748,6 +779,79 @@ export function useAuthorizationPricing() {
     }
   }
 
+  /**
+   * Check if this is a declining balance plan
+   */
+  const isDecliningBalancePlan = authorization?.benefitStructure === 'DECLINING_BALANCE'
+
+  /**
+   * Calculate pricing for declining balance plans
+   * Returns the patient pays amount after applying credit and overage discount
+   */
+  const calculateDecliningBalance = (
+    items: Array<{ retailPrice: number; category: 'frame' | 'lens' | 'coating' | 'addon' | 'contact' | 'exam' }>
+  ): {
+    totalRetail: number
+    creditApplied: number
+    afterCredit: number
+    overageDiscount: number
+    patientPays: number
+    creditRemaining: number
+  } => {
+    if (!authorization || authorization.benefitStructure !== 'DECLINING_BALANCE') {
+      const totalRetail = items.reduce((sum, i) => sum + i.retailPrice, 0)
+      return {
+        totalRetail,
+        creditApplied: 0,
+        afterCredit: totalRetail,
+        overageDiscount: 0,
+        patientPays: totalRetail,
+        creditRemaining: 0,
+      }
+    }
+
+    const totalCredit = authorization.totalMaterialsCredit ?? 0
+    const overageDiscountRate = authorization.overageDiscountPercent ?? 0
+
+    // Filter items eligible for credit
+    const eligibleItems = items.filter(item => {
+      // Exams are always separate - not covered by declining balance credit
+      if (item.category === 'exam') return false
+
+      if (item.category === 'frame') return authorization.creditAppliesToFrames !== false
+      if (item.category === 'lens') return authorization.creditAppliesToLenses !== false
+      if (item.category === 'coating' || item.category === 'addon') return authorization.creditAppliesToCoatings !== false
+      if (item.category === 'contact') return authorization.creditAppliesToContacts === true
+      return false
+    })
+
+    // Non-eligible items (like exams) are handled separately with copays
+    const nonEligibleItems = items.filter(item => !eligibleItems.includes(item))
+
+    const eligibleRetail = eligibleItems.reduce((sum, i) => sum + i.retailPrice, 0)
+    const nonEligibleRetail = nonEligibleItems.reduce((sum, i) => sum + i.retailPrice, 0)
+
+    // Apply credit to eligible items
+    const creditApplied = Math.min(eligibleRetail, totalCredit)
+    const afterCredit = eligibleRetail - creditApplied
+
+    // Apply overage discount to remaining amount
+    const overageDiscount = afterCredit * overageDiscountRate
+    const eligiblePatientPays = afterCredit - overageDiscount
+
+    // Credit remaining for tracking
+    const creditRemaining = Math.max(0, totalCredit - eligibleRetail)
+
+    return {
+      totalRetail: eligibleRetail + nonEligibleRetail,
+      creditApplied,
+      afterCredit,
+      overageDiscount,
+      patientPays: eligiblePatientPays + nonEligibleRetail, // Add non-eligible items at full price (or with copays)
+      creditRemaining,
+    }
+  }
+
   return {
     authorization,
     isLoading: authorizationLoading,
@@ -760,6 +864,12 @@ export function useAuthorizationPricing() {
     frameAllowance: authorization?.frameAllowance ?? null,
     contactAllowance: authorization?.contactAllowance ?? null,
 
+    // Declining balance support
+    isDecliningBalancePlan,
+    totalMaterialsCredit: authorization?.totalMaterialsCredit ?? null,
+    overageDiscountPercent: authorization?.overageDiscountPercent ?? null,
+    benefitStructure: authorization?.benefitStructure ?? 'COPAY_ALLOWANCE',
+
     // Special flags
     isChild: authorization?.specialRules?.isChild ?? false,
     glassesContactsExclusive: authorization?.glassesContactsExclusive ?? false,
@@ -770,5 +880,6 @@ export function useAuthorizationPricing() {
     getMaterialCopay,
     getEnhancementCopay,
     calculateFramePrice,
+    calculateDecliningBalance,
   }
 }

@@ -5,15 +5,14 @@ import {
   PricingResult,
   FramePricingResult,
 } from '@/lib/services/pricing-calculator'
-import { normalizeAuthorization } from '@/lib/services/authorization-normalizer'
-import { ExtractedInsuranceData } from '@/types/insurance-document'
+import { getActiveAuthorizationForCustomer } from '@/lib/services/authorization-service'
 import { ProductCatalogEntry } from '@/types/product-catalog'
 
 export interface PricingRequest {
   customerId: string
   products: Array<{
     sku: string
-    productType: 'progressive' | 'ar_coating' | 'frame' | 'lens_sv' | 'material' | 'photochromic' | 'polarized' | 'blue_light' | 'tint' | 'other'
+    productType: 'progressive' | 'ar_coating' | 'frame' | 'lens_sv' | 'material' | 'photochromic' | 'polarized' | 'blue_light' | 'tint' | 'mount_fee' | 'other'
     brand?: string
     productName?: string
     retailPrice: number
@@ -64,24 +63,8 @@ export async function POST(request: NextRequest) {
       )
     }
 
-    // Get customer with verified insurance document
-    const customer = await prisma.customer.findUnique({
-      where: { id: body.customerId },
-      include: {
-        insuranceDocuments: {
-          where: { isVerified: true },
-          orderBy: { verifiedAt: 'desc' },
-          take: 1,
-        },
-      },
-    })
-
-    if (!customer) {
-      return NextResponse.json(
-        { error: 'Customer not found' },
-        { status: 404 }
-      )
-    }
+    // First, try to get authorization from carrier-specific tables
+    const authResult = await getActiveAuthorizationForCustomer(body.customerId)
 
     const warnings: string[] = []
     let carrier: string | null = null
@@ -89,12 +72,9 @@ export async function POST(request: NextRequest) {
     let examCopay = 0
     let materialsCopay = 0
 
-    // Check for verified insurance document with extracted data
-    const verifiedDoc = customer.insuranceDocuments[0]
-
-    if (!verifiedDoc || !verifiedDoc.extractedData) {
-      // No verified insurance - calculate at retail prices
-      warnings.push('No verified insurance document found - pricing at retail')
+    if (!authResult) {
+      // No authorization found - calculate at retail prices
+      warnings.push('No active authorization found - pricing at retail')
 
       const items = body.products.map(product => ({
         sku: product.sku,
@@ -128,100 +108,134 @@ export async function POST(request: NextRequest) {
       })
     }
 
-    // Normalize the extracted data into a BenefitAuthorization
-    const extractedData = verifiedDoc.extractedData as unknown as ExtractedInsuranceData
-
-    // Calculate patient age if we have DOB
-    let patientAge: number | undefined
-    if (customer.dateOfBirth) {
-      const today = new Date()
-      const dob = new Date(customer.dateOfBirth)
-      patientAge = today.getFullYear() - dob.getFullYear()
-      const monthDiff = today.getMonth() - dob.getMonth()
-      if (monthDiff < 0 || (monthDiff === 0 && today.getDate() < dob.getDate())) {
-        patientAge--
-      }
-    }
-
-    const normResult = normalizeAuthorization(extractedData, {
-      customerId: body.customerId,
-      patientAge,
-      fallbackCarrier: (verifiedDoc.carrier?.toLowerCase() as 'eyemed' | 'spectera' | 'vsp') || undefined,
-    })
-
-    if (!normResult.success || !normResult.authorization) {
-      // Normalization failed - use retail pricing
-      warnings.push(...normResult.errors)
-      warnings.push('Could not normalize insurance data - pricing at retail')
-
-      const items = body.products.map(product => ({
-        sku: product.sku,
-        productName: product.productName || product.sku,
-        retailPrice: product.retailPrice,
-        patientCopay: product.retailPrice,
-        insurancePays: 0,
-        savings: 0,
-        notes: 'Insurance normalization failed',
-      }))
-
-      const retailTotal = items.reduce((sum, item) => sum + item.retailPrice, 0)
-
-      return NextResponse.json({
-        success: true,
-        data: {
-          customerId: body.customerId,
-          carrier: verifiedDoc.carrier,
-          planName: verifiedDoc.planName,
-          items,
-          summary: {
-            retailTotal,
-            patientTotal: retailTotal,
-            insuranceTotal: 0,
-            totalSavings: 0,
-            examCopay: 0,
-            materialsCopay: 0,
-          },
-          warnings,
-        } as PricingResponse,
-      })
-    }
-
-    // Add normalization warnings
-    warnings.push(...normResult.warnings)
-
-    const auth = normResult.authorization
-    carrier = auth.plan.carrier
+    // Use the authorization from the carrier-specific table
+    const auth = authResult.authorization
+    carrier = authResult.carrier
     planName = auth.plan.planName
 
     // Get copays from authorization
-    if (auth.plan.carrier === 'vsp') {
-      examCopay = (auth as typeof auth & { copays: { examWellvision: number } }).copays.examWellvision
-      materialsCopay = auth.copays.materials || 0
-    } else if (auth.plan.carrier === 'eyemed') {
-      examCopay = (auth as typeof auth & { copays: { exam: number } }).copays.exam
-      materialsCopay = (auth as typeof auth & { copays: { materials: number } }).copays.materials
-    } else if (auth.plan.carrier === 'spectera') {
-      // Use adult exam copay by default
-      examCopay = (auth as typeof auth & { copays: { examAdult: number } }).copays.examAdult
-      materialsCopay = (auth as typeof auth & { copays: { materials?: number } }).copays.materials || 0
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    const copays = auth.copays as any
+    if (authResult.carrier === 'vsp') {
+      examCopay = copays.examWellvision || 0
+      materialsCopay = copays.materials || 0
+    } else if (authResult.carrier === 'eyemed') {
+      examCopay = copays.exam || 0
+      materialsCopay = copays.materials || 0
+    } else if (authResult.carrier === 'spectera') {
+      examCopay = copays.examAdult || 0
+      materialsCopay = copays.materials || 0
     }
 
     // Create carrier-specific pricing calculator
     const calculator = createPricingCalculator(auth)
 
+    // Look up tier codes for all products from the database
+    const productSkus = body.products.map(p => p.sku)
+    // Map carrier to the correct case used in lens_carrier_tiers table
+    const carrierMap: Record<string, string> = {
+      'vsp': 'VSP',
+      'eyemed': 'EyeMed',
+      'spectera': 'Spectera',
+    }
+    const tierCarrier = carrierMap[authResult.carrier] || authResult.carrier
+    const tierMappings = await prisma.lensCarrierTier.findMany({
+      where: {
+        lensProductId: { in: productSkus },
+        carrier: tierCarrier,
+      },
+    })
+
+    // Create a map of sku -> tierCode for quick lookup
+    const tierCodeMap = new Map<string, string>()
+    for (const tier of tierMappings) {
+      tierCodeMap.set(tier.lensProductId, tier.tierCode)
+    }
+
     // Calculate pricing for each product
     const items: PricingResponse['items'] = []
 
     for (const product of body.products) {
-      // Create a minimal ProductCatalogEntry for the calculator
+      // Get the tier code for this product
+      const tierCode = tierCodeMap.get(product.sku)
+
+      // Create a ProductCatalogEntry with carrier-specific tier mapping
       const catalogEntry: ProductCatalogEntry = {
         sku: product.sku,
         displayName: product.productName || product.sku,
         category: mapProductType(product.productType),
         retailPrice: product.retailPrice,
         isActive: true,
-        // Map brand to tier if we have formulary data (future enhancement)
-        vsp: product.isFeaturedBrand !== undefined ? { isFeaturedBrand: product.isFeaturedBrand } : undefined,
+      }
+
+      // Add carrier-specific mapping based on product type and tier code
+      if (tierCode) {
+        if (authResult.carrier === 'vsp') {
+          catalogEntry.vsp = {
+            isFeaturedBrand: product.isFeaturedBrand,
+          }
+          // Map tier code to VSP property based on product type
+          if (product.productType === 'progressive') {
+            catalogEntry.vsp.baseCode = tierCode as 'KA' | 'JA' | 'FA' | 'NA' | 'OA'
+          } else if (product.productType === 'ar_coating') {
+            catalogEntry.vsp.arCode = tierCode as 'QM' | 'QT' | 'QV'
+          } else if (product.productType === 'material') {
+            // Map VSP material codes (AD=poly, AB=hi-index 1.60, AH=hi-index 1.67)
+            const materialMap: Record<string, 'D' | 'T' | 'H'> = {
+              'AD': 'D', 'BD': 'D', 'DD': 'D', 'FD': 'D', 'JD': 'D', 'KD': 'D', 'ND': 'D', 'OD': 'D', // Poly codes
+              'AB': 'T', // Trivex/1.60
+              'AH': 'H', 'AJ': 'H', // High index
+            }
+            if (materialMap[tierCode]) {
+              catalogEntry.vsp.materialModifier = materialMap[tierCode]
+            }
+          } else if (product.productType === 'mount_fee') {
+            // Mount fee codes: standard, semi_rimless, SW (rimless)
+            catalogEntry.vsp.baseCode = tierCode as 'standard' | 'semi_rimless' | 'SW'
+          }
+        } else if (authResult.carrier === 'eyemed') {
+          catalogEntry.eyemed = {}
+          if (product.productType === 'progressive') {
+            catalogEntry.eyemed.progressiveTier = tierCode as 'standard' | 'tier_1' | 'tier_2' | 'tier_3' | 'tier_4' | 'tier_5'
+          } else if (product.productType === 'ar_coating') {
+            catalogEntry.eyemed.arTier = tierCode as 'standard' | 'tier_1' | 'tier_2' | 'tier_3'
+          } else if (product.productType === 'material') {
+            const materialMap: Record<string, 'polycarbonate' | 'trivex' | 'high_index_167' | 'high_index_174'> = {
+              'polycarbonate': 'polycarbonate',
+              'trivex': 'trivex',
+              'high_index_167': 'high_index_167',
+              'high_index_174': 'high_index_174',
+            }
+            if (materialMap[tierCode]) {
+              catalogEntry.eyemed.materialType = materialMap[tierCode]
+            }
+          } else if (product.productType === 'mount_fee') {
+            // Mount fee codes: standard, semi_rimless, rimless
+            catalogEntry.eyemed.materialType = tierCode as 'standard' | 'semi_rimless' | 'rimless'
+          }
+        } else if (authResult.carrier === 'spectera') {
+          catalogEntry.spectera = {}
+          if (product.productType === 'progressive') {
+            catalogEntry.spectera.progressiveTier = tierCode as 'I' | 'II' | 'III' | 'IV' | 'V'
+          } else if (product.productType === 'ar_coating') {
+            catalogEntry.spectera.arTier = tierCode as 'I' | 'II' | 'III' | 'IV'
+          } else if (product.productType === 'material') {
+            const materialMap: Record<string, 'polycarbonate' | 'trivex' | 'high_index'> = {
+              'polycarbonate': 'polycarbonate',
+              'trivex': 'trivex',
+              'high_index': 'high_index',
+            }
+            if (materialMap[tierCode]) {
+              catalogEntry.spectera.materialType = materialMap[tierCode]
+            }
+          } else if (product.productType === 'mount_fee') {
+            // Mount fee codes: standard, semi_rimless, rimless
+            catalogEntry.spectera.materialType = tierCode as 'standard' | 'semi_rimless' | 'rimless'
+          }
+        }
+      } else if (product.isFeaturedBrand !== undefined && authResult.carrier === 'vsp') {
+        // VSP frame with no tier code, still set featured brand flag
+        catalogEntry.vsp = { isFeaturedBrand: product.isFeaturedBrand }
       }
 
       let result: PricingResult | FramePricingResult
@@ -315,6 +329,8 @@ function mapProductType(
       return 'blue_light'
     case 'tint':
       return 'tint'
+    case 'mount_fee':
+      return 'mount_fee'
     default:
       return 'other'
   }

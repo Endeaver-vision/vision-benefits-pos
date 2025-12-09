@@ -1,6 +1,6 @@
 'use client'
 
-import { Shield, DollarSign, Eye, Glasses, AlertTriangle } from 'lucide-react'
+import { Shield, DollarSign, Eye, Glasses, AlertTriangle, Wallet, TrendingDown } from 'lucide-react'
 
 interface CarrierBannerProps {
   carrier: string | null
@@ -12,6 +12,10 @@ interface CarrierBannerProps {
   contactFittingCovered?: boolean
   glassesContactsExclusive?: boolean
   isLoading?: boolean
+  // Declining balance support
+  benefitStructure?: 'COPAY_ALLOWANCE' | 'DECLINING_BALANCE' | 'PACKAGE' | null
+  totalMaterialsCredit?: number | null
+  overageDiscountPercent?: number | null
 }
 
 const carrierConfig: Record<string, { bg: string; text: string; border: string }> = {
@@ -31,8 +35,12 @@ export function CarrierBanner({
   contactAllowance,
   contactFittingCovered,
   glassesContactsExclusive,
-  isLoading
+  isLoading,
+  benefitStructure,
+  totalMaterialsCredit,
+  overageDiscountPercent
 }: CarrierBannerProps) {
+  const isDecliningBalance = benefitStructure === 'DECLINING_BALANCE'
   if (isLoading) {
     return (
       <div className="bg-white/10 rounded-xl px-4 py-3 border border-white/20 animate-pulse">
@@ -83,6 +91,28 @@ export function CarrierBanner({
 
         {/* Benefits Summary - Horizontal on larger screens */}
         <div className="flex items-center gap-4 text-sm">
+          {/* Declining Balance Badge */}
+          {isDecliningBalance && (
+            <div className="flex items-center gap-1.5 px-2 py-1 bg-amber-500/30 rounded-lg">
+              <TrendingDown className="h-4 w-4 text-amber-200" />
+              <span className="font-semibold text-amber-100">Flex Plan</span>
+            </div>
+          )}
+
+          {/* Declining Balance: Show total credit */}
+          {isDecliningBalance && totalMaterialsCredit !== null && totalMaterialsCredit !== undefined && (
+            <div className="flex items-center gap-1.5 text-white/90">
+              <Wallet className="h-4 w-4 text-emerald-300" />
+              <span className="text-white/70">Credit:</span>
+              <span className="font-bold text-emerald-300">${totalMaterialsCredit}</span>
+              {overageDiscountPercent !== null && overageDiscountPercent > 0 && (
+                <span className="text-xs text-white/60">
+                  (+{Math.round(overageDiscountPercent * 100)}% off overage)
+                </span>
+              )}
+            </div>
+          )}
+
           {examCopay !== null && examCopay !== undefined && (
             <div className="flex items-center gap-1.5 text-white/90">
               <Eye className="h-4 w-4" />
@@ -90,14 +120,16 @@ export function CarrierBanner({
               <span className="font-semibold">${examCopay}</span>
             </div>
           )}
-          {materialsCopay !== null && materialsCopay !== undefined && (
+
+          {/* Standard Copay Plan: Show materials copay and frame allowance */}
+          {!isDecliningBalance && materialsCopay !== null && materialsCopay !== undefined && (
             <div className="flex items-center gap-1.5 text-white/90">
               <Glasses className="h-4 w-4" />
               <span className="text-white/70">Materials:</span>
               <span className="font-semibold">${materialsCopay}</span>
             </div>
           )}
-          {frameAllowance !== null && frameAllowance !== undefined && (
+          {!isDecliningBalance && frameAllowance !== null && frameAllowance !== undefined && (
             <div className="flex items-center gap-1.5 text-white/90">
               <DollarSign className="h-4 w-4" />
               <span className="text-white/70">Frame:</span>
@@ -116,6 +148,19 @@ export function CarrierBanner({
           )}
         </div>
       </div>
+
+      {/* Declining Balance Explanation */}
+      {isDecliningBalance && (
+        <div className="flex items-center gap-2 mt-2 px-2 py-1.5 bg-emerald-500/20 rounded-lg">
+          <Wallet className="h-4 w-4 text-emerald-300 shrink-0" />
+          <span className="text-xs text-emerald-200">
+            <strong>Flex Plan:</strong> ${totalMaterialsCredit} credit applies to frame, lenses, and coatings.
+            {overageDiscountPercent !== null && overageDiscountPercent > 0 && (
+              <> After credit, {Math.round(overageDiscountPercent * 100)}% off remaining balance.</>
+            )}
+          </span>
+        </div>
+      )}
       {/* Glasses/Contacts Mutual Exclusion Warning */}
       {glassesContactsExclusive && (
         <div className="flex items-center gap-2 mt-2 px-2 py-1.5 bg-amber-500/20 rounded-lg">

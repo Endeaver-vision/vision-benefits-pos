@@ -579,6 +579,40 @@ export default function ExamServicesLayer({ onNext, onBack }: ExamServicesLayerP
           </CardContent>
         </Card>
       )}
+
+      {/* Skip Exam - Show when no exam selected */}
+      {!selectedMainExamSku && onNext && (
+        <Card className="glass-card border-white/20 bg-white/10">
+          <CardContent className="p-6">
+            <div className="flex items-center justify-between">
+              <div className="text-white/70">
+                <div className="font-medium text-white">No exam selected</div>
+                <div className="text-sm">You can skip exam services and proceed directly to eyeglasses or contacts.</div>
+              </div>
+              <div className="flex gap-3">
+                {onBack && (
+                  <Button
+                    onClick={onBack}
+                    variant="outline"
+                    size="lg"
+                    className="border-white/30 text-white hover:bg-white/10"
+                  >
+                    Back
+                  </Button>
+                )}
+                <Button
+                  onClick={onNext}
+                  variant="outline"
+                  size="lg"
+                  className="border-amber-400/50 text-amber-400 hover:bg-amber-500/20"
+                >
+                  Skip Exam →
+                </Button>
+              </div>
+            </div>
+          </CardContent>
+        </Card>
+      )}
     </div>
   )
 }

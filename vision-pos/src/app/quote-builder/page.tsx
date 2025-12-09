@@ -1,7 +1,7 @@
 'use client'
 
-import { useState, useEffect } from 'react'
-import { useRouter } from 'next/navigation'
+import { useState, useEffect, Suspense } from 'react'
+import { useRouter, useSearchParams } from 'next/navigation'
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
 import { Button } from '@/components/ui/button'
 import { Badge } from '@/components/ui/badge'
@@ -19,6 +19,7 @@ import {
 // Import the simplified layer components
 import ExamServicesLayer from '@/components/quote-builder/layers/exam-services-layer-simple'
 import { EyeglassesLayerSimple } from '@/components/quote-builder/layers/eyeglasses-layer-simple'
+import { SecondPairDiscounts } from '@/components/quote-builder/layers/second-pair-discounts'
 import { ContactLensCalculator } from '@/components/quote-builder/layers/contact-lens-calculator'
 import { QuoteReviewLayer } from '@/components/quote-builder/layers/quote-review-layer'
 import { InsuranceVerificationLayer } from '@/components/quote-builder/layers/insurance-verification-layer'
@@ -40,11 +41,15 @@ interface Customer {
   memberId?: string
 }
 
-type QuoteLayer = 'customer' | 'insurance' | 'exam-services' | 'eyeglasses' | 'contacts' | 'review'
+type QuoteLayer = 'customer' | 'insurance' | 'exam-services' | 'eyeglasses' | 'second-pair' | 'contacts' | 'review'
 
 // Inner component that uses the pricing context
 function QuoteBuilderContent() {
   const router = useRouter()
+  const searchParams = useSearchParams()
+
+  // URL parameters for customer persistence
+  const urlCustomerId = searchParams.get('customerId')
 
   // Pricing context
   const {
@@ -54,6 +59,7 @@ function QuoteBuilderContent() {
     authorizationLoading,
     materialsConflict,
     pricingSummary,
+    pricedItems,
     isCalculating
   } = useQuotePricingContext()
 
@@ -63,24 +69,56 @@ function QuoteBuilderContent() {
   const [customerSearch, setCustomerSearch] = useState('')
   const [customerResults, setCustomerResults] = useState<Customer[]>([])
   const [loading, setLoading] = useState(false)
+  const [isLoadingCustomer, setIsLoadingCustomer] = useState(false)
 
-  // Check for selected customer from session storage
+  // Load customer from URL param (highest priority - for returning from scanner)
   useEffect(() => {
-    const storedCustomer = sessionStorage.getItem('selectedCustomer')
-    if (storedCustomer) {
-      try {
-        const customer = JSON.parse(storedCustomer)
-        setSelectedCustomer(customer)
-        // Sync with pricing context
-        setCustomer(customer.id, `${customer.firstName} ${customer.lastName}`)
-        setCurrentLayer('insurance')
-        // Clean up session storage
-        sessionStorage.removeItem('selectedCustomer')
-      } catch (error) {
-        console.error('Error parsing stored customer:', error)
+    if (urlCustomerId && !selectedCustomer) {
+      setIsLoadingCustomer(true)
+      fetch(`/api/customers/${urlCustomerId}`)
+        .then(res => res.json())
+        .then(data => {
+          // API returns { success: true, data: customer }
+          const customerData = data.data || data.customer
+          if (data.success && customerData) {
+            const customer: Customer = {
+              id: customerData.id,
+              firstName: customerData.firstName,
+              lastName: customerData.lastName,
+              email: customerData.email,
+              phone: customerData.phone,
+              insuranceCarrier: customerData.insuranceCarrier,
+              memberId: customerData.memberId,
+            }
+            setSelectedCustomer(customer)
+            setCustomer(customer.id, `${customer.firstName} ${customer.lastName}`)
+            setCurrentLayer('insurance')
+            // Store in sessionStorage for persistence
+            sessionStorage.setItem('selectedCustomer', JSON.stringify(customer))
+          }
+        })
+        .catch(err => console.error('Error loading customer from URL:', err))
+        .finally(() => setIsLoadingCustomer(false))
+    }
+  }, [urlCustomerId, selectedCustomer, setCustomer])
+
+  // Check for selected customer from session storage (fallback if no URL param)
+  useEffect(() => {
+    if (!urlCustomerId && !selectedCustomer) {
+      const storedCustomer = sessionStorage.getItem('selectedCustomer')
+      if (storedCustomer) {
+        try {
+          const customer = JSON.parse(storedCustomer)
+          setSelectedCustomer(customer)
+          // Sync with pricing context
+          setCustomer(customer.id, `${customer.firstName} ${customer.lastName}`)
+          setCurrentLayer('insurance')
+        } catch (error) {
+          console.error('Error parsing stored customer:', error)
+        }
       }
     }
-  }, [setCustomer])
+  }, [urlCustomerId, selectedCustomer, setCustomer])
 
   // Search customers
   const searchCustomers = async (search: string) => {
@@ -111,6 +149,8 @@ function QuoteBuilderContent() {
     setCurrentLayer('insurance')
     setCustomerSearch('')
     setCustomerResults([])
+    // Persist to sessionStorage for navigation resilience
+    sessionStorage.setItem('selectedCustomer', JSON.stringify(customer))
   }
 
   // Handle layer navigation
@@ -127,19 +167,40 @@ function QuoteBuilderContent() {
     setCurrentLayer(layer)
   }
 
+  // Helper functions to check if categories have items
+  const hasExamServices = pricedItems.some(item =>
+    item.category === 'exam' || item.category === 'service'
+  )
+  const hasEyeglasses = pricedItems.some(item =>
+    item.category === 'frame' || item.category === 'lens' || item.category === 'coating' || item.category === 'addon'
+  )
+  const hasContacts = pricedItems.some(item => item.category === 'contact')
+
   // Get layer status for navigation
   const getLayerStatus = (layer: QuoteLayer) => {
     switch (layer) {
       case 'customer':
         return selectedCustomer ? 'complete' : 'current'
       case 'insurance':
-        return selectedCustomer ? (currentLayer === 'insurance' ? 'current' : 'available') : 'locked'
+        if (!selectedCustomer) return 'locked'
+        if (currentLayer === 'insurance') return 'current'
+        return authorization ? 'complete' : 'available'
       case 'exam-services':
-        return selectedCustomer ? (currentLayer === 'exam-services' ? 'current' : 'available') : 'locked'
+        if (!selectedCustomer) return 'locked'
+        if (currentLayer === 'exam-services') return 'current'
+        return hasExamServices ? 'complete' : 'available'
       case 'eyeglasses':
-        return selectedCustomer ? (currentLayer === 'eyeglasses' ? 'current' : 'available') : 'locked'
+        if (!selectedCustomer) return 'locked'
+        if (currentLayer === 'eyeglasses') return 'current'
+        return hasEyeglasses ? 'complete' : 'available'
+      case 'second-pair':
+        // Second pair is optional - keep as available unless current
+        if (!selectedCustomer) return 'locked'
+        return currentLayer === 'second-pair' ? 'current' : 'available'
       case 'contacts':
-        return selectedCustomer ? (currentLayer === 'contacts' ? 'current' : 'available') : 'locked'
+        if (!selectedCustomer) return 'locked'
+        if (currentLayer === 'contacts') return 'current'
+        return hasContacts ? 'complete' : 'available'
       case 'review':
         return selectedCustomer ? (currentLayer === 'review' ? 'current' : 'available') : 'locked'
       default:
@@ -243,12 +304,18 @@ function QuoteBuilderContent() {
                       ? 'bg-white/5 border-white/10 cursor-not-allowed opacity-60'
                       : currentLayer === 'exam-services'
                       ? 'bg-blue-500/30 border-blue-400 cursor-pointer'
+                      : getLayerStatus('exam-services') === 'complete'
+                      ? 'bg-emerald-500/30 border-emerald-400 cursor-pointer'
                       : 'bg-white/10 border-white/20 cursor-pointer'
                   }`}
                   onClick={() => getLayerStatus('exam-services') !== 'locked' && handleLayerChange('exam-services')}
                 >
                   <div className="flex items-center gap-3">
-                    <Eye className="h-5 w-5 text-white/80" />
+                    {getLayerStatus('exam-services') === 'complete' ? (
+                      <CheckCircle className="h-5 w-5 text-emerald-400" />
+                    ) : (
+                      <Eye className="h-5 w-5 text-white/80" />
+                    )}
                     <div>
                       <div className="font-medium text-white">Exam Services</div>
                       <div className="text-xs text-white/60">Eye exams & diagnostics</div>
@@ -263,15 +330,41 @@ function QuoteBuilderContent() {
                       ? 'bg-white/5 border-white/10 cursor-not-allowed opacity-60'
                       : currentLayer === 'eyeglasses'
                       ? 'bg-blue-500/30 border-blue-400 cursor-pointer'
+                      : getLayerStatus('eyeglasses') === 'complete'
+                      ? 'bg-emerald-500/30 border-emerald-400 cursor-pointer'
                       : 'bg-white/10 border-white/20 cursor-pointer'
                   }`}
                   onClick={() => getLayerStatus('eyeglasses') !== 'locked' && handleLayerChange('eyeglasses')}
                 >
                   <div className="flex items-center gap-3">
-                    <Glasses className="h-5 w-5 text-white/80" />
+                    {getLayerStatus('eyeglasses') === 'complete' ? (
+                      <CheckCircle className="h-5 w-5 text-emerald-400" />
+                    ) : (
+                      <Glasses className="h-5 w-5 text-white/80" />
+                    )}
                     <div>
                       <div className="font-medium text-white">Eyeglasses</div>
                       <div className="text-xs text-white/60">Frames, lenses & options</div>
+                    </div>
+                  </div>
+                </div>
+
+                {/* Second Pair Step */}
+                <div
+                  className={`p-3 rounded-lg border transition-colors ${
+                    getLayerStatus('second-pair') === 'locked'
+                      ? 'bg-white/5 border-white/10 cursor-not-allowed opacity-60'
+                      : currentLayer === 'second-pair'
+                      ? 'bg-blue-500/30 border-blue-400 cursor-pointer'
+                      : 'bg-white/10 border-white/20 cursor-pointer'
+                  }`}
+                  onClick={() => getLayerStatus('second-pair') !== 'locked' && handleLayerChange('second-pair')}
+                >
+                  <div className="flex items-center gap-3">
+                    <Glasses className="h-5 w-5 text-amber-400" />
+                    <div>
+                      <div className="font-medium text-white">Second Pair</div>
+                      <div className="text-xs text-white/60">Cash discount (optional)</div>
                     </div>
                   </div>
                 </div>
@@ -283,12 +376,18 @@ function QuoteBuilderContent() {
                       ? 'bg-white/5 border-white/10 cursor-not-allowed opacity-60'
                       : currentLayer === 'contacts'
                       ? 'bg-blue-500/30 border-blue-400 cursor-pointer'
+                      : getLayerStatus('contacts') === 'complete'
+                      ? 'bg-emerald-500/30 border-emerald-400 cursor-pointer'
                       : 'bg-white/10 border-white/20 cursor-pointer'
                   }`}
                   onClick={() => getLayerStatus('contacts') !== 'locked' && handleLayerChange('contacts')}
                 >
                   <div className="flex items-center gap-3">
-                    <Eye className="h-5 w-5 text-white/80" />
+                    {getLayerStatus('contacts') === 'complete' ? (
+                      <CheckCircle className="h-5 w-5 text-emerald-400" />
+                    ) : (
+                      <Eye className="h-5 w-5 text-white/80" />
+                    )}
                     <div>
                       <div className="font-medium text-white">Contact Lenses</div>
                       <div className="text-xs text-white/60">Brands, types & parameters</div>
@@ -334,6 +433,9 @@ function QuoteBuilderContent() {
                 contactFittingCovered={authorization?.contactFittingCovered}
                 glassesContactsExclusive={authorization?.glassesContactsExclusive}
                 isLoading={authorizationLoading}
+                benefitStructure={authorization?.benefitStructure}
+                totalMaterialsCredit={authorization?.totalMaterialsCredit}
+                overageDiscountPercent={authorization?.overageDiscountPercent}
               />
             )}
 
@@ -367,6 +469,10 @@ function QuoteBuilderContent() {
                         setSelectedCustomer(null)
                         clearCustomer()
                         setCurrentLayer('customer')
+                        // Clear persisted customer
+                        sessionStorage.removeItem('selectedCustomer')
+                        // Clear URL param by navigating to base URL
+                        router.replace('/quote-builder')
                       }}
                     >
                       Change Customer
@@ -491,9 +597,17 @@ function QuoteBuilderContent() {
 
             {/* Eyeglasses Layer */}
             {currentLayer === 'eyeglasses' && selectedCustomer && (
-              <EyeglassesLayerSimple 
-                onNext={() => setCurrentLayer('contacts')}
+              <EyeglassesLayerSimple
+                onNext={() => setCurrentLayer('second-pair')}
                 onBack={() => setCurrentLayer('exam-services')}
+              />
+            )}
+
+            {/* Second Pair Layer */}
+            {currentLayer === 'second-pair' && selectedCustomer && (
+              <SecondPairDiscounts
+                onNext={() => setCurrentLayer('contacts')}
+                onBack={() => setCurrentLayer('eyeglasses')}
               />
             )}
 
@@ -501,7 +615,7 @@ function QuoteBuilderContent() {
             {currentLayer === 'contacts' && selectedCustomer && (
               <ContactLensCalculator
                 onNext={() => setCurrentLayer('review')}
-                onBack={() => setCurrentLayer('eyeglasses')}
+                onBack={() => setCurrentLayer('second-pair')}
               />
             )}
 
@@ -513,6 +627,7 @@ function QuoteBuilderContent() {
                   else if (section === 'insurance') setCurrentLayer('insurance')
                   else if (section === 'exam-services') setCurrentLayer('exam-services')
                   else if (section === 'eyeglasses') setCurrentLayer('eyeglasses')
+                  else if (section === 'second-pair') setCurrentLayer('second-pair')
                   else if (section === 'contacts') setCurrentLayer('contacts')
                 }}
                 onFinalize={() => {
@@ -571,7 +686,9 @@ function QuoteBuilderContent() {
 export default function QuoteBuilderPage() {
   return (
     <QuotePricingProvider>
-      <QuoteBuilderContent />
+      <Suspense fallback={<div className="flex items-center justify-center min-h-screen">Loading...</div>}>
+        <QuoteBuilderContent />
+      </Suspense>
     </QuotePricingProvider>
   )
 }

@@ -21,11 +21,12 @@ export default function RootLayout({
     <html lang="en" suppressHydrationWarning>
       <body className={inter.className}>
         <ThemeProvider>
-          <AuthProvider>
+          {/* Auth disabled for development */}
+          {/* <AuthProvider> */}
             <QueryProvider>
               {children}
             </QueryProvider>
-          </AuthProvider>
+          {/* </AuthProvider> */}
         </ThemeProvider>
       </body>
     </html>

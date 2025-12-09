@@ -1,7 +1,9 @@
 'use client'
 
 import { useState, useEffect } from 'react'
-import { AlertTriangle, Bell, CheckCircle2, Clock, XCircle } from 'lucide-react'
+import { AlertTriangle, Bell, CheckCircle2, Clock, XCircle, ArrowLeft, Home, Package } from 'lucide-react'
+import { useRouter } from 'next/navigation'
+import { Button } from '@/components/ui/button'
 
 interface Alert {
   id: string
@@ -42,6 +44,7 @@ const SEVERITY_ICONS = {
 }
 
 export default function OrderAlertsMonitor() {
+  const router = useRouter()
   const [alerts, setAlerts] = useState<Alert[]>([])
   const [stats, setStats] = useState<AlertStats | null>(null)
   const [loading, setLoading] = useState(true)
@@ -122,6 +125,41 @@ export default function OrderAlertsMonitor() {
 
   return (
     <div className="space-y-6">
+      {/* Header Navigation */}
+      <div className="bg-white/10 backdrop-blur-md border-b border-white/20">
+        <div className="flex items-center justify-between px-4 py-3">
+          <div className="flex items-center gap-2">
+            <Button
+              variant="ghost"
+              size="sm"
+              onClick={() => router.back()}
+              className="text-white/90 hover:text-white hover:bg-white/10"
+            >
+              <ArrowLeft className="h-4 w-4 mr-1" />
+              Back
+            </Button>
+            <Button
+              variant="ghost"
+              size="sm"
+              onClick={() => router.push('/dashboard')}
+              className="text-white/90 hover:text-white hover:bg-white/10"
+            >
+              <Home className="h-4 w-4 mr-1" />
+              Dashboard
+            </Button>
+            <Button
+              variant="ghost"
+              size="sm"
+              onClick={() => router.push('/order-tracking')}
+              className="text-white/90 hover:text-white hover:bg-white/10"
+            >
+              <Package className="h-4 w-4 mr-1" />
+              Orders
+            </Button>
+          </div>
+        </div>
+      </div>
+
       {/* Header with Stats */}
       <div className="flex items-center justify-between">
         <div>
@@ -235,6 +273,76 @@ export default function OrderAlertsMonitor() {
             )
           })
         )}
+      </div>
+
+      {/* Footer Navigation */}
+      <div className="mt-8 bg-white/10 backdrop-blur-md border-t border-white/20 rounded-b-lg">
+        <div className="flex items-center justify-between px-4 py-3">
+          <div className="flex items-center gap-2">
+            <Button
+              variant="ghost"
+              size="sm"
+              onClick={() => router.back()}
+              className="text-white/90 hover:text-white hover:bg-white/10"
+            >
+              <ArrowLeft className="h-4 w-4 mr-1" />
+              Back
+            </Button>
+            <Button
+              variant="ghost"
+              size="sm"
+              onClick={() => router.push('/dashboard')}
+              className="text-white/90 hover:text-white hover:bg-white/10"
+            >
+              <Home className="h-4 w-4 mr-1" />
+              Dashboard
+            </Button>
+            <Button
+              variant="ghost"
+              size="sm"
+              onClick={() => router.push('/order-tracking')}
+              className="text-white/90 hover:text-white hover:bg-white/10"
+            >
+              <Package className="h-4 w-4 mr-1" />
+              Orders
+            </Button>
+          </div>
+        </div>
+      </div>
+
+      {/* Footer Navigation */}
+      <div className="bg-white/10 backdrop-blur-md border-t border-white/20">
+        <div className="flex items-center justify-between px-4 py-3">
+          <div className="flex items-center gap-2">
+            <Button
+              variant="ghost"
+              size="sm"
+              onClick={() => router.back()}
+              className="text-white/90 hover:text-white hover:bg-white/10"
+            >
+              <ArrowLeft className="h-4 w-4 mr-1" />
+              Back
+            </Button>
+            <Button
+              variant="ghost"
+              size="sm"
+              onClick={() => router.push('/dashboard')}
+              className="text-white/90 hover:text-white hover:bg-white/10"
+            >
+              <Home className="h-4 w-4 mr-1" />
+              Dashboard
+            </Button>
+            <Button
+              variant="ghost"
+              size="sm"
+              onClick={() => router.push('/order-tracking')}
+              className="text-white/90 hover:text-white hover:bg-white/10"
+            >
+              <Package className="h-4 w-4 mr-1" />
+              Orders
+            </Button>
+          </div>
+        </div>
       </div>
     </div>
   )

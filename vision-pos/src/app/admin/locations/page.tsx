@@ -1,7 +1,6 @@
 'use client'
 
 import { useState, useEffect, useCallback } from 'react'
-import { useSession } from 'next-auth/react'
 import PageLayout from '@/components/layout/page-layout'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
@@ -53,8 +52,6 @@ const US_TIMEZONES = [
 ]
 
 export default function LocationsAdminPage() {
-  const { data: session } = useSession()
-
   const [locations, setLocations] = useState<Location[]>([])
   const [loading, setLoading] = useState(false)
   const [search, setSearch] = useState('')
@@ -73,8 +70,8 @@ export default function LocationsAdminPage() {
   const [saving, setSaving] = useState(false)
   const [error, setError] = useState('')
 
-  const userRole = session?.user?.role
-  const isAdmin = userRole === 'ADMIN'
+  // Auth disabled - default to admin for now
+  const isAdmin = true
 
   // Load locations
   const loadLocations = useCallback(async () => {

@@ -20,6 +20,8 @@ interface QuoteBuilderProduct {
   color?: string | null
   isFeatured?: boolean
   notes?: string
+  pricingCategory?: string | null  // For determining SV vs MF tech addon
+  posDisplayOrder?: number | null  // For preserving database sort order
 }
 
 export async function GET() {
@@ -97,6 +99,8 @@ export async function GET() {
         price: product.retailPrice,
         sku: product.sku,
         manufacturer: product.manufacturer,
+        pricingCategory: product.pricingCategory,  // Include for SV vs MF tech addon
+        posDisplayOrder: product.posDisplayOrder,  // Preserve database sort order
         notes: isCashPayOnly
           ? 'Cash pay only - no vision plans'
           : undefined
@@ -204,21 +208,31 @@ export async function GET() {
       }
     }
 
-    // Sort each group by price (lowest first), with base materials at the start
+    // Sort each group appropriately
     for (const key of Object.keys(grouped)) {
-      grouped[key].sort((a, b) => {
-        // Put base/standard options first
-        const aIsBase = a.name.toLowerCase().includes('cr-39') ||
-                        a.name.toLowerCase().includes('standard') ||
-                        a.name.toLowerCase() === 'single vision'
-        const bIsBase = b.name.toLowerCase().includes('cr-39') ||
-                        b.name.toLowerCase().includes('standard') ||
-                        b.name.toLowerCase() === 'single vision'
-        if (aIsBase && !bIsBase) return -1
-        if (bIsBase && !aIsBase) return 1
-        // Then sort by price
-        return a.price - b.price
-      })
+      if (key === 'lensType' || key === 'arCoating') {
+        // For lens types and AR coatings, use posDisplayOrder from database
+        grouped[key].sort((a, b) => {
+          const orderA = a.posDisplayOrder ?? 999
+          const orderB = b.posDisplayOrder ?? 999
+          return orderA - orderB
+        })
+      } else {
+        // For other groups, sort by price with base materials first
+        grouped[key].sort((a, b) => {
+          // Put base/standard options first
+          const aIsBase = a.name.toLowerCase().includes('cr-39') ||
+                          a.name.toLowerCase().includes('standard') ||
+                          a.name.toLowerCase() === 'single vision'
+          const bIsBase = b.name.toLowerCase().includes('cr-39') ||
+                          b.name.toLowerCase().includes('standard') ||
+                          b.name.toLowerCase() === 'single vision'
+          if (aIsBase && !bIsBase) return -1
+          if (bIsBase && !aIsBase) return 1
+          // Then sort by price
+          return a.price - b.price
+        })
+      }
     }
 
     return NextResponse.json({

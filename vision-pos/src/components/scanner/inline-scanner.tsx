@@ -35,6 +35,14 @@ interface ProcessedDocument {
   error?: string
 }
 
+interface FileWithStatus {
+  file: File
+  status: 'pending' | 'uploading' | 'processing' | 'complete' | 'error'
+  progress: number
+  error?: string
+  result?: ProcessedDocument
+}
+
 type ScannerState = 'idle' | 'uploading' | 'processing' | 'complete' | 'error'
 
 const ALLOWED_TYPES = ['application/pdf', 'image/jpeg', 'image/png', 'image/jpg']
@@ -43,11 +51,15 @@ const MAX_SIZE = 10 * 1024 * 1024 // 10MB
 export function InlineScanner({ customerId, onDocumentProcessed, onClose, compact = false }: InlineScannerProps) {
   const [state, setState] = useState<ScannerState>('idle')
   const [isDragging, setIsDragging] = useState(false)
-  const [selectedFile, setSelectedFile] = useState<File | null>(null)
+  const [selectedFiles, setSelectedFiles] = useState<FileWithStatus[]>([])
   const [progress, setProgress] = useState(0)
   const [error, setError] = useState<string | null>(null)
   const [result, setResult] = useState<ProcessedDocument | null>(null)
+  const [processedCount, setProcessedCount] = useState(0)
   const fileInputRef = useRef<HTMLInputElement>(null)
+
+  // For backward compatibility
+  const selectedFile = selectedFiles.length > 0 ? selectedFiles[0].file : null
 
   const validateFile = (file: File): string | null => {
     if (!ALLOWED_TYPES.includes(file.type)) {
@@ -66,7 +78,12 @@ export function InlineScanner({ customerId, onDocumentProcessed, onClose, compac
       setError(validationError)
       return
     }
-    setSelectedFile(file)
+    // Add file to the list (allow multiple)
+    setSelectedFiles(prev => [...prev, {
+      file,
+      status: 'pending',
+      progress: 0
+    }])
   }, [])
 
   const handleDragOver = useCallback((e: React.DragEvent) => {
@@ -83,93 +100,124 @@ export function InlineScanner({ customerId, onDocumentProcessed, onClose, compac
     e.preventDefault()
     setIsDragging(false)
     const files = e.dataTransfer.files
-    if (files.length > 0) {
-      handleFile(files[0])
+    // Handle multiple files
+    for (let i = 0; i < files.length; i++) {
+      handleFile(files[i])
     }
   }, [handleFile])
 
   const handleFileSelect = useCallback((e: React.ChangeEvent<HTMLInputElement>) => {
     const files = e.target.files
-    if (files && files.length > 0) {
-      handleFile(files[0])
+    if (files) {
+      // Handle multiple files
+      for (let i = 0; i < files.length; i++) {
+        handleFile(files[i])
+      }
     }
   }, [handleFile])
 
+  const removeFile = useCallback((index: number) => {
+    setSelectedFiles(prev => prev.filter((_, i) => i !== index))
+  }, [])
+
   const processDocument = useCallback(async () => {
-    if (!selectedFile) return
+    if (selectedFiles.length === 0) return
 
     setState('uploading')
-    setProgress(10)
+    setProgress(0)
     setError(null)
+    setProcessedCount(0)
 
-    try {
-      // Step 1: Upload
-      const formData = new FormData()
-      formData.append('file', selectedFile)
-      formData.append('customerId', customerId)
-      formData.append('uploadedBy', 'inline-scanner')
+    const totalFiles = selectedFiles.length
+    let lastResult: ProcessedDocument | null = null
+    let hasError = false
 
-      setProgress(20)
+    for (let i = 0; i < selectedFiles.length; i++) {
+      const fileEntry = selectedFiles[i]
+      const fileProgress = (i / totalFiles) * 100
 
-      const uploadResponse = await fetch('/api/documents/upload', {
-        method: 'POST',
-        body: formData,
-      })
+      // Update file status
+      setSelectedFiles(prev => prev.map((f, idx) =>
+        idx === i ? { ...f, status: 'uploading', progress: 10 } : f
+      ))
+      setProgress(fileProgress + (10 / totalFiles))
 
-      const uploadResult = await uploadResponse.json()
+      try {
+        // Step 1: Upload
+        const formData = new FormData()
+        formData.append('file', fileEntry.file)
+        formData.append('customerId', customerId)
+        formData.append('uploadedBy', 'inline-scanner')
 
-      if (!uploadResult.success) {
-        throw new Error(uploadResult.error || 'Upload failed')
-      }
+        const uploadResponse = await fetch('/api/documents/upload', {
+          method: 'POST',
+          body: formData,
+        })
 
-      setProgress(40)
-      setState('processing')
+        const uploadResult = await uploadResponse.json()
 
-      // Step 2: Process with OCR + GPT
-      const processResponse = await fetch(`/api/documents/${uploadResult.documentId}/process`, {
-        method: 'POST',
-      })
-
-      setProgress(80)
-
-      const processResult = await processResponse.json()
-
-      if (processResult.success) {
-        setProgress(100)
-        setState('complete')
-
-        const processed: ProcessedDocument = {
-          documentId: uploadResult.documentId,
-          carrier: processResult.carrier,
-          planName: processResult.planName,
-          confidenceScore: processResult.confidenceScore,
-          extractedData: processResult.extractedData,
-          success: true,
+        if (!uploadResult.success) {
+          throw new Error(uploadResult.error || 'Upload failed')
         }
 
-        setResult(processed)
-        onDocumentProcessed?.(processed)
-      } else {
-        throw new Error(processResult.error || 'Processing failed')
+        setSelectedFiles(prev => prev.map((f, idx) =>
+          idx === i ? { ...f, status: 'processing', progress: 50 } : f
+        ))
+        setProgress(fileProgress + (50 / totalFiles))
+        setState('processing')
+
+        // Step 2: Process with OCR + GPT
+        const processResponse = await fetch(`/api/documents/${uploadResult.documentId}/process`, {
+          method: 'POST',
+        })
+
+        const processResult = await processResponse.json()
+
+        if (processResult.success) {
+          const processed: ProcessedDocument = {
+            documentId: uploadResult.documentId,
+            carrier: processResult.carrier,
+            planName: processResult.planName,
+            confidenceScore: processResult.confidenceScore,
+            extractedData: processResult.extractedData,
+            success: true,
+          }
+
+          setSelectedFiles(prev => prev.map((f, idx) =>
+            idx === i ? { ...f, status: 'complete', progress: 100, result: processed } : f
+          ))
+          setProcessedCount(prev => prev + 1)
+          lastResult = processed
+          onDocumentProcessed?.(processed)
+        } else {
+          throw new Error(processResult.error || 'Processing failed')
+        }
+      } catch (err) {
+        hasError = true
+        const errorMessage = err instanceof Error ? err.message : 'Processing failed'
+        setSelectedFiles(prev => prev.map((f, idx) =>
+          idx === i ? { ...f, status: 'error', error: errorMessage } : f
+        ))
       }
-    } catch (err) {
-      setState('error')
-      const errorMessage = err instanceof Error ? err.message : 'Processing failed'
-      setError(errorMessage)
-      setResult({
-        documentId: '',
-        success: false,
-        error: errorMessage,
-      })
     }
-  }, [selectedFile, customerId, onDocumentProcessed])
+
+    setProgress(100)
+    if (hasError && !lastResult) {
+      setState('error')
+      setError('One or more documents failed to process')
+    } else {
+      setState('complete')
+      setResult(lastResult)
+    }
+  }, [selectedFiles, customerId, onDocumentProcessed])
 
   const reset = useCallback(() => {
     setState('idle')
-    setSelectedFile(null)
+    setSelectedFiles([])
     setProgress(0)
     setError(null)
     setResult(null)
+    setProcessedCount(0)
     if (fileInputRef.current) {
       fileInputRef.current.value = ''
     }
@@ -186,7 +234,8 @@ export function InlineScanner({ customerId, onDocumentProcessed, onClose, compac
   if (compact) {
     return (
       <div className="space-y-3">
-        {state === 'idle' && !selectedFile && (
+        {/* Drop zone - always show when idle, even with files selected */}
+        {state === 'idle' && (
           <div
             onDragOver={handleDragOver}
             onDragLeave={handleDragLeave}
@@ -204,59 +253,102 @@ export function InlineScanner({ customerId, onDocumentProcessed, onClose, compac
               ref={fileInputRef}
               type="file"
               accept=".pdf,.jpg,.jpeg,.png"
+              multiple
               onChange={handleFileSelect}
               className="hidden"
             />
             <Upload className={`h-8 w-8 mx-auto mb-2 ${isDragging ? 'text-emerald-400' : 'text-muted-foreground'}`} />
-            <p className="text-sm font-medium">Drop document or click to browse</p>
-            <p className="text-xs text-muted-foreground mt-1">PDF, JPG, PNG (max 10MB)</p>
+            <p className="text-sm font-medium">Drop documents or click to browse</p>
+            <p className="text-xs text-muted-foreground mt-1">PDF, JPG, PNG (max 10MB each)</p>
+            <p className="text-xs text-white/50 mt-2">Upload authorization and benefit documents</p>
           </div>
         )}
 
-        {state === 'idle' && selectedFile && (
-          <div className="flex items-center gap-3 p-3 rounded-xl bg-white/5 border border-white/10">
-            {getFileIcon(selectedFile.type)}
-            <div className="flex-1 min-w-0">
-              <p className="text-sm font-medium truncate">{selectedFile.name}</p>
-              <p className="text-xs text-muted-foreground">{(selectedFile.size / 1024 / 1024).toFixed(2)} MB</p>
+        {/* Selected files list */}
+        {state === 'idle' && selectedFiles.length > 0 && (
+          <div className="space-y-2">
+            <div className="text-xs text-white/60 font-medium">{selectedFiles.length} document{selectedFiles.length > 1 ? 's' : ''} selected</div>
+            {selectedFiles.map((fileEntry, index) => (
+              <div key={index} className="flex items-center gap-3 p-3 rounded-xl bg-white/5 border border-white/10">
+                {getFileIcon(fileEntry.file.type)}
+                <div className="flex-1 min-w-0">
+                  <p className="text-sm font-medium truncate">{fileEntry.file.name}</p>
+                  <p className="text-xs text-muted-foreground">{(fileEntry.file.size / 1024 / 1024).toFixed(2)} MB</p>
+                </div>
+                <Button variant="ghost" size="icon-sm" onClick={() => removeFile(index)}>
+                  <X className="h-4 w-4" />
+                </Button>
+              </div>
+            ))}
+            <div className="flex gap-2 pt-2">
+              <Button variant="outline" size="sm" onClick={reset} className="flex-1">
+                Clear All
+              </Button>
+              <Button size="sm" onClick={processDocument} className="flex-1">
+                <Upload className="h-4 w-4 mr-1" />
+                Process {selectedFiles.length > 1 ? `All ${selectedFiles.length}` : ''}
+              </Button>
             </div>
-            <Button variant="ghost" size="icon-sm" onClick={reset}>
-              <X className="h-4 w-4" />
-            </Button>
-            <Button size="sm" onClick={processDocument}>
-              <Upload className="h-4 w-4 mr-1" />
-              Process
-            </Button>
           </div>
         )}
 
         {(state === 'uploading' || state === 'processing') && (
           <div className="p-4 rounded-xl bg-white/5 border border-white/10 space-y-3">
-            <div className="flex items-center gap-3">
-              <Loader2 className="h-5 w-5 animate-spin text-emerald-400" />
-              <span className="text-sm">
-                {state === 'uploading' ? 'Uploading document...' : 'Running OCR & AI extraction...'}
-              </span>
+            <div className="flex items-center justify-between">
+              <div className="flex items-center gap-3">
+                <Loader2 className="h-5 w-5 animate-spin text-emerald-400" />
+                <span className="text-sm">
+                  Processing {selectedFiles.length} document{selectedFiles.length > 1 ? 's' : ''}...
+                </span>
+              </div>
+              <span className="text-xs text-white/60">{processedCount}/{selectedFiles.length}</span>
             </div>
             <Progress value={progress} variant="default" className="h-2" />
+            {/* Individual file status */}
+            <div className="space-y-1">
+              {selectedFiles.map((f, i) => (
+                <div key={i} className="flex items-center gap-2 text-xs">
+                  {f.status === 'complete' ? (
+                    <CheckCircle className="h-3 w-3 text-emerald-400" />
+                  ) : f.status === 'error' ? (
+                    <AlertCircle className="h-3 w-3 text-red-400" />
+                  ) : f.status === 'pending' ? (
+                    <div className="h-3 w-3 rounded-full border border-white/30" />
+                  ) : (
+                    <Loader2 className="h-3 w-3 animate-spin text-blue-400" />
+                  )}
+                  <span className={`truncate ${f.status === 'complete' ? 'text-emerald-400' : f.status === 'error' ? 'text-red-400' : 'text-white/60'}`}>
+                    {f.file.name}
+                  </span>
+                </div>
+              ))}
+            </div>
           </div>
         )}
 
-        {state === 'complete' && result && (
+        {state === 'complete' && (
           <div className="p-4 rounded-xl bg-emerald-500/10 border border-emerald-400/30 space-y-3">
             <div className="flex items-center gap-2">
               <CheckCircle className="h-5 w-5 text-emerald-400" />
-              <span className="font-medium text-emerald-400">Document Processed</span>
-              {result.carrier && (
+              <span className="font-medium text-emerald-400">
+                {processedCount} Document{processedCount > 1 ? 's' : ''} Processed
+              </span>
+              {result?.carrier && (
                 <Badge variant="success" size="sm">{result.carrier}</Badge>
               )}
             </div>
-            {result.planName && (
+            {result?.planName && (
               <p className="text-sm text-muted-foreground">{result.planName}</p>
+            )}
+            {/* Show any errors */}
+            {selectedFiles.some(f => f.status === 'error') && (
+              <div className="text-xs text-red-400">
+                {selectedFiles.filter(f => f.status === 'error').length} file(s) had errors
+              </div>
             )}
             <div className="flex gap-2">
               <Button size="sm" variant="outline" onClick={reset}>
-                Scan Another
+                Scan More
               </Button>
               {onClose && (
                 <Button size="sm" onClick={onClose}>Done</Button>
@@ -297,8 +389,8 @@ export function InlineScanner({ customerId, onDocumentProcessed, onClose, compac
         </div>
       </CardHeader>
       <CardContent className="space-y-4">
-        {/* Drop Zone */}
-        {state === 'idle' && !selectedFile && (
+        {/* Drop Zone - always show when idle */}
+        {state === 'idle' && (
           <div
             onDragOver={handleDragOver}
             onDragLeave={handleDragLeave}
@@ -316,14 +408,15 @@ export function InlineScanner({ customerId, onDocumentProcessed, onClose, compac
               ref={fileInputRef}
               type="file"
               accept=".pdf,.jpg,.jpeg,.png"
+              multiple
               onChange={handleFileSelect}
               className="hidden"
             />
             <Upload className={`h-10 w-10 mx-auto mb-3 ${isDragging ? 'text-emerald-400' : 'text-muted-foreground'}`} />
             <p className="font-medium">
-              {isDragging ? 'Drop your file here' : 'Drag and drop your document'}
+              {isDragging ? 'Drop your files here' : 'Drag and drop your documents'}
             </p>
-            <p className="text-sm text-muted-foreground mt-1">or click to browse</p>
+            <p className="text-sm text-muted-foreground mt-1">or click to browse (select multiple)</p>
             <div className="flex justify-center gap-4 mt-3 text-xs text-muted-foreground">
               <span className="flex items-center gap-1">
                 <FileText className="h-3 w-3" /> PDF
@@ -332,33 +425,37 @@ export function InlineScanner({ customerId, onDocumentProcessed, onClose, compac
                 <ImageIcon className="h-3 w-3" /> JPG/PNG
               </span>
             </div>
+            <p className="text-xs text-white/50 mt-3">Upload authorization and benefit documents</p>
           </div>
         )}
 
-        {/* Selected File */}
-        {state === 'idle' && selectedFile && (
+        {/* Selected Files */}
+        {state === 'idle' && selectedFiles.length > 0 && (
           <div className="space-y-4">
-            <div className="flex items-center gap-4 p-4 rounded-xl bg-white/5 border border-white/10">
-              <div className="h-12 w-12 rounded-xl bg-white/10 flex items-center justify-center">
-                {getFileIcon(selectedFile.type)}
+            <div className="text-sm font-medium text-white/80">{selectedFiles.length} document{selectedFiles.length > 1 ? 's' : ''} selected</div>
+            {selectedFiles.map((fileEntry, index) => (
+              <div key={index} className="flex items-center gap-4 p-4 rounded-xl bg-white/5 border border-white/10">
+                <div className="h-12 w-12 rounded-xl bg-white/10 flex items-center justify-center">
+                  {getFileIcon(fileEntry.file.type)}
+                </div>
+                <div className="flex-1 min-w-0">
+                  <p className="font-medium truncate">{fileEntry.file.name}</p>
+                  <p className="text-sm text-muted-foreground">
+                    {(fileEntry.file.size / 1024 / 1024).toFixed(2)} MB
+                  </p>
+                </div>
+                <Button variant="ghost" size="icon-sm" onClick={() => removeFile(index)}>
+                  <X className="h-4 w-4" />
+                </Button>
               </div>
-              <div className="flex-1 min-w-0">
-                <p className="font-medium truncate">{selectedFile.name}</p>
-                <p className="text-sm text-muted-foreground">
-                  {(selectedFile.size / 1024 / 1024).toFixed(2)} MB
-                </p>
-              </div>
-              <Button variant="ghost" size="icon-sm" onClick={reset}>
-                <X className="h-4 w-4" />
-              </Button>
-            </div>
+            ))}
             <div className="flex gap-3">
               <Button variant="outline" onClick={reset} className="flex-1">
-                Cancel
+                Clear All
               </Button>
               <Button onClick={processDocument} className="flex-1">
                 <Upload className="h-4 w-4 mr-2" />
-                Upload & Process
+                Upload & Process {selectedFiles.length > 1 ? `All ${selectedFiles.length}` : ''}
               </Button>
             </div>
           </div>
@@ -367,46 +464,54 @@ export function InlineScanner({ customerId, onDocumentProcessed, onClose, compac
         {/* Processing State */}
         {(state === 'uploading' || state === 'processing') && (
           <div className="space-y-4">
+            <div className="flex items-center justify-between mb-2">
+              <span className="text-sm font-medium">Processing {selectedFiles.length} document{selectedFiles.length > 1 ? 's' : ''}...</span>
+              <span className="text-xs text-white/60">{processedCount}/{selectedFiles.length}</span>
+            </div>
             <Progress value={progress} className="h-2" />
-            <div className="space-y-3">
-              <div className="flex items-center gap-3">
-                <div className={`h-8 w-8 rounded-full flex items-center justify-center ${progress >= 40 ? 'bg-emerald-500/20 text-emerald-400' : 'bg-white/10 text-muted-foreground'}`}>
-                  {progress >= 40 ? <CheckCircle className="h-4 w-4" /> : <Loader2 className="h-4 w-4 animate-spin" />}
+            {/* Per-file status */}
+            <div className="space-y-2 pt-2">
+              {selectedFiles.map((f, i) => (
+                <div key={i} className="flex items-center gap-3 p-2 rounded-lg bg-white/5">
+                  {f.status === 'complete' ? (
+                    <CheckCircle className="h-4 w-4 text-emerald-400" />
+                  ) : f.status === 'error' ? (
+                    <AlertCircle className="h-4 w-4 text-red-400" />
+                  ) : f.status === 'pending' ? (
+                    <div className="h-4 w-4 rounded-full border border-white/30" />
+                  ) : (
+                    <Loader2 className="h-4 w-4 animate-spin text-blue-400" />
+                  )}
+                  <span className={`text-sm truncate flex-1 ${f.status === 'complete' ? 'text-emerald-400' : f.status === 'error' ? 'text-red-400' : 'text-white/70'}`}>
+                    {f.file.name}
+                  </span>
+                  {f.status !== 'pending' && f.status !== 'complete' && f.status !== 'error' && (
+                    <span className="text-xs text-white/50">{f.status === 'uploading' ? 'Uploading...' : 'Processing...'}</span>
+                  )}
                 </div>
-                <span className={progress >= 40 ? 'text-emerald-400' : ''}>Uploading document</span>
-              </div>
-              <div className="flex items-center gap-3">
-                <div className={`h-8 w-8 rounded-full flex items-center justify-center ${progress >= 80 ? 'bg-emerald-500/20 text-emerald-400' : state === 'processing' ? 'bg-primary/20 text-primary' : 'bg-white/10 text-muted-foreground'}`}>
-                  {progress >= 80 ? <CheckCircle className="h-4 w-4" /> : state === 'processing' ? <Loader2 className="h-4 w-4 animate-spin" /> : <FileSearch className="h-4 w-4" />}
-                </div>
-                <span className={progress >= 80 ? 'text-emerald-400' : state === 'processing' ? 'text-primary' : 'text-muted-foreground'}>Running OCR extraction</span>
-              </div>
-              <div className="flex items-center gap-3">
-                <div className={`h-8 w-8 rounded-full flex items-center justify-center ${progress === 100 ? 'bg-emerald-500/20 text-emerald-400' : 'bg-white/10 text-muted-foreground'}`}>
-                  {progress === 100 ? <CheckCircle className="h-4 w-4" /> : <Brain className="h-4 w-4" />}
-                </div>
-                <span className={progress === 100 ? 'text-emerald-400' : 'text-muted-foreground'}>AI data extraction</span>
-              </div>
+              ))}
             </div>
           </div>
         )}
 
         {/* Complete State */}
-        {state === 'complete' && result && (
+        {state === 'complete' && (
           <div className="space-y-4">
             <div className="p-4 rounded-xl bg-emerald-500/10 border border-emerald-400/30">
               <div className="flex items-center gap-3 mb-3">
                 <CheckCircle className="h-6 w-6 text-emerald-400" />
                 <div>
-                  <p className="font-medium text-emerald-400">Document Processed Successfully</p>
-                  {result.confidenceScore && (
+                  <p className="font-medium text-emerald-400">
+                    {processedCount} Document{processedCount > 1 ? 's' : ''} Processed Successfully
+                  </p>
+                  {result?.confidenceScore && (
                     <p className="text-sm text-muted-foreground">
                       {(result.confidenceScore * 100).toFixed(0)}% confidence
                     </p>
                   )}
                 </div>
               </div>
-              {(result.carrier || result.planName) && (
+              {(result?.carrier || result?.planName) && (
                 <div className="flex flex-wrap gap-2">
                   {result.carrier && (
                     <Badge variant="success">{result.carrier}</Badge>
@@ -416,10 +521,19 @@ export function InlineScanner({ customerId, onDocumentProcessed, onClose, compac
                   )}
                 </div>
               )}
+              {/* Show any failed files */}
+              {selectedFiles.some(f => f.status === 'error') && (
+                <div className="mt-3 pt-3 border-t border-white/10">
+                  <p className="text-xs text-red-400 mb-2">{selectedFiles.filter(f => f.status === 'error').length} file(s) had errors:</p>
+                  {selectedFiles.filter(f => f.status === 'error').map((f, i) => (
+                    <p key={i} className="text-xs text-red-300">{f.file.name}: {f.error}</p>
+                  ))}
+                </div>
+              )}
             </div>
             <div className="flex gap-3">
               <Button variant="outline" onClick={reset} className="flex-1">
-                Scan Another
+                Scan More
               </Button>
               {onClose && (
                 <Button onClick={onClose} className="flex-1">
