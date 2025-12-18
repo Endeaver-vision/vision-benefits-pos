@@ -1,12 +1,26 @@
 /**
  * Hook to fetch exam and fitting services from the pricing API
- * 
- * This replaces hardcoded service definitions with database values
- * and applies carrier-specific pricing based on customer authorization.
+ *
+ * ARCHITECTURE: Prices come from customer_price_lists table (single source of truth).
+ * The API returns pre-computed prices, NOT real-time calculations.
  */
 
 import { useState, useEffect, useCallback } from 'react'
-import { PricedProduct } from '@/lib/services/unified-pricing-service'
+
+// Service type returned by /api/pricing/services
+export interface PricedService {
+  sku: string
+  name: string
+  category: string
+  retailPrice: number
+  patientPays: number
+  insurancePays: number
+  savings: number
+  pricingMethod: 'copay' | 'tier' | 'retail' | 'fallback'
+  tierUsed?: string
+  notes?: string
+  needsTierAssignment?: boolean
+}
 
 interface UseExamServicesOptions {
   customerId?: string | null
@@ -14,8 +28,8 @@ interface UseExamServicesOptions {
 }
 
 interface ExamServicesState {
-  exams: PricedProduct[]
-  fittings: PricedProduct[]
+  exams: PricedService[]
+  fittings: PricedService[]
   hasInsurance: boolean
   carrier: string | null
   loading: boolean
@@ -73,7 +87,7 @@ export function useExamServices(options: UseExamServicesOptions = {}) {
   }, [fetchServices])
   
   // Helper to get a service by SKU
-  const getServiceBySku = useCallback((sku: string): PricedProduct | undefined => {
+  const getServiceBySku = useCallback((sku: string): PricedService | undefined => {
     return [...state.exams, ...state.fittings].find(s => s.sku === sku)
   }, [state.exams, state.fittings])
   

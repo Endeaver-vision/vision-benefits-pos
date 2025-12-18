@@ -1,9 +1,9 @@
 /**
  * Quote API
- * POST /api/quote - Calculate pricing for items based on customer's authorization
+ * POST /api/quote - Get pricing for items from customer's pre-computed price list
  *
- * This connects the pricing-by-category service to the frontend quote builder.
- * It fetches the customer's active authorization and calculates pricing for products.
+ * ARCHITECTURE: All prices come from customer_price_lists table.
+ * NO real-time calculation - prices are pre-computed by generatePriceMapping().
  *
  * Supports materials benefit exclusivity - when both glasses and contacts are in the quote,
  * only one category gets the insurance allowance (based on activeMaterialsBenefit parameter).
@@ -12,16 +12,8 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { prisma } from '@/lib/prisma'
 import { getActiveAuthorizationForCustomer } from '@/lib/services/authorization-service'
-import {
-  calculateServicePricingByCategory,
-  calculateFramePricing,
-  calculateLensPricingByCategory,
-  calculateContactLensPricing,
-  PricingResult,
-} from '@/lib/services/pricing-by-category'
 import { ProductCategory, QuoteLineItem, QuoteResult } from '@/types/product-catalog'
 import {
-  BenefitAuthorization,
   isVspAuth,
   isEyemedAuth,
   isSpecteraAuth,
@@ -46,6 +38,7 @@ interface QuoteRequest {
 // Product info fetched from database
 interface ProductInfo {
   sku: string
+  productId: string  // ID used in customer_price_lists
   name: string
   retailPrice: number
   category: string  // 'frame' | 'lens' | 'contact' | 'service'
@@ -54,12 +47,15 @@ interface ProductInfo {
 }
 
 /**
- * POST - Calculate quote pricing using pricingCategory
+ * POST - Get quote pricing from pre-computed customer_price_lists
+ *
+ * ALL PRICES come from customer_price_lists - NO real-time calculation.
+ * Prices must be generated via generatePriceMapping() before quotes work.
  *
  * Supports materials benefit exclusivity:
- * - When activeMaterialsBenefit = 'glasses', frames/lenses use insurance allowance, contacts pay retail
- * - When activeMaterialsBenefit = 'contacts', contacts use insurance allowance, frames/lenses pay retail
- * - Services (exams, fittings) ALWAYS use insurance copays regardless of materials benefit
+ * - When activeMaterialsBenefit = 'glasses', frames/lenses use insurance price, contacts pay retail
+ * - When activeMaterialsBenefit = 'contacts', contacts use insurance price, frames/lenses pay retail
+ * - Services (exams, fittings) ALWAYS use insurance prices regardless of materials benefit
  */
 export async function POST(request: NextRequest) {
   try {
@@ -80,13 +76,27 @@ export async function POST(request: NextRequest) {
       )
     }
 
-    // Get customer's active authorization
-    const authResult = await getActiveAuthorizationForCustomer(customerId)
-    const carrier = authResult?.carrier || null
+    console.log('[Quote API] Received', items.length, 'items for customer', customerId)
 
-    // Fetch products for the items
+    // Get customer's active authorization (for carrier info and copay display)
+    const authResult = await getActiveAuthorizationForCustomer(customerId)
+    const carrier = authResult?.carrier?.toUpperCase() || null
+
+    // Fetch product info for display names and categories
     const productSkus = items.map(i => i.sku)
     const products = await fetchProductInfo(productSkus, carrier)
+
+    // Fetch pre-computed prices from customer_price_lists
+    const priceList = await prisma.customerPriceList.findMany({
+      where: {
+        customerId,
+        active: true,
+        insuranceCarrier: carrier || undefined,
+      },
+    })
+
+    // Build a map of productId -> price entry
+    const priceMap = new Map(priceList.map(p => [p.productId, p]))
 
     if (!authResult) {
       // No authorization - return retail pricing for everything
@@ -131,7 +141,7 @@ export async function POST(request: NextRequest) {
     const { authorization } = authResult
 
     // Determine if glasses/contacts are exclusive (most plans are)
-    const glassesContactsExclusive = true // VSP, EyeMed, Spectera all enforce this
+    const glassesContactsExclusive = true
 
     // Detect what's in the quote
     const hasGlassesMaterials = items.some(item => {
@@ -144,17 +154,16 @@ export async function POST(request: NextRequest) {
     })
 
     // Determine which benefit is active
-    // If not specified and both present, default to glasses (first added typically)
     let effectiveActiveBenefit: MaterialsBenefitType = activeMaterialsBenefit || null
     if (!effectiveActiveBenefit && hasGlassesMaterials && hasContactMaterials && glassesContactsExclusive) {
-      effectiveActiveBenefit = 'glasses' // Default to glasses if both present
+      effectiveActiveBenefit = 'glasses'
     } else if (!effectiveActiveBenefit && hasGlassesMaterials) {
       effectiveActiveBenefit = 'glasses'
     } else if (!effectiveActiveBenefit && hasContactMaterials) {
       effectiveActiveBenefit = 'contacts'
     }
 
-    // Calculate pricing for each item
+    // Build line items from price list
     const lineItems: QuoteLineItem[] = []
     const warnings: string[] = []
 
@@ -174,61 +183,49 @@ export async function POST(request: NextRequest) {
         continue
       }
 
+      // Look up pre-computed price from customer_price_lists
+      // Use product.productId if available, otherwise try sku
+      const priceEntry = priceMap.get(product.productId || item.sku)
       const retailPrice = item.retailPrice ?? product.retailPrice
-      let pricing: PricingResult
 
       // Determine if this item should use insurance or pay retail
       const isService = product.category === 'service'
       const isGlassesMaterial = product.category === 'frame' || product.category === 'lens'
       const isContactMaterial = product.category === 'contact'
 
-      // Services ALWAYS use insurance (exam copays, fitting copays)
-      // Materials only use insurance if they're the active benefit type
       const useInsurance = isService ||
         (isGlassesMaterial && effectiveActiveBenefit === 'glasses') ||
         (isContactMaterial && effectiveActiveBenefit === 'contacts') ||
-        (!glassesContactsExclusive) // If not exclusive, both can use insurance
+        (!glassesContactsExclusive)
+
+      let patientCopay: number
+      let insurancePays: number
+      let notes: string | undefined
+      let tierUsed: string | undefined
+      let needsTierAssignment = false
 
       if (!useInsurance) {
         // This category doesn't get insurance - patient pays retail
-        pricing = {
-          patientPays: retailPrice,
-          insurancePays: 0,
-          notes: isGlassesMaterial
-            ? 'Glasses benefit not active (contacts selected)'
-            : 'Contacts benefit not active (glasses selected)'
+        patientCopay = retailPrice
+        insurancePays = 0
+        notes = isGlassesMaterial
+          ? 'Glasses benefit not active (contacts selected)'
+          : 'Contacts benefit not active (glasses selected)'
+      } else if (priceEntry && priceEntry.finalPrice !== null) {
+        // Use pre-computed price from price list
+        patientCopay = priceEntry.customPrice ?? priceEntry.finalPrice
+        insurancePays = Math.max(0, retailPrice - patientCopay)
+        tierUsed = priceEntry.tier || undefined
+        needsTierAssignment = priceEntry.needsTierAssignment || false
+        if (needsTierAssignment) {
+          notes = 'Using fallback pricing (80% retail) - needs tier assignment'
         }
       } else {
-        // Calculate insurance pricing based on category
-        switch (product.category) {
-          case 'service':
-            pricing = calculateServicePricingByCategory(
-              product.pricingCategory,
-              retailPrice,
-              authorization
-            )
-            break
-
-          case 'frame':
-            pricing = calculateFramePricing(retailPrice, authorization)
-            break
-
-          case 'lens':
-            pricing = calculateLensPricingByCategory(
-              product.pricingCategory,
-              retailPrice,
-              authorization,
-              product.tierCode || item.tierCode
-            )
-            break
-
-          case 'contact':
-            pricing = calculateContactLensPricing(retailPrice, authorization)
-            break
-
-          default:
-            pricing = { patientPays: retailPrice, insurancePays: 0, notes: 'Unknown category' }
-        }
+        // No price in list - this shouldn't happen if prices were generated
+        patientCopay = retailPrice
+        insurancePays = 0
+        notes = 'No price in customer price list - run price generation'
+        warnings.push(`Product "${product.name}" has no price entry`)
       }
 
       lineItems.push({
@@ -237,11 +234,12 @@ export async function POST(request: NextRequest) {
         category: product.category as ProductCategory,
         pricingCategory: product.pricingCategory,
         retailPrice,
-        patientCopay: pricing.patientPays,
-        insurancePays: pricing.insurancePays,
-        savings: pricing.insurancePays,
-        tierUsed: (pricing as any).tier,
-        notes: pricing.notes,
+        patientCopay,
+        insurancePays,
+        savings: insurancePays,
+        tierUsed,
+        notes,
+        needsTierAssignment,
       })
     }
 
@@ -258,7 +256,7 @@ export async function POST(request: NextRequest) {
     const insuranceTotal = lineItems.reduce((sum, item) => sum + item.insurancePays, 0)
     const totalSavings = lineItems.reduce((sum, item) => sum + item.savings, 0)
 
-    // Get exam and materials copays from authorization
+    // Get exam and materials copays from authorization for display
     let examCopay: number | null = null
     let materialsCopay: number | null = null
 
@@ -307,7 +305,7 @@ export async function POST(request: NextRequest) {
     return NextResponse.json(
       {
         success: false,
-        error: 'Failed to calculate quote',
+        error: 'Failed to get quote pricing',
         details: error instanceof Error ? error.message : 'Unknown error',
       },
       { status: 500 }
@@ -318,93 +316,20 @@ export async function POST(request: NextRequest) {
 /**
  * Fetch product info from database for quote pricing
  * Returns simplified ProductInfo with pricingCategory and tier codes
+ *
+ * NOTE: customer_price_lists uses IDs from the 'products' table.
+ * Other tables (LensProduct, Frame, etc.) are NOT in customer_price_lists.
  */
 async function fetchProductInfo(skus: string[], carrier: string | null): Promise<Map<string, ProductInfo>> {
   const products = new Map<string, ProductInfo>()
 
-  // Fetch from LensProduct table (lenses, AR coatings, materials, etc.)
-  const lensProducts = await prisma.lensProduct.findMany({
-    where: {
-      sku: { in: skus },
-      isActive: true,
-    },
-    include: {
-      carrierTiers: carrier ? {
-        where: { carrier: { equals: carrier, mode: 'insensitive' } }
-      } : false,
-    },
-  })
-
-  for (const product of lensProducts) {
-    const tierMapping = Array.isArray(product.carrierTiers) ? product.carrierTiers[0] : null
-    products.set(product.sku!, {
-      sku: product.sku!,
-      name: product.name,
-      retailPrice: product.retailPrice,
-      category: 'lens',
-      pricingCategory: product.pricingCategory,
-      tierCode: tierMapping?.tierCode,
-    })
-  }
-
-  // Fetch from Frame table
-  const frames = await prisma.frame.findMany({
-    where: {
-      sku: { in: skus },
-      isActive: true,
-    },
-  })
-
-  for (const frame of frames) {
-    products.set(frame.sku!, {
-      sku: frame.sku!,
-      name: `${frame.brand} ${frame.model}`,
-      retailPrice: frame.retailPrice,
-      category: 'frame',
-      pricingCategory: frame.pricingCategory || 'FRAME',
-    })
-  }
-
-  // Fetch from ServicePrice table (exams, fittings)
-  const services = await prisma.servicePrice.findMany({
-    where: {
-      sku: { in: skus },
-      isActive: true,
-    },
-  })
-
-  for (const service of services) {
-    products.set(service.sku!, {
-      sku: service.sku!,
-      name: service.name,
-      retailPrice: service.retailPrice,
-      category: 'service',
-      pricingCategory: service.pricingCategory,
-    })
-  }
-
-  // Fetch from ContactLens table
-  const contactLenses = await prisma.contactLens.findMany({
-    where: {
-      id: { in: skus },
-      isActive: true,
-    },
-  })
-
-  for (const cl of contactLenses) {
-    products.set(cl.id, {
-      sku: cl.id,
-      name: cl.lensName,
-      retailPrice: cl.retailPrice,
-      category: 'contact',
-      pricingCategory: cl.pricingCategory,
-    })
-  }
-
-  // Fetch from general Product table (mount fees, add-ons, etc.)
+  // Primary source: Product table (this is what customer_price_lists uses)
   const generalProducts = await prisma.product.findMany({
     where: {
-      sku: { in: skus },
+      OR: [
+        { sku: { in: skus } },
+        { id: { in: skus } }
+      ],
       active: true,
     },
     include: {
@@ -418,7 +343,9 @@ async function fetchProductInfo(skus: string[], carrier: string | null): Promise
     let category: string = 'lens'  // Default to lens for pricing
 
     if (catCode === 'MOUNT_FEES' || catCode === 'LENS_ADDONS' || catCode === 'AR_COATINGS' ||
-        catCode === 'LENS_MATERIALS' || catCode === 'LINED_MULTIFOCAL') {
+        catCode === 'LENS_MATERIALS' || catCode === 'LINED_MULTIFOCAL' ||
+        catCode === 'PROGRESSIVE_LENSES' || catCode === 'SINGLE_VISION_LENSES' ||
+        catCode === 'PHOTOCHROMIC' || catCode === 'POLARIZED') {
       category = 'lens'
     } else if (catCode === 'FRAMES') {
       category = 'frame'
@@ -426,14 +353,124 @@ async function fetchProductInfo(skus: string[], carrier: string | null): Promise
       category = 'service'
     }
 
-    products.set(product.sku, {
-      sku: product.sku,
+    // Use sku if available, otherwise use id as the key
+    const key = product.sku || product.id
+    products.set(key, {
+      sku: key,
+      productId: product.id,  // This is what customer_price_lists uses
       name: product.name,
       retailPrice: product.basePrice,
       category,
       pricingCategory: product.category?.code || null,
-      tierCode: product.tierVsp,  // Use VSP tier code for copay lookup
+      tierCode: product.tierVsp,
     })
+  }
+
+  // Secondary sources for products not in the main Product table
+  // These are for backwards compatibility but won't have price list entries
+
+  // Fetch from LensProduct table
+  const lensProducts = await prisma.lensProduct.findMany({
+    where: {
+      OR: [
+        { sku: { in: skus } },
+        { id: { in: skus } }
+      ],
+      isActive: true,
+    },
+    include: {
+      carrierTiers: carrier ? {
+        where: { carrier: { equals: carrier, mode: 'insensitive' } }
+      } : false,
+    },
+  })
+
+  for (const product of lensProducts) {
+    const tierMapping = Array.isArray(product.carrierTiers) ? product.carrierTiers[0] : null
+    const key = product.sku || product.id
+    // Only add if not already in map from Product table
+    if (!products.has(key)) {
+      products.set(key, {
+        sku: key,
+        productId: product.id,  // LensProduct ID - may not be in price list
+        name: product.name,
+        retailPrice: product.retailPrice,
+        category: 'lens',
+        pricingCategory: product.pricingCategory,
+        tierCode: tierMapping?.tierCode,
+      })
+    }
+  }
+
+  // Fetch from Frame table
+  const frames = await prisma.frame.findMany({
+    where: {
+      OR: [
+        { sku: { in: skus } },
+        { id: { in: skus } }
+      ],
+      isActive: true,
+    },
+  })
+
+  for (const frame of frames) {
+    const key = frame.sku || frame.id
+    if (!products.has(key)) {
+      products.set(key, {
+        sku: key,
+        productId: frame.id,  // Frame ID - may not be in price list
+        name: `${frame.brand} ${frame.model}`,
+        retailPrice: frame.retailPrice,
+        category: 'frame',
+        pricingCategory: frame.pricingCategory || 'FRAME',
+      })
+    }
+  }
+
+  // Fetch from ServicePrice table
+  const services = await prisma.servicePrice.findMany({
+    where: {
+      OR: [
+        { sku: { in: skus } },
+        { id: { in: skus } }
+      ],
+      isActive: true,
+    },
+  })
+
+  for (const service of services) {
+    const key = service.sku || service.id
+    if (!products.has(key)) {
+      products.set(key, {
+        sku: key,
+        productId: service.id,  // Service ID - may not be in price list
+        name: service.name,
+        retailPrice: service.retailPrice,
+        category: 'service',
+        pricingCategory: service.pricingCategory,
+      })
+    }
+  }
+
+  // Fetch from ContactLens table
+  const contactLenses = await prisma.contactLens.findMany({
+    where: {
+      id: { in: skus },
+      isActive: true,
+    },
+  })
+
+  for (const cl of contactLenses) {
+    if (!products.has(cl.id)) {
+      products.set(cl.id, {
+        sku: cl.id,
+        productId: cl.id,  // ContactLens ID - may not be in price list
+        name: cl.lensName,
+        retailPrice: cl.retailPrice,
+        category: 'contact',
+        pricingCategory: cl.pricingCategory,
+      })
+    }
   }
 
   return products

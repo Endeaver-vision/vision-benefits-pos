@@ -82,6 +82,11 @@ export async function POST(
         confidenceScore: updatedDoc?.confidenceScore,
         extractedData: updatedDoc?.extractedData,
         duration: `${duration}ms`,
+        timing: result.timing ? {
+          ocrMs: result.timing.ocrMs,
+          gptMs: result.timing.gptMs,
+          totalMs: result.timing.totalMs,
+        } : null,
         message: 'Document processed successfully. Ready for verification.',
       })
     } else {

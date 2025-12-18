@@ -37,7 +37,8 @@ function SelectTrigger({
       data-slot="select-trigger"
       data-size={size}
       className={cn(
-        "flex w-fit items-center justify-between gap-2 rounded-2xl px-4 py-2.5 text-sm whitespace-nowrap transition-all duration-200 outline-none",
+        // Use specific transitions to avoid backdrop-filter rendering bugs during scroll
+        "flex w-fit items-center justify-between gap-2 rounded-2xl px-4 py-2.5 text-sm whitespace-nowrap transition-[background-color,border-color,box-shadow] duration-200 outline-none transform-gpu",
         "bg-white/[0.08] backdrop-blur-sm border border-white/15",
         "text-foreground data-[placeholder]:text-muted-foreground",
         "shadow-[inset_0_1px_0_0_rgba(255,255,255,0.05)]",

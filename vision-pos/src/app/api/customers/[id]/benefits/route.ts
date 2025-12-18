@@ -56,29 +56,30 @@ export async function GET(
 
     if (vspAuth) {
       carrier = 'VSP';
+      // NO DEFAULTS - only show what was actually scanned
       benefits = {
         planYear: new Date().getFullYear(),
-        examCopay: vspAuth.examCopay ?? 0,
-        examCovered: true,
-        examEligible: true,
+        examCopay: vspAuth.examCopay,
+        examCovered: vspAuth.examCopay !== null,
+        examEligible: vspAuth.examCopay !== null,
         examFrequency: 12,
-        materialsCopay: vspAuth.materialsCopay ?? 0,
-        materialsEligible: true,
+        materialsCopay: vspAuth.materialsCopay,
+        materialsEligible: vspAuth.materialsCopay !== null,
         materialsFrequency: 12,
-        frameAllowance: vspAuth.frameAllowanceRetail ?? 150,
-        frameAllowanceFeatured: vspAuth.frameAllowanceMarchon ?? 220,
-        frameOverageDiscount: vspAuth.frameOverageDiscount ?? 20,
+        frameAllowance: vspAuth.frameAllowanceRetail,
+        frameAllowanceFeatured: vspAuth.frameAllowanceMarchon,
+        frameOverageDiscount: vspAuth.frameOverageDiscount,
         frameAllowanceUsed: 0,
-        frameAllowanceRemaining: vspAuth.frameAllowanceRetail ?? 150,
+        frameAllowanceRemaining: vspAuth.frameAllowanceRetail,
         lensAllowance: 0, // VSP covers lenses fully with copay
         lensAllowanceUsed: 0,
         lensAllowanceRemaining: 0,
-        contactAllowance: vspAuth.contactAllowance ?? 150,
+        contactAllowance: vspAuth.contactAllowance,
         contactAllowanceUsed: 0,
-        contactAllowanceRemaining: vspAuth.contactAllowance ?? 150,
-        contactFittingCovered: vspAuth.contactFittingCovered ?? false,
-        contactFittingCopay: 0, // When covered, no copay
-        contactsEligible: true,
+        contactAllowanceRemaining: vspAuth.contactAllowance,
+        contactFittingCovered: vspAuth.contactFittingCovered,
+        contactFittingCopay: null, // Will be null unless scanned
+        contactsEligible: vspAuth.contactAllowance !== null,
         contactFrequency: 12,
         // VSP plans: glasses and contacts are mutually exclusive per benefit period
         glassesContactsExclusive: true,
@@ -94,26 +95,27 @@ export async function GET(
 
       if (eyemedAuth) {
         carrier = 'EyeMed';
+        // NO DEFAULTS - only show what was actually scanned
         benefits = {
           planYear: new Date().getFullYear(),
-          examCopay: eyemedAuth.examCopay ?? 0,
-          examCovered: true,
-          examEligible: true,
+          examCopay: eyemedAuth.examCopay,
+          examCovered: eyemedAuth.examCopay !== null,
+          examEligible: eyemedAuth.examCopay !== null,
           examFrequency: 12,
-          materialsCopay: 0,
+          materialsCopay: null,
           materialsEligible: true,
           materialsFrequency: 24,
-          frameAllowance: eyemedAuth.frameAllowance ?? 150,
+          frameAllowance: eyemedAuth.frameAllowance,
           frameAllowanceUsed: 0,
-          frameAllowanceRemaining: eyemedAuth.frameAllowance ?? 150,
+          frameAllowanceRemaining: eyemedAuth.frameAllowance,
           lensAllowance: 0,
           lensAllowanceUsed: 0,
           lensAllowanceRemaining: 0,
-          contactAllowance: eyemedAuth.contactAllowance ?? 150,
+          contactAllowance: eyemedAuth.contactAllowance,
           contactAllowanceUsed: 0,
-          contactAllowanceRemaining: eyemedAuth.contactAllowance ?? 150,
-          contactFittingCopay: 0,
-          contactsEligible: true,
+          contactAllowanceRemaining: eyemedAuth.contactAllowance,
+          contactFittingCopay: null,
+          contactsEligible: eyemedAuth.contactAllowance !== null,
           contactFrequency: 12,
         };
       }
@@ -128,26 +130,27 @@ export async function GET(
 
       if (specteraAuth) {
         carrier = 'Spectera';
+        // NO DEFAULTS - only show what was actually scanned
         benefits = {
           planYear: new Date().getFullYear(),
-          examCopay: specteraAuth.examCopay ?? 0,
-          examCovered: true,
-          examEligible: true,
+          examCopay: specteraAuth.examCopay,
+          examCovered: specteraAuth.examCopay !== null,
+          examEligible: specteraAuth.examCopay !== null,
           examFrequency: 12,
-          materialsCopay: 0,
+          materialsCopay: null,
           materialsEligible: true,
           materialsFrequency: 24,
-          frameAllowance: specteraAuth.frameAllowance ?? 130,
+          frameAllowance: specteraAuth.frameAllowance,
           frameAllowanceUsed: 0,
-          frameAllowanceRemaining: specteraAuth.frameAllowance ?? 130,
+          frameAllowanceRemaining: specteraAuth.frameAllowance,
           lensAllowance: 0,
           lensAllowanceUsed: 0,
           lensAllowanceRemaining: 0,
-          contactAllowance: 105, // Spectera typical contact allowance
+          contactAllowance: specteraAuth.nonSelectionClAllowance,
           contactAllowanceUsed: 0,
-          contactAllowanceRemaining: 105,
-          contactFittingCopay: 0,
-          contactsEligible: true,
+          contactAllowanceRemaining: specteraAuth.nonSelectionClAllowance,
+          contactFittingCopay: null,
+          contactsEligible: specteraAuth.nonSelectionClAllowance !== null,
           contactFrequency: 12,
         };
       }

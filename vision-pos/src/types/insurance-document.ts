@@ -47,6 +47,9 @@ export interface InsuranceDocument {
 }
 
 export interface ExtractedInsuranceData {
+  // Schema version for backwards compatibility
+  schemaVersion?: string
+
   patient: {
     patientName: FieldWithConfidence<string>
     memberName: FieldWithConfidence<string>
@@ -57,6 +60,18 @@ export interface ExtractedInsuranceData {
     patientBirthDate: FieldWithConfidence<string | null>
     authEffectiveDate: FieldWithConfidence<string | null>
     authExpirationDate: FieldWithConfidence<string | null>
+    // New fields from schema
+    gender?: FieldWithConfidence<string | null>
+    memberAddress?: FieldWithConfidence<string | null>
+    responsibleMember?: FieldWithConfidence<string | null>
+  }
+
+  // Provider information (new section)
+  provider?: {
+    providerName: FieldWithConfidence<string | null>
+    providerNpi: FieldWithConfidence<string | null>
+    locationAddress: FieldWithConfidence<string | null>
+    dateOfService: FieldWithConfidence<string | null>
   }
   conditions: {
     systemic: {
@@ -88,11 +103,24 @@ export interface ExtractedInsuranceData {
     lens: FieldWithConfidence<string | null>
     frame: FieldWithConfidence<string | null>
     contacts: FieldWithConfidence<string | null>
+    clFit?: FieldWithConfidence<string | null>
+    // Eligibility dates (new)
+    examEligibleDate?: FieldWithConfidence<string | null>
+    lensEligibleDate?: FieldWithConfidence<string | null>
+    frameEligibleDate?: FieldWithConfidence<string | null>
+    contactsEligibleDate?: FieldWithConfidence<string | null>
+    clFitEligibleDate?: FieldWithConfidence<string | null>
     frequency: {
       examFrequency: FieldWithConfidence<string | null>
       lensFrequency: FieldWithConfidence<string | null>
       frameFrequency: FieldWithConfidence<string | null>
       contactsFrequency: FieldWithConfidence<string | null>
+      clFitFrequency?: FieldWithConfidence<string | null>
+    }
+    // Restrictions
+    restrictions?: {
+      contactsOrGlasses?: FieldWithConfidence<boolean | null>  // Plan allows EITHER contacts OR glasses
+      additionalGlassesAllowance?: FieldWithConfidence<boolean | null>
     }
   }
   plan: {
@@ -175,6 +203,7 @@ export interface ExtractedInsuranceData {
       extraFramePromotion: FieldWithConfidence<number | null>
     }
     allowances: {
+      // VSP frame allowances
       altairMarchonFrameAllowance: {
         allowance: number | null
         overageDiscount: number | null
@@ -185,10 +214,33 @@ export interface ExtractedInsuranceData {
         overageDiscount: number | null
         confidence: number
       }
+      // VSP EasyOptions upgraded allowances
+      marchonUpgradedAllowance?: FieldWithConfidence<number | null>
+      standardUpgradedAllowance?: FieldWithConfidence<number | null>
       // Generic frame allowance for EyeMed/Spectera
       frameAllowance?: FieldWithConfidence<number | null>
       frameOveragePercent?: FieldWithConfidence<number | null>
+      // EyeMed wholesale/retail range
+      wholesaleAllowance?: FieldWithConfidence<number | null>
+      retailMinAllowance?: FieldWithConfidence<number | null>
+      retailMaxAllowance?: FieldWithConfidence<number | null>
     }
+  }
+
+  // VSP EasyOptions (new section)
+  easyOptions?: {
+    enabled: FieldWithConfidence<boolean | null>
+    clUpgrade: FieldWithConfidence<number | null>
+    frameUpgrade: FieldWithConfidence<number | null>
+    arCovered: FieldWithConfidence<boolean | null>
+    photoCovered: FieldWithConfidence<boolean | null>
+    progCovered: FieldWithConfidence<boolean | null>
+  }
+
+  // EyeMed declining balance (new section)
+  decliningBalance?: {
+    clStarting: FieldWithConfidence<number | null>
+    clRemaining: FieldWithConfidence<number | null>
   }
   contacts: {
     clExamDiscount: FieldWithConfidence<string | null>
@@ -196,18 +248,33 @@ export interface ExtractedInsuranceData {
     clExamOnlyPatientPaysOver: FieldWithConfidence<number | null>
     contactsInsteadOfGlasses: FieldWithConfidence<boolean | null>
     nextFrameAvailableDate: FieldWithConfidence<string | null>
+    // VSP-specific
+    clExamCopay?: FieldWithConfidence<number | string | null>
+    clAllowanceUpgraded?: FieldWithConfidence<number | null>
     // Spectera-specific contact lens fields
     selectionContactLensesFit?: FieldWithConfidence<string | null>
     nonSelectionContactLensesFit?: FieldWithConfidence<string | null>
     selectionDailyBiweekly?: FieldWithConfidence<string | null>
     selectionMonthly?: FieldWithConfidence<string | null>
+    // EyeMed contact lens cost structure
+    conventionalCost?: FieldWithConfidence<string | null>
+    disposableCost?: FieldWithConfidence<string | null>
+    clOveragePercentage?: FieldWithConfidence<number | null>
     necessaryCl: {
       necessaryClCopay: FieldWithConfidence<number | null>
     }
   }
+
+  // Contact lens fitting (new section)
+  clFit?: {
+    standardCost: FieldWithConfidence<string | number | null>
+    premiumCost: FieldWithConfidence<string | number | null>
+  }
   valueAdded: {
     additionalPairDiscount: FieldWithConfidence<number | null>
+    additionalPairTimeframe?: FieldWithConfidence<string | null>
     clExam12MonthsDiscount: FieldWithConfidence<number | null>
+    clReorderDiscount?: FieldWithConfidence<number | null>
   }
   enhancements: {
     covered: FieldWithConfidence<string[] | null>
@@ -218,6 +285,106 @@ export interface ExtractedInsuranceData {
     phiConfidentialDisclaimer: FieldWithConfidence<string | null>
     coverageDisclaimer: FieldWithConfidence<string | null>
   }
+
+  // Family members on same plan (new section)
+  familyMembers?: Array<{
+    name: string
+    memberId: string
+    dateOfBirth: string | null
+    relationship?: string
+    groupId?: string
+  }>
+
+  // VSP detailed lens enhancement charges (new - more granular than vspLensEnhancements)
+  vspLensCharges?: {
+    // Aspheric lenses
+    aspheric?: {
+      plasticSv: FieldWithConfidence<number | null>
+      plasticMulti: FieldWithConfidence<number | null>
+      digitalSv: FieldWithConfidence<number | null>
+      digitalMulti: FieldWithConfidence<number | null>
+    }
+    // Oversize
+    oversize?: {
+      plasticSv: FieldWithConfidence<number | null>
+      plasticMulti: FieldWithConfidence<number | null>
+      glassSv: FieldWithConfidence<number | null>
+      glassMulti: FieldWithConfidence<number | null>
+    }
+    // Progressives by code
+    progressives?: {
+      standardK?: { plastic: number | null; glass: number | null }
+      premiumF?: { plastic: number | null; glass: number | null }
+      premiumJ?: { plastic: number | null; glass: number | null }
+      customN?: number | null
+      customO?: number | null
+      customMeasurementAddon?: number | null
+    }
+    // Polycarbonate
+    polycarbonate?: {
+      baseSv: FieldWithConfidence<number | null>
+      baseMulti: FieldWithConfidence<number | null>
+      digitalAddon: FieldWithConfidence<number | null>
+      polarizedAddon: FieldWithConfidence<number | null>
+      progressiveAddon: FieldWithConfidence<number | null>
+    }
+    // High index
+    highIndex?: {
+      trivex160Sv: FieldWithConfidence<number | null>
+      trivex160Multi: FieldWithConfidence<number | null>
+      hi166Sv: FieldWithConfidence<number | null>
+      hi166Multi: FieldWithConfidence<number | null>
+      hi170Sv: FieldWithConfidence<number | null>
+      hi170Multi: FieldWithConfidence<number | null>
+    }
+    // Photochromic
+    photochromic?: {
+      glassSv: FieldWithConfidence<number | null>
+      glassMulti: FieldWithConfidence<number | null>
+      plasticSv: FieldWithConfidence<number | null>
+      plasticMulti: FieldWithConfidence<number | null>
+    }
+    // Polarized
+    polarized?: {
+      plasticSv: FieldWithConfidence<number | null>
+      plasticMulti: FieldWithConfidence<number | null>
+      glassSv: FieldWithConfidence<number | null>
+      glassMulti: FieldWithConfidence<number | null>
+      progressiveAddon: FieldWithConfidence<number | null>
+    }
+    // UV
+    uv?: {
+      backside: FieldWithConfidence<number | null>
+      standard: FieldWithConfidence<number | null>
+    }
+    // Tints
+    tints?: {
+      plasticSolid: FieldWithConfidence<number | null>
+      glassSv: FieldWithConfidence<number | null>
+      glassMulti: FieldWithConfidence<number | null>
+      gradient: FieldWithConfidence<number | null>
+    }
+    // Coatings
+    coatings?: {
+      scratchA: FieldWithConfidence<number | null>
+      scratchB: FieldWithConfidence<number | null>
+      arA: FieldWithConfidence<number | null>
+      arC: FieldWithConfidence<number | null>
+      arD: FieldWithConfidence<number | null>
+    }
+    // Misc
+    misc?: {
+      edgePolish: FieldWithConfidence<number | null>
+      edgeCoating: FieldWithConfidence<number | null>
+      facets: FieldWithConfidence<number | null>
+      rimlessDrill: FieldWithConfidence<number | null>
+      nearVariableFocus: FieldWithConfidence<number | null>
+      lightFilter: FieldWithConfidence<number | null>
+      blendedBifocal: FieldWithConfidence<number | null>
+    }
+    confidence: number
+  }
+
   overallConfidence: number
   notes: string
 }

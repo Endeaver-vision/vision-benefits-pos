@@ -43,7 +43,8 @@ function TabsTrigger({
     <TabsPrimitive.Trigger
       data-slot="tabs-trigger"
       className={cn(
-        "inline-flex h-full items-center justify-center gap-2 rounded-xl px-4 py-2 text-sm font-semibold whitespace-nowrap transition-all duration-200",
+        // Use specific transitions to avoid backdrop-filter rendering bugs during scroll
+        "inline-flex h-full items-center justify-center gap-2 rounded-xl px-4 py-2 text-sm font-semibold whitespace-nowrap transition-[background-color,border-color,box-shadow,color] duration-200 transform-gpu",
         "text-muted-foreground hover:text-foreground",
         "focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary/50",
         "disabled:pointer-events-none disabled:opacity-50",

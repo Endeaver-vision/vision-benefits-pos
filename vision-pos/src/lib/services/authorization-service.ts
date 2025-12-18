@@ -168,7 +168,6 @@ async function getEyemedAuthorization(customerId: string): Promise<Authorization
     },
     include: {
       arCoatingCopays: true,
-      lensOptionCopays: true,
     },
     orderBy: {
       dateOfService: 'desc',
@@ -242,10 +241,6 @@ async function getEyemedAuthorization(customerId: string): Promise<Authorization
       tierDescription: c.tierDescription,
       copay: c.copay,
     })),
-    lensOptionCopays: auth.lensOptionCopays.map(c => ({
-      optionName: c.optionName,
-      copay: c.copay,
-    })),
   }
 
   const patientData = customer ? {
@@ -272,7 +267,6 @@ async function getSpecteraAuthorization(customerId: string): Promise<Authorizati
     },
     include: {
       arCoatingCopays: true,
-      lensOptionCopays: true,
     },
     orderBy: {
       dateOfService: 'desc',
@@ -351,10 +345,6 @@ async function getSpecteraAuthorization(customerId: string): Promise<Authorizati
     isActive: auth.isActive,
     arCoatingCopays: auth.arCoatingCopays.map(c => ({
       tier: c.tier,
-      copay: c.copay,
-    })),
-    lensOptionCopays: auth.lensOptionCopays.map(c => ({
-      optionName: c.optionName,
       copay: c.copay,
     })),
   }

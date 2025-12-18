@@ -107,7 +107,7 @@ export interface SpecteraAuthorizationData {
 
   // Related copays
   arCoatingCopays: SpecteraArCoatingCopayData[]
-  lensOptionCopays: SpecteraLensOptionCopayData[]
+  lensOptionCopays?: SpecteraLensOptionCopayData[] // Optional - may not exist in older schemas
 }
 
 export interface SpecteraArCoatingCopayData {
@@ -161,67 +161,71 @@ export function convertToSpecteraBenefitAuth(
   // Parse AR copays
   const arCopays = parseArCopays(authData.arCoatingCopays)
 
-  // Parse lens option copays
-  const lensOptions = parseLensOptionCopays(authData.lensOptionCopays)
+  // Parse lens option copays (may not exist in older schemas)
+  const lensOptions = parseLensOptionCopays(authData.lensOptionCopays ?? [])
 
   // Parse polycarbonate (can be complex like "Covered-in-Full for Ages 0-18" or "$33.00 for Ages 19+")
   const polyInfo = parsePolycarbonate(authData.polycarbonate)
 
-  // Build copays object
+  // Build copays object - NO DEFAULTS, only use scanned data
   const copays: SpecteraCopays = {
-    examPediatric: authData.pediatricExamCopay ?? authData.examCopay ?? 15,
-    examMaternity: authData.maternityExamCopay ?? authData.examCopay ?? 15,
-    examAdult: authData.examCopay ?? 10,
-    examContactFitSelection: authData.selectionClFitCopay === 'Covered-in-Full' ? 'covered' : parseNumericOrUndefined(authData.selectionClFitCopay),
-    examContactFitNonSelection: authData.nonSelectionClFitCopay ?? '100% of Billed Charges',
+    examPediatric: authData.pediatricExamCopay ?? authData.examCopay,
+    examMaternity: authData.maternityExamCopay ?? authData.examCopay,
+    examAdult: authData.examCopay,
+    examContactFitSelection: authData.selectionClFitCopay === 'Covered-in-Full' ? 'covered' : parseNumericOrNull(authData.selectionClFitCopay),
+    examContactFitNonSelection: authData.nonSelectionClFitCopay,
 
-    frameAllowance: authData.frameAllowance ?? 150,
-    frameOveragePercent: (authData.frameOveragePercent ?? 70) / 100, // Patient pays this %
+    frameAllowance: authData.frameAllowance,
+    frameOveragePercent: authData.frameOveragePercent !== null
+      ? authData.frameOveragePercent / 100
+      : null, // Patient pays this %
 
-    lensStandard: authData.standardLensCopay ?? 15,
-    lensBlendedBifocal: authData.blendedBifocalsCopay ?? '80% of Billed Charges',
-    lensFreeformSv: authData.freeformSvCopay ?? '80% of Billed Charges',
-    lensMfAspheric: authData.mfAsphericCopay ?? '80% of Billed Charges',
-    lensSvAspheric: authData.svAsphericCopay ?? '80% of Billed Charges',
+    lensStandard: authData.standardLensCopay,
+    lensBlendedBifocal: authData.blendedBifocalsCopay,
+    lensFreeformSv: authData.freeformSvCopay,
+    lensMfAspheric: authData.mfAsphericCopay,
+    lensSvAspheric: authData.svAsphericCopay,
 
-    progressiveTierI: authData.progressiveTier1Copay ?? 70,
-    progressiveTierII: authData.progressiveTier2Copay ?? 115,
-    progressiveTierIII: authData.progressiveTier3Copay ?? 165,
-    progressiveTierIV: authData.progressiveTier4Copay ?? 215,
-    progressiveTierV: authData.progressiveTier5Copay ?? 265,
-    progressiveNonFormulary: authData.progressiveNonFormularyCopay ?? '80% of Billed Charges',
+    progressiveTierI: authData.progressiveTier1Copay,
+    progressiveTierII: authData.progressiveTier2Copay,
+    progressiveTierIII: authData.progressiveTier3Copay,
+    progressiveTierIV: authData.progressiveTier4Copay,
+    progressiveTierV: authData.progressiveTier5Copay,
+    progressiveNonFormulary: authData.progressiveNonFormularyCopay,
 
-    // Material copays - prefer direct fields, fall back to parsed values
-    materialPolycarbonateAdult: authData.polycarbonateAdultCopay ?? polyInfo.adult ?? 33,
-    materialPolycarbonateChild: authData.polycarbonateChildCopay === 0 ? 'covered' : (authData.polycarbonateChildCopay ?? polyInfo.child ?? 'covered'),
-    materialTrivex: authData.trivexCopay ?? 0,
-    materialHighIndex160166: authData.highIndex166 ?? 53,
-    materialHighIndex166173: authData.highIndex167to173 ?? 63,
+    // Material copays - prefer direct fields, fall back to parsed values, null if neither
+    materialPolycarbonateAdult: authData.polycarbonateAdultCopay ?? polyInfo.adult ?? null,
+    materialPolycarbonateChild: authData.polycarbonateChildCopay === 0 ? 'covered' : (authData.polycarbonateChildCopay ?? polyInfo.child ?? null),
+    materialTrivex: authData.trivexCopay ?? null,
+    materialHighIndex160166: authData.highIndex166,
+    materialHighIndex166173: authData.highIndex167to173,
     // If we have a numeric copay, convert it to a display string; otherwise use the existing string
     materialHighIndex174Plus: authData.highIndex174Copay != null
       ? `$${authData.highIndex174Copay}`
-      : (authData.highIndex174Plus ?? '80% of Billed Charges'),
+      : authData.highIndex174Plus,
 
-    arTierI: arCopays.I ?? 30,
-    arTierII: arCopays.II ?? 50,
-    arTierIII: arCopays.III ?? 75,
-    arTierIV: arCopays.IV ?? 95,
-    arNonFormulary: '80% of Billed Charges',
+    arTierI: arCopays.I ?? null,
+    arTierII: arCopays.II ?? null,
+    arTierIII: arCopays.III ?? null,
+    arTierIV: arCopays.IV ?? null,
+    arNonFormulary: null,
 
-    // Enhancement copays - prefer direct fields, fall back to parsed lensOptions
-    photochromic: authData.photochromicCopay ?? lensOptions.photochromic ?? 67,
-    polarized: authData.polarizedCopay ?? lensOptions.polarized ?? '80% of Billed Charges',
-    tint: authData.tintCopay ?? lensOptions.tint ?? 14,
-    uvCoating: lensOptions.uvCoating ?? 16,
-    scratchCoating: lensOptions.scratchCoating === 0 ? 'covered' : (lensOptions.scratchCoating ?? 'covered'),
-    polishedEdges: lensOptions.polishedEdges ?? 13,
-    scratchWarranty1yr: lensOptions.scratchWarranty ?? 10,
+    // Enhancement copays - prefer direct fields, fall back to parsed lensOptions, null if neither
+    photochromic: authData.photochromicCopay ?? lensOptions.photochromic ?? null,
+    polarized: authData.polarizedCopay ?? lensOptions.polarized ?? null,
+    tint: authData.tintCopay ?? lensOptions.tint ?? null,
+    uvCoating: lensOptions.uvCoating ?? null,
+    scratchCoating: lensOptions.scratchCoating === 0 ? 'covered' : (lensOptions.scratchCoating ?? null),
+    polishedEdges: lensOptions.polishedEdges ?? null,
+    scratchWarranty1yr: lensOptions.scratchWarranty ?? null,
 
-    contactsMedicallyNecessary: authData.necessaryClCopay ?? 15,
+    contactsMedicallyNecessary: authData.necessaryClCopay,
     contactsSelectionDailyBiweekly: parseContactSelection(authData.selectionClDailyCopay),
     contactsSelectionMonthly: parseContactSelection(authData.selectionClMonthlyCopay),
-    contactsNonSelectionAllowance: authData.nonSelectionClAllowance ?? 200,
-    contactsNonSelectionOveragePercent: (authData.nonSelectionClOverage ?? 100) / 100,
+    contactsNonSelectionAllowance: authData.nonSelectionClAllowance,
+    contactsNonSelectionOveragePercent: authData.nonSelectionClOverage !== null
+      ? authData.nonSelectionClOverage / 100
+      : null,
   }
 
   // Build frequency
@@ -279,36 +283,37 @@ function parseArCopays(arCopays: SpecteraArCoatingCopayData[]): {
 
 /**
  * Parse lens option copays from database records
+ * NO DEFAULTS - only returns what was actually found
  */
 function parseLensOptionCopays(options: SpecteraLensOptionCopayData[]): {
-  photochromic?: number
-  polarized?: number | string
-  tint?: number
-  uvCoating?: number
-  scratchCoating?: number
-  polishedEdges?: number
-  scratchWarranty?: number
+  photochromic?: number | null
+  polarized?: number | string | null
+  tint?: number | null
+  uvCoating?: number | null
+  scratchCoating?: number | null
+  polishedEdges?: number | null
+  scratchWarranty?: number | null
 } {
-  const result: Record<string, number | string | undefined> = {}
+  const result: Record<string, number | string | null | undefined> = {}
 
   for (const opt of options) {
     const name = opt.optionName.toLowerCase()
     const copay = opt.copay.includes('%') ? opt.copay : parseNumericCopay(opt.copay)
 
     if (name.includes('photochrom')) {
-      result.photochromic = typeof copay === 'number' ? copay : 67
+      result.photochromic = typeof copay === 'number' ? copay : null
     } else if (name.includes('polarized')) {
       result.polarized = copay
     } else if (name.includes('tint')) {
-      result.tint = typeof copay === 'number' ? copay : 14
+      result.tint = typeof copay === 'number' ? copay : null
     } else if (name.includes('uv')) {
-      result.uvCoating = typeof copay === 'number' ? copay : 16
+      result.uvCoating = typeof copay === 'number' ? copay : null
     } else if (name.includes('scratch') && name.includes('coating')) {
-      result.scratchCoating = typeof copay === 'number' ? copay : 0
+      result.scratchCoating = typeof copay === 'number' ? copay : null
     } else if (name.includes('polish') || name.includes('roll')) {
-      result.polishedEdges = typeof copay === 'number' ? copay : 13
+      result.polishedEdges = typeof copay === 'number' ? copay : null
     } else if (name.includes('warranty')) {
-      result.scratchWarranty = typeof copay === 'number' ? copay : 10
+      result.scratchWarranty = typeof copay === 'number' ? copay : null
     }
   }
 
@@ -317,9 +322,10 @@ function parseLensOptionCopays(options: SpecteraLensOptionCopayData[]): {
 
 /**
  * Parse polycarbonate value (can have age conditions)
+ * NO DEFAULTS - returns null if no data
  */
-function parsePolycarbonate(value: string | null): { adult?: number; child?: number | 'covered' } {
-  if (!value) return { adult: 33, child: 'covered' }
+function parsePolycarbonate(value: string | null): { adult?: number | null; child?: number | 'covered' | null } {
+  if (!value) return { adult: null, child: null }
 
   const lower = value.toLowerCase()
 
@@ -328,7 +334,7 @@ function parsePolycarbonate(value: string | null): { adult?: number; child?: num
     // Try to extract adult price
     const adultMatch = value.match(/\$(\d+(?:\.\d+)?)\s*for\s*Ages?\s*19/i)
     return {
-      adult: adultMatch ? parseFloat(adultMatch[1]) : 33,
+      adult: adultMatch ? parseFloat(adultMatch[1]) : null,
       child: 'covered',
     }
   }
@@ -338,7 +344,7 @@ function parsePolycarbonate(value: string | null): { adult?: number; child?: num
   }
 
   const numericValue = parseNumericCopay(value)
-  return { adult: numericValue, child: 'covered' }
+  return { adult: numericValue, child: null }
 }
 
 /**
@@ -360,9 +366,10 @@ function parseContactSelection(value: string | null): { amount: number; units: s
 
 /**
  * Parse frequency string (e.g., "1 every 1 plan year(s)", "2 every 12 month(s)")
+ * Returns null if no data - NO DEFAULTS
  */
-function parseFrequency(freq: string | null): FrequencyBenefit {
-  if (!freq) return { count: 1, periodMonths: 12 }
+function parseFrequency(freq: string | null): FrequencyBenefit | null {
+  if (!freq) return null
 
   const match = freq.match(/(\d+)\s*every\s*(\d+)\s*(plan\s*year|month)/i)
   if (match) {
@@ -376,23 +383,23 @@ function parseFrequency(freq: string | null): FrequencyBenefit {
     }
   }
 
-  return { count: 1, periodMonths: 12 }
+  return null
 }
 
 /**
  * Parse a copay string to number
+ * Returns null if no valid number - NO DEFAULTS
  */
-function parseNumericCopay(copay: string | null): number {
-  if (!copay) return 0
+function parseNumericCopay(copay: string | null): number | null {
+  if (!copay) return null
   const cleaned = copay.replace(/[$,]/g, '').trim()
   const num = parseFloat(cleaned)
-  return isNaN(num) ? 0 : num
+  return isNaN(num) ? null : num
 }
 
-function parseNumericOrUndefined(value: string | null): number | undefined {
-  if (!value) return undefined
-  const num = parseNumericCopay(value)
-  return num > 0 ? num : undefined
+function parseNumericOrNull(value: string | null): number | null {
+  if (!value) return null
+  return parseNumericCopay(value)
 }
 
 /**

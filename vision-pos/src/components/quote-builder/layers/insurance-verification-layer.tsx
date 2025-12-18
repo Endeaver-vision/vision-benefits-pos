@@ -29,6 +29,7 @@ import {
 } from 'lucide-react'
 import { useQuotePricingContext } from '@/contexts/quote-pricing-context'
 import { AuthorizationEditor } from '@/components/quote-builder/authorization-editor'
+import { InsuranceSummary } from '@/components/quote-builder/insurance-summary'
 
 interface InsuranceVerificationLayerProps {
   customerId: string
@@ -312,7 +313,18 @@ export function InsuranceVerificationLayer({
                   </div>
                 </div>
               )}
+              {authorization.contactFittingCopay !== null && authorization.contactFittingCopay !== undefined && (
+                <div className="bg-white/10 rounded-lg p-3">
+                  <div className="text-xs text-white/60 mb-1">CL Fitting Copay</div>
+                  <div className="text-emerald-400 font-bold text-lg">
+                    ${authorization.contactFittingCopay}
+                  </div>
+                </div>
+              )}
             </div>
+
+            {/* Tier Details - Expandable Insurance Summary */}
+            <InsuranceSummary customerId={customerId} className="mt-4" />
 
             <div className="flex gap-3 pt-4">
               <Button onClick={onBack} variant="outline" className="border-white/30 text-white">

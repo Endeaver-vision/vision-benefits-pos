@@ -371,8 +371,8 @@ export function InsuranceQuoteBreakdown({
               )}
 
               <div className="flex justify-between text-sm pt-2 border-t">
-                <span className="text-muted-foreground">Insurance Pays</span>
-                <span className="text-blue-600">
+                <span className="text-muted-foreground">Insurance Saves</span>
+                <span className="text-emerald-600">
                   {formatCurrency(summary.insuranceTotal)}
                 </span>
               </div>

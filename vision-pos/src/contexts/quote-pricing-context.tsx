@@ -44,6 +44,68 @@ interface ContactLensPricing {
   totalDue: number
 }
 
+// Frame selection data (for restoration)
+interface FrameSelection {
+  id: string
+  sku: string
+  brand: string
+  model: string
+  color: string
+  size: string
+  price: number
+  manufacturer: string
+}
+
+// Eyeglasses layer selection state (for restoration when navigating back)
+interface EyeglassesSelections {
+  frame: string | null
+  selectedFrame: FrameSelection | null
+  isPatientOwnedFrame: boolean
+  lensType: string | null
+  lensMaterial: string | null
+  arCoating: string | null
+  transitions: string | null
+  polarized: string | null
+  mountFee: string | null
+  addons: string[]
+  techAddon: string | null
+}
+
+// Second pair layer selection state
+interface SecondPairSelections {
+  discountType: 'same-day' | 'within-30-days' | 'none'
+  frame: string | null
+  selectedFrame: FrameSelection | null
+  isPatientOwnedFrame: boolean
+  lensType: string | null
+  lensMaterial: string | null
+  arCoating: string | null
+  transitions: string | null
+  polarized: string | null
+  mountFee: string | null
+  addons: string[]
+}
+
+// Contact lens layer selection state
+interface ContactLensSelections {
+  manufacturer: string
+  selectedLens: {
+    id: string
+    name: string
+    manufacturer: string
+    pricePerBox: number
+  } | null
+  boxesRight: number
+  boxesLeft: number
+}
+
+// Exam services layer selection state (for restoration when navigating back)
+interface ExamSelections {
+  mainExamSku: string | null
+  addOnSkus: string[]
+  clFittingSku: string | null
+}
+
 // Authorization info from the API - now includes full pricing tiers
 interface Authorization {
   id: string
@@ -143,6 +205,9 @@ interface PricedItem extends QuoteItem {
 // Services (exams, fittings) are NEVER exclusive and always use insurance
 export type MaterialsBenefitType = 'glasses' | 'contacts' | null
 
+// Export selection types for layer components
+export type { EyeglassesSelections, SecondPairSelections, ContactLensSelections, ExamSelections, FrameSelection }
+
 // Materials conflict state - automatically tracked based on what's in the quote
 export interface MaterialsConflict {
   hasConflict: boolean           // True when both glasses materials AND contact materials are added
@@ -157,6 +222,48 @@ const initialMaterialsConflict: MaterialsConflict = {
   activeBenefit: null,
   conflictingBenefit: null,
   firstAddedType: null,
+}
+
+// Initial selections state
+const initialEyeglassesSelections: EyeglassesSelections = {
+  frame: null,
+  selectedFrame: null,
+  isPatientOwnedFrame: false,
+  lensType: null,
+  lensMaterial: null,
+  arCoating: null,
+  transitions: null,
+  polarized: null,
+  mountFee: null,
+  addons: [],
+  techAddon: null,
+}
+
+const initialSecondPairSelections: SecondPairSelections = {
+  discountType: 'same-day',
+  frame: null,
+  selectedFrame: null,
+  isPatientOwnedFrame: false,
+  lensType: null,
+  lensMaterial: null,
+  arCoating: null,
+  transitions: null,
+  polarized: null,
+  mountFee: null,
+  addons: [],
+}
+
+const initialContactLensSelections: ContactLensSelections = {
+  manufacturer: '',
+  selectedLens: null,
+  boxesRight: 0,  // Start at 0, auto-populated when lens selected
+  boxesLeft: 0,
+}
+
+const initialExamSelections: ExamSelections = {
+  mainExamSku: null,
+  addOnSkus: [],
+  clFittingSku: null,
 }
 
 // Context state
@@ -186,6 +293,12 @@ interface QuotePricingState {
 
   // Contact lenses
   contactLenses: ContactLensPricing | null
+
+  // Layer selections (for restoration when navigating back)
+  examSelections: ExamSelections
+  eyeglassesSelections: EyeglassesSelections
+  secondPairSelections: SecondPairSelections
+  contactLensSelections: ContactLensSelections
 
   // Loading/error states
   isCalculating: boolean
@@ -224,6 +337,12 @@ interface QuotePricingActions {
   updateSecondPair: (pricing: SecondPairPricing) => void
   updateContactLenses: (pricing: ContactLensPricing) => void
 
+  // Layer selections management (for state persistence)
+  updateExamSelections: (selections: Partial<ExamSelections>) => void
+  updateEyeglassesSelections: (selections: Partial<EyeglassesSelections>) => void
+  updateSecondPairSelections: (selections: Partial<SecondPairSelections>) => void
+  updateContactLensSelections: (selections: Partial<ContactLensSelections>) => void
+
   // Force recalculation
   recalculatePricing: () => Promise<void>
 }
@@ -257,6 +376,12 @@ export function QuotePricingProvider({ children }: { children: React.ReactNode }
   const [lastCalculatedAt, setLastCalculatedAt] = useState<Date | null>(null)
   const [secondPair, setSecondPair] = useState<SecondPairPricing | null>(null)
   const [contactLenses, setContactLenses] = useState<ContactLensPricing | null>(null)
+
+  // Layer selections (for state persistence when navigating between layers)
+  const [examSelections, setExamSelections] = useState<ExamSelections>(initialExamSelections)
+  const [eyeglassesSelections, setEyeglassesSelections] = useState<EyeglassesSelections>(initialEyeglassesSelections)
+  const [secondPairSelections, setSecondPairSelections] = useState<SecondPairSelections>(initialSecondPairSelections)
+  const [contactLensSelections, setContactLensSelections] = useState<ContactLensSelections>(initialContactLensSelections)
 
   // Fetch authorization function (reusable for initial load and refresh)
   const fetchAuthorizationForCustomer = useCallback(async (id: string) => {
@@ -319,6 +444,10 @@ export function QuotePricingProvider({ children }: { children: React.ReactNode }
         pricingCategory: item.pricingCategory,
       }))
 
+      // Debug: Log items being sent to API
+      console.log('[QuotePricing] Items being sent to API:', items.length, 'items')
+      console.log('[QuotePricing] Item details:', items.map(i => `${i.sku} (${i.category}): $${i.retailPrice}`))
+
       // Pass activeMaterialsBenefit so the API knows which category gets the allowance
       const response = await fetch('/api/quote', {
         method: 'POST',
@@ -337,6 +466,10 @@ export function QuotePricingProvider({ children }: { children: React.ReactNode }
       }
 
       const quote: QuoteResult = data.quote
+
+      // Debug: Log API response
+      console.log('[QuotePricing] API response - patientTotal:', quote.patientTotal, 'retailTotal:', quote.retailTotal)
+      console.log('[QuotePricing] API response items:', quote.items.map(i => `${i.sku}: patient $${i.patientCopay}, insurance $${i.insurancePays}`))
 
       // Map API response to priced items
       const priced: PricedItem[] = Array.from(selectedItems.values()).map(item => {
@@ -432,6 +565,11 @@ export function QuotePricingProvider({ children }: { children: React.ReactNode }
     setPricingSummary(initialSummary)
     setSecondPair(null)
     setContactLenses(null)
+    // Clear layer selections
+    setExamSelections(initialExamSelections)
+    setEyeglassesSelections(initialEyeglassesSelections)
+    setSecondPairSelections(initialSecondPairSelections)
+    setContactLensSelections(initialContactLensSelections)
   }, [])
 
   // Helper to determine what type of materials category an item belongs to
@@ -539,13 +677,35 @@ export function QuotePricingProvider({ children }: { children: React.ReactNode }
     // If glasses and contacts are NOT exclusive (rare plans), both can use allowance
     if (!authorization.glassesContactsExclusive) return true
 
-    // Use allowance if this is the active benefit type
-    return materialsConflict.activeBenefit === category
-  }, [authorization, materialsConflict.activeBenefit])
+    // If activeBenefit is already set, use that
+    if (materialsConflict.activeBenefit) {
+      return materialsConflict.activeBenefit === category
+    }
+
+    // activeBenefit is null (initial state) - determine based on what's in the quote
+    // This handles the timing issue where pricing is requested before conflict state is set
+    const hasGlassesMaterials = Array.from(selectedItems.values()).some(
+      item => item.category === 'frame' || item.category === 'lens' || item.category === 'coating' || item.category === 'addon'
+    )
+
+    // If asking about contacts and no glasses materials in quote, contacts can use allowance
+    if (category === 'contacts' && !hasGlassesMaterials) {
+      return true
+    }
+
+    // If asking about glasses and no contacts enabled, glasses can use allowance
+    if (category === 'glasses' && !contactLenses?.enabled) {
+      return true
+    }
+
+    return false
+  }, [authorization, materialsConflict.activeBenefit, selectedItems, contactLenses?.enabled])
 
   const addItem = useCallback((item: QuoteItem) => {
+    console.log('[QuotePricing] Adding item:', item.sku, item.category, '$' + item.retailPrice)
     setSelectedItems(prev => {
       const newItems = new Map(prev).set(item.sku, item)
+      console.log('[QuotePricing] Map now has', newItems.size, 'items:', Array.from(newItems.keys()))
       // Update conflict state when items change
       updateMaterialsConflictState(newItems)
       return newItems
@@ -553,9 +713,11 @@ export function QuotePricingProvider({ children }: { children: React.ReactNode }
   }, [updateMaterialsConflictState])
 
   const removeItem = useCallback((sku: string) => {
+    console.log('[QuotePricing] Removing item:', sku)
     setSelectedItems(prev => {
       const next = new Map(prev)
-      next.delete(sku)
+      const existed = next.delete(sku)
+      console.log('[QuotePricing] Item existed:', existed, '- Map now has', next.size, 'items:', Array.from(next.keys()))
       // Update conflict state when items change
       updateMaterialsConflictState(next)
       return next
@@ -605,6 +767,23 @@ export function QuotePricingProvider({ children }: { children: React.ReactNode }
     setContactLenses(pricing.enabled ? pricing : null)
   }, [])
 
+  // Layer selections update functions
+  const updateExamSelections = useCallback((selections: Partial<ExamSelections>) => {
+    setExamSelections(prev => ({ ...prev, ...selections }))
+  }, [])
+
+  const updateEyeglassesSelections = useCallback((selections: Partial<EyeglassesSelections>) => {
+    setEyeglassesSelections(prev => ({ ...prev, ...selections }))
+  }, [])
+
+  const updateSecondPairSelections = useCallback((selections: Partial<SecondPairSelections>) => {
+    setSecondPairSelections(prev => ({ ...prev, ...selections }))
+  }, [])
+
+  const updateContactLensSelections = useCallback((selections: Partial<ContactLensSelections>) => {
+    setContactLensSelections(prev => ({ ...prev, ...selections }))
+  }, [])
+
   const value: QuotePricingContextType = {
     // State
     customerId,
@@ -617,6 +796,10 @@ export function QuotePricingProvider({ children }: { children: React.ReactNode }
     pricingSummary,
     secondPair,
     contactLenses,
+    examSelections,
+    eyeglassesSelections,
+    secondPairSelections,
+    contactLensSelections,
     isCalculating,
     error,
     lastCalculatedAt,
@@ -635,6 +818,10 @@ export function QuotePricingProvider({ children }: { children: React.ReactNode }
     getItemPricing,
     updateSecondPair,
     updateContactLenses,
+    updateExamSelections,
+    updateEyeglassesSelections,
+    updateSecondPairSelections,
+    updateContactLensSelections,
     recalculatePricing,
   }
 

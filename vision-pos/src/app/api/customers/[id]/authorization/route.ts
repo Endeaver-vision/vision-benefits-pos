@@ -304,7 +304,7 @@ function getContactFittingCopay(authResult: NonNullable<Awaited<ReturnType<typeo
       // Spectera: Selection CL fit is typically covered-in-full
       // eslint-disable-next-line @typescript-eslint/no-explicit-any
       const specCopays = authorization.copays as any
-      return specCopays.selectionClFitCopay ?? 0
+      return specCopays.selectionClFitCopay ?? null
     default:
       return null
   }
@@ -326,25 +326,26 @@ function getLensCopays(authResult: AuthResult): {
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
   const copays = authorization.copays as any
 
+  // NO DEFAULTS - return what was scanned or null
   switch (carrier) {
     case 'vsp':
       // VSP includes basic lenses in materials copay
       return {
-        singleVision: copays.materials ?? 0,
-        bifocal: copays.materials ?? 0,
-        trifocal: copays.materials ?? 0,
+        singleVision: copays.materials ?? null,
+        bifocal: copays.materials ?? null,
+        trifocal: copays.materials ?? null,
       }
     case 'eyemed':
       return {
-        singleVision: copays.lensSv ?? 0,
-        bifocal: copays.lensBifocal ?? 0,
-        trifocal: copays.lensTrifocal ?? 0,
+        singleVision: copays.lensSv ?? null,
+        bifocal: copays.lensBifocal ?? null,
+        trifocal: copays.lensTrifocal ?? null,
       }
     case 'spectera':
       return {
-        singleVision: copays.lensStandard ?? 0,
-        bifocal: copays.lensStandard ?? 0, // Spectera often same as standard
-        trifocal: copays.lensStandard ?? 0,
+        singleVision: copays.lensStandard ?? null,
+        bifocal: copays.lensStandard ?? null,
+        trifocal: copays.lensStandard ?? null,
       }
     default:
       return { singleVision: null, bifocal: null, trifocal: null }

@@ -100,11 +100,11 @@ export default function DashboardPage() {
               <CardHeader>
                 <div className="flex items-center gap-3">
                   <Package className="h-6 w-6 text-blue-400" />
-                  <CardTitle className="text-lg text-white">Product Catalog</CardTitle>
+                  <CardTitle className="text-lg text-white">Products & Services</CardTitle>
                 </div>
               </CardHeader>
               <CardContent>
-                <p className="text-sm text-white/70">View prices and insurance tiers</p>
+                <p className="text-sm text-white/70">View all products and services with pricing</p>
               </CardContent>
             </Card>
           </Link>

@@ -19,6 +19,11 @@ export async function processInsuranceDocument(
   gptSuccess: boolean
   extractedData?: ExtractedInsuranceData
   error?: string
+  timing?: {
+    ocrMs: number
+    gptMs: number
+    totalMs: number
+  }
 }> {
   try {
     // Step 1: Update status to processing
@@ -86,7 +91,10 @@ export async function processInsuranceDocument(
         copayMaterials: extractedData.copays?.materialsCopay?.value ?? undefined,
         frameAllowance: extractedData.frame?.allowances?.altairMarchonFrameAllowance?.allowance ?? undefined,
         lensAllowance: extractedData.frame?.allowances?.nonAltairMarchonFrameAllowance?.allowance ?? undefined,
-        contactAllowance: extractedData.contacts?.clExamAndMaterialsAllowance?.value ?? undefined,
+        // Contact lens allowance - check both field names (GPT sometimes uses clMaterialsAllowance)
+        contactAllowance: extractedData.contacts?.clExamAndMaterialsAllowance?.value ??
+          (extractedData.contacts as unknown as Record<string, { value: number | null }>)?.clMaterialsAllowance?.value ??
+          undefined,
         networkTier: extractedData.plan?.networkLabRequirement?.value || undefined,
         effectiveDate: extractedData.patient?.authEffectiveDate?.value
           ? new Date(extractedData.patient.authEffectiveDate.value)
@@ -131,6 +139,7 @@ export async function processInsuranceDocument(
       ocrSuccess: true,
       gptSuccess: true,
       extractedData,
+      timing: result.timing,
     }
   } catch (error) {
     console.error('Error processing insurance document:', error)
@@ -392,10 +401,11 @@ async function createEyemedAuthorization(
       extractedData?.copays?.materialsCopay?.value ??
       null,
 
-    // Contact lens benefits
+    // Contact lens benefits - check both field names (GPT sometimes uses clMaterialsAllowance)
     contactAllowance:
       (corrections?.contactAllowance as number) ??
       extractedData?.contacts?.clExamAndMaterialsAllowance?.value ??
+      (extractedData?.contacts as unknown as Record<string, { value: number | null }>)?.clMaterialsAllowance?.value ??
       null,
 
     // Authorization validity
@@ -492,10 +502,11 @@ async function createSpecteraAuthorization(
         ?.allowance ??
       null,
 
-    // Contact lens benefits
+    // Contact lens benefits - check both field names (GPT sometimes uses clMaterialsAllowance)
     nonSelectionClAllowance:
       (corrections?.contactAllowance as number) ??
       extractedData?.contacts?.clExamAndMaterialsAllowance?.value ??
+      (extractedData?.contacts as unknown as Record<string, { value: number | null }>)?.clMaterialsAllowance?.value ??
       null,
 
     // Authorization validity
@@ -588,10 +599,11 @@ async function createVspAuthorization(
       extractedData?.frame?.allowances?.nonAltairMarchonFrameAllowance
         ?.overageDiscount ?? null,
 
-    // Contact lens
+    // Contact lens - check both field names (GPT sometimes uses clMaterialsAllowance)
     contactAllowance:
       (corrections?.contactAllowance as number) ??
       extractedData?.contacts?.clExamAndMaterialsAllowance?.value ??
+      (extractedData?.contacts as unknown as Record<string, { value: number | null }>)?.clMaterialsAllowance?.value ??
       null,
 
     // Authorization validity

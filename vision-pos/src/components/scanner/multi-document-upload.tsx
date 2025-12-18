@@ -63,17 +63,22 @@ export function MultiDocumentUpload({ customerId, onUploadComplete }: MultiDocum
 
   const detectDocumentType = (fileName: string): string => {
     const lower = fileName.toLowerCase()
-    if (lower.includes('auth') || lower.includes('patient') || lower.includes('record') || lower.includes('vsp')) {
-      return 'VSP Authorization'
-    }
+    // Check lens/enhancement FIRST (before carrier detection)
+    // because files like "AB-vsp-lens-1.pdf" contain both "vsp" and "lens"
     if (lower.includes('lens') || lower.includes('enhancement') || lower.includes('copay')) {
       return 'Lens Enhancement Form'
+    }
+    if (lower.includes('auth') || lower.includes('patient') || lower.includes('record')) {
+      return 'VSP Authorization'
     }
     if (lower.includes('eyemed')) {
       return 'EyeMed Authorization'
     }
     if (lower.includes('spectera')) {
       return 'Spectera Authorization'
+    }
+    if (lower.includes('vsp')) {
+      return 'VSP Authorization'
     }
     return 'Insurance Document'
   }

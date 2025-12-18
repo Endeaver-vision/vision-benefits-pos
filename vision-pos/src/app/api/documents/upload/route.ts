@@ -111,7 +111,6 @@ export async function POST(request: NextRequest) {
           data: {
             id: caseId,
             customerId,
-            status: 'pending',
           },
         })
         actualCaseId = newCase.id

@@ -556,12 +556,58 @@ export function calculateLensPricingByCategory(
 
     // =========================================================================
     // MOUNT FEES (Full Rim, Semi-Rimless, Rimless/Drill)
-    // VSP uses tier codes: 'standard' (covered), 'addon', 'SW' (rimless drill)
+    // VSP uses tier codes: 'standard' (covered), 'SW' (rimless drill - $30 copay)
+    // Semi-rimless/groove is typically covered by VSP at no additional charge
     // =========================================================================
     case 'MOUNT_FEES': {
       // Standard mount (full rim) is typically covered at no charge
       if (tierCode === 'standard' || tierCode === 'covered') {
         return { patientPays: 0, insurancePays: retailPrice, notes: 'Standard mount - covered' }
+      }
+
+      // Semi-rimless / groove mount - VSP typically covers this at no charge
+      // It's an intermediate between full rim and rimless drill
+      if (tierCode === 'semi_rimless' || tierCode === 'groove') {
+        if (isVspAuth(authorization)) {
+          // VSP covers semi-rimless at no additional copay (like standard mount)
+          return { patientPays: 0, insurancePays: retailPrice, notes: 'Semi-rimless mount - covered' }
+        }
+        // For other carriers, check for specific copay
+        const semiCopay = getLensEnhancementCopay(authorization, tierCode)
+        if (semiCopay !== null) {
+          return {
+            patientPays: semiCopay,
+            insurancePays: retailPrice - semiCopay,
+            tier: tierCode,
+            notes: 'Semi-rimless mount'
+          }
+        }
+        // EyeMed/Spectera may also cover semi-rimless at no charge
+        return { patientPays: 0, insurancePays: retailPrice, notes: 'Semi-rimless mount - covered' }
+      }
+
+      // For VSP SW (rimless drill) - check enhancement copays first
+      if (tierCode === 'SW' || tierCode === 'rimless') {
+        // Try to get SW copay from VSP enhancement copays
+        const swCopay = getLensEnhancementCopay(authorization, 'SW')
+        if (swCopay !== null) {
+          return {
+            patientPays: swCopay,
+            insurancePays: retailPrice - swCopay,
+            tier: 'SW',
+            notes: 'Rimless drill mount'
+          }
+        }
+        // If no specific copay found, use 80% U&C rule (patient pays 20% of retail)
+        if (isVspAuth(authorization)) {
+          const copay80Uc = Math.round(retailPrice * 0.2)  // 80% U&C = patient pays 20%
+          return {
+            patientPays: copay80Uc,
+            insurancePays: retailPrice - copay80Uc,
+            tier: 'SW',
+            notes: 'Rimless drill mount - 80% U&C'
+          }
+        }
       }
 
       // Check for specific mount copay from lens enhancement table
@@ -575,20 +621,7 @@ export function calculateLensPricingByCategory(
         }
       }
 
-      // For VSP SW (rimless drill) - typically covered with copay or 80% U&C
-      // If no specific copay found, use 80% U&C rule (patient pays 20% of retail)
-      if (tierCode === 'SW' && isVspAuth(authorization)) {
-        const copay80Uc = Math.round(retailPrice * 0.2)  // 80% U&C = patient pays 20%
-        return {
-          patientPays: copay80Uc,
-          insurancePays: retailPrice - copay80Uc,
-          tier: 'SW',
-          notes: 'Rimless drill mount - 80% U&C'
-        }
-      }
-
-      // Default: semi-rimless and other mounts - check if covered with copay
-      // If no copay data, patient pays retail for upgrade
+      // Default: other mounts - patient pays retail for upgrade
       return { patientPays: retailPrice, insurancePays: 0, notes: 'Mount upgrade - patient pays' }
     }
 
@@ -839,31 +872,62 @@ function getPolarizedCopay(auth: BenefitAuthorization): number | null {
 
 /**
  * Get material upgrade copay (poly, hi-index, trivex)
+ *
+ * materialType can be:
+ * - A VSP tier code (AD, AB, AH, AJ) - used when coming from lens_carrier_tiers
+ * - A descriptive name containing keywords like 'poly', '1.67', 'trivex'
+ *
+ * VSP planTier.materialCopays structure:
+ *   { polycarbonate: number, trivex: number, highIndex167: number, highIndex174: number }
  */
 function getMaterialCopay(auth: BenefitAuthorization, materialType?: string | null): number | null {
   const copays = auth.copays as any
 
   if (isVspAuth(auth)) {
-    // VSP materials are in planTier.materialCopays keyed by code
+    // VSP materials are in planTier.materialCopays with named properties
     const vspAuth = auth as any
     const matCopays = vspAuth.planTier?.materialCopays
 
-    if (materialType && matCopays) {
+    if (materialType) {
+      const matUpper = materialType.toUpperCase()
       const matLower = materialType.toLowerCase()
-      if (matLower.includes('poly')) {
-        return matCopays['AD'] ?? copays.polycarbonateAdultCopay ?? null
+
+      // First try direct tier code lookup (AD, AB, AH, AJ)
+      // These come from lens_carrier_tiers when a product is selected
+      if (matUpper === 'AD') {
+        // Polycarbonate
+        return matCopays?.polycarbonate ?? copays.polycarbonateAdultCopay ?? 35
       }
-      if (matLower.includes('167') || matLower.includes('1.67')) {
-        return matCopays['AH'] ?? copays.highIndex167Copay ?? null
+      if (matUpper === 'AB') {
+        // Trivex / Hi-Index 1.60 & Below
+        return matCopays?.trivex ?? copays.trivexCopay ?? 56
       }
-      if (matLower.includes('174') || matLower.includes('1.74')) {
-        return matCopays['AJ'] ?? copays.highIndex174Copay ?? null
+      if (matUpper === 'AH') {
+        // Hi-Index 1.66/1.67
+        return matCopays?.highIndex167 ?? copays.highIndex167Copay ?? 98
       }
-      if (matLower.includes('trivex')) {
-        return matCopays['AB'] ?? copays.trivexCopay ?? null
+      if (matUpper === 'AJ') {
+        // Hi-Index 1.71+
+        return matCopays?.highIndex174 ?? copays.highIndex174Copay ?? 118
+      }
+
+      // Fall back to keyword matching (for descriptive material names)
+      if (matCopays) {
+        if (matLower.includes('poly')) {
+          return matCopays.polycarbonate ?? copays.polycarbonateAdultCopay ?? 35
+        }
+        if (matLower.includes('167') || matLower.includes('1.67')) {
+          return matCopays.highIndex167 ?? copays.highIndex167Copay ?? 98
+        }
+        if (matLower.includes('174') || matLower.includes('1.74')) {
+          return matCopays.highIndex174 ?? copays.highIndex174Copay ?? 118
+        }
+        if (matLower.includes('trivex') || matLower.includes('1.60')) {
+          return matCopays.trivex ?? copays.trivexCopay ?? 56
+        }
       }
     }
-    return copays.materialCopay ?? null
+    return copays.materials ?? copays.materialCopay ?? null
   }
 
   // Common material copays for EyeMed/Spectera
@@ -884,7 +948,7 @@ function getMaterialCopay(auth: BenefitAuthorization, materialType?: string | nu
   }
 
   // Generic material copay
-  return copays.materialCopay ?? null
+  return copays.materials ?? copays.materialCopay ?? null
 }
 
 /**

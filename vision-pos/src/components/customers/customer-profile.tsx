@@ -1,7 +1,7 @@
 'use client'
 
 import React, { useState, useEffect } from 'react'
-import { useParams, useRouter } from 'next/navigation'
+import { useParams, useRouter, useSearchParams } from 'next/navigation'
 import Link from 'next/link'
 import { ArrowLeft, Edit, Phone, Mail, MapPin, Calendar, DollarSign, CreditCard, User, FileText, Plus, Eye } from 'lucide-react'
 import { Button } from '@/components/ui/button'
@@ -14,8 +14,15 @@ import CustomerInsurancePricing from './customer-insurance-pricing'
 export default function CustomerProfile() {
   const params = useParams()
   const router = useRouter()
+  const searchParams = useSearchParams()
   const customerId = params.id as string
-  
+
+  // Read tab from URL query param (e.g., ?tab=price-plan)
+  const tabFromUrl = searchParams.get('tab')
+  const defaultTab = tabFromUrl && ['overview', 'contact', 'history', 'prescriptions', 'price-plan'].includes(tabFromUrl)
+    ? tabFromUrl
+    : 'overview'
+
   const [customer, setCustomer] = useState<Customer | null>(null)
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState<string | null>(null)
@@ -245,7 +252,7 @@ export default function CustomerProfile() {
       </div>
 
       {/* Main Content Tabs */}
-      <Tabs defaultValue="overview" className="w-full">
+      <Tabs defaultValue={defaultTab} className="w-full">
         <TabsList className="grid w-full grid-cols-5">
           <TabsTrigger value="overview">Overview</TabsTrigger>
           <TabsTrigger value="contact">Contact & Address</TabsTrigger>

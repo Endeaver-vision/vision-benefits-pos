@@ -97,7 +97,7 @@ export interface EyemedAuthorizationData {
 
   // Related copays
   arCoatingCopays: EyemedArCoatingCopayData[]
-  lensOptionCopays: EyemedLensOptionCopayData[]
+  lensOptionCopays?: EyemedLensOptionCopayData[] // Optional - may not exist in older schemas
 }
 
 export interface EyemedArCoatingCopayData {
@@ -153,53 +153,55 @@ export function convertToEyemedBenefitAuth(
   // Parse AR copays
   const arCopays = parseArCopays(authData.arCoatingCopays)
 
-  // Parse lens option copays
-  const lensOptions = parseLensOptionCopays(authData.lensOptionCopays)
+  // Parse lens option copays (may not exist in older schemas)
+  const lensOptions = parseLensOptionCopays(authData.lensOptionCopays ?? [])
 
-  // Build copays object
+  // Build copays object - NO DEFAULTS, only use scanned data
   const copays: EyemedCopays = {
-    exam: authData.examCopay ?? 0,
-    materials: 0, // EyeMed often includes materials copay in exam or has separate
+    exam: authData.examCopay,
+    materials: null, // EyeMed often includes materials copay in exam or has separate
 
-    frameAllowance: authData.frameAllowance ?? 0,
-    frameOverageDiscount: (authData.frameOverageDiscount ?? 20) / 100,
+    frameAllowance: authData.frameAllowance,
+    frameOverageDiscount: authData.frameOverageDiscount !== null
+      ? authData.frameOverageDiscount / 100
+      : null,
 
-    lensSv: authData.singleVisionCopay ?? 0,
-    lensBifocal: authData.bifocalCopay ?? authData.singleVisionCopay ?? 0,
-    lensTrifocal: authData.trifocalCopay ?? authData.singleVisionCopay ?? 0,
+    lensSv: authData.singleVisionCopay,
+    lensBifocal: authData.bifocalCopay,
+    lensTrifocal: authData.trifocalCopay,
 
-    progressiveStandard: authData.progressiveStandardCopay ?? 0,
-    progressivePremiumTier1: authData.progressiveTier1Copay ?? 0,
-    progressivePremiumTier2: authData.progressiveTier2Copay ?? 0,
-    progressivePremiumTier3: authData.progressiveTier3Copay ?? 0,
-    progressivePremiumTier4: authData.progressiveTier4Copay ?? 0,
-    progressivePremiumTier5: authData.progressiveTier5Copay ?? 0,
+    progressiveStandard: authData.progressiveStandardCopay,
+    progressivePremiumTier1: authData.progressiveTier1Copay,
+    progressivePremiumTier2: authData.progressiveTier2Copay,
+    progressivePremiumTier3: authData.progressiveTier3Copay,
+    progressivePremiumTier4: authData.progressiveTier4Copay,
+    progressivePremiumTier5: authData.progressiveTier5Copay ?? null,
 
-    // Material copays - prefer direct fields, fall back to parsed lensOptions
-    materialPolycarbonate: authData.polycarbonateAdultCopay ?? lensOptions.polycarbonate ?? 40,
-    materialPolycarbonateChild: authData.polycarbonateChildCopay === 0 ? 'covered' : (authData.polycarbonateChildCopay ?? 'covered'),
-    materialHighIndex: authData.highIndex160Copay ?? lensOptions.highIndex ?? 0,
-    materialHighIndex167: authData.highIndex167Copay ?? lensOptions.highIndex ?? 0,
-    materialHighIndex174: authData.highIndex174Copay ?? lensOptions.highIndex ?? 0,
-    materialTrivex: authData.trivexCopay ?? lensOptions.trivex ?? 0,
+    // Material copays - prefer direct fields, fall back to parsed lensOptions, null if neither
+    materialPolycarbonate: authData.polycarbonateAdultCopay ?? lensOptions.polycarbonate ?? null,
+    materialPolycarbonateChild: authData.polycarbonateChildCopay === 0 ? 'covered' : (authData.polycarbonateChildCopay ?? null),
+    materialHighIndex: authData.highIndex160Copay ?? lensOptions.highIndex ?? null,
+    materialHighIndex167: authData.highIndex167Copay ?? lensOptions.highIndex ?? null,
+    materialHighIndex174: authData.highIndex174Copay ?? lensOptions.highIndex ?? null,
+    materialTrivex: authData.trivexCopay ?? lensOptions.trivex ?? null,
 
-    // AR copays from junction table
-    arStandard: arCopays.standard ?? 45,
-    arPremiumTier1: arCopays.tier_1 ?? 57,
-    arPremiumTier2: arCopays.tier_2 ?? 68,
-    arPremiumTier3: arCopays.tier_3 ?? 0,
+    // AR copays from junction table - NO DEFAULTS
+    arStandard: arCopays.standard ?? null,
+    arPremiumTier1: arCopays.tier_1 ?? null,
+    arPremiumTier2: arCopays.tier_2 ?? null,
+    arPremiumTier3: arCopays.tier_3 ?? null,
 
-    // Enhancement copays - prefer direct fields, fall back to parsed lensOptions
-    photochromic: authData.photochromicCopay ?? lensOptions.photochromic ?? 75,
-    polarized: authData.polarizedCopay ?? lensOptions.polarized ?? 0,
-    blueLightFilter: authData.blueLightFilterCopay ?? lensOptions.blueLightFilter ?? 0,
-    tint: authData.tintCopay ?? lensOptions.tint ?? 15,
-    uvCoating: lensOptions.uvCoating ?? 15,
-    scratchCoating: lensOptions.scratchCoating ?? 15,
+    // Enhancement copays - prefer direct fields, fall back to parsed lensOptions, null if neither
+    photochromic: authData.photochromicCopay ?? lensOptions.photochromic ?? null,
+    polarized: authData.polarizedCopay ?? lensOptions.polarized ?? null,
+    blueLightFilter: authData.blueLightFilterCopay ?? lensOptions.blueLightFilter ?? null,
+    tint: authData.tintCopay ?? lensOptions.tint ?? null,
+    uvCoating: lensOptions.uvCoating ?? null,
+    scratchCoating: lensOptions.scratchCoating ?? null,
 
-    contactsConventional: authData.contactAllowance ?? undefined,
-    contactsDisposable: authData.contactAllowance ?? undefined,
-    contactsMedicallyNecessary: 0,
+    contactsConventional: authData.contactAllowance ?? null,
+    contactsDisposable: authData.contactAllowance ?? null,
+    contactsMedicallyNecessary: null,
 
     // CL fitting copays
     clFitEligible: authData.clFitEligible,
@@ -302,13 +304,14 @@ function parseLensOptionCopays(options: EyemedLensOptionCopayData[]): {
 }
 
 /**
- * Parse a copay string to number (e.g., "$45", "45", "20% off retail" -> 0)
+ * Parse a copay string to number (e.g., "$45", "45")
+ * Returns null if no valid number found - NO DEFAULTS
  */
-function parseNumericCopay(copay: string | null): number {
-  if (!copay) return 0
+function parseNumericCopay(copay: string | null): number | null {
+  if (!copay) return null
   const cleaned = copay.replace(/[$,]/g, '').trim()
   const num = parseFloat(cleaned)
-  return isNaN(num) ? 0 : num
+  return isNaN(num) ? null : num
 }
 
 /**
@@ -322,8 +325,8 @@ function parseClFitCopay(copay: string | null): number | 'covered' | null {
   return num
 }
 
-function parseNumericOrZero(value: string | number | null): number {
-  if (value === null) return 0
+function parseNumericOrNull(value: string | number | null): number | null {
+  if (value === null) return null
   if (typeof value === 'number') return value
   return parseNumericCopay(value)
 }

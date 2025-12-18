@@ -46,7 +46,9 @@ export async function GET(request: Request) {
         }
       },
       orderBy: [
-        { category: { name: 'asc' } },
+        { displayTier: 'asc' },  // 'everyday' before 'reserve'
+        { category: { displayOrder: 'asc' } },
+        { displayOrder: 'asc' },
         { name: 'asc' }
       ]
     })

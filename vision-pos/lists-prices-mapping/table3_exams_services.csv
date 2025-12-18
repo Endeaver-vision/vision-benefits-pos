@@ -1,0 +1,48 @@
+Service Name,Category,Code,Retail
+Comp Ophth Service (New),EXAM,92004,$200.00
+Comp Ophth Service (Est),EXAM,92014,$165.00
+Interm Ophth Service (New),EXAM,92002,$150.00
+Interm Ophth Service (Est),EXAM,92012,$120.00
+Routine Vision Exam (New),EXAM,92004,$100.00
+Routine Vision Exam (Est),EXAM,92014,$100.00
+Refraction,EXAM,92015,$50.00
+Myopia Atropine Exam/Consult/F/U,DIAGNOSTIC,,$350.00
+Fluorescein Angiography,DIAGNOSTIC,92235,$105.00
+Visual Field,DIAGNOSTIC,92083,$95.00
+Ophthalmic Biometry W/IOL Calc,DIAGNOSTIC,92250,$95.00
+Neuro HA Screen,DIAGNOSTIC,,$89.00
+Visual Field (Intermediate),DIAGNOSTIC,92082,$85.00
+Endothelial Cell Count,DIAGNOSTIC,65210,$85.00
+Fundus Photography,DIAGNOSTIC,92025,$80.00
+Serial Tonometry,DIAGNOSTIC,92025,$80.00
+Visual Field (Limited),DIAGNOSTIC,92081,$75.00
+OCT ONH (Optic Nerve),DIAGNOSTIC,92133,$65.00
+OCT Retina,DIAGNOSTIC,92133,$65.00
+Corneal Topography,DIAGNOSTIC,92025,$49.00
+Corneal Thickness (Pachymetry),DIAGNOSTIC,76514,$40.00
+Gonioscopy,DIAGNOSTIC,92020,$40.00
+Optomap,DIAGNOSTIC,92286,$39.00
+External Photos,DIAGNOSTIC,92025,$29.00
+iWellness Screening,DIAGNOSTIC,92070,$19.00
+CL Fitting - Ortho-K,CONTACT_LENS_FIT,92310,$2200.00
+CL Fitting - MiSight,CONTACT_LENS_FIT,92310,$1600.00
+CL Fitting - Specialty CL,CONTACT_LENS_FIT,92310,$750.00
+CL Fitting - RGP,CONTACT_LENS_FIT,92310,$350.00
+CL Fitting - Multifocal Soft Lens,CONTACT_LENS_FIT,92310,$145.00
+CL Fitting - Monovision,CONTACT_LENS_FIT,92310,$115.00
+CL Fitting - Toric,CONTACT_LENS_FIT,92310,$100.00
+CL Fitting - Sphere,CONTACT_LENS_FIT,92310,$75.00
+Dilation of Punctum,PROCEDURE,68840,$165.00
+Sensorimotor Exam,PROCEDURE,92002,$125.00
+Chalazion Excision (Single),PROCEDURE,92316,$125.00
+Removal Corneal Epithelium,PROCEDURE,65435,$110.00
+Epilation,PROCEDURE,92229,$95.00
+Subconjunctival Injection,PROCEDURE,65210,$85.00
+Foreign Body Removal (Conj),PROCEDURE,65222,$85.00
+Foreign Body Removal (Corneal),PROCEDURE,65222,$85.00
+Color Vision Exam,PROCEDURE,92283,$75.00
+Orthoptic Training,PROCEDURE,S9986,$39.00
+Punctum Closure (Punctal Plug),PROCEDURE,S9986,$39.00
+Unlisted Ophth Service,OTHER,92499,$95.00
+Telescopic Low Vision Aid Fitting,FITTING,92283,$75.00
+Spectacle Repair & Refitting,SPECTACLE_SERVICE,,$35.00

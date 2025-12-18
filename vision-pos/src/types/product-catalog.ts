@@ -207,6 +207,7 @@ export interface QuoteLineItem {
   savings: number
   tierUsed?: string  // e.g., "tier_4", "III", "FA"
   notes?: string     // e.g., "80% of U&C applied", "Frame overage: $50"
+  needsTierAssignment?: boolean  // True if using fallback pricing (80% retail)
 }
 
 export interface QuoteResult {

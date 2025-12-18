@@ -12,7 +12,12 @@ import { useQuotePricingContext } from '@/contexts/quote-pricing-context'
 interface Product {
   id: string
   name: string
-  price: number
+  price: number                    // Retail price
+  customerPrice?: number | null    // Patient pays from price list (null = needs pricing)
+  insuranceSavings?: number        // How much insurance covers
+  tier?: string | null             // Insurance tier code
+  needsPricing?: boolean           // True if no price mapping exists
+  hasCustomPrice?: boolean         // True if manually overridden
   notes?: string
   sku?: string
   manufacturer?: string
@@ -60,6 +65,7 @@ export function EyeglassesLayerSimple({ className, onNext, onBack }: EyeglassesL
 
   // Pricing context for real-time insurance calculations
   const {
+    customerId,
     addItem,
     removeItem,
     getItemPricing,
@@ -71,6 +77,8 @@ export function EyeglassesLayerSimple({ className, onNext, onBack }: EyeglassesL
     contactLenses,
     materialsConflict,
     usesMaterialsAllowance,
+    eyeglassesSelections,
+    updateEyeglassesSelections,
   } = useQuotePricingContext()
 
   // Check if glasses benefit is getting the insurance allowance
@@ -84,23 +92,54 @@ export function EyeglassesLayerSimple({ className, onNext, onBack }: EyeglassesL
   // Products from database
   const [products, setProducts] = useState<ProductsData | null>(null)
 
-  // State for selections
-  const [frame, setFrame] = useState<string | null>(null)
-  const [lensType, setLensType] = useState<string | null>(null)
-  const [lensMaterial, setLensMaterial] = useState<string | null>(null)
-  const [arCoating, setArCoating] = useState<string | null>(null)
-  const [transitions, setTransitions] = useState<string | null>(null)
-  const [polarized, setPolarized] = useState<string | null>(null)
-  const [mountFee, setMountFee] = useState<string | null>(null)
-  const [addons, setAddons] = useState<string[]>([])
-  const [techAddon, setTechAddon] = useState<string | null>(null)  // VSP tech addon
+  // State for selections - initialized from context
+  const [frame, setFrame] = useState<string | null>(eyeglassesSelections.frame)
+  const [lensType, setLensType] = useState<string | null>(eyeglassesSelections.lensType)
+  const [lensMaterial, setLensMaterial] = useState<string | null>(eyeglassesSelections.lensMaterial)
+  const [arCoating, setArCoating] = useState<string | null>(eyeglassesSelections.arCoating)
+  const [transitions, setTransitions] = useState<string | null>(eyeglassesSelections.transitions)
+  const [polarized, setPolarized] = useState<string | null>(eyeglassesSelections.polarized)
+  const [mountFee, setMountFee] = useState<string | null>(eyeglassesSelections.mountFee)
+  const [addons, setAddons] = useState<string[]>(eyeglassesSelections.addons)
+  const [techAddon, setTechAddon] = useState<string | null>(eyeglassesSelections.techAddon)  // VSP tech addon
+  const [prismDiopters, setPrismDiopters] = useState<number>(1)  // Prism amount (per diopter pricing)
 
-  // Frame search state
+  // Track the actual SKUs added to the Map for reliable removal
+  // This ensures we always remove the correct item even if product lookup fails
+  const [addedSkus, setAddedSkus] = useState<{
+    lensType?: string
+    lensMaterial?: string
+    arCoating?: string
+    transitions?: string
+    polarized?: string
+    mountFee?: string
+  }>({})
+
+  // Frame search state - initialize selectedFrame from context
   const [frameSearch, setFrameSearch] = useState('')
   const [frameSearchResults, setFrameSearchResults] = useState<FrameResult[]>([])
   const [frameSearchLoading, setFrameSearchLoading] = useState(false)
-  const [selectedFrame, setSelectedFrame] = useState<FrameResult | null>(null)
-  const [isPatientOwnedFrame, setIsPatientOwnedFrame] = useState(false)
+  const [selectedFrame, setSelectedFrame] = useState<FrameResult | null>(
+    eyeglassesSelections.selectedFrame as FrameResult | null
+  )
+  const [isPatientOwnedFrame, setIsPatientOwnedFrame] = useState(eyeglassesSelections.isPatientOwnedFrame)
+
+  // Sync selections to context whenever they change
+  useEffect(() => {
+    updateEyeglassesSelections({
+      frame,
+      selectedFrame: selectedFrame as any,
+      isPatientOwnedFrame,
+      lensType,
+      lensMaterial,
+      arCoating,
+      transitions,
+      polarized,
+      mountFee,
+      addons,
+      techAddon,
+    })
+  }, [frame, selectedFrame, isPatientOwnedFrame, lensType, lensMaterial, arCoating, transitions, polarized, mountFee, addons, techAddon, updateEyeglassesSelections])
 
   // Get existing eyeglasses items from pricing context
   const existingEyeglassItems = useMemo(() => {
@@ -111,6 +150,19 @@ export function EyeglassesLayerSimple({ className, onNext, onBack }: EyeglassesL
       item.category === 'addon'
     )
   }, [pricedItems])
+
+  // Calculate eyeglasses-specific totals (NOT including exams or contacts)
+  const eyeglassesSummary = useMemo(() => {
+    const retailTotal = existingEyeglassItems.reduce((sum, item) => sum + item.retailPrice, 0)
+    const patientTotal = existingEyeglassItems.reduce((sum, item) => sum + item.patientPays, 0)
+    const insuranceTotal = existingEyeglassItems.reduce((sum, item) => sum + item.insurancePays, 0)
+    return {
+      retailTotal,
+      patientTotal,
+      insuranceTotal,
+      totalSavings: insuranceTotal,
+    }
+  }, [existingEyeglassItems])
 
   // Helper to add product to pricing context
   const addProductToQuote = useCallback((product: Product, category: 'frame' | 'lens' | 'coating' | 'addon') => {
@@ -130,32 +182,53 @@ export function EyeglassesLayerSimple({ className, onNext, onBack }: EyeglassesL
     removeItem(productId)
   }, [removeItem])
 
-  // Fetch products from API
+  // Customer info from price list API
+  const [customerPriceInfo, setCustomerPriceInfo] = useState<{
+    hasPriceList: boolean
+    carrier: string | null
+    productsNeedingPricing: number
+  } | null>(null)
+
+  // Fetch products from API - include customerId for price list integration
   useEffect(() => {
     async function fetchProducts() {
       try {
         setLoading(true)
-        const response = await fetch('/api/quote-builder/products')
+        // Build URL with customerId if available
+        const url = customerId
+          ? `/api/quote-builder/products?customerId=${encodeURIComponent(customerId)}`
+          : '/api/quote-builder/products'
+
+        const response = await fetch(url)
         const data = await response.json()
 
         if (data.success) {
-          // Add "None" option to transitions and polarized if not present
+          // Add "None" option to transitions and polarized at the end
           const productsWithNone: ProductsData = {
             ...data.products,
             transitions: [
-              { id: 'none', name: 'None', price: 0 },
-              ...(data.products.transitions || [])
+              ...(data.products.transitions || []),
+              { id: 'none', name: 'None', price: 0 }
             ],
             polarized: [
-              { id: 'none', name: 'None', price: 0 },
-              ...(data.products.polarized || [])
+              ...(data.products.polarized || []),
+              { id: 'none', name: 'None', price: 0 }
             ],
             arCoating: [
-              { id: 'opt-out', name: 'Opt out', price: 0 },
-              ...(data.products.arCoating || [])
+              ...(data.products.arCoating || []),
+              { id: 'opt-out', name: 'No Charge', price: 0 }
             ]
           }
           setProducts(productsWithNone)
+
+          // Store customer price info if available
+          if (data.customer) {
+            setCustomerPriceInfo({
+              hasPriceList: data.customer.hasPriceList,
+              carrier: data.customer.carrier,
+              productsNeedingPricing: data.customer.productsNeedingPricing
+            })
+          }
         } else {
           setError('Failed to load products')
         }
@@ -168,51 +241,45 @@ export function EyeglassesLayerSimple({ className, onNext, onBack }: EyeglassesL
     }
 
     fetchProducts()
-  }, [])
+  }, [customerId])  // Re-fetch when customer changes
 
-  // Initialize selections from existing pricing context items when products load
+  // Mark as initialized once products are loaded
+  // Also initialize addedSkus from existing selections to ensure proper removal tracking
   useEffect(() => {
-    if (!products || hasInitialized || existingEyeglassItems.length === 0) return
+    if (products && !hasInitialized) {
+      // Initialize addedSkus from existing selections
+      const initialSkus: typeof addedSkus = {}
 
-    // Find and restore existing selections
-    const existingSkus = existingEyeglassItems.map(item => item.sku)
+      if (lensType) {
+        const product = products.lensType?.find(p => p.id === lensType)
+        if (product) initialSkus.lensType = product.sku || product.id
+      }
+      if (lensMaterial) {
+        const product = products.lensMaterial?.find(p => p.id === lensMaterial)
+        if (product) initialSkus.lensMaterial = product.sku || product.id
+      }
+      if (arCoating) {
+        const product = products.arCoating?.find(p => p.id === arCoating)
+        if (product) initialSkus.arCoating = product.sku || product.id
+      }
+      if (transitions && transitions !== 'none') {
+        const product = products.transitions?.find(p => p.id === transitions)
+        if (product) initialSkus.transitions = product.sku || product.id
+      }
+      if (polarized && polarized !== 'none') {
+        const product = products.polarized?.find(p => p.id === polarized)
+        if (product) initialSkus.polarized = product.sku || product.id
+      }
+      if (mountFee) {
+        const product = products.mountFee?.find(p => p.id === mountFee)
+        if (product) initialSkus.mountFee = product.sku || product.id
+      }
 
-    // Restore frame selection
-    const existingFrame = products.frames?.find(p => existingSkus.includes(p.sku || p.id))
-    if (existingFrame) setFrame(existingFrame.id)
-
-    // Restore lens type selection
-    const existingLensType = products.lensType?.find(p => existingSkus.includes(p.sku || p.id))
-    if (existingLensType) setLensType(existingLensType.id)
-
-    // Restore lens material selection
-    const existingLensMaterial = products.lensMaterial?.find(p => existingSkus.includes(p.sku || p.id))
-    if (existingLensMaterial) setLensMaterial(existingLensMaterial.id)
-
-    // Restore AR coating selection
-    const existingArCoating = products.arCoating?.find(p => existingSkus.includes(p.sku || p.id))
-    if (existingArCoating) setArCoating(existingArCoating.id)
-
-    // Restore transitions selection
-    const existingTransitions = products.transitions?.find(p => existingSkus.includes(p.sku || p.id))
-    if (existingTransitions) setTransitions(existingTransitions.id)
-
-    // Restore polarized selection
-    const existingPolarized = products.polarized?.find(p => existingSkus.includes(p.sku || p.id))
-    if (existingPolarized) setPolarized(existingPolarized.id)
-
-    // Restore mount fee selection
-    const existingMountFee = products.mountFee?.find(p => existingSkus.includes(p.sku || p.id))
-    if (existingMountFee) setMountFee(existingMountFee.id)
-
-    // Restore addons (multiple selection)
-    const existingAddons = products.addons?.filter(p => existingSkus.includes(p.sku || p.id))
-    if (existingAddons && existingAddons.length > 0) {
-      setAddons(existingAddons.map(a => a.id))
+      setAddedSkus(initialSkus)
+      setHasInitialized(true)
     }
-
-    setHasInitialized(true)
-  }, [products, existingEyeglassItems, hasInitialized])
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [products, hasInitialized])
 
   const toggleAddon = (id: string) => {
     setAddons(prev =>
@@ -287,6 +354,7 @@ export function EyeglassesLayerSimple({ className, onNext, onBack }: EyeglassesL
     setMountFee(null)
     setAddons([])
     setTechAddon(null)  // Clear VSP tech addon
+    setAddedSkus({})  // Clear SKU tracking
     // Clear all eyeglasses items from pricing context
     clearItemsByCategory('frame')
     clearItemsByCategory('lens')
@@ -417,10 +485,11 @@ export function EyeglassesLayerSimple({ className, onNext, onBack }: EyeglassesL
   }
 
   const handleLensTypeSelect = (product: Product) => {
-    // Remove old selection
-    if (lensType && products?.lensType) {
-      const oldProduct = products.lensType.find(p => p.id === lensType)
-      if (oldProduct) removeProductFromQuote(oldProduct.sku || oldProduct.id)
+    const newSku = product.sku || product.id
+
+    // Remove old selection using tracked SKU (more reliable than product lookup)
+    if (addedSkus.lensType) {
+      removeProductFromQuote(addedSkus.lensType)
     }
 
     // Remove old tech addon if any
@@ -430,6 +499,7 @@ export function EyeglassesLayerSimple({ className, onNext, onBack }: EyeglassesL
     }
 
     setLensType(product.id)
+    setAddedSkus(prev => ({ ...prev, lensType: newSku }))
     addProductToQuote(product, 'lens')
 
     // Auto-add VSP tech addon based on lens pricing category
@@ -463,61 +533,148 @@ export function EyeglassesLayerSimple({ className, onNext, onBack }: EyeglassesL
   }
 
   const handleLensMaterialSelect = (product: Product) => {
-    if (lensMaterial && products?.lensMaterial) {
-      const oldProduct = products.lensMaterial.find(p => p.id === lensMaterial)
-      if (oldProduct) removeProductFromQuote(oldProduct.sku || oldProduct.id)
+    const newSku = product.sku || product.id
+
+    // Remove old selection using tracked SKU
+    if (addedSkus.lensMaterial) {
+      removeProductFromQuote(addedSkus.lensMaterial)
     }
+
     setLensMaterial(product.id)
+    setAddedSkus(prev => ({ ...prev, lensMaterial: newSku }))
     addProductToQuote(product, 'lens')
   }
 
   const handleArCoatingSelect = (product: Product) => {
-    if (arCoating && products?.arCoating) {
-      const oldProduct = products.arCoating.find(p => p.id === arCoating)
-      if (oldProduct) removeProductFromQuote(oldProduct.sku || oldProduct.id)
+    const newSku = product.sku || product.id
+
+    // Remove old selection using tracked SKU
+    if (addedSkus.arCoating) {
+      removeProductFromQuote(addedSkus.arCoating)
     }
+
     setArCoating(product.id)
+    setAddedSkus(prev => ({ ...prev, arCoating: newSku }))
     addProductToQuote(product, 'coating')
   }
 
   const handleTransitionsSelect = (product: Product) => {
-    if (transitions && products?.transitions) {
-      const oldProduct = products.transitions.find(p => p.id === transitions)
-      if (oldProduct) removeProductFromQuote(oldProduct.sku || oldProduct.id)
+    const newSku = product.sku || product.id
+
+    // Remove old transitions selection using tracked SKU
+    if (addedSkus.transitions) {
+      removeProductFromQuote(addedSkus.transitions)
     }
+
     setTransitions(product.id)
+
+    // Transitions and Polarized are mutually exclusive (can't have both)
+    // If selecting an actual transitions product (not "None"), clear polarized
+    if (product.id !== 'none' && addedSkus.polarized) {
+      removeProductFromQuote(addedSkus.polarized)
+      setAddedSkus(prev => ({ ...prev, polarized: undefined }))
+      setPolarized(null)
+    }
+
+    // Track the new SKU (or clear if "none")
+    if (product.id !== 'none') {
+      setAddedSkus(prev => ({ ...prev, transitions: newSku }))
+    } else {
+      setAddedSkus(prev => ({ ...prev, transitions: undefined }))
+    }
+
     addProductToQuote(product, 'coating')
   }
 
   const handlePolarizedSelect = (product: Product) => {
-    if (polarized && products?.polarized) {
-      const oldProduct = products.polarized.find(p => p.id === polarized)
-      if (oldProduct) removeProductFromQuote(oldProduct.sku || oldProduct.id)
+    const newSku = product.sku || product.id
+
+    // Remove old polarized selection using tracked SKU
+    if (addedSkus.polarized) {
+      removeProductFromQuote(addedSkus.polarized)
     }
+
     setPolarized(product.id)
+
+    // Polarized and Transitions are mutually exclusive (can't have both)
+    // If selecting an actual polarized product (not "None"), clear transitions
+    if (product.id !== 'none' && addedSkus.transitions) {
+      removeProductFromQuote(addedSkus.transitions)
+      setAddedSkus(prev => ({ ...prev, transitions: undefined }))
+      setTransitions(null)
+    }
+
+    // Track the new SKU (or clear if "none")
+    if (product.id !== 'none') {
+      setAddedSkus(prev => ({ ...prev, polarized: newSku }))
+    } else {
+      setAddedSkus(prev => ({ ...prev, polarized: undefined }))
+    }
+
     addProductToQuote(product, 'coating')
   }
 
   const handleMountFeeSelect = (product: Product) => {
-    if (mountFee && products?.mountFee) {
-      const oldProduct = products.mountFee.find(p => p.id === mountFee)
-      if (oldProduct) removeProductFromQuote(oldProduct.sku || oldProduct.id)
+    const newSku = product.sku || product.id
+
+    // Remove old selection using tracked SKU
+    if (addedSkus.mountFee) {
+      removeProductFromQuote(addedSkus.mountFee)
     }
+
     setMountFee(product.id)
+    setAddedSkus(prev => ({ ...prev, mountFee: newSku }))
     addProductToQuote(product, 'addon')
   }
 
   const handleAddonToggle = (product: Product) => {
+    const isPrism = product.id === 'preferred-prism' || product.name.toLowerCase().includes('prism (per diopter)')
+
     if (addons.includes(product.id)) {
       setAddons(prev => prev.filter(a => a !== product.id))
       removeProductFromQuote(product.sku || product.id)
+      if (isPrism) {
+        setPrismDiopters(1)  // Reset diopters when deselecting prism
+      }
     } else {
       setAddons(prev => [...prev, product.id])
-      addProductToQuote(product, 'addon')
+      if (isPrism) {
+        // For prism, add with quantity = diopters
+        addItem({
+          sku: product.sku || product.id,
+          displayName: `${product.name} (${prismDiopters} diopter${prismDiopters > 1 ? 's' : ''})`,
+          category: 'addon',
+          retailPrice: product.price * prismDiopters,
+          quantity: prismDiopters,
+        })
+      } else {
+        addProductToQuote(product, 'addon')
+      }
+    }
+  }
+
+  // Handle prism diopter change
+  const handlePrismDioptersChange = (newDiopters: number, product: Product) => {
+    if (newDiopters < 1) newDiopters = 1
+    if (newDiopters > 20) newDiopters = 20
+    setPrismDiopters(newDiopters)
+
+    // Update the quote with new quantity
+    if (addons.includes(product.id)) {
+      // Remove old entry and add new one with updated quantity
+      removeProductFromQuote(product.sku || product.id)
+      addItem({
+        sku: product.sku || product.id,
+        displayName: `${product.name} (${newDiopters} diopter${newDiopters > 1 ? 's' : ''})`,
+        category: 'addon',
+        retailPrice: product.price * newDiopters,
+        quantity: newDiopters,
+      })
     }
   }
 
   // Get insurance pricing for a product
+  // Priority: 1) Pre-computed price from price list, 2) Real-time calculated price
   const getInsurancePricing = (productId: string) => {
     const pricing = getItemPricing(productId)
     if (pricing && authorization) {
@@ -528,6 +685,41 @@ export function EyeglassesLayerSimple({ className, onNext, onBack }: EyeglassesL
       }
     }
     return null
+  }
+
+  // Get the display price for a product - uses price list when available
+  const getProductDisplayPrice = (product: Product): {
+    patientPays: number | null
+    retailPrice: number
+    insuranceSavings: number
+    needsPricing: boolean
+    hasCustomPrice: boolean
+    hasPriceListEntry: boolean
+    tier: string | null
+  } => {
+    // If product has pre-computed price from price list, use it
+    if (product.customerPrice !== undefined) {
+      return {
+        patientPays: product.customerPrice,
+        retailPrice: product.price,
+        insuranceSavings: product.insuranceSavings ?? 0,
+        needsPricing: product.needsPricing ?? false,
+        hasCustomPrice: product.hasCustomPrice ?? false,
+        hasPriceListEntry: true,
+        tier: product.tier ?? null
+      }
+    }
+
+    // No price list entry - return retail price
+    return {
+      patientPays: null,
+      retailPrice: product.price,
+      insuranceSavings: 0,
+      needsPricing: customerPriceInfo?.hasPriceList ?? false,  // Need pricing if customer has other products priced
+      hasCustomPrice: false,
+      hasPriceListEntry: false,
+      tier: null
+    }
   }
 
   if (loading) {
@@ -814,10 +1006,13 @@ export function EyeglassesLayerSimple({ className, onNext, onBack }: EyeglassesL
             <CardTitle className="text-lg text-white flex items-center justify-between">
               <span>Step 2: Select Lens Type</span>
               {authorization && (
-                <Badge className="bg-blue-500/30 text-blue-300 border-blue-400/50">
-                  <Shield className="h-3 w-3 mr-1" />
-                  {authorization.materialsCopay ? `$${authorization.materialsCopay} Copay` : 'Covered'}
-                </Badge>
+                <div className="flex items-center gap-2 bg-blue-500/30 border border-blue-400/50 rounded-lg px-4 py-2">
+                  <Shield className="h-5 w-5 text-blue-400" />
+                  <span className="text-2xl font-bold text-blue-300">
+                    {authorization.materialsCopay ? `$${authorization.materialsCopay}` : 'Covered'}
+                  </span>
+                  <span className="text-sm text-blue-300/70">copay</span>
+                </div>
               )}
             </CardTitle>
           </CardHeader>
@@ -826,6 +1021,7 @@ export function EyeglassesLayerSimple({ className, onNext, onBack }: EyeglassesL
             <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
               {products.lensType?.filter(p => !p.name.toLowerCase().includes('neurolens')).map((product) => {
                 const insurancePricing = getInsurancePricing(product.sku || product.id)
+                const priceListInfo = getProductDisplayPrice(product)
                 const isSelected = lensType === product.id
                 return (
                   <button
@@ -834,7 +1030,9 @@ export function EyeglassesLayerSimple({ className, onNext, onBack }: EyeglassesL
                     className={`relative p-5 rounded-lg border-2 transition-all text-left ${
                       isSelected
                         ? 'border-blue-400 bg-blue-500/30'
-                        : 'border-white/20 hover:border-white/40 bg-white/10'
+                        : priceListInfo.needsPricing
+                          ? 'border-yellow-400/50 hover:border-yellow-400 bg-yellow-500/10'
+                          : 'border-white/20 hover:border-white/40 bg-white/10'
                     }`}
                   >
                     {isSelected && (
@@ -844,11 +1042,45 @@ export function EyeglassesLayerSimple({ className, onNext, onBack }: EyeglassesL
                         </div>
                       </div>
                     )}
+                    {/* Show tier badge if from price list */}
+                    {priceListInfo.tier && (
+                      <div className="absolute top-3 left-3">
+                        <Badge className="bg-blue-500/30 text-blue-300 text-xs border-blue-400/50">
+                          {priceListInfo.tier}
+                        </Badge>
+                      </div>
+                    )}
                     <div className="text-lg font-semibold mb-1 text-white">{product.name}</div>
                     {product.notes && (
                       <div className="text-xs text-yellow-400 mb-2">{product.notes}</div>
                     )}
-                    {authorization ? (
+                    {/* Price List pricing (pre-computed) */}
+                    {priceListInfo.hasPriceListEntry ? (
+                      <div className="space-y-1">
+                        <div className="text-sm text-white/60 line-through">
+                          {formatPrice(priceListInfo.retailPrice)}
+                        </div>
+                        {priceListInfo.patientPays !== null ? (
+                          <div className="text-2xl font-bold text-emerald-400">
+                            {formatPrice(priceListInfo.patientPays)}
+                            {priceListInfo.hasCustomPrice && (
+                              <span className="text-xs ml-2 text-purple-400">(custom)</span>
+                            )}
+                          </div>
+                        ) : (
+                          <div className="text-lg font-bold text-yellow-400">
+                            <AlertTriangle className="h-4 w-4 inline mr-1" />
+                            Needs pricing
+                          </div>
+                        )}
+                        {priceListInfo.insuranceSavings > 0 && (
+                          <div className="text-xs text-emerald-400">
+                            Saves: {formatPrice(priceListInfo.insuranceSavings)}
+                          </div>
+                        )}
+                      </div>
+                    ) : authorization ? (
+                      /* Real-time pricing fallback */
                       <div className="space-y-1">
                         <div className="text-sm text-white/60 line-through">
                           {formatPrice(product.price)}
@@ -868,17 +1100,12 @@ export function EyeglassesLayerSimple({ className, onNext, onBack }: EyeglassesL
                         {formatPrice(product.price)}
                       </div>
                     )}
-                    {/* Show insurance pricing breakdown if selected */}
-                    {isSelected && insurancePricing && (
+                    {/* Show insurance pricing breakdown if selected (real-time) */}
+                    {isSelected && insurancePricing && !priceListInfo.hasPriceListEntry && (
                       <div className="mt-2 pt-2 border-t border-white/20 space-y-1">
                         <div className="text-xs text-emerald-400">
-                          Insurance pays: {formatPrice(insurancePricing.insurancePays)}
+                          Insurance saves: {formatPrice(insurancePricing.insurancePays)}
                         </div>
-                        {insurancePricing.savings > 0 && (
-                          <div className="text-xs text-emerald-300">
-                            You save: {formatPrice(insurancePricing.savings)}
-                          </div>
-                        )}
                       </div>
                     )}
                   </button>
@@ -888,11 +1115,11 @@ export function EyeglassesLayerSimple({ className, onNext, onBack }: EyeglassesL
 
             {/* Neurolens Section */}
             {products.lensType?.some(p => p.name.toLowerCase().includes('neurolens')) && (
-              <div className="mt-6 pt-4 border-t border-amber-500/30">
+              <div className="mt-6 pt-4 border-t border-cyan-500/30">
                 <div className="flex items-center gap-2 mb-4">
-                  <div className="h-6 w-1 bg-amber-500 rounded-full"></div>
-                  <span className="text-amber-400 font-semibold text-sm uppercase tracking-wide">Neurolens</span>
-                  <span className="text-amber-400/60 text-xs">(Cash Pay Only)</span>
+                  <div className="h-6 w-1 bg-cyan-500 rounded-full"></div>
+                  <span className="text-cyan-400 font-semibold text-sm uppercase tracking-wide">Neurolens</span>
+                  <span className="text-cyan-400/60 text-xs">(Cash Pay Only)</span>
                 </div>
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                   {products.lensType?.filter(p => p.name.toLowerCase().includes('neurolens')).map((product) => {
@@ -904,20 +1131,20 @@ export function EyeglassesLayerSimple({ className, onNext, onBack }: EyeglassesL
                         onClick={() => handleLensTypeSelect(product)}
                         className={`relative p-5 rounded-lg border-2 transition-all text-left ${
                           isSelected
-                            ? 'border-amber-400 bg-amber-500/30'
-                            : 'border-amber-500/30 hover:border-amber-400/50 bg-amber-500/10'
+                            ? 'border-cyan-400 bg-cyan-500/30'
+                            : 'border-cyan-500/30 hover:border-cyan-400/50 bg-cyan-500/10'
                         }`}
                       >
                         {isSelected && (
                           <div className="absolute top-3 right-3">
-                            <div className="bg-amber-500 rounded-full p-1">
+                            <div className="bg-cyan-500 rounded-full p-1">
                               <Check className="h-4 w-4 text-white" />
                             </div>
                           </div>
                         )}
                         <div className="text-lg font-semibold mb-1 text-white">{product.name}</div>
-                        <div className="text-xs text-amber-400 mb-2">Cash pay only - no vision plans</div>
-                        <div className="text-2xl font-bold text-amber-400">
+                        <div className="text-xs text-cyan-400 mb-2">Cash pay only - no vision plans</div>
+                        <div className="text-2xl font-bold text-cyan-400">
                           {formatPrice(product.price)}
                         </div>
                       </button>
@@ -1001,7 +1228,7 @@ export function EyeglassesLayerSimple({ className, onNext, onBack }: EyeglassesL
                     {isSelected && insurancePricing && insurancePricing.savings > 0 && (
                       <div className="mt-2 pt-2 border-t border-white/20">
                         <div className="text-xs text-emerald-400">
-                          Insurance pays: {formatPrice(insurancePricing.insurancePays)}
+                          Insurance saves: {formatPrice(insurancePricing.insurancePays)}
                         </div>
                       </div>
                     )}
@@ -1024,6 +1251,7 @@ export function EyeglassesLayerSimple({ className, onNext, onBack }: EyeglassesL
             <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
               {products.arCoating?.filter(p => !p.name.toLowerCase().includes('neurolens')).map((product) => {
                 const insurancePricing = getInsurancePricing(product.sku || product.id)
+                const priceListInfo = getProductDisplayPrice(product)
                 const isSelected = arCoating === product.id
                 return (
                   <button
@@ -1032,7 +1260,9 @@ export function EyeglassesLayerSimple({ className, onNext, onBack }: EyeglassesL
                     className={`relative p-5 rounded-lg border-2 transition-all text-left ${
                       isSelected
                         ? 'border-orange-400 bg-orange-500/30'
-                        : 'border-white/20 hover:border-white/40 bg-white/10'
+                        : priceListInfo.needsPricing
+                          ? 'border-yellow-400/50 hover:border-yellow-400 bg-yellow-500/10'
+                          : 'border-white/20 hover:border-white/40 bg-white/10'
                     }`}
                   >
                     {isSelected && (
@@ -1042,11 +1272,44 @@ export function EyeglassesLayerSimple({ className, onNext, onBack }: EyeglassesL
                         </div>
                       </div>
                     )}
+                    {/* Show tier badge if from price list */}
+                    {priceListInfo.tier && (
+                      <div className="absolute top-3 left-3">
+                        <Badge className="bg-orange-500/30 text-orange-300 text-xs border-orange-400/50">
+                          {priceListInfo.tier}
+                        </Badge>
+                      </div>
+                    )}
                     <div className="text-lg font-semibold mb-1 text-white">{product.name}</div>
                     {product.notes && (
                       <div className="text-xs text-yellow-400 mb-2">{product.notes}</div>
                     )}
-                    {product.price === 0 ? (
+                    {/* Price List pricing (pre-computed) */}
+                    {priceListInfo.hasPriceListEntry ? (
+                      <div className="space-y-1">
+                        <div className="text-sm text-white/60 line-through">
+                          {formatPrice(priceListInfo.retailPrice)}
+                        </div>
+                        {priceListInfo.patientPays !== null ? (
+                          <div className="text-2xl font-bold text-emerald-400">
+                            {formatPrice(priceListInfo.patientPays)}
+                            {priceListInfo.hasCustomPrice && (
+                              <span className="text-xs ml-2 text-purple-400">(custom)</span>
+                            )}
+                          </div>
+                        ) : (
+                          <div className="text-lg font-bold text-yellow-400">
+                            <AlertTriangle className="h-4 w-4 inline mr-1" />
+                            Needs pricing
+                          </div>
+                        )}
+                        {priceListInfo.insuranceSavings > 0 && (
+                          <div className="text-xs text-emerald-400">
+                            Saves: {formatPrice(priceListInfo.insuranceSavings)}
+                          </div>
+                        )}
+                      </div>
+                    ) : product.price === 0 ? (
                       <div className="text-2xl font-bold text-orange-400">No charge</div>
                     ) : authorization ? (
                       <div className="space-y-1">
@@ -1068,11 +1331,11 @@ export function EyeglassesLayerSimple({ className, onNext, onBack }: EyeglassesL
                         {formatPrice(product.price)}
                       </div>
                     )}
-                    {/* Show insurance savings if selected */}
-                    {isSelected && insurancePricing && insurancePricing.savings > 0 && (
+                    {/* Show insurance savings if selected (real-time fallback) */}
+                    {isSelected && insurancePricing && !priceListInfo.hasPriceListEntry && insurancePricing.savings > 0 && (
                       <div className="mt-2 pt-2 border-t border-white/20">
                         <div className="text-xs text-emerald-400">
-                          Insurance pays: {formatPrice(insurancePricing.insurancePays)}
+                          Insurance saves: {formatPrice(insurancePricing.insurancePays)}
                         </div>
                       </div>
                     )}
@@ -1083,11 +1346,11 @@ export function EyeglassesLayerSimple({ className, onNext, onBack }: EyeglassesL
 
             {/* Neurolens AR Section */}
             {products.arCoating?.some(p => p.name.toLowerCase().includes('neurolens')) && (
-              <div className="mt-6 pt-4 border-t border-amber-500/30">
+              <div className="mt-6 pt-4 border-t border-cyan-500/30">
                 <div className="flex items-center gap-2 mb-4">
-                  <div className="h-6 w-1 bg-amber-500 rounded-full"></div>
-                  <span className="text-amber-400 font-semibold text-sm uppercase tracking-wide">Neurolens AR</span>
-                  <span className="text-amber-400/60 text-xs">(Cash Pay Only)</span>
+                  <div className="h-6 w-1 bg-cyan-500 rounded-full"></div>
+                  <span className="text-cyan-400 font-semibold text-sm uppercase tracking-wide">Neurolens AR</span>
+                  <span className="text-cyan-400/60 text-xs">(Cash Pay Only)</span>
                 </div>
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                   {products.arCoating?.filter(p => p.name.toLowerCase().includes('neurolens')).map((product) => {
@@ -1098,20 +1361,20 @@ export function EyeglassesLayerSimple({ className, onNext, onBack }: EyeglassesL
                         onClick={() => handleArCoatingSelect(product)}
                         className={`relative p-5 rounded-lg border-2 transition-all text-left ${
                           isSelected
-                            ? 'border-amber-400 bg-amber-500/30'
-                            : 'border-amber-500/30 hover:border-amber-400/50 bg-amber-500/10'
+                            ? 'border-cyan-400 bg-cyan-500/30'
+                            : 'border-cyan-500/30 hover:border-cyan-400/50 bg-cyan-500/10'
                         }`}
                       >
                         {isSelected && (
                           <div className="absolute top-3 right-3">
-                            <div className="bg-amber-500 rounded-full p-1">
+                            <div className="bg-cyan-500 rounded-full p-1">
                               <Check className="h-4 w-4 text-white" />
                             </div>
                           </div>
                         )}
                         <div className="text-lg font-semibold mb-1 text-white">{product.name}</div>
-                        <div className="text-xs text-amber-400 mb-2">Cash pay only - no vision plans</div>
-                        <div className="text-2xl font-bold text-amber-400">
+                        <div className="text-xs text-cyan-400 mb-2">Cash pay only - no vision plans</div>
+                        <div className="text-2xl font-bold text-cyan-400">
                           {formatPrice(product.price)}
                         </div>
                       </button>
@@ -1179,7 +1442,7 @@ export function EyeglassesLayerSimple({ className, onNext, onBack }: EyeglassesL
                     {isSelected && insurancePricing && insurancePricing.savings > 0 && (
                       <div className="mt-2 pt-2 border-t border-white/20">
                         <div className="text-xs text-emerald-400">
-                          Insurance pays: {formatPrice(insurancePricing.insurancePays)}
+                          Insurance saves: {formatPrice(insurancePricing.insurancePays)}
                         </div>
                       </div>
                     )}
@@ -1246,7 +1509,7 @@ export function EyeglassesLayerSimple({ className, onNext, onBack }: EyeglassesL
                     {isSelected && insurancePricing && insurancePricing.savings > 0 && (
                       <div className="mt-2 pt-2 border-t border-white/20">
                         <div className="text-xs text-emerald-400">
-                          Insurance pays: {formatPrice(insurancePricing.insurancePays)}
+                          Insurance saves: {formatPrice(insurancePricing.insurancePays)}
                         </div>
                       </div>
                     )}
@@ -1313,7 +1576,7 @@ export function EyeglassesLayerSimple({ className, onNext, onBack }: EyeglassesL
                     {isSelected && insurancePricing && insurancePricing.savings > 0 && (
                       <div className="mt-2 pt-2 border-t border-white/20">
                         <div className="text-xs text-emerald-400">
-                          Insurance pays: {formatPrice(insurancePricing.insurancePays)}
+                          Insurance saves: {formatPrice(insurancePricing.insurancePays)}
                         </div>
                       </div>
                     )}
@@ -1336,15 +1599,17 @@ export function EyeglassesLayerSimple({ className, onNext, onBack }: EyeglassesL
               {products.addons?.map((product) => {
                 const insurancePricing = getInsurancePricing(product.sku || product.id)
                 const isSelected = addons.includes(product.id)
+                const isPrism = product.id === 'preferred-prism' || product.name.toLowerCase().includes('prism (per diopter)')
+                const displayPrice = isPrism ? product.price * prismDiopters : product.price
                 return (
-                  <button
+                  <div
                     key={product.id}
-                    onClick={() => handleAddonToggle(product)}
-                    className={`relative p-5 rounded-lg border-2 transition-all text-left ${
+                    className={`relative p-5 rounded-lg border-2 transition-all text-left cursor-pointer ${
                       isSelected
                         ? 'border-emerald-400 bg-emerald-500/30'
                         : 'border-white/20 hover:border-white/40 bg-white/10'
                     }`}
+                    onClick={() => !isPrism || !isSelected ? handleAddonToggle(product) : undefined}
                   >
                     {isSelected && (
                       <div className="absolute top-3 right-3">
@@ -1354,12 +1619,29 @@ export function EyeglassesLayerSimple({ className, onNext, onBack }: EyeglassesL
                       </div>
                     )}
                     <div className="text-lg font-semibold mb-2 text-white">{product.name}</div>
+
+                    {/* Prism diopter input */}
+                    {isPrism && isSelected && (
+                      <div className="mb-3 flex items-center gap-2" onClick={(e) => e.stopPropagation()}>
+                        <label className="text-sm text-white/70">Diopters:</label>
+                        <input
+                          type="number"
+                          min={1}
+                          max={20}
+                          value={prismDiopters}
+                          onChange={(e) => handlePrismDioptersChange(parseInt(e.target.value) || 1, product)}
+                          className="w-20 px-2 py-1 rounded bg-white/20 border border-white/30 text-white text-center focus:outline-none focus:border-emerald-400"
+                        />
+                        <span className="text-xs text-white/50">@ {formatPrice(product.price)}/diopter</span>
+                      </div>
+                    )}
+
                     {product.price === 0 ? (
                       <div className="text-2xl font-bold text-emerald-400">Included</div>
                     ) : authorization ? (
                       <div className="space-y-1">
                         <div className="text-sm text-white/60 line-through">
-                          +{formatPrice(product.price)}
+                          +{formatPrice(displayPrice)}
                         </div>
                         {isSelected && insurancePricing ? (
                           <div className="text-2xl font-bold text-emerald-400">
@@ -1373,18 +1655,31 @@ export function EyeglassesLayerSimple({ className, onNext, onBack }: EyeglassesL
                       </div>
                     ) : (
                       <div className="text-2xl font-bold text-emerald-400">
-                        +{formatPrice(product.price)}
+                        +{formatPrice(displayPrice)}
                       </div>
                     )}
                     {/* Show insurance savings if selected */}
                     {isSelected && insurancePricing && insurancePricing.savings > 0 && (
                       <div className="mt-2 pt-2 border-t border-white/20">
                         <div className="text-xs text-emerald-400">
-                          Insurance pays: {formatPrice(insurancePricing.insurancePays)}
+                          Insurance saves: {formatPrice(insurancePricing.insurancePays)}
                         </div>
                       </div>
                     )}
-                  </button>
+
+                    {/* Click to deselect for prism when already selected */}
+                    {isPrism && isSelected && (
+                      <button
+                        onClick={(e) => {
+                          e.stopPropagation()
+                          handleAddonToggle(product)
+                        }}
+                        className="mt-3 w-full text-xs text-red-400 hover:text-red-300 underline"
+                      >
+                        Remove Prism
+                      </button>
+                    )}
+                  </div>
                 )
               })}
             </div>
@@ -1400,29 +1695,24 @@ export function EyeglassesLayerSimple({ className, onNext, onBack }: EyeglassesL
               <div>
                 {authorization ? (
                   <>
-                    <div className="text-sm text-white/70 mb-1">Retail Total</div>
-                    <div className="text-xl text-white/60 line-through">{formatPrice(pricingSummary.retailTotal)}</div>
+                    <div className="text-sm text-white/70 mb-1">Eyeglasses Retail</div>
+                    <div className="text-xl text-white/60 line-through">{formatPrice(eyeglassesSummary.retailTotal)}</div>
                     <div className="flex items-center gap-3 mt-2">
                       <div>
-                        <div className="text-sm text-emerald-400">Insurance pays</div>
-                        <div className="text-lg font-semibold text-emerald-400">{formatPrice(pricingSummary.insuranceTotal)}</div>
+                        <div className="text-sm text-emerald-400">Insurance saves</div>
+                        <div className="text-lg font-semibold text-emerald-400">{formatPrice(eyeglassesSummary.insuranceTotal)}</div>
                       </div>
                       <div>
-                        <div className="text-sm text-amber-400">You pay</div>
+                        <div className="text-sm text-amber-400">Eyeglasses Total</div>
                         <div className="text-3xl font-bold text-amber-400">
                           {isCalculating ? (
                             <Loader2 className="h-6 w-6 animate-spin inline" />
                           ) : (
-                            formatPrice(pricingSummary.patientTotal)
+                            formatPrice(eyeglassesSummary.patientTotal)
                           )}
                         </div>
                       </div>
                     </div>
-                    {pricingSummary.totalSavings > 0 && (
-                      <div className="text-sm text-emerald-400 mt-1">
-                        You save {formatPrice(pricingSummary.totalSavings)} with insurance!
-                      </div>
-                    )}
                   </>
                 ) : (
                   <>

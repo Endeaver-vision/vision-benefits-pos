@@ -49,6 +49,46 @@ export interface NormalizationResult {
   errors: string[]
 }
 
+// =============================================================================
+// EXTENDED NORMALIZATION RESULT (includes new fields from schema)
+// =============================================================================
+
+export interface ExtendedNormalizationResult extends NormalizationResult {
+  // Provider info (for display, not pricing)
+  provider?: {
+    name: string | null
+    npi: string | null
+    locationAddress: string | null
+    dateOfService: string | null
+  }
+  // Restrictions
+  restrictions?: {
+    contactsOrGlasses: boolean  // Plan allows EITHER contacts OR glasses, not both
+    additionalGlassesAllowance: boolean
+  }
+  // VSP EasyOptions
+  easyOptions?: {
+    enabled: boolean
+    clUpgrade: number | null
+    frameUpgrade: number | null
+    arCovered: boolean
+    photoCovered: boolean
+    progCovered: boolean
+  }
+  // EyeMed declining balance
+  decliningBalance?: {
+    clStarting: number | null
+    clRemaining: number | null
+  }
+  // Family members on same plan
+  familyMembers?: Array<{
+    name: string
+    memberId: string
+    dateOfBirth: string | null
+    relationship?: string
+  }>
+}
+
 export interface NormalizationOptions {
   customerId?: string
   patientAge?: number
@@ -172,12 +212,105 @@ function parseRelationship(rel: string): 'self' | 'spouse' | 'child' | 'other' {
  * Extract frequency info common to all carriers
  */
 function extractFrequency(data: ExtractedInsuranceData): Frequency {
+  // Base frequency from frequency strings
+  const examFreq = parseFrequency(getValue(data.eligibility?.frequency?.examFrequency, null), 12)
+  const frameFreq = parseFrequency(getValue(data.eligibility?.frequency?.frameFrequency, null), 24)
+  const lensFreq = parseFrequency(getValue(data.eligibility?.frequency?.lensFrequency, null), 12)
+  const contactsFreq = parseFrequency(getValue(data.eligibility?.frequency?.contactsFrequency, null), 12)
+
+  // Add eligibility dates if available
+  const examEligDate = getValue(data.eligibility?.examEligibleDate, null)
+  const frameEligDate = getValue(data.eligibility?.frameEligibleDate, null)
+  const lensEligDate = getValue(data.eligibility?.lensEligibleDate, null)
+  const contactsEligDate = getValue(data.eligibility?.contactsEligibleDate, null)
+
+  if (examEligDate) examFreq.nextEligibleDate = examEligDate
+  if (frameEligDate) frameFreq.nextEligibleDate = frameEligDate
+  if (lensEligDate) lensFreq.nextEligibleDate = lensEligDate
+  if (contactsEligDate) contactsFreq.nextEligibleDate = contactsEligDate
+
   return {
-    exam: parseFrequency(getValue(data.eligibility?.frequency?.examFrequency, null), 12),
-    frame: parseFrequency(getValue(data.eligibility?.frequency?.frameFrequency, null), 24),
-    lenses: parseFrequency(getValue(data.eligibility?.frequency?.lensFrequency, null), 12),
-    contacts: parseFrequency(getValue(data.eligibility?.frequency?.contactsFrequency, null), 12),
+    exam: examFreq,
+    frame: frameFreq,
+    lenses: lensFreq,
+    contacts: contactsFreq,
   }
+}
+
+/**
+ * Extract provider info from extracted data
+ */
+function extractProvider(data: ExtractedInsuranceData): ExtendedNormalizationResult['provider'] {
+  if (!data.provider) return undefined
+
+  return {
+    name: getValue(data.provider.providerName, null),
+    npi: getValue(data.provider.providerNpi, null),
+    locationAddress: getValue(data.provider.locationAddress, null),
+    dateOfService: getValue(data.provider.dateOfService, null),
+  }
+}
+
+/**
+ * Extract restrictions from extracted data
+ */
+function extractRestrictions(data: ExtractedInsuranceData): ExtendedNormalizationResult['restrictions'] {
+  if (!data.eligibility?.restrictions) return undefined
+
+  return {
+    contactsOrGlasses: getValue(data.eligibility.restrictions.contactsOrGlasses, false) ?? false,
+    additionalGlassesAllowance: getValue(data.eligibility.restrictions.additionalGlassesAllowance, false) ?? false,
+  }
+}
+
+/**
+ * Extract VSP EasyOptions from extracted data
+ */
+function extractEasyOptions(data: ExtractedInsuranceData): ExtendedNormalizationResult['easyOptions'] {
+  if (!data.easyOptions) return undefined
+
+  const enabled = getValue(data.easyOptions.enabled, false)
+  if (!enabled) return undefined
+
+  return {
+    enabled: true,
+    clUpgrade: getValue(data.easyOptions.clUpgrade, null),
+    frameUpgrade: getValue(data.easyOptions.frameUpgrade, null),
+    arCovered: getValue(data.easyOptions.arCovered, false) ?? false,
+    photoCovered: getValue(data.easyOptions.photoCovered, false) ?? false,
+    progCovered: getValue(data.easyOptions.progCovered, false) ?? false,
+  }
+}
+
+/**
+ * Extract EyeMed declining balance from extracted data
+ */
+function extractDecliningBalance(data: ExtractedInsuranceData): ExtendedNormalizationResult['decliningBalance'] {
+  if (!data.decliningBalance) return undefined
+
+  const starting = getValue(data.decliningBalance.clStarting, null)
+  const remaining = getValue(data.decliningBalance.clRemaining, null)
+
+  if (starting === null && remaining === null) return undefined
+
+  return {
+    clStarting: starting,
+    clRemaining: remaining,
+  }
+}
+
+/**
+ * Extract family members from extracted data
+ */
+function extractFamilyMembers(data: ExtractedInsuranceData): ExtendedNormalizationResult['familyMembers'] {
+  if (!data.familyMembers || data.familyMembers.length === 0) return undefined
+
+  return data.familyMembers.map(member => ({
+    name: member.name,
+    memberId: member.memberId,
+    dateOfBirth: member.dateOfBirth,
+    relationship: member.relationship,
+  }))
 }
 
 // =============================================================================
@@ -216,20 +349,59 @@ function normalizeToVsp(
   const featuredAllowance = data.frame?.allowances?.altairMarchonFrameAllowance
   const nonFeaturedAllowance = data.frame?.allowances?.nonAltairMarchonFrameAllowance
 
-  auth.copays.frameAllowanceFeatured = featuredAllowance?.allowance ?? 0
-  auth.copays.frameAllowanceNonFeatured = nonFeaturedAllowance?.allowance ?? auth.copays.frameAllowanceFeatured
+  // Check for upgraded allowances from EasyOptions
+  const easyOptions = data.easyOptions
+  const hasEasyOptionsFrame = easyOptions && getValue(easyOptions.enabled, false) && getValue(easyOptions.frameUpgrade, null)
+
+  if (hasEasyOptionsFrame) {
+    // Use upgraded frame allowance from EasyOptions
+    auth.copays.frameAllowanceFeatured = getValue(data.frame?.allowances?.marchonUpgradedAllowance, null) ??
+                                          getValue(easyOptions!.frameUpgrade, null) ??
+                                          featuredAllowance?.allowance ?? 0
+    auth.copays.frameAllowanceNonFeatured = getValue(data.frame?.allowances?.standardUpgradedAllowance, null) ??
+                                             getValue(easyOptions!.frameUpgrade, null) ??
+                                             nonFeaturedAllowance?.allowance ?? auth.copays.frameAllowanceFeatured
+  } else {
+    auth.copays.frameAllowanceFeatured = featuredAllowance?.allowance ?? 0
+    auth.copays.frameAllowanceNonFeatured = nonFeaturedAllowance?.allowance ?? auth.copays.frameAllowanceFeatured
+  }
   auth.copays.frameOverageDiscount = featuredAllowance?.overageDiscount ?? 0.20
 
-  // Contact lens info
-  auth.copays.contactLensAllowance = getValue(data.contacts?.clExamAndMaterialsAllowance, undefined) || undefined
-  auth.copays.contactLensExamCopay = getValue(data.contacts?.clExamOnlyPatientPaysOver, undefined) || undefined
+  // Contact lens info - check for upgraded allowance from EasyOptions
+  // Note: GPT sometimes returns clMaterialsAllowance instead of clExamAndMaterialsAllowance
+  const getClAllowance = () => {
+    const contacts = data.contacts as unknown as Record<string, { value: number | null; confidence: number } | undefined> | undefined
+    return getValue(data.contacts?.clExamAndMaterialsAllowance, null) ??
+           (contacts?.clMaterialsAllowance?.value ?? null)
+  }
+
+  const hasEasyOptionsCl = easyOptions && getValue(easyOptions.enabled, false) && getValue(easyOptions.clUpgrade, null)
+  if (hasEasyOptionsCl) {
+    const clAllowance = getValue(data.contacts?.clAllowanceUpgraded, null) ??
+                        getValue(easyOptions!.clUpgrade, null) ??
+                        getClAllowance()
+    auth.copays.contactLensAllowance = clAllowance ?? undefined
+  } else {
+    auth.copays.contactLensAllowance = getClAllowance() ?? undefined
+  }
+  auth.copays.contactLensExamCopay = getValue(data.contacts?.clExamOnlyPatientPaysOver, null) ?? undefined
 
   // Determine plan tier from network/plan name
   auth.planTier.tier = detectVspTier(plan.network || plan.planName)
 
-  // Material copays from extracted data
+  // Material copays from extracted data - prefer vspLensCharges if available
+  const vspCharges = data.vspLensCharges
   const matCopays = data.copays?.materialCopays
-  if (matCopays) {
+
+  if (vspCharges?.polycarbonate) {
+    // Use detailed VSP lens charges
+    auth.planTier.materialCopays.polycarbonate = getValue(vspCharges.polycarbonate.baseSv, 0) ?? 0
+    auth.planTier.materialCopays.polycarbonateChild = 'covered' // VSP typically covers poly for children
+    auth.planTier.materialCopays.trivex = getValue(vspCharges.highIndex?.trivex160Sv, 0) ?? 0
+    auth.planTier.materialCopays.highIndex167 = getValue(vspCharges.highIndex?.hi166Sv, 0) ?? 0
+    auth.planTier.materialCopays.highIndex174 = getValue(vspCharges.highIndex?.hi170Sv, 0) ?? 0
+  } else if (matCopays) {
+    // Fall back to standard material copays
     const polyValue = getValue(matCopays.polycarbonate, null)
     auth.planTier.materialCopays.polycarbonate = polyValue === 'covered' ? 'covered' : (polyValue ?? 0)
 
@@ -241,17 +413,63 @@ function normalizeToVsp(
     auth.planTier.materialCopays.highIndex174 = getValue(matCopays.highIndex174, 0) ?? 0
   }
 
-  // Enhancement copays from extracted data
+  // Progressive copays from vspLensCharges
+  if (vspCharges?.progressives) {
+    const progs = vspCharges.progressives
+    if (progs.standardK?.plastic !== undefined) auth.planTier.progressiveCopays['KA'] = progs.standardK.plastic ?? 0
+    if (progs.premiumF?.plastic !== undefined) auth.planTier.progressiveCopays['FA'] = progs.premiumF.plastic ?? 0
+    if (progs.premiumJ?.plastic !== undefined) auth.planTier.progressiveCopays['JA'] = progs.premiumJ.plastic ?? 0
+    if (progs.customN !== undefined) auth.planTier.progressiveCopays['NA'] = progs.customN ?? 0
+    if (progs.customO !== undefined) auth.planTier.progressiveCopays['OA'] = progs.customO ?? 0
+  }
+
+  // AR copays from vspLensCharges
+  if (vspCharges?.coatings) {
+    const coatings = vspCharges.coatings
+    if (getValue(coatings.arA, null) !== null) auth.planTier.arCopays['QM'] = getValue(coatings.arA, 0) ?? 0
+    if (getValue(coatings.arC, null) !== null) auth.planTier.arCopays['QT'] = getValue(coatings.arC, 0) ?? 0
+    if (getValue(coatings.arD, null) !== null) auth.planTier.arCopays['QV'] = getValue(coatings.arD, 0) ?? 0
+  }
+
+  // Enhancement copays from extracted data - check EasyOptions coverage
   const enhCopays = data.copays?.enhancementCopays
   if (enhCopays) {
-    auth.planTier.enhancementCopays.photochromic = getValue(enhCopays.photochromic, 0) ?? 0
+    // If EasyOptions covers these, set to 0
+    const arCoveredByEasyOptions = easyOptions && getValue(easyOptions.enabled, false) && getValue(easyOptions.arCovered, false)
+    const photoCoveredByEasyOptions = easyOptions && getValue(easyOptions.enabled, false) && getValue(easyOptions.photoCovered, false)
+    const progCoveredByEasyOptions = easyOptions && getValue(easyOptions.enabled, false) && getValue(easyOptions.progCovered, false)
+
+    auth.planTier.enhancementCopays.photochromic = photoCoveredByEasyOptions ? 0 : (getValue(enhCopays.photochromic, 0) ?? 0)
     auth.planTier.enhancementCopays.polarized = getValue(enhCopays.polarized, 0) ?? 0
     auth.planTier.enhancementCopays.blueLightFilter = getValue(enhCopays.blueLightFilter, 0) ?? 0
     auth.planTier.enhancementCopays.tint = getValue(enhCopays.tint, 0) ?? 0
+
+    // Store EasyOptions coverage info in special rules for progressive handling
+    if (progCoveredByEasyOptions) {
+      auth.specialRules.pricingRules['progressive'] = 'copay'
+    }
+    if (arCoveredByEasyOptions) {
+      auth.specialRules.pricingRules['ar'] = 'copay'
+    }
+  } else if (vspCharges) {
+    // Use vspLensCharges for enhancements
+    if (vspCharges.photochromic) {
+      auth.planTier.enhancementCopays.photochromic = getValue(vspCharges.photochromic.plasticSv, 0) ?? 0
+    }
+    if (vspCharges.polarized) {
+      auth.planTier.enhancementCopays.polarized = getValue(vspCharges.polarized.plasticSv, 0) ?? 0
+    }
+    if (vspCharges.tints) {
+      auth.planTier.enhancementCopays.tint = getValue(vspCharges.tints.plasticSolid, 0) ?? 0
+    }
+    if (vspCharges.misc?.lightFilter) {
+      auth.planTier.enhancementCopays.blueLightFilter = getValue(vspCharges.misc.lightFilter, 0) ?? 0
+    }
   }
 
   // Parse enhancements to determine pricing rules
-  auth.specialRules.pricingRules = parseVspEnhancementRules(data.enhancements)
+  const enhancementRules = parseVspEnhancementRules(data.enhancements)
+  auth.specialRules.pricingRules = { ...auth.specialRules.pricingRules, ...enhancementRules }
 
   // Warnings for missing critical data
   if (!auth.copays.frameAllowanceFeatured) {
@@ -337,18 +555,31 @@ function normalizeToEyemed(
   auth.copays.exam = getValue(data.copays?.examCopay, 0) ?? 0
   auth.copays.materials = getValue(data.copays?.materialsCopay, 0) ?? 0
 
-  // Frame allowance - EyeMed typically has single allowance
-  const featuredAllowance = data.frame?.allowances?.altairMarchonFrameAllowance
-  const nonFeaturedAllowance = data.frame?.allowances?.nonAltairMarchonFrameAllowance
+  // Frame allowance - EyeMed may have wholesale/retail range or single allowance
+  const frameAllowances = data.frame?.allowances
+  const featuredAllowance = frameAllowances?.altairMarchonFrameAllowance
+  const nonFeaturedAllowance = frameAllowances?.nonAltairMarchonFrameAllowance
 
-  auth.copays.frameAllowance = featuredAllowance?.allowance ?? nonFeaturedAllowance?.allowance ?? 0
-  auth.copays.frameOverageDiscount = featuredAllowance?.overageDiscount ?? 0.20
+  // Prefer generic frame allowance, then fall back to featured/non-featured
+  auth.copays.frameAllowance = getValue(frameAllowances?.frameAllowance, null) ??
+                               getValue(frameAllowances?.retailMinAllowance, null) ??
+                               featuredAllowance?.allowance ??
+                               nonFeaturedAllowance?.allowance ?? 0
+
+  // EyeMed overage - use frameOveragePercent if available
+  const overagePercent = getValue(frameAllowances?.frameOveragePercent, null)
+  if (overagePercent !== null) {
+    // frameOveragePercent is what patient pays (e.g., 80 = 80%), convert to discount (20%)
+    auth.copays.frameOverageDiscount = (100 - overagePercent) / 100
+  } else {
+    auth.copays.frameOverageDiscount = featuredAllowance?.overageDiscount ?? 0.20
+  }
 
   // Lens copays by type
   auth.copays.lensSv = getValue(data.copays?.singleVisionCopay, 0) ?? 0
-  // Bifocal/trifocal - often same as SV or need extraction
-  auth.copays.lensBifocal = auth.copays.lensSv  // Default to SV, update if extracted
-  auth.copays.lensTrifocal = auth.copays.lensSv  // Default to SV, update if extracted
+  // Bifocal/trifocal - use extracted values if available
+  auth.copays.lensBifocal = getValue(data.copays?.bifocalCopay, null) ?? auth.copays.lensSv
+  auth.copays.lensTrifocal = getValue(data.copays?.trifocalCopay, null) ?? auth.copays.lensSv
 
   // Progressive tier copays from extracted data
   const progCopays = data.copays?.progressiveCopays
@@ -399,7 +630,7 @@ function normalizeToEyemed(
 
     // High index - use general field, with optional specific tiers
     auth.copays.materialHighIndex = getValue(matCopays.highIndex167, 0) ?? getValue(matCopays.highIndex174, 0) ?? 0
-    auth.copays.materialHighIndex167 = getValue(matCopays.highIndex167, 0) ?? auth.copays.materialHighIndex
+    auth.copays.materialHighIndex167 = getValue(matCopays.highIndex167, 0) ?? getValue(matCopays.highIndex166, 0) ?? auth.copays.materialHighIndex
     auth.copays.materialHighIndex174 = getValue(matCopays.highIndex174, 0) ?? auth.copays.materialHighIndex
   }
 
@@ -416,6 +647,37 @@ function normalizeToEyemed(
 
     const scratchValue = getValue(enhCopays.scratchCoating, 0)
     auth.copays.scratchCoating = scratchValue === 0 ? 'covered' : scratchValue
+  }
+
+  // Contact lens fitting copays
+  const clFit = data.clFit
+  if (clFit) {
+    auth.copays.clFitEligible = true
+    const standardCost = getValue(clFit.standardCost, null)
+    const premiumCost = getValue(clFit.premiumCost, null)
+
+    // Handle string or number cost values
+    if (standardCost !== null) {
+      auth.copays.clFitStandardCopay = typeof standardCost === 'number' ? standardCost :
+                                        standardCost === '0' ? 0 :
+                                        standardCost.toLowerCase().includes('covered') ? 'covered' : null
+    }
+    if (premiumCost !== null) {
+      auth.copays.clFitPremiumCopay = typeof premiumCost === 'number' ? premiumCost :
+                                       premiumCost === '0' ? 0 :
+                                       premiumCost.toLowerCase().includes('covered') ? 'covered' : null
+    }
+  }
+
+  // Contact lens materials - check for EyeMed declining balance
+  const decliningBalance = data.decliningBalance
+  if (decliningBalance) {
+    const remaining = getValue(decliningBalance.clRemaining, null)
+    if (remaining !== null) {
+      // Use remaining balance as contact lens allowance
+      auth.copays.contactsConventional = 0  // Full remaining balance applies
+      auth.copays.contactsDisposable = 0
+    }
   }
 
   // Special rules
@@ -581,12 +843,12 @@ function normalizeToSpectera(
  *
  * @param extractedData - Raw data from OCR/GPT extraction
  * @param options - Additional context (customer ID, patient age, fallback carrier)
- * @returns NormalizationResult with the authorization or errors
+ * @returns ExtendedNormalizationResult with the authorization, extended fields, or errors
  */
 export function normalizeAuthorization(
   extractedData: ExtractedInsuranceData,
   options: NormalizationOptions = {}
-): NormalizationResult {
+): ExtendedNormalizationResult {
   const errors: string[] = []
   let warnings: string[] = []
 
@@ -614,6 +876,15 @@ export function normalizeAuthorization(
   if (!patient.name && !patient.memberId) {
     errors.push('Could not extract patient name or member ID from document')
   }
+
+  // Extract extended fields (common to all carriers)
+  const provider = extractProvider(extractedData)
+  const restrictions = extractRestrictions(extractedData)
+  const familyMembers = extractFamilyMembers(extractedData)
+
+  // Carrier-specific extended fields
+  const easyOptions = carrier === 'vsp' ? extractEasyOptions(extractedData) : undefined
+  const decliningBalance = carrier === 'eyemed' ? extractDecliningBalance(extractedData) : undefined
 
   // Normalize based on carrier
   let authorization: BenefitAuthorization | undefined
@@ -653,6 +924,11 @@ export function normalizeAuthorization(
     }
   }
 
+  // Add warning if contacts_or_glasses restriction is active
+  if (restrictions?.contactsOrGlasses) {
+    warnings.push('Plan restriction: Patient can choose EITHER contacts OR glasses, not both')
+  }
+
   return {
     success: true,
     authorization,
@@ -660,6 +936,12 @@ export function normalizeAuthorization(
     confidence: extractedData.overallConfidence || 0,
     warnings,
     errors: [],
+    // Extended fields
+    provider,
+    restrictions,
+    easyOptions,
+    decliningBalance,
+    familyMembers,
   }
 }
 
@@ -671,6 +953,11 @@ export {
   detectCarrier,
   extractPatient,
   extractFrequency,
+  extractProvider,
+  extractRestrictions,
+  extractEasyOptions,
+  extractDecliningBalance,
+  extractFamilyMembers,
   normalizeToVsp,
   normalizeToEyemed,
   normalizeToSpectera,

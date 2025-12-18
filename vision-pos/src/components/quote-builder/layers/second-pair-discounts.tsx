@@ -57,29 +57,49 @@ export function SecondPairDiscounts({ className, onNext, onBack }: SecondPairDis
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState<string | null>(null)
 
-  const { updateSecondPair } = useQuotePricingContext()
+  const { updateSecondPair, secondPairSelections, updateSecondPairSelections } = useQuotePricingContext()
 
   // Products from database
   const [products, setProducts] = useState<ProductsData | null>(null)
 
-  // Discount type
-  const [discountType, setDiscountType] = useState<DiscountType>('same-day')
+  // Discount type - initialized from context
+  const [discountType, setDiscountType] = useState<DiscountType>(secondPairSelections.discountType)
 
-  // State for selections
-  const [frame, setFrame] = useState<string | null>(null)
-  const [lensType, setLensType] = useState<string | null>(null)
-  const [lensMaterial, setLensMaterial] = useState<string | null>(null)
-  const [arCoating, setArCoating] = useState<string | null>(null)
-  const [transitions, setTransitions] = useState<string | null>(null)
-  const [polarized, setPolarized] = useState<string | null>(null)
-  const [mountFee, setMountFee] = useState<string | null>(null)
-  const [addons, setAddons] = useState<string[]>([])
+  // State for selections - initialized from context
+  const [frame, setFrame] = useState<string | null>(secondPairSelections.frame)
+  const [lensType, setLensType] = useState<string | null>(secondPairSelections.lensType)
+  const [lensMaterial, setLensMaterial] = useState<string | null>(secondPairSelections.lensMaterial)
+  const [arCoating, setArCoating] = useState<string | null>(secondPairSelections.arCoating)
+  const [transitions, setTransitions] = useState<string | null>(secondPairSelections.transitions)
+  const [polarized, setPolarized] = useState<string | null>(secondPairSelections.polarized)
+  const [mountFee, setMountFee] = useState<string | null>(secondPairSelections.mountFee)
+  const [addons, setAddons] = useState<string[]>(secondPairSelections.addons)
 
-  // Frame search state
+  // Frame search state - initialize selectedFrame from context
   const [frameSearch, setFrameSearch] = useState('')
   const [frameSearchResults, setFrameSearchResults] = useState<FrameResult[]>([])
   const [frameSearchLoading, setFrameSearchLoading] = useState(false)
-  const [selectedFrame, setSelectedFrame] = useState<FrameResult | null>(null)
+  const [selectedFrame, setSelectedFrame] = useState<FrameResult | null>(
+    secondPairSelections.selectedFrame as FrameResult | null
+  )
+  const [isPatientOwnedFrame, setIsPatientOwnedFrame] = useState(secondPairSelections.isPatientOwnedFrame)
+
+  // Sync selections to context whenever they change
+  useEffect(() => {
+    updateSecondPairSelections({
+      discountType,
+      frame,
+      selectedFrame: selectedFrame as any,
+      isPatientOwnedFrame,
+      lensType,
+      lensMaterial,
+      arCoating,
+      transitions,
+      polarized,
+      mountFee,
+      addons,
+    })
+  }, [discountType, frame, selectedFrame, isPatientOwnedFrame, lensType, lensMaterial, arCoating, transitions, polarized, mountFee, addons, updateSecondPairSelections])
 
   // Fetch products from API
   useEffect(() => {
@@ -93,16 +113,16 @@ export function SecondPairDiscounts({ className, onNext, onBack }: SecondPairDis
           const productsWithNone: ProductsData = {
             ...data.products,
             transitions: [
-              { id: 'none', name: 'None', price: 0 },
-              ...(data.products.transitions || [])
+              ...(data.products.transitions || []),
+              { id: 'none', name: 'None', price: 0 }
             ],
             polarized: [
-              { id: 'none', name: 'None', price: 0 },
-              ...(data.products.polarized || [])
+              ...(data.products.polarized || []),
+              { id: 'none', name: 'None', price: 0 }
             ],
             arCoating: [
-              { id: 'opt-out', name: 'Opt out', price: 0 },
-              ...(data.products.arCoating || [])
+              ...(data.products.arCoating || []),
+              { id: 'opt-out', name: 'No Charge', price: 0 }
             ]
           }
           setProducts(productsWithNone)
@@ -134,6 +154,8 @@ export function SecondPairDiscounts({ className, onNext, onBack }: SecondPairDis
     let total = 0
 
     if (selectedFrame) total += selectedFrame.price
+    // Patient owned frame has $75 mount fee
+    if (isPatientOwnedFrame) total += 75
 
     const lens = getSelectedProduct(products.lensType, lensType)
     if (lens) total += lens.price
@@ -150,8 +172,11 @@ export function SecondPairDiscounts({ className, onNext, onBack }: SecondPairDis
     const polar = getSelectedProduct(products.polarized, polarized)
     if (polar) total += polar.price
 
-    const mount = getSelectedProduct(products.mountFee, mountFee)
-    if (mount) total += mount.price
+    // Only add mount fee if not POF (POF already includes mount)
+    if (!isPatientOwnedFrame) {
+      const mount = getSelectedProduct(products.mountFee, mountFee)
+      if (mount) total += mount.price
+    }
 
     addons.forEach(id => {
       const addon = getSelectedProduct(products.addons, id)
@@ -168,9 +193,10 @@ export function SecondPairDiscounts({ className, onNext, onBack }: SecondPairDis
 
   // Update pricing context whenever selections change
   useEffect(() => {
-    if (selectedFrame || lensType) {
+    if (selectedFrame || isPatientOwnedFrame || lensType) {
       const lineItems: Array<{ name: string; price: number }> = []
       if (selectedFrame) lineItems.push({ name: `${selectedFrame.brand} ${selectedFrame.model}`, price: selectedFrame.price })
+      if (isPatientOwnedFrame) lineItems.push({ name: 'Patient Owned Frame Mount', price: 75 })
       if (lensType && products?.lensType) {
         const lens = getSelectedProduct(products.lensType, lensType)
         if (lens) lineItems.push({ name: lens.name, price: lens.price })
@@ -204,10 +230,10 @@ export function SecondPairDiscounts({ className, onNext, onBack }: SecondPairDis
 
       updateSecondPair({
         enabled: true,
-        frameName: selectedFrame ? `${selectedFrame.brand} ${selectedFrame.model}` : 'Second Pair',
-        framePrice: selectedFrame?.price || 0,
+        frameName: isPatientOwnedFrame ? 'Patient Owned Frame' : selectedFrame ? `${selectedFrame.brand} ${selectedFrame.model}` : 'Second Pair',
+        framePrice: isPatientOwnedFrame ? 75 : (selectedFrame?.price || 0),
         lensPrice: (getSelectedProduct(products?.lensType, lensType)?.price || 0) + (getSelectedProduct(products?.lensMaterial, lensMaterial)?.price || 0),
-        coatingPrice: (getSelectedProduct(products?.arCoating, arCoating)?.price || 0) + (getSelectedProduct(products?.transitions, transitions)?.price || 0) + (getSelectedProduct(products?.polarized, polarized)?.price || 0) + (getSelectedProduct(products?.mountFee, mountFee)?.price || 0) + addons.reduce((sum, id) => sum + (getSelectedProduct(products?.addons, id)?.price || 0), 0),
+        coatingPrice: (getSelectedProduct(products?.arCoating, arCoating)?.price || 0) + (getSelectedProduct(products?.transitions, transitions)?.price || 0) + (getSelectedProduct(products?.polarized, polarized)?.price || 0) + (!isPatientOwnedFrame ? (getSelectedProduct(products?.mountFee, mountFee)?.price || 0) : 0) + addons.reduce((sum, id) => sum + (getSelectedProduct(products?.addons, id)?.price || 0), 0),
         discountType,
         discountPercent,
         subtotal,
@@ -229,7 +255,7 @@ export function SecondPairDiscounts({ className, onNext, onBack }: SecondPairDis
         totalDue: 0
       })
     }
-  }, [selectedFrame, lensType, lensMaterial, arCoating, transitions, polarized, mountFee, addons, discountType, subtotal, discountAmount, totalDue, discountPercent, updateSecondPair, products])
+  }, [selectedFrame, isPatientOwnedFrame, lensType, lensMaterial, arCoating, transitions, polarized, mountFee, addons, discountType, subtotal, discountAmount, totalDue, discountPercent, updateSecondPair, products])
 
   const formatPrice = (price: number) => {
     return new Intl.NumberFormat('en-US', {
@@ -241,6 +267,7 @@ export function SecondPairDiscounts({ className, onNext, onBack }: SecondPairDis
   const handleReset = () => {
     setFrame(null)
     setSelectedFrame(null)
+    setIsPatientOwnedFrame(false)
     setFrameSearch('')
     setFrameSearchResults([])
     setLensType(null)
@@ -293,8 +320,23 @@ export function SecondPairDiscounts({ className, onNext, onBack }: SecondPairDis
 
   // Clear frame selection
   const handleClearFrame = () => {
+    if (isPatientOwnedFrame) {
+      setMountFee(null)
+    }
     setSelectedFrame(null)
     setFrame(null)
+    setIsPatientOwnedFrame(false)
+  }
+
+  // Handle patient owned frame selection
+  const handlePatientOwnedFrame = () => {
+    setSelectedFrame(null)
+    setFrame('patient-owned')
+    setIsPatientOwnedFrame(true)
+    setFrameSearch('')
+    setFrameSearchResults([])
+    // Set mount fee to POF mount fee
+    setMountFee('pof-mount-fee')
   }
 
   const handleLensTypeSelect = (product: Product) => {
@@ -479,7 +521,38 @@ export function SecondPairDiscounts({ className, onNext, onBack }: SecondPairDis
           <CardTitle className="text-lg text-white">Step 1: Select Frame</CardTitle>
         </CardHeader>
         <CardContent className="space-y-4">
-          {selectedFrame ? (
+          {/* Patient Owned Frame Display */}
+          {isPatientOwnedFrame ? (
+            <div className="p-4 rounded-lg border-2 border-cyan-400 bg-cyan-500/20">
+              <div className="flex items-start justify-between">
+                <div className="flex-1">
+                  <div className="flex items-center gap-2 mb-1">
+                    <Check className="h-5 w-5 text-cyan-400" />
+                    <span className="text-lg font-semibold text-white">
+                      Patient Owned Frame
+                    </span>
+                  </div>
+                  <div className="text-sm text-white/70">
+                    Customer is using their own frame for new lenses
+                  </div>
+                  <div className="mt-3">
+                    <div className="flex items-center justify-between">
+                      <span className="text-white/70">Mounting fee:</span>
+                      <span className="text-lg font-bold text-amber-400">$75.00</span>
+                    </div>
+                  </div>
+                </div>
+                <Button
+                  variant="ghost"
+                  size="sm"
+                  onClick={handleClearFrame}
+                  className="text-white/60 hover:text-white hover:bg-white/10"
+                >
+                  <X className="h-4 w-4" />
+                </Button>
+              </div>
+            </div>
+          ) : selectedFrame ? (
             <div className="p-4 rounded-lg border-2 border-amber-400 bg-amber-500/20">
               <div className="flex items-start justify-between">
                 <div className="flex-1">
@@ -570,13 +643,36 @@ export function SecondPairDiscounts({ className, onNext, onBack }: SecondPairDis
                   Enter a model code (e.g., TF5401, OX8046) or brand name to search
                 </div>
               )}
+
+              {/* Patient Owned Frame Option */}
+              <div className="pt-4 border-t border-white/20">
+                <button
+                  onClick={handlePatientOwnedFrame}
+                  className="w-full p-4 rounded-lg border-2 border-dashed border-cyan-400/50 hover:border-cyan-400 hover:bg-cyan-500/10 transition-all text-left"
+                >
+                  <div className="flex items-center gap-3">
+                    <div className="h-10 w-10 rounded-full bg-cyan-500/20 flex items-center justify-center">
+                      <Glasses className="h-5 w-5 text-cyan-400" />
+                    </div>
+                    <div>
+                      <div className="font-medium text-white">Patient Owned Frame</div>
+                      <div className="text-sm text-white/60">
+                        Customer is bringing their own frame for new lenses
+                      </div>
+                    </div>
+                    <div className="ml-auto text-amber-400 font-semibold">
+                      $75 mounting
+                    </div>
+                  </div>
+                </button>
+              </div>
             </>
           )}
         </CardContent>
       </Card>
 
       {/* Step 2: Lens Type */}
-      {(frame || lensType) && (
+      {(frame || isPatientOwnedFrame || lensType) && (
         <Card>
           <CardHeader>
             <CardTitle className="text-lg text-white">Step 2: Select Lens Type</CardTitle>
@@ -643,7 +739,7 @@ export function SecondPairDiscounts({ className, onNext, onBack }: SecondPairDis
                     )}
                     <div className="text-lg font-semibold mb-2 text-white">{product.name}</div>
                     <div className="text-2xl font-bold text-amber-400">
-                      {product.price === 0 ? 'Included' : formatPrice(product.price)}
+                      {product.price === 0 ? 'No charge' : formatPrice(product.price)}
                     </div>
                   </button>
                 )
@@ -799,7 +895,7 @@ export function SecondPairDiscounts({ className, onNext, onBack }: SecondPairDis
                     )}
                     <div className="text-lg font-semibold mb-2 text-white">{product.name}</div>
                     <div className="text-2xl font-bold text-amber-400">
-                      {product.price === 0 ? 'Included' : formatPrice(product.price)}
+                      {product.price === 0 ? 'No charge' : formatPrice(product.price)}
                     </div>
                   </button>
                 )
@@ -838,7 +934,7 @@ export function SecondPairDiscounts({ className, onNext, onBack }: SecondPairDis
                     )}
                     <div className="text-lg font-semibold mb-2 text-white">{product.name}</div>
                     <div className="text-2xl font-bold text-amber-400">
-                      {product.price === 0 ? 'Included' : `+${formatPrice(product.price)}`}
+                      {product.price === 0 ? 'No charge' : `+${formatPrice(product.price)}`}
                     </div>
                   </button>
                 )
@@ -849,7 +945,7 @@ export function SecondPairDiscounts({ className, onNext, onBack }: SecondPairDis
       )}
 
       {/* Total Summary */}
-      {(frame || lensType) && (
+      {(frame || isPatientOwnedFrame || lensType) && (
         <Card className="bg-gradient-to-r from-amber-900/30 to-orange-900/30 border-amber-500/50">
           <CardContent className="p-6">
             <div className="flex items-center justify-between">

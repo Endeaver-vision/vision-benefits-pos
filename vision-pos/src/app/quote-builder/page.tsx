@@ -60,7 +60,9 @@ function QuoteBuilderContent() {
     materialsConflict,
     pricingSummary,
     pricedItems,
-    isCalculating
+    isCalculating,
+    secondPair,
+    contactLenses,
   } = useQuotePricingContext()
 
   // State management
@@ -174,7 +176,7 @@ function QuoteBuilderContent() {
   const hasEyeglasses = pricedItems.some(item =>
     item.category === 'frame' || item.category === 'lens' || item.category === 'coating' || item.category === 'addon'
   )
-  const hasContacts = pricedItems.some(item => item.category === 'contact')
+  const hasContacts = contactLenses?.enabled === true
 
   // Get layer status for navigation
   const getLayerStatus = (layer: QuoteLayer) => {
@@ -194,9 +196,10 @@ function QuoteBuilderContent() {
         if (currentLayer === 'eyeglasses') return 'current'
         return hasEyeglasses ? 'complete' : 'available'
       case 'second-pair':
-        // Second pair is optional - keep as available unless current
+        // Second pair is optional - show as complete when enabled
         if (!selectedCustomer) return 'locked'
-        return currentLayer === 'second-pair' ? 'current' : 'available'
+        if (currentLayer === 'second-pair') return 'current'
+        return secondPair?.enabled ? 'complete' : 'available'
       case 'contacts':
         if (!selectedCustomer) return 'locked'
         if (currentLayer === 'contacts') return 'current'
@@ -356,12 +359,18 @@ function QuoteBuilderContent() {
                       ? 'bg-white/5 border-white/10 cursor-not-allowed opacity-60'
                       : currentLayer === 'second-pair'
                       ? 'bg-blue-500/30 border-blue-400 cursor-pointer'
+                      : getLayerStatus('second-pair') === 'complete'
+                      ? 'bg-emerald-500/30 border-emerald-400 cursor-pointer'
                       : 'bg-white/10 border-white/20 cursor-pointer'
                   }`}
                   onClick={() => getLayerStatus('second-pair') !== 'locked' && handleLayerChange('second-pair')}
                 >
                   <div className="flex items-center gap-3">
-                    <Glasses className="h-5 w-5 text-amber-400" />
+                    {getLayerStatus('second-pair') === 'complete' ? (
+                      <CheckCircle className="h-5 w-5 text-emerald-400" />
+                    ) : (
+                      <Glasses className="h-5 w-5 text-amber-400" />
+                    )}
                     <div>
                       <div className="font-medium text-white">Second Pair</div>
                       <div className="text-xs text-white/60">Cash discount (optional)</div>
@@ -430,6 +439,7 @@ function QuoteBuilderContent() {
                 materialsCopay={authorization?.materialsCopay}
                 frameAllowance={authorization?.frameAllowance}
                 contactAllowance={authorization?.contactAllowance}
+                contactFittingCopay={authorization?.contactFittingCopay}
                 contactFittingCovered={authorization?.contactFittingCovered}
                 glassesContactsExclusive={authorization?.glassesContactsExclusive}
                 isLoading={authorizationLoading}
@@ -638,43 +648,6 @@ function QuoteBuilderContent() {
               />
             )}
 
-            {/* Live Pricing Summary */}
-            {selectedCustomer && (
-              <Card className="glass-card border-white/20 sticky bottom-4">
-                <CardContent className="py-4">
-                  <div className="flex items-center justify-between">
-                    <div className="flex items-center gap-6">
-                      <div className="text-sm">
-                        <span className="text-white/60">Retail Total:</span>
-                        <span className="ml-2 text-white font-medium">
-                          ${pricingSummary.retailTotal.toFixed(2)}
-                        </span>
-                      </div>
-                      {authorization && pricingSummary.insuranceTotal > 0 && (
-                        <div className="text-sm">
-                          <span className="text-emerald-400">Insurance Pays:</span>
-                          <span className="ml-2 text-emerald-300 font-medium">
-                            -${pricingSummary.insuranceTotal.toFixed(2)}
-                          </span>
-                        </div>
-                      )}
-                      <div className="text-lg font-bold">
-                        <span className="text-white/80">Patient Pays:</span>
-                        <span className="ml-2 text-blue-300">
-                          ${pricingSummary.patientTotal.toFixed(2)}
-                        </span>
-                      </div>
-                    </div>
-                    {isCalculating && (
-                      <div className="flex items-center gap-2 text-white/60">
-                        <Clock className="h-4 w-4 animate-spin" />
-                        <span className="text-xs">Calculating...</span>
-                      </div>
-                    )}
-                  </div>
-                </CardContent>
-              </Card>
-            )}
           </div>
         </div>
       </div>

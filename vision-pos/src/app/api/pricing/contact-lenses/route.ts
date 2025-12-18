@@ -19,10 +19,12 @@ import {
   isEyemedAuth,
   isSpecteraAuth,
 } from '@/types/benefit-authorization'
+import { calculateAnnualSupplyThreshold } from '@/lib/contact-lens-utils'
 
 // Annual supply discount rules (per manufacturer/modality)
-const ANNUAL_SUPPLY_DISCOUNTS = {
+const ANNUAL_SUPPLY_DISCOUNTS: Record<string, number> = {
   daily: 30,      // $30 discount for annual supply of daily lenses
+  weekly: 20,     // $20 discount for annual supply of weekly lenses
   biweekly: 10,   // $10 discount for annual supply of bi-weekly
   monthly: 10,    // $10 discount for annual supply of monthly
 }
@@ -141,8 +143,12 @@ export async function POST(request: NextRequest) {
     const pricePerBox = lens.retailPrice
     const retailSubtotal = totalBoxes * pricePerBox
 
-    // Check annual supply threshold
-    const annualSupplyThreshold = lens.annualSupplyBothEyes || getDefaultAnnualSupply(modality)
+    // Check annual supply threshold using hybrid calculation
+    const annualSupplyThreshold = calculateAnnualSupplyThreshold(
+      modality,
+      lens.boxSize,
+      lens.annualSupplyBothEyes
+    )
     const meetsAnnualSupply = totalBoxes >= annualSupplyThreshold
 
     // Calculate annual supply discount
@@ -275,28 +281,25 @@ function getModality(lens: {
   isDaily: boolean
   isWeekly: boolean
   isMonthly: boolean
-}): 'daily' | 'biweekly' | 'monthly' {
+  modality?: string | null
+}): 'daily' | 'weekly' | 'biweekly' | 'monthly' {
   if (lens.isDaily) return 'daily'
-  if (lens.isWeekly) return 'biweekly'
+  if (lens.isWeekly) {
+    // Check modality string to distinguish weekly vs bi-weekly
+    // isWeekly flag historically meant bi-weekly, but now we have true weekly lenses
+    if (lens.modality === 'weekly') return 'weekly'
+    return 'biweekly'
+  }
   if (lens.isMonthly) return 'monthly'
+
+  // Fall back to modality string if flags not set
+  const mod = lens.modality?.toLowerCase()
+  if (mod === 'daily' || mod === 'weekly' || mod === 'biweekly' || mod === 'monthly') {
+    return mod as 'daily' | 'weekly' | 'biweekly' | 'monthly'
+  }
+
   // Default to daily if not specified
   return 'daily'
-}
-
-/**
- * Get default annual supply threshold by modality
- */
-function getDefaultAnnualSupply(modality: string): number {
-  switch (modality) {
-    case 'daily':
-      return 8  // 8 boxes = 4 per eye = 90 lenses per eye = ~1 year
-    case 'biweekly':
-      return 4  // 4 boxes = 2 per eye = 12 lenses per eye = ~1 year (26 weeks each)
-    case 'monthly':
-      return 4  // 4 boxes = 2 per eye = 6 lenses per eye = ~1 year
-    default:
-      return 8
-  }
 }
 
 /**

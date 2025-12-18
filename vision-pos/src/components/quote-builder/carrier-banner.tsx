@@ -9,6 +9,7 @@ interface CarrierBannerProps {
   materialsCopay?: number | null
   frameAllowance?: number | null
   contactAllowance?: number | null
+  contactFittingCopay?: number | null
   contactFittingCovered?: boolean
   glassesContactsExclusive?: boolean
   isLoading?: boolean
@@ -33,6 +34,7 @@ export function CarrierBanner({
   materialsCopay,
   frameAllowance,
   contactAllowance,
+  contactFittingCopay,
   contactFittingCovered,
   glassesContactsExclusive,
   isLoading,
@@ -141,9 +143,16 @@ export function CarrierBanner({
               <DollarSign className="h-4 w-4" />
               <span className="text-white/70">Contacts:</span>
               <span className="font-semibold">${contactAllowance}</span>
-              {contactFittingCovered && (
+              {contactFittingCovered && !contactFittingCopay && (
                 <span className="text-xs text-white/60">(fitting covered)</span>
               )}
+            </div>
+          )}
+          {contactFittingCopay !== null && contactFittingCopay !== undefined && (
+            <div className="flex items-center gap-1.5 text-white/90">
+              <Eye className="h-4 w-4" />
+              <span className="text-white/70">CL Fit:</span>
+              <span className="font-semibold">${contactFittingCopay}</span>
             </div>
           )}
         </div>

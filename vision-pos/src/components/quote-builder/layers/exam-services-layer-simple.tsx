@@ -16,14 +16,16 @@ interface ExamServicesLayerProps {
 
 export default function ExamServicesLayer({ onNext, onBack }: ExamServicesLayerProps) {
   const { quote, updateExam, resetQuote } = useQuoteStore()
-  const { 
-    addItem, 
-    removeItem, 
-    clearItemsByCategory, 
-    pricedItems, 
-    authorization, 
+  const {
+    addItem,
+    removeItem,
+    clearItemsByCategory,
+    pricedItems,
+    authorization,
     isCalculating,
     customerId,
+    examSelections,
+    updateExamSelections,
   } = useQuotePricingContext()
 
   // Fetch services from database with insurance pricing
@@ -40,37 +42,23 @@ export default function ExamServicesLayer({ onNext, onBack }: ExamServicesLayerP
 
   const [showResetConfirm, setShowResetConfirm] = useState(false)
 
-  // Initialize from existing selections
-  const existingExamItems = pricedItems.filter(item => item.category === 'exam')
-  const existingExamSkus = existingExamItems.map(item => item.sku)
-  const initialServices = existingExamSkus.length > 0 ? existingExamSkus : (quote.exam.selectedServices || [])
-
+  // Initialize from context examSelections (persisted) - this is the primary source of truth
   // State for selections - track by SKU
-  const [selectedMainExamSku, setSelectedMainExamSku] = useState<string | null>(() => {
-    // Find if any of the initial services match a main exam
-    for (const sku of initialServices) {
-      if (mainExams.find(e => e.sku === sku)) {
-        return sku
-      }
-    }
-    return null
-  })
-
-  const [selectedAddOnSkus, setSelectedAddOnSkus] = useState<string[]>(() => {
-    return initialServices.filter(sku => addOnServices.find(a => a.sku === sku))
-  })
-
-  const [selectedCLFittingSku, setSelectedCLFittingSku] = useState<string | null>(() => {
-    for (const sku of initialServices) {
-      if (clFittings.find(f => f.sku === sku)) {
-        return sku
-      }
-    }
-    return null
-  })
+  const [selectedMainExamSku, setSelectedMainExamSku] = useState<string | null>(examSelections.mainExamSku)
+  const [selectedAddOnSkus, setSelectedAddOnSkus] = useState<string[]>(examSelections.addOnSkus)
+  const [selectedCLFittingSku, setSelectedCLFittingSku] = useState<string | null>(examSelections.clFittingSku)
 
   // Track if we've done initial sync
   const [hasSynced, setHasSynced] = useState(false)
+
+  // Sync selections to context whenever they change (for state persistence across navigation)
+  useEffect(() => {
+    updateExamSelections({
+      mainExamSku: selectedMainExamSku,
+      addOnSkus: selectedAddOnSkus,
+      clFittingSku: selectedCLFittingSku,
+    })
+  }, [selectedMainExamSku, selectedAddOnSkus, selectedCLFittingSku, updateExamSelections])
 
   // Sync exam selections to pricing context
   const syncToPricingContext = useCallback((examSku: string | null, addOnSkus: string[], clFitSku: string | null) => {
@@ -144,49 +132,7 @@ export default function ExamServicesLayer({ onNext, onBack }: ExamServicesLayerP
     }
   }, [hasSynced, servicesLoading, mainExams.length, selectedMainExamSku, selectedAddOnSkus, selectedCLFittingSku, syncToPricingContext])
 
-  // Update selections when services load (match old fake SKUs to new real SKUs)
-  useEffect(() => {
-    if (!servicesLoading && mainExams.length > 0 && !hasSynced) {
-      // Check if we have old-style SKUs that need to be migrated
-      const hasOldSkus = initialServices.some(sku => 
-        sku === 'routine' || sku === 'medical' || 
-        sku.startsWith('cl-') || !sku.startsWith('SVC-')
-      )
-      
-      if (hasOldSkus) {
-        // Try to find matching services for old SKUs
-        let newMainExam: string | null = null
-        const newAddOns: string[] = []
-        let newCLFitting: string | null = null
-
-        for (const oldSku of initialServices) {
-          if (oldSku === 'routine') {
-            const match = mainExams.find(e => e.name.toLowerCase().includes('routine'))
-            if (match) newMainExam = match.sku
-          } else if (oldSku === 'medical') {
-            const match = mainExams.find(e => e.name.toLowerCase().includes('medical'))
-            if (match) newMainExam = match.sku
-          } else if (oldSku.startsWith('cl-')) {
-            const nameMatch = oldSku.replace('cl-', '')
-            const match = clFittings.find(f => f.name.toLowerCase().includes(nameMatch))
-            if (match) newCLFitting = match.sku
-          } else {
-            // Try to match add-on by name
-            const match = addOnServices.find(a => 
-              a.name.toLowerCase().includes(oldSku.toLowerCase().replace(/-/g, ' '))
-            )
-            if (match) newAddOns.push(match.sku)
-          }
-        }
-
-        if (newMainExam || newAddOns.length > 0 || newCLFitting) {
-          setSelectedMainExamSku(newMainExam)
-          setSelectedAddOnSkus(newAddOns)
-          setSelectedCLFittingSku(newCLFitting)
-        }
-      }
-    }
-  }, [servicesLoading, mainExams, addOnServices, clFittings, initialServices, hasSynced])
+  // Note: Legacy SKU migration removed - context-based persistence now handles state
 
   const handleMainExamChange = (sku: string) => {
     const newSku = selectedMainExamSku === sku ? null : sku
@@ -387,7 +333,7 @@ export default function ExamServicesLayer({ onNext, onBack }: ExamServicesLayerP
                           {formatPrice(exam.patientPays)}
                         </div>
                         <div className="text-xs text-emerald-300">
-                          Insurance pays {formatPrice(exam.insurancePays)}
+                          Insurance saves {formatPrice(exam.insurancePays)}
                         </div>
                       </div>
                     ) : (
@@ -530,7 +476,7 @@ export default function ExamServicesLayer({ onNext, onBack }: ExamServicesLayerP
                     <div className="text-xl text-white/60 line-through">{formatPrice(calculateTotal.retail)}</div>
                     <div className="flex items-center gap-3 mt-2">
                       <div>
-                        <div className="text-sm text-emerald-400">Insurance pays</div>
+                        <div className="text-sm text-emerald-400">Insurance saves</div>
                         <div className="text-lg font-semibold text-emerald-400">
                           {formatPrice(calculateTotal.insurance)}
                         </div>

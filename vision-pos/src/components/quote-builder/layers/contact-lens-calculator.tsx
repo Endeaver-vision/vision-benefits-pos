@@ -24,10 +24,18 @@ import {
   XCircle,
   Package,
   Shield,
-  Loader2
+  Loader2,
+  ChevronDown,
+  ChevronUp,
+  Edit2
 } from 'lucide-react'
 import { Alert, AlertDescription } from '@/components/ui/alert'
 import { useQuotePricingContext } from '@/contexts/quote-pricing-context'
+import {
+  calculateAnnualSupplyThreshold,
+  calculateBoxesPerEye,
+  getModalityFromLens,
+} from '@/lib/contact-lens-utils'
 
 // API pricing result type
 interface ContactLensPricingResult {
@@ -87,24 +95,6 @@ interface ContactLensCalculatorProps {
 }
 
 export function ContactLensCalculator({ className, onNext, onBack }: ContactLensCalculatorProps) {
-  // State
-  const [lenses, setLenses] = useState<ContactLens[]>([])
-  const [manufacturers, setManufacturers] = useState<string[]>([])
-  const [loading, setLoading] = useState(true)
-  const [searchQuery, setSearchQuery] = useState('')
-
-  // Selection state
-  const [selectedManufacturer, setSelectedManufacturer] = useState<string>('')
-  const [selectedLens, setSelectedLens] = useState<ContactLens | null>(null)
-  const [rightEyeBoxes, setRightEyeBoxes] = useState(4)
-  const [leftEyeBoxes, setLeftEyeBoxes] = useState(4)
-  const [rebateAmount, setRebateAmount] = useState(0)
-
-  // API pricing state
-  const [apiPricing, setApiPricing] = useState<ContactLensPricingResult | null>(null)
-  const [pricingLoading, setPricingLoading] = useState(false)
-  const [pricingError, setPricingError] = useState<string | null>(null)
-
   // Get insurance context and selected items
   const {
     customerId,
@@ -113,7 +103,46 @@ export function ContactLensCalculator({ className, onNext, onBack }: ContactLens
     selectedItems,
     materialsConflict,
     usesMaterialsAllowance,
+    contactLensSelections,
+    updateContactLensSelections,
   } = useQuotePricingContext()
+
+  // State
+  const [lenses, setLenses] = useState<ContactLens[]>([])
+  const [manufacturers, setManufacturers] = useState<string[]>([])
+  const [loading, setLoading] = useState(true)
+  const [searchQuery, setSearchQuery] = useState('')
+  const [isLensSelectionExpanded, setIsLensSelectionExpanded] = useState(true)
+
+  // Selection state - initialized from context (selectedLens restored when lenses load)
+  const [selectedManufacturer, setSelectedManufacturer] = useState<string>(contactLensSelections.manufacturer)
+  const [selectedLens, setSelectedLens] = useState<ContactLens | null>(null)
+  const [pendingLensId, setPendingLensId] = useState<string | null>(
+    contactLensSelections.selectedLens?.id || null
+  )
+  const [rightEyeBoxes, setRightEyeBoxes] = useState(contactLensSelections.boxesRight)
+  const [leftEyeBoxes, setLeftEyeBoxes] = useState(contactLensSelections.boxesLeft)
+  const [rebateAmount, setRebateAmount] = useState(0)
+
+  // API pricing state
+  const [apiPricing, setApiPricing] = useState<ContactLensPricingResult | null>(null)
+  const [pricingLoading, setPricingLoading] = useState(false)
+  const [pricingError, setPricingError] = useState<string | null>(null)
+
+  // Sync selections to context whenever they change
+  useEffect(() => {
+    updateContactLensSelections({
+      manufacturer: selectedManufacturer,
+      selectedLens: selectedLens ? {
+        id: selectedLens.id,
+        name: selectedLens.lensName,
+        manufacturer: selectedLens.manufacturer,
+        pricePerBox: selectedLens.retailPrice,
+      } : null,
+      boxesRight: rightEyeBoxes,
+      boxesLeft: leftEyeBoxes,
+    })
+  }, [selectedManufacturer, selectedLens, rightEyeBoxes, leftEyeBoxes, updateContactLensSelections])
 
   // Check if contacts benefit is getting the insurance allowance
   // This uses the automatic conflict detection system
@@ -154,6 +183,17 @@ export function ContactLensCalculator({ className, onNext, onBack }: ContactLens
 
     fetchLenses()
   }, [selectedManufacturer, searchQuery])
+
+  // Restore selected lens from context when lenses load
+  useEffect(() => {
+    if (pendingLensId && lenses.length > 0 && !selectedLens) {
+      const lens = lenses.find(l => l.id === pendingLensId)
+      if (lens) {
+        setSelectedLens(lens)
+        setPendingLensId(null)
+      }
+    }
+  }, [lenses, pendingLensId, selectedLens])
 
   // Fetch pricing from API when selection changes
   const fetchPricing = useCallback(async () => {
@@ -310,9 +350,25 @@ export function ContactLensCalculator({ className, onNext, onBack }: ContactLens
     if (lens.isMultifocal) types.push('Multifocal')
     if (lens.isColor) types.push('Color')
     if (lens.isDaily) types.push('Daily')
-    if (lens.isWeekly) types.push('Bi-Weekly')
+    if (lens.isWeekly) {
+      // Check modality string to distinguish weekly vs bi-weekly
+      types.push(lens.modality === 'weekly' ? 'Weekly' : 'Bi-Weekly')
+    }
     if (lens.isMonthly) types.push('Monthly')
     return types.join(' • ') || 'Standard'
+  }
+
+  // Get annual supply threshold using hybrid calculation
+  // Prefers API value > DB override > dynamic formula
+  const getAnnualSupplyThreshold = (lens: ContactLens | null) => {
+    // Prefer API pricing threshold if available (most accurate, server-calculated)
+    if (apiPricing?.annualSupplyThreshold) {
+      return apiPricing.annualSupplyThreshold
+    }
+    // Use hybrid calculation: DB override or dynamic formula
+    if (!lens) return 8
+    const modality = getModalityFromLens(lens)
+    return calculateAnnualSupplyThreshold(modality, lens.boxSize, lens.annualSupplyBothEyes)
   }
 
   return (
@@ -335,6 +391,7 @@ export function ContactLensCalculator({ className, onNext, onBack }: ContactLens
           <AlertDescription className="text-emerald-200">
             <strong className="text-emerald-300">Insurance Active:</strong> {authorization.carrier} coverage applies to contact lenses.
             {authorization.contactAllowance && ` Allowance: $${authorization.contactAllowance}`}
+            {authorization.contactFittingCopay !== null && authorization.contactFittingCopay !== undefined && ` • Fitting Copay: $${authorization.contactFittingCopay}`}
           </AlertDescription>
         </Alert>
       )}
@@ -373,66 +430,124 @@ export function ContactLensCalculator({ className, onNext, onBack }: ContactLens
 
       {/* Lens Selection */}
       {selectedManufacturer && (
-        <Card className="glass-card border-white/20">
-          <CardHeader>
-            <CardTitle className="flex items-center gap-2 text-white">
-              <Eye className="h-5 w-5" />
-              Step 2: Select Contact Lens
-            </CardTitle>
-            <CardDescription>
-              Choose the lens and box size
-            </CardDescription>
-          </CardHeader>
-          <CardContent>
-            {loading ? (
-              <div className="text-center py-8 text-white/60">Loading lenses...</div>
-            ) : (
-              <div className="space-y-4">
-                {Object.entries(groupedLenses).map(([lensName, variants]) => {
-                  const isSelected = selectedLens && variants.some(v => v.id === selectedLens.id)
-                  const primaryVariant = variants[0]
-
-                  return (
-                    <div key={lensName} className="space-y-2">
-                      <div className="flex items-center gap-2 mb-2">
-                        <span className="text-sm font-medium text-white">{lensName}</span>
-                        <Badge variant="outline" className="text-xs border-white/30 text-white/70">
-                          {getLensTypeLabel(primaryVariant)}
-                        </Badge>
-                      </div>
-                      <div className="grid grid-cols-2 md:grid-cols-3 gap-2">
-                        {variants.map(variant => (
-                          <button
-                            key={variant.id}
-                            onClick={() => setSelectedLens(variant)}
-                            className={`
-                              p-3 rounded-lg border transition-all text-left
-                              ${selectedLens?.id === variant.id
-                                ? 'border-blue-400 bg-blue-500/20'
-                                : 'border-white/20 hover:border-white/40 bg-white/5'
-                              }
-                            `}
-                          >
-                            <div className="flex items-center justify-between">
-                              <div>
-                                <div className="text-xs text-white/60">{variant.boxSize}-pack</div>
-                                <div className="text-lg font-bold text-white">
-                                  {formatPrice(variant.officePrice || variant.retailPrice)}
-                                </div>
-                              </div>
-                              {selectedLens?.id === variant.id && (
-                                <CheckCircle className="h-5 w-5 text-blue-400" />
-                              )}
-                            </div>
-                          </button>
-                        ))}
-                      </div>
+        <Card className={`glass-card border-white/20 ${selectedLens && !isLensSelectionExpanded ? 'border-emerald-500/50' : ''}`}>
+          <CardHeader className="cursor-pointer" onClick={() => selectedLens && setIsLensSelectionExpanded(!isLensSelectionExpanded)}>
+            <div className="flex items-center justify-between">
+              <CardTitle className="flex items-center gap-2 text-white">
+                {selectedLens && !isLensSelectionExpanded ? (
+                  <CheckCircle className="h-5 w-5 text-emerald-400" />
+                ) : (
+                  <Eye className="h-5 w-5" />
+                )}
+                Step 2: Select Contact Lens
+              </CardTitle>
+              {selectedLens && (
+                <Button
+                  variant="ghost"
+                  size="sm"
+                  onClick={(e) => {
+                    e.stopPropagation()
+                    setIsLensSelectionExpanded(!isLensSelectionExpanded)
+                  }}
+                  className="text-white/70 hover:text-white"
+                >
+                  {isLensSelectionExpanded ? (
+                    <ChevronUp className="h-5 w-5" />
+                  ) : (
+                    <>
+                      <Edit2 className="h-4 w-4 mr-1" />
+                      Change
+                    </>
+                  )}
+                </Button>
+              )}
+            </div>
+            {/* Collapsed Summary - Show when lens is selected and collapsed */}
+            {selectedLens && !isLensSelectionExpanded && (
+              <div className="mt-3 p-3 rounded-lg bg-emerald-500/20 border border-emerald-500/30">
+                <div className="flex items-center justify-between">
+                  <div>
+                    <div className="text-lg font-semibold text-white">{selectedLens.lensName}</div>
+                    <div className="text-sm text-white/70">
+                      {selectedLens.manufacturer} • {selectedLens.boxSize}-pack • {formatPrice(selectedLens.officePrice || selectedLens.retailPrice)}/box
                     </div>
-                  )
-                })}
+                  </div>
+                  <CheckCircle className="h-6 w-6 text-emerald-400" />
+                </div>
               </div>
             )}
-          </CardContent>
+            {/* Description only when expanded or no lens selected */}
+            {(!selectedLens || isLensSelectionExpanded) && (
+              <CardDescription>
+                Choose the lens and box size
+              </CardDescription>
+            )}
+          </CardHeader>
+          {/* Expandable Content */}
+          {(!selectedLens || isLensSelectionExpanded) && (
+            <CardContent>
+              {loading ? (
+                <div className="text-center py-8 text-white/60">Loading lenses...</div>
+              ) : (
+                <div className="space-y-4 max-h-96 overflow-y-auto">
+                  {Object.entries(groupedLenses).map(([lensName, variants]) => {
+                    const isSelected = selectedLens && variants.some(v => v.id === selectedLens.id)
+                    const primaryVariant = variants[0]
+
+                    return (
+                      <div key={lensName} className="space-y-2">
+                        <div className="flex items-center gap-2 mb-2">
+                          <span className="text-xl font-bold text-white">{lensName}</span>
+                          <Badge variant="outline" className="text-xs border-white/30 text-white/70">
+                            {getLensTypeLabel(primaryVariant)}
+                          </Badge>
+                        </div>
+                        <div className="grid grid-cols-2 md:grid-cols-3 gap-2">
+                          {variants.map(variant => (
+                            <button
+                              key={variant.id}
+                              onClick={() => {
+                                setSelectedLens(variant)
+                                setIsLensSelectionExpanded(false)
+                                // Auto-set box quantities to annual supply threshold
+                                const modality = getModalityFromLens(variant)
+                                const boxesPerEye = calculateBoxesPerEye(
+                                  modality,
+                                  variant.boxSize,
+                                  variant.annualSupplyBothEyes
+                                )
+                                setRightEyeBoxes(boxesPerEye)
+                                setLeftEyeBoxes(boxesPerEye)
+                              }}
+                              className={`
+                                p-3 rounded-lg border transition-all text-left
+                                ${selectedLens?.id === variant.id
+                                  ? 'border-blue-400 bg-blue-500/20'
+                                  : 'border-white/20 hover:border-white/40 bg-white/5'
+                                }
+                              `}
+                            >
+                              <div className="flex items-center justify-between">
+                                <div>
+                                  <div className="text-xs text-white/60">{variant.boxSize}-pack</div>
+                                  <div className="text-sm font-medium text-white">
+                                    {formatPrice(variant.officePrice || variant.retailPrice)}
+                                  </div>
+                                </div>
+                                {selectedLens?.id === variant.id && (
+                                  <CheckCircle className="h-5 w-5 text-blue-400" />
+                                )}
+                              </div>
+                            </button>
+                          ))}
+                        </div>
+                      </div>
+                    )
+                  })}
+                </div>
+              )}
+            </CardContent>
+          )}
         </Card>
       )}
 
@@ -445,7 +560,7 @@ export function ContactLensCalculator({ className, onNext, onBack }: ContactLens
               Step 3: Select Quantity
             </CardTitle>
             <CardDescription>
-              Annual supply threshold: {selectedLens.annualSupplyBothEyes || 8} boxes for both eyes
+              Annual supply threshold: {getAnnualSupplyThreshold(selectedLens)} boxes for both eyes
             </CardDescription>
           </CardHeader>
           <CardContent>
@@ -540,7 +655,7 @@ export function ContactLensCalculator({ className, onNext, onBack }: ContactLens
                 <>
                   <XCircle className="h-5 w-5 text-yellow-400" />
                   <span className="text-yellow-300 text-sm">
-                    Add {(selectedLens?.annualSupplyBothEyes || 8) - calculation.totalBoxes} more boxes for annual supply discount
+                    Add {getAnnualSupplyThreshold(selectedLens) - calculation.totalBoxes} more boxes for annual supply discount
                   </span>
                 </>
               )}
@@ -605,6 +720,20 @@ export function ContactLensCalculator({ className, onNext, onBack }: ContactLens
                   Enter any manufacturer rebate amount
                 </p>
               </div>
+              {/* Fitting Copay - shown when insurance is active */}
+              {authorization?.contactFittingCopay !== null && authorization?.contactFittingCopay !== undefined && isContactsInsured && (
+                <div className="space-y-2">
+                  <label className="text-sm font-medium text-white">CL Fitting Copay</label>
+                  <div className="p-3 rounded-lg bg-blue-500/20 border border-blue-500/30">
+                    <div className="text-2xl font-bold text-blue-400">
+                      {formatPrice(authorization.contactFittingCopay)}
+                    </div>
+                    <div className="text-xs text-blue-300 mt-1">
+                      Patient pays for fitting service
+                    </div>
+                  </div>
+                </div>
+              )}
             </div>
           </CardContent>
         </Card>
@@ -656,14 +785,14 @@ export function ContactLensCalculator({ className, onNext, onBack }: ContactLens
 
               <div className="border-t border-white/20 pt-3 mt-3">
                 <div className="flex justify-between items-center">
-                  <span className="text-lg font-semibold text-white">Patient Pays</span>
-                  <span className="text-2xl font-bold text-blue-400">
-                    {formatPrice(calculation.finalCost)}
+                  <span className="text-2xl font-bold text-white">Per Box</span>
+                  <span className="text-3xl font-bold text-blue-400">
+                    {formatPrice(calculation.costPerBox)}
                   </span>
                 </div>
-                <div className="flex justify-between text-sm text-white/60 mt-1">
-                  <span>Per Box</span>
-                  <span>{formatPrice(calculation.costPerBox)}</span>
+                <div className="flex justify-between text-sm text-white/60 mt-2">
+                  <span>Patient Pays Total</span>
+                  <span className="text-lg font-semibold text-white">{formatPrice(calculation.finalCost)}</span>
                 </div>
               </div>
             </div>

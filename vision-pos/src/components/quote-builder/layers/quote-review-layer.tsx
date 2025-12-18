@@ -55,20 +55,21 @@ export function QuoteReviewLayer({ onEdit, onFinalize, onBack }: QuoteReviewProp
   const addonItems = pricedItems.filter(item => item.category === 'addon')
   const examItems = pricedItems.filter(item => item.category === 'exam')
 
-  // Determine if materials copay applies
-  const hasLenses = lensItems.length > 0 || coatingItems.length > 0
-  const materialsCopay = hasLenses && authorization ? (pricingSummary.materialsCopay || 0) : 0
+  // Calculate totals by category
+  // Calculate eyeglasses total (frames + lenses + coatings + addons only)
+  const eyeglassesItems = [...frameItems, ...lensItems, ...coatingItems, ...addonItems]
+  const eyeglassesPatientTotal = eyeglassesItems.reduce((sum, item) => sum + item.patientPays, 0)
+  const eyeglassesInsuranceTotal = eyeglassesItems.reduce((sum, item) => sum + item.insurancePays, 0)
 
-  // Calculate totals
+  // Calculate exam total separately
+  const examPatientTotal = examItems.reduce((sum, item) => sum + item.patientPays, 0)
+
   const secondPairTotal = secondPair?.totalDue || 0
   const contactLensTotal = contactLenses?.totalDue || 0
-  const insurancePatientTotal = pricingSummary.patientTotal + materialsCopay
-  const totalBeforeTax = insurancePatientTotal + secondPairTotal + contactLensTotal
 
-  // Tax (8.75%) - only on optical goods, not contact lenses
-  const taxableAmount = insurancePatientTotal + secondPairTotal
-  const tax = taxableAmount * 0.0875
-  const grandTotal = totalBeforeTax + tax
+  // Grand total = exams + eyeglasses + second pair + contacts
+  // No tax - medical devices and services are tax exempt
+  const grandTotal = examPatientTotal + eyeglassesPatientTotal + secondPairTotal + contactLensTotal
 
   const formatPrice = (price: number) => {
     return new Intl.NumberFormat('en-US', {
@@ -120,7 +121,7 @@ export function QuoteReviewLayer({ onEdit, onFinalize, onBack }: QuoteReviewProp
           retailTotal: pricingSummary.retailTotal,
           insuranceTotal: pricingSummary.insuranceTotal,
           patientTotal: pricingSummary.patientTotal,
-          tax,
+          tax: 0,  // Medical devices/services are tax exempt
           grandTotal
         })
       })
@@ -195,7 +196,7 @@ export function QuoteReviewLayer({ onEdit, onFinalize, onBack }: QuoteReviewProp
           retailTotal: pricingSummary.retailTotal,
           insuranceTotal: pricingSummary.insuranceTotal,
           patientTotal: pricingSummary.patientTotal,
-          tax,
+          tax: 0,  // Medical devices/services are tax exempt
           grandTotal
         })
       })
@@ -341,6 +342,45 @@ export function QuoteReviewLayer({ onEdit, onFinalize, onBack }: QuoteReviewProp
             </div>
           ) : (
             <div className="divide-y divide-white/10">
+              {/* Exam Services - First */}
+              {examItems.length > 0 && (
+                <div className="p-6">
+                  <div className="flex items-center justify-between mb-4">
+                    <h3 className="font-semibold text-white">Exam Services</h3>
+                    <Button
+                      variant="ghost"
+                      size="sm"
+                      onClick={() => onEdit?.('exam-services')}
+                      className="text-white/60 hover:text-white"
+                    >
+                      Edit
+                    </Button>
+                  </div>
+
+                  <div className="space-y-2">
+                    {examItems.map(item => (
+                      <div key={item.sku} className="flex justify-between items-center py-2">
+                        <span className="text-white">{item.displayName}</span>
+                        <div className="text-right">
+                          {item.insurancePays > 0 && (
+                            <span className="text-xs text-white/40 line-through mr-2">{formatPrice(item.retailPrice)}</span>
+                          )}
+                          <span className="font-medium text-white">{formatPrice(item.patientPays)}</span>
+                        </div>
+                      </div>
+                    ))}
+
+                    {/* Exam Services Subtotal */}
+                    {examItems.length > 1 && (
+                      <div className="flex justify-between items-center pt-3 border-t border-white/10">
+                        <span className="font-medium text-white">Exam Services Subtotal</span>
+                        <span className="font-bold text-white">{formatPrice(examPatientTotal)}</span>
+                      </div>
+                    )}
+                  </div>
+                </div>
+              )}
+
               {/* Primary Pair - Eyeglasses */}
               {(frameItems.length > 0 || lensItems.length > 0 || coatingItems.length > 0 || addonItems.length > 0) && (
                 <div className="p-6">
@@ -422,57 +462,18 @@ export function QuoteReviewLayer({ onEdit, onFinalize, onBack }: QuoteReviewProp
                       </div>
                     ))}
 
-                    {/* Materials Copay */}
-                    {materialsCopay > 0 && (
-                      <div className="flex justify-between items-center py-2 text-white/70">
-                        <span>Materials Copay</span>
-                        <span>{formatPrice(materialsCopay)}</span>
-                      </div>
-                    )}
-
                     {/* Subtotal */}
                     <div className="flex justify-between items-center pt-3 border-t border-white/10">
                       <span className="font-medium text-white">Primary Pair Subtotal</span>
-                      <span className="font-bold text-white">{formatPrice(insurancePatientTotal)}</span>
+                      <span className="font-bold text-white">{formatPrice(eyeglassesPatientTotal)}</span>
                     </div>
 
-                    {pricingSummary.insuranceTotal > 0 && (
+                    {eyeglassesInsuranceTotal > 0 && (
                       <div className="flex justify-between items-center text-emerald-400 text-sm">
                         <span>Insurance Covered</span>
-                        <span>-{formatPrice(pricingSummary.insuranceTotal)}</span>
+                        <span>-{formatPrice(eyeglassesInsuranceTotal)}</span>
                       </div>
                     )}
-                  </div>
-                </div>
-              )}
-
-              {/* Exam Services */}
-              {examItems.length > 0 && (
-                <div className="p-6">
-                  <div className="flex items-center justify-between mb-4">
-                    <h3 className="font-semibold text-white">Exam Services</h3>
-                    <Button
-                      variant="ghost"
-                      size="sm"
-                      onClick={() => onEdit?.('exam-services')}
-                      className="text-white/60 hover:text-white"
-                    >
-                      Edit
-                    </Button>
-                  </div>
-
-                  <div className="space-y-2">
-                    {examItems.map(item => (
-                      <div key={item.sku} className="flex justify-between items-center py-2">
-                        <span className="text-white">{item.displayName}</span>
-                        <div className="text-right">
-                          {item.insurancePays > 0 && (
-                            <span className="text-xs text-white/40 line-through mr-2">{formatPrice(item.retailPrice)}</span>
-                          )}
-                          <span className="font-medium text-white">{formatPrice(item.patientPays)}</span>
-                        </div>
-                      </div>
-                    ))}
                   </div>
                 </div>
               )}
@@ -619,18 +620,18 @@ export function QuoteReviewLayer({ onEdit, onFinalize, onBack }: QuoteReviewProp
         <Card className="bg-gradient-to-r from-blue-900/50 to-purple-900/50 border-blue-400/30">
           <CardContent className="p-6">
             <div className="space-y-3">
-              {/* Line items summary */}
+              {/* Line items summary - Order: Exam, Eyeglasses, Second Pair, Contact Lenses */}
               <div className="space-y-2 text-sm">
-                {insurancePatientTotal > 0 && (
-                  <div className="flex justify-between text-white/80">
-                    <span>Primary Eyeglasses</span>
-                    <span>{formatPrice(insurancePatientTotal)}</span>
-                  </div>
-                )}
-                {examItems.length > 0 && (
+                {examPatientTotal > 0 && (
                   <div className="flex justify-between text-white/80">
                     <span>Exam Services</span>
-                    <span>{formatPrice(examItems.reduce((sum, item) => sum + item.patientPays, 0))}</span>
+                    <span>{formatPrice(examPatientTotal)}</span>
+                  </div>
+                )}
+                {eyeglassesPatientTotal > 0 && (
+                  <div className="flex justify-between text-white/80">
+                    <span>Primary Eyeglasses</span>
+                    <span>{formatPrice(eyeglassesPatientTotal)}</span>
                   </div>
                 )}
                 {secondPair?.enabled && (
@@ -645,18 +646,6 @@ export function QuoteReviewLayer({ onEdit, onFinalize, onBack }: QuoteReviewProp
                     <span>{formatPrice(contactLensTotal)}</span>
                   </div>
                 )}
-              </div>
-
-              <Separator className="bg-white/20" />
-
-              <div className="flex justify-between text-white/80">
-                <span>Subtotal</span>
-                <span>{formatPrice(totalBeforeTax)}</span>
-              </div>
-
-              <div className="flex justify-between text-white/80">
-                <span>Tax (8.75%)</span>
-                <span>{formatPrice(tax)}</span>
               </div>
 
               <Separator className="bg-white/20" />
@@ -800,8 +789,7 @@ export function QuoteReviewLayer({ onEdit, onFinalize, onBack }: QuoteReviewProp
               retailTotal={pricingSummary.retailTotal}
               insuranceTotal={pricingSummary.insuranceTotal}
               patientTotal={pricingSummary.patientTotal}
-              materialsCopay={materialsCopay}
-              tax={tax}
+              tax={0}
               grandTotal={grandTotal}
             />
           </div>

@@ -342,16 +342,16 @@ async function createEyemedAuthorization(body: IntakeRequest): Promise<string> {
         ?? data.frame.allowances.nonAltairMarchonFrameAllowance?.overageDiscount,
       frameCopay: 0,
 
-      // Lens copays
-      singleVisionCopay: copays.singleVisionCopay ?? 0,
-      bifocalCopay: copays.bifocalCopay ?? 0,
-      trifocalCopay: copays.trifocalCopay ?? 0,
+      // Lens copays - NO DEFAULTS
+      singleVisionCopay: copays.singleVisionCopay ?? null,
+      bifocalCopay: copays.bifocalCopay ?? null,
+      trifocalCopay: copays.trifocalCopay ?? null,
 
-      // Progressive copays
-      progressiveStandardCopay: copays.progressiveStandardCopay ?? 0,
-      progressiveTier1Copay: copays.progressiveTier1Copay ?? 0,
-      progressiveTier2Copay: copays.progressiveTier2Copay ?? 0,
-      progressiveTier3Copay: copays.progressiveTier3Copay ?? 0,
+      // Progressive copays - NO DEFAULTS
+      progressiveStandardCopay: copays.progressiveStandardCopay ?? null,
+      progressiveTier1Copay: copays.progressiveTier1Copay ?? null,
+      progressiveTier2Copay: copays.progressiveTier2Copay ?? null,
+      progressiveTier3Copay: copays.progressiveTier3Copay ?? null,
       progressiveTier4Copay: copays.progressiveTier4Copay ?? null,
 
       // Contacts
@@ -433,10 +433,10 @@ async function createSpecteraAuthorization(body: IntakeRequest): Promise<string>
       // Frame
       frameAllowance: data.frame.allowances.nonAltairMarchonFrameAllowance?.allowance
         ?? data.frame.allowances.altairMarchonFrameAllowance?.allowance,
-      frameOveragePercent: 70, // Spectera typically 70% patient pays
+      frameOveragePercent: null, // NO DEFAULT - must be extracted from document
 
-      // Lens copays
-      standardLensCopay: copays.standardLensCopay ?? 15,
+      // Lens copays - NO DEFAULTS
+      standardLensCopay: copays.standardLensCopay ?? null,
       progressiveTier1Copay: copays.progressiveTier1Copay,
       progressiveTier2Copay: copays.progressiveTier2Copay,
       progressiveTier3Copay: copays.progressiveTier3Copay,

@@ -4,15 +4,30 @@
  *
  * Uses LensProduct table for lens-related items (with carrier tier mappings)
  * Uses Product table for frames and legacy items
+ *
+ * Query Parameters:
+ * - customerId: Optional customer ID to fetch pre-computed prices from CustomerPriceList
+ * - carrier: Optional carrier filter when customer has multiple insurance plans
+ *
+ * Price List Integration:
+ * - If customerId provided, merges prices from customer_price_lists table
+ * - Products show both retailPrice and customerPrice (patient pays)
+ * - customerPrice = null means needs manual pricing
+ * - customerPrice = 0 means fully covered by insurance
  */
 
-import { NextResponse } from 'next/server'
+import { NextRequest, NextResponse } from 'next/server'
 import { prisma } from '@/lib/prisma'
 
 interface QuoteBuilderProduct {
   id: string
   name: string
-  price: number
+  price: number              // Retail price (always present)
+  customerPrice?: number | null  // Patient pays from price list (null = needs pricing)
+  insuranceSavings?: number  // How much insurance covers
+  tier?: string | null       // Insurance tier code (e.g., "KA", "tier_1")
+  needsPricing?: boolean     // True if no price mapping exists
+  hasCustomPrice?: boolean   // True if manually overridden
   sku: string | null
   manufacturer?: string | null
   brand?: string | null
@@ -24,8 +39,60 @@ interface QuoteBuilderProduct {
   posDisplayOrder?: number | null  // For preserving database sort order
 }
 
-export async function GET() {
+interface PriceListEntry {
+  finalPrice: number | null
+  customPrice: number | null
+  tier: string | null
+  retailPrice: number
+}
+
+export async function GET(request: NextRequest) {
   try {
+    const { searchParams } = new URL(request.url)
+    const customerId = searchParams.get('customerId')
+    const carrierFilter = searchParams.get('carrier')  // Optional: filter to specific carrier
+
+    // Load customer's pre-computed price list if customerId provided
+    const priceList = new Map<string, PriceListEntry>()
+    let customerCarrier: string | null = null
+    let hasPriceList = false
+
+    if (customerId) {
+      // Build where clause for price list query
+      const priceListWhere: { customerId: string; active: boolean; insuranceCarrier?: string } = {
+        customerId,
+        active: true
+      }
+
+      // If carrier filter specified, only get prices for that carrier
+      if (carrierFilter) {
+        priceListWhere.insuranceCarrier = carrierFilter
+      }
+
+      const customerPrices = await prisma.customerPriceList.findMany({
+        where: priceListWhere,
+        orderBy: { createdAt: 'desc' }  // Most recent first
+      })
+
+      for (const price of customerPrices) {
+        // Use first occurrence of each product (most recent per carrier)
+        if (!priceList.has(price.productId)) {
+          priceList.set(price.productId, {
+            finalPrice: price.customPrice ?? price.finalPrice,  // Custom price takes precedence
+            customPrice: price.customPrice,
+            tier: price.tier,
+            retailPrice: price.retailPrice
+          })
+        }
+        // Track carrier from first price entry
+        if (!customerCarrier && price.insuranceCarrier) {
+          customerCarrier = price.insuranceCarrier
+        }
+      }
+
+      hasPriceList = priceList.size > 0
+    }
+
     const grouped: Record<string, QuoteBuilderProduct[]> = {
       frames: [],
       lensType: [],
@@ -35,6 +102,39 @@ export async function GET() {
       polarized: [],
       mountFee: [],
       addons: []
+    }
+
+    // Helper to enrich product with price list data
+    const enrichWithPriceList = (
+      product: QuoteBuilderProduct,
+      productId: string
+    ): QuoteBuilderProduct => {
+      const priceEntry = priceList.get(productId)
+
+      if (priceEntry) {
+        return {
+          ...product,
+          customerPrice: priceEntry.finalPrice,
+          insuranceSavings: priceEntry.finalPrice !== null
+            ? Math.max(0, product.price - priceEntry.finalPrice)
+            : 0,
+          tier: priceEntry.tier,
+          needsPricing: priceEntry.finalPrice === null,
+          hasCustomPrice: priceEntry.customPrice !== null
+        }
+      }
+
+      // No price list entry - mark as needing pricing if customer has insurance
+      if (hasPriceList) {
+        return {
+          ...product,
+          customerPrice: null,
+          needsPricing: true
+        }
+      }
+
+      // No customer / no insurance - just return retail
+      return product
     }
 
     // Fetch ONLY preferred lens products (curated list for the practice)
@@ -93,7 +193,7 @@ export async function GET() {
         nameLower.includes(pattern)
       )
 
-      grouped[groupKey]?.push({
+      const baseProduct: QuoteBuilderProduct = {
         id: product.id,
         name: product.name,
         price: product.retailPrice,
@@ -104,7 +204,14 @@ export async function GET() {
         notes: isCashPayOnly
           ? 'Cash pay only - no vision plans'
           : undefined
-      })
+      }
+
+      // Enrich with customer price list data if available
+      const enrichedProduct = isCashPayOnly
+        ? baseProduct  // Cash pay products don't use insurance
+        : enrichWithPriceList(baseProduct, product.id)
+
+      grouped[groupKey]?.push(enrichedProduct)
     }
 
     // Fetch frames from Frame table - prioritize featured and showInPos
@@ -123,7 +230,7 @@ export async function GET() {
     })
 
     for (const frame of frames) {
-      grouped.frames.push({
+      const baseProduct: QuoteBuilderProduct = {
         id: frame.id,
         name: `${frame.brand} ${frame.model}`,
         price: frame.retailPrice,
@@ -134,7 +241,10 @@ export async function GET() {
         color: frame.color,
         isFeatured: frame.isFeatured,
         notes: frame.isFeatured ? 'VSP Featured Brand' : undefined
-      })
+      }
+
+      // Enrich with customer price list data if available
+      grouped.frames.push(enrichWithPriceList(baseProduct, frame.id))
     }
 
     // If no frames found in Frame table, fall back to Product table
@@ -152,13 +262,16 @@ export async function GET() {
       })
 
       for (const frame of legacyFrames) {
-        grouped.frames.push({
+        const baseProduct: QuoteBuilderProduct = {
           id: frame.id,
           name: frame.name,
           price: frame.basePrice,
           sku: frame.sku,
           manufacturer: frame.manufacturer
-        })
+        }
+
+        // Enrich with customer price list data if available
+        grouped.frames.push(enrichWithPriceList(baseProduct, frame.id))
       }
     }
 
@@ -198,13 +311,16 @@ export async function GET() {
       for (const product of legacyProducts) {
         const groupKey = legacyCategoryMap[product.category.code] || 'addons'
 
-        grouped[groupKey]?.push({
+        const baseProduct: QuoteBuilderProduct = {
           id: product.id,
           name: product.name,
           price: product.basePrice,
           sku: product.sku,
           manufacturer: product.manufacturer
-        })
+        }
+
+        // Enrich with customer price list data if available
+        grouped[groupKey]?.push(enrichWithPriceList(baseProduct, product.id))
       }
     }
 
@@ -235,6 +351,11 @@ export async function GET() {
       }
     }
 
+    // Count products needing pricing (only relevant if customer has price list)
+    const productsNeedingPricing = hasPriceList
+      ? Object.values(grouped).flat().filter(p => p.needsPricing).length
+      : 0
+
     return NextResponse.json({
       success: true,
       products: grouped,
@@ -247,7 +368,14 @@ export async function GET() {
         polarized: 'Polarized',
         mountFee: 'Mount Fee',
         addons: 'Add-ons'
-      }
+      },
+      // Customer pricing info (only present if customerId provided)
+      customer: customerId ? {
+        id: customerId,
+        carrier: customerCarrier,
+        hasPriceList,
+        productsNeedingPricing
+      } : null
     })
   } catch (error) {
     console.error('[Quote Builder Products API] Error:', error)

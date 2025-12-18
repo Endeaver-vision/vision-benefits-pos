@@ -78,7 +78,8 @@ function DialogContent({
           <DialogPrimitive.Close
             data-slot="dialog-close"
             className={cn(
-              "absolute top-4 right-4 rounded-xl p-2 transition-all duration-200",
+              // Use specific transitions to avoid backdrop-filter rendering bugs
+              "absolute top-4 right-4 rounded-xl p-2 transition-[background-color,color] duration-200 transform-gpu",
               "bg-white/10 hover:bg-white/20 text-muted-foreground hover:text-foreground",
               "focus:outline-none focus:ring-2 focus:ring-primary/50",
               "disabled:pointer-events-none",

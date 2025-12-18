@@ -1,6 +1,5 @@
 // OCR Service for Insurance Document Processing
-// Uses Google Cloud Vision for OCR (cheap) + GPT for text parsing
-// This is much more cost-effective than GPT-4o Vision
+// Uses Google Cloud Vision for OCR + GPT for text parsing
 
 import * as fs from 'fs'
 import { ImageAnnotatorClient } from '@google-cloud/vision'
@@ -12,7 +11,6 @@ let visionClient: ImageAnnotatorClient | null = null
 
 function getVisionClient(): ImageAnnotatorClient {
   if (!visionClient) {
-    // Uses GOOGLE_APPLICATION_CREDENTIALS environment variable
     visionClient = new ImageAnnotatorClient()
   }
   return visionClient
@@ -20,7 +18,6 @@ function getVisionClient(): ImageAnnotatorClient {
 
 /**
  * Process document with Google Cloud Vision OCR
- * Supports images (PNG, JPG) and PDFs
  */
 export async function processDocument(filePath: string): Promise<{
   success: boolean
@@ -51,7 +48,6 @@ export async function processDocument(filePath: string): Promise<{
         const pdfData = await pdfParseLib(fileBuffer)
 
         if (pdfData.text && pdfData.text.trim().length > 100) {
-          // Good enough text content, use it
           text = pdfData.text
           pageCount = pdfData.numpages || 1
           console.log(`📄 PDF text extracted: ${text.length} chars from ${pageCount} pages`)
@@ -70,8 +66,6 @@ export async function processDocument(filePath: string): Promise<{
       }
 
       // Fall back to Google Vision for image-based PDFs
-      // Note: Vision API requires GCS for PDFs, so we'll convert pages to images
-      // For now, just try document text detection on the file directly
       const fileBuffer = fs.readFileSync(filePath)
       const base64Content = fileBuffer.toString('base64')
 
@@ -101,8 +95,6 @@ export async function processDocument(filePath: string): Promise<{
     }
 
     console.log('✅ OCR completed successfully')
-    console.log('========================================\n')
-
     return {
       success: true,
       text,
@@ -122,8 +114,7 @@ export async function processDocument(filePath: string): Promise<{
 }
 
 /**
- * Full pipeline: OCR + GPT extraction
- * Returns extracted insurance data
+ * Full pipeline: Google Vision OCR + GPT extraction
  */
 export async function processDocumentWithVision(
   filePath: string
@@ -132,6 +123,11 @@ export async function processDocumentWithVision(
   extractedData?: ExtractedInsuranceData
   rawText?: string
   error?: string
+  timing?: {
+    ocrMs: number
+    gptMs: number
+    totalMs: number
+  }
 }> {
   console.log('\n========================================')
   console.log('📥 FULL DOCUMENT PROCESSING PIPELINE')
@@ -140,7 +136,10 @@ export async function processDocumentWithVision(
 
   try {
     // Step 1: OCR with Google Vision
+    const ocrStart = Date.now()
     const ocrResult = await processDocument(filePath)
+    const ocrTime = Date.now() - ocrStart
+    console.log(`⏱️ OCR completed in ${ocrTime}ms`)
 
     if (!ocrResult.success || !ocrResult.text) {
       return {
@@ -152,20 +151,28 @@ export async function processDocumentWithVision(
     console.log(`\n📝 OCR Text Preview (first 300 chars):`)
     console.log(ocrResult.text.substring(0, 300) + '...\n')
 
-    // Step 2: Parse with GPT (uses gpt-4o for text, NOT gpt-4o-vision)
+    // Step 2: Parse with GPT
     console.log('🤖 Sending OCR text to GPT for parsing...')
-
+    const gptStart = Date.now()
     const extractedData = await parseInsuranceDocument(ocrResult.text)
+    const gptTime = Date.now() - gptStart
+    console.log(`⏱️ GPT parsing completed in ${gptTime}ms`)
 
+    const totalTime = ocrTime + gptTime
     console.log('✅ Document processed successfully')
     console.log('📊 Carrier:', extractedData.plan?.carrier?.value || 'Unknown')
-    console.log('📊 Confidence:', extractedData.overallConfidence || 'N/A')
+    console.log(`⏱️ Total time: ${totalTime}ms`)
     console.log('========================================\n')
 
     return {
       success: true,
       extractedData,
       rawText: ocrResult.text,
+      timing: {
+        ocrMs: ocrTime,
+        gptMs: gptTime,
+        totalMs: totalTime,
+      },
     }
 
   } catch (error) {
@@ -186,9 +193,8 @@ export async function processDocumentFromBase64(
   tempDir: string = '/tmp'
 ): Promise<{
   success: boolean
-  text: string
-  method: string
-  pageCount?: number
+  extractedData?: ExtractedInsuranceData
+  rawText?: string
   error?: string
 }> {
   const tempPath = `${tempDir}/${Date.now()}-${fileName}`
@@ -199,7 +205,7 @@ export async function processDocumentFromBase64(
     fs.writeFileSync(tempPath, buffer)
 
     // Process the document
-    const result = await processDocument(tempPath)
+    const result = await processDocumentWithVision(tempPath)
 
     return result
   } finally {

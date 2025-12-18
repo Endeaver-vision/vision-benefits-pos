@@ -91,26 +91,26 @@ export function convertToVspBenefitAuth(
   const { progressiveCopays, arCopays, materialCopays, enhancementCopays } =
     buildCopayMaps(authData.lensEnhancementCopays)
 
-  // Build plan tier
+  // Build plan tier - NO DEFAULTS, only use scanned data
   const planTier: VspPlanTier = {
     tier: mapPlanTypeToTier(authData.planType),
     progressiveCopays,
     arCopays,
     materialCopays: {
-      polycarbonate: materialCopays['AD'] ?? 35,
+      polycarbonate: materialCopays['AD'] ?? null,
       polycarbonateChild: 'covered',
-      trivex: materialCopays['AB'] ?? 56,
-      highIndex167: materialCopays['AH'] ?? 98,
-      highIndex174: materialCopays['AJ'] ?? 118,
+      trivex: materialCopays['AB'] ?? null,
+      highIndex167: materialCopays['AH'] ?? null,
+      highIndex174: materialCopays['AJ'] ?? null,
     },
     enhancementCopays: {
-      photochromic: enhancementCopays['PR'] ?? 75,
-      polarized: enhancementCopays['DA'] ?? 77,
-      blueLightFilter: enhancementCopays['LF'] ?? 15,
-      tint: enhancementCopays['MN'] ?? 15,
-      rimlessDrill: enhancementCopays['SW'] ?? 30,
-      edgePolish: enhancementCopays['SP'] ?? 16,
-      edgeCoating: enhancementCopays['SQ'] ?? 36,
+      photochromic: enhancementCopays['PR'] ?? null,
+      polarized: enhancementCopays['DA'] ?? null,
+      blueLightFilter: enhancementCopays['LF'] ?? null,
+      tint: enhancementCopays['MN'] ?? null,
+      rimlessDrill: enhancementCopays['SW'] ?? null,
+      edgePolish: enhancementCopays['SP'] ?? null,
+      edgeCoating: enhancementCopays['SQ'] ?? null,
     },
     // Raw enhancement copays keyed by VSP code for tier-based lookups
     lensEnhancementCopays: enhancementCopays,
@@ -125,17 +125,18 @@ export function convertToVspBenefitAuth(
       lenses: { count: 1, periodMonths: 12 },
     },
     copays: {
-      examWellvision: authData.examCopay ?? 10,
-      materials: authData.materialsCopay ?? 25,
-      frameAllowanceFeatured: authData.frameAllowanceMarchon ?? 220,
-      frameAllowanceNonFeatured: authData.frameAllowanceRetail ?? 200,
+      // NO DEFAULTS - only use scanned data, null if missing
+      examWellvision: authData.examCopay,
+      materials: authData.materialsCopay,
+      frameAllowanceFeatured: authData.frameAllowanceMarchon,
+      frameAllowanceNonFeatured: authData.frameAllowanceRetail,
       // Normalize frameOverageDiscount to decimal (0.20 = 20%)
-      // Database may store as integer (20) or decimal (0.20) depending on source
-      frameOverageDiscount: normalizeOverageDiscount(authData.frameOverageDiscount),
-      contactLensAllowance: authData.contactAllowance ?? undefined,
+      frameOverageDiscount: authData.frameOverageDiscount !== null
+        ? normalizeOverageDiscount(authData.frameOverageDiscount)
+        : null,
+      contactLensAllowance: authData.contactAllowance,
       contactFittingCovered: authData.contactFittingCovered,
       // Extract contact lens exam copay from raw OCR data
-      // This is what patient pays for CL fitting (e.g., $60)
       contactLensExamCopay: extractContactLensExamCopay(authData.rawPatientReport),
     },
     planTier,
@@ -147,64 +148,25 @@ export function convertToVspBenefitAuth(
 }
 
 /**
- * Default VSP Choice tier copays (used when no scanned data exists)
- * Based on standard VSP Choice plan pricing
- */
-const DEFAULT_VSP_CHOICE_COPAYS = {
-  progressive: {
-    'KA': 55,   // Standard progressive
-    'JA': 95,   // Premium tier 1
-    'FA': 120,  // Premium tier 2
-    'OA': 150,  // Premium tier 3
-    'NA': 175,  // Premium tier 4
-  },
-  ar: {
-    'QM': 0,    // Standard AR (covered)
-    'QT': 45,   // Premium AR tier 1
-    'QV': 65,   // Premium AR tier 2
-  },
-  material: {
-    'AD': 35,   // Polycarbonate
-    'AB': 56,   // Trivex
-    'AH': 98,   // High index 1.67
-    'AJ': 118,  // High index 1.74
-  },
-  enhancement: {
-    'PR': 75,   // Photochromic
-    'DA': 77,   // Polarized
-    'LF': 15,   // Blue light filter
-    'MN': 15,   // Tint
-    'SW': 30,   // Rimless drill mount
-    'SP': 16,   // High luster edge polish
-    'SQ': 36,   // Edge coating
-  },
-}
-
-/**
  * Build copay lookup maps from the lens enhancement data
- * Falls back to default VSP Choice copays when no data exists
+ * NO DEFAULTS - returns only what was actually scanned
  */
 function buildCopayMaps(copays: VspLensEnhancementCopayData[]): {
-  progressiveCopays: { [code: string]: number }
-  arCopays: { [code: string]: number }
-  materialCopays: { [code: string]: number }
-  enhancementCopays: { [code: string]: number }
+  progressiveCopays: { [code: string]: number | null }
+  arCopays: { [code: string]: number | null }
+  materialCopays: { [code: string]: number | null }
+  enhancementCopays: { [code: string]: number | null }
 } {
-  // If no copays data, return defaults
-  if (!copays || copays.length === 0) {
-    return {
-      progressiveCopays: { ...DEFAULT_VSP_CHOICE_COPAYS.progressive },
-      arCopays: { ...DEFAULT_VSP_CHOICE_COPAYS.ar },
-      materialCopays: { ...DEFAULT_VSP_CHOICE_COPAYS.material },
-      enhancementCopays: { ...DEFAULT_VSP_CHOICE_COPAYS.enhancement },
-    }
-  }
+  // Start with empty maps - NO DEFAULTS
+  const progressiveCopays: { [code: string]: number | null } = {}
+  const arCopays: { [code: string]: number | null } = {}
+  const materialCopays: { [code: string]: number | null } = {}
+  const enhancementCopays: { [code: string]: number | null } = {}
 
-  // Start with defaults, then override with scanned data
-  const progressiveCopays: { [code: string]: number } = { ...DEFAULT_VSP_CHOICE_COPAYS.progressive }
-  const arCopays: { [code: string]: number } = { ...DEFAULT_VSP_CHOICE_COPAYS.ar }
-  const materialCopays: { [code: string]: number } = { ...DEFAULT_VSP_CHOICE_COPAYS.material }
-  const enhancementCopays: { [code: string]: number } = { ...DEFAULT_VSP_CHOICE_COPAYS.enhancement }
+  // If no copays data, return empty maps
+  if (!copays || copays.length === 0) {
+    return { progressiveCopays, arCopays, materialCopays, enhancementCopays }
+  }
 
   // Progressive base codes (use multifocal copay)
   const progressiveCodes = ['NA', 'OA', 'FA', 'JA', 'KA']
@@ -220,25 +182,24 @@ function buildCopayMaps(copays: VspLensEnhancementCopayData[]): {
 
   for (const copay of copays) {
     const code = copay.code
+    // Get the copay value - prefer multifocal, fallback to single vision, null if neither
+    const copayValue = copay.copayMultifocal ?? copay.copaySingleVision ?? null
 
-    // Progressive lenses - use multifocal copay
+    // Progressive lenses
     if (progressiveCodes.includes(code)) {
-      progressiveCopays[code] = copay.copayMultifocal ?? copay.copaySingleVision ?? progressiveCopays[code] ?? 0
+      progressiveCopays[code] = copayValue
     }
-
-    // AR coatings - use either copay (they're usually the same for AR)
+    // AR coatings
     else if (arCodes.includes(code)) {
-      arCopays[code] = copay.copayMultifocal ?? copay.copaySingleVision ?? arCopays[code] ?? 0
+      arCopays[code] = copayValue
     }
-
-    // Material modifiers - use MF copay for progressives context
+    // Material modifiers
     else if (materialModifierCodes.includes(code)) {
-      materialCopays[code] = copay.copayMultifocal ?? copay.copaySingleVision ?? materialCopays[code] ?? 0
+      materialCopays[code] = copayValue
     }
-
     // Enhancements
     else if (enhancementCodes.includes(code)) {
-      enhancementCopays[code] = copay.copayMultifocal ?? copay.copaySingleVision ?? enhancementCopays[code] ?? 0
+      enhancementCopays[code] = copayValue
     }
   }
 
@@ -316,11 +277,11 @@ function mapPlanTypeToNetwork(planType: VspAuthorizationData['planType']): strin
 /**
  * Normalize frameOverageDiscount to decimal format (0.20 = 20%)
  * Database may store as integer (20 for 20%) or decimal (0.20 for 20%)
- * This function handles both cases and defaults to 0.20 (20%) if null
+ * NO DEFAULT - returns null if no data
  */
-function normalizeOverageDiscount(discount: number | null): number {
+function normalizeOverageDiscount(discount: number | null): number | null {
   if (discount === null || discount === undefined) {
-    return 0.20 // Default 20% discount
+    return null // No default - missing is missing
   }
   // If discount > 1, assume it's stored as integer (20 = 20%)
   // If discount <= 1, assume it's already decimal (0.20 = 20%)
@@ -335,7 +296,8 @@ function normalizeOverageDiscount(discount: number | null): number {
  *
  * Tries multiple sources:
  * 1. contacts.clExamOnlyPatientPaysOver.value (direct numeric extraction)
- * 2. contacts.clExamDiscount.value (parse number from text like "60 copay")
+ * 2. contacts.clExamCopay.value (parse number from text like "lesser of 60 copay or 85% U&C")
+ * 3. contacts.clExamDiscount.value (legacy field name)
  *
  * Represents what patient pays for contact lens fitting (e.g., $60)
  */
@@ -351,7 +313,21 @@ function extractContactLensExamCopay(rawPatientReport: Record<string, unknown> |
     return clExamField.value
   }
 
-  // Fallback: parse number from clExamDiscount text (e.g., "Charge the lesser of 60 copay or 85% U&C")
+  // Try clExamCopay field (common field name from GPT extraction)
+  const clExamCopay = contacts.clExamCopay as { value: string | number | null; confidence: number } | undefined
+  if (clExamCopay?.value) {
+    // If it's already a number, return it
+    if (typeof clExamCopay.value === 'number') {
+      return clExamCopay.value
+    }
+    // Parse number from text (e.g., "lesser of 60 copay or 85% U&C")
+    const match = String(clExamCopay.value).match(/(\d+(?:\.\d{2})?)\s*(?:copay|co-pay)/i)
+    if (match) {
+      return parseFloat(match[1])
+    }
+  }
+
+  // Fallback: parse number from clExamDiscount text (legacy field name)
   const clExamDiscount = contacts.clExamDiscount as { value: string | null; confidence: number } | undefined
   if (clExamDiscount?.value) {
     // Look for patterns like "60 copay", "$60", "60.00"

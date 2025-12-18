@@ -3,7 +3,12 @@
  * GET /api/pos/products - Unified endpoint for all POS products
  *
  * Returns frames, lenses, contacts with pre-calculated patient copays
- * based on the customer's active insurance authorization.
+ * based on the customer's price list (from scanned documents).
+ *
+ * Price List Priority:
+ * - If customer has a price list entry for product, use that price
+ * - Products with NULL prices are flagged as "needsPricing" = true
+ * - Falls back to real-time calculation if no price list exists
  *
  * Location-Specific Visibility:
  * - When locationId is provided, filters products based on LocationProductSettings
@@ -39,11 +44,26 @@ export async function GET(request: NextRequest) {
     let authorization = null
     let carrier: string | null = null
 
+    // Get customer's pre-calculated price list
+    let priceList = new Map<string, { finalPrice: number | null; customPrice: number | null; tier: string | null }>()
+
     if (customerId) {
       const authResult = await getActiveAuthorizationForCustomer(customerId)
       if (authResult) {
         authorization = authResult.authorization
         carrier = authResult.carrier
+      }
+
+      // Load price list for this customer
+      const customerPrices = await prisma.customerPriceList.findMany({
+        where: { customerId, active: true }
+      })
+      for (const price of customerPrices) {
+        priceList.set(price.productId, {
+          finalPrice: price.customPrice ?? price.finalPrice,  // Custom price takes precedence
+          customPrice: price.customPrice,
+          tier: price.tier
+        })
       }
     }
 
@@ -90,7 +110,38 @@ export async function GET(request: NextRequest) {
       const paginatedFrames = visibleFrames.slice(0, limit)
 
       for (const frame of paginatedFrames) {
-        const pricing = calculateFramePricing(frame.retailPrice, authorization)
+        // Check for pre-calculated price from price list
+        const priceEntry = priceList.get(frame.id)
+
+        let patientPays: number | null
+        let insurancePays: number
+        let tier: string | null = null
+        let pricingNotes: string | undefined
+        let needsPricing = false
+        let hasCustomPrice = false
+
+        if (priceEntry) {
+          // Use price list entry
+          if (priceEntry.finalPrice === null) {
+            patientPays = null
+            insurancePays = 0
+            needsPricing = true
+            pricingNotes = 'Price not set - manual entry required'
+          } else {
+            patientPays = priceEntry.finalPrice
+            insurancePays = Math.max(0, frame.retailPrice - priceEntry.finalPrice)
+            tier = priceEntry.tier
+            hasCustomPrice = priceEntry.customPrice !== null
+            pricingNotes = hasCustomPrice ? 'Custom price override' : undefined
+          }
+        } else {
+          // Fall back to real-time calculation
+          const pricing = calculateFramePricing(frame.retailPrice, authorization)
+          patientPays = pricing.patientPays
+          insurancePays = pricing.insurancePays
+          pricingNotes = pricing.notes
+        }
+
         products.push({
           id: frame.id,
           sku: frame.sku || frame.id,
@@ -100,9 +151,12 @@ export async function GET(request: NextRequest) {
           category: 'frames',
           subcategory: frame.gender || 'unisex',
           retailPrice: frame.retailPrice,
-          patientPays: pricing.patientPays,
-          insurancePays: pricing.insurancePays,
-          pricingNotes: pricing.notes,
+          patientPays,
+          insurancePays,
+          tier,
+          pricingNotes,
+          needsPricing,
+          hasCustomPrice,
           inStock: frame.stockQuantity > 0,
           stockQuantity: frame.stockQuantity,
           manufacturer: frame.manufacturer,
@@ -131,16 +185,47 @@ export async function GET(request: NextRequest) {
       const paginatedLenses = visibleLenses.slice(0, limit)
 
       for (const lens of paginatedLenses) {
-        // Get carrier tier code if available
-        const tierMapping = lens.carrierTiers?.find(t =>
-          t.carrier.toLowerCase() === (carrier || '').toLowerCase()
-        )
-        const pricing = calculateLensPricingByCategory(
-          lens.pricingCategory,
-          lens.retailPrice,
-          authorization,
-          tierMapping?.tierCode
-        )
+        // Check for pre-calculated price from price list
+        const priceEntry = priceList.get(lens.id)
+
+        let patientPays: number | null
+        let insurancePays: number
+        let tier: string | null = null
+        let pricingNotes: string | undefined
+        let needsPricing = false
+        let hasCustomPrice = false
+
+        if (priceEntry) {
+          // Use price list entry
+          if (priceEntry.finalPrice === null) {
+            patientPays = null
+            insurancePays = 0
+            needsPricing = true
+            pricingNotes = 'Price not set - manual entry required'
+          } else {
+            patientPays = priceEntry.finalPrice
+            insurancePays = Math.max(0, lens.retailPrice - priceEntry.finalPrice)
+            tier = priceEntry.tier
+            hasCustomPrice = priceEntry.customPrice !== null
+            pricingNotes = hasCustomPrice ? 'Custom price override' : undefined
+          }
+        } else {
+          // Fall back to real-time calculation
+          const tierMapping = lens.carrierTiers?.find(t =>
+            t.carrier.toLowerCase() === (carrier || '').toLowerCase()
+          )
+          const pricing = calculateLensPricingByCategory(
+            lens.pricingCategory,
+            lens.retailPrice,
+            authorization,
+            tierMapping?.tierCode
+          )
+          patientPays = pricing.patientPays
+          insurancePays = pricing.insurancePays
+          tier = pricing.tier || null
+          pricingNotes = pricing.notes
+        }
+
         products.push({
           id: lens.id,
           sku: lens.sku || lens.id,
@@ -151,10 +236,12 @@ export async function GET(request: NextRequest) {
           subcategory: lens.category.toLowerCase(),
           pricingCategory: lens.pricingCategory,
           retailPrice: lens.retailPrice,
-          patientPays: pricing.patientPays,
-          insurancePays: pricing.insurancePays,
-          tier: pricing.tier,
-          pricingNotes: pricing.notes,
+          patientPays,
+          insurancePays,
+          tier,
+          pricingNotes,
+          needsPricing,
+          hasCustomPrice,
           inStock: true,
           manufacturer: lens.manufacturer,
         })
@@ -182,7 +269,38 @@ export async function GET(request: NextRequest) {
       const paginatedContacts = visibleContacts.slice(0, limit)
 
       for (const contact of paginatedContacts) {
-        const pricing = calculateContactLensPricing(contact.retailPrice, authorization)
+        // Check for pre-calculated price from price list
+        const priceEntry = priceList.get(contact.id)
+
+        let patientPays: number | null
+        let insurancePays: number
+        let tier: string | null = null
+        let pricingNotes: string | undefined
+        let needsPricing = false
+        let hasCustomPrice = false
+
+        if (priceEntry) {
+          // Use price list entry
+          if (priceEntry.finalPrice === null) {
+            patientPays = null
+            insurancePays = 0
+            needsPricing = true
+            pricingNotes = 'Price not set - manual entry required'
+          } else {
+            patientPays = priceEntry.finalPrice
+            insurancePays = Math.max(0, contact.retailPrice - priceEntry.finalPrice)
+            tier = priceEntry.tier
+            hasCustomPrice = priceEntry.customPrice !== null
+            pricingNotes = hasCustomPrice ? 'Custom price override' : undefined
+          }
+        } else {
+          // Fall back to real-time calculation
+          const pricing = calculateContactLensPricing(contact.retailPrice, authorization)
+          patientPays = pricing.patientPays
+          insurancePays = pricing.insurancePays
+          pricingNotes = pricing.notes
+        }
+
         products.push({
           id: contact.id,
           sku: contact.id,
@@ -193,9 +311,12 @@ export async function GET(request: NextRequest) {
           subcategory: getContactSubcategory(contact),
           pricingCategory: contact.pricingCategory,
           retailPrice: contact.retailPrice,
-          patientPays: pricing.patientPays,
-          insurancePays: pricing.insurancePays,
-          pricingNotes: pricing.notes,
+          patientPays,
+          insurancePays,
+          tier,
+          pricingNotes,
+          needsPricing,
+          hasCustomPrice,
           inStock: true,
           manufacturer: contact.manufacturer,
           metadata: {
@@ -212,6 +333,9 @@ export async function GET(request: NextRequest) {
     // Get available brands for filters
     const brands = await getAvailableBrands(category)
 
+    // Count products needing pricing
+    const productsNeedingPricing = products.filter(p => p.needsPricing).length
+
     return NextResponse.json({
       success: true,
       products,
@@ -224,7 +348,12 @@ export async function GET(request: NextRequest) {
         id: customerId,
         carrier,
         hasAuthorization: !!authorization,
+        hasPriceList: priceList.size > 0,
       } : null,
+      pricing: {
+        productsNeedingPricing,
+        canAddToCart: productsNeedingPricing === 0,  // Block if any products need pricing
+      },
       pagination: {
         page,
         limit,
@@ -255,10 +384,12 @@ interface PosProduct {
   subcategory: string
   pricingCategory?: string | null
   retailPrice: number
-  patientPays: number
+  patientPays: number | null  // NULL means needs manual pricing
   insurancePays: number
-  tier?: string
+  tier?: string | null
   pricingNotes?: string
+  needsPricing: boolean  // TRUE if price is NULL and must be set before adding to cart
+  hasCustomPrice?: boolean  // TRUE if price was manually overridden
   inStock: boolean
   stockQuantity?: number
   manufacturer?: string

@@ -4,7 +4,7 @@ import { useState, useEffect } from 'react'
 import { Button } from '@/components/ui/button'
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
 import { Badge } from '@/components/ui/badge'
-import { Shield, Edit, Save, X, CreditCard, FileSearch } from 'lucide-react'
+import { Shield, Edit, Save, X, CreditCard, FileSearch, Sparkles, Loader2, RefreshCw } from 'lucide-react'
 import InsuranceSelector, { InsuranceData } from '@/components/insurance-selector'
 import CustomerPricePlan from './customer-price-plan'
 import { BenefitSummaryCard } from '@/components/insurance'
@@ -77,6 +77,8 @@ export default function CustomerInsurancePricing({
   const [showScanner, setShowScanner] = useState(false)
   const [authData, setAuthData] = useState<AuthorizationData | null>(null)
   const [loadingAuth, setLoadingAuth] = useState(false)
+  const [generatingPrices, setGeneratingPrices] = useState(false)
+  const [pricePlanKey, setPricePlanKey] = useState(0) // Used to force refresh CustomerPricePlan
   const { toast } = useToast()
 
   useEffect(() => {
@@ -261,6 +263,40 @@ export default function CustomerInsurancePricing({
     return colors[carrier] || 'bg-gray-500'
   }
 
+  // Generate price plan from authorization data
+  const handleGeneratePricePlan = async () => {
+    setGeneratingPrices(true)
+    try {
+      const response = await fetch(`/api/customers/${customerId}/price-plan`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ action: 'generate-bulk' })
+      })
+
+      const result = await response.json()
+
+      if (response.ok && result.success) {
+        toast({
+          title: 'Price Plan Generated',
+          description: `Mapped ${result.stats?.mappedProducts || 0} products. ${result.stats?.missingPrices || 0} need manual pricing.`
+        })
+        // Force refresh the CustomerPricePlan component
+        setPricePlanKey(prev => prev + 1)
+      } else {
+        throw new Error(result.error || 'Failed to generate price plan')
+      }
+    } catch (error) {
+      console.error('Error generating price plan:', error)
+      toast({
+        title: 'Error',
+        description: error instanceof Error ? error.message : 'Failed to generate price plan',
+        variant: 'destructive'
+      })
+    } finally {
+      setGeneratingPrices(false)
+    }
+  }
+
   // Check if customer has insurance - either from customer record OR from authorization tables
   const hasInsurance = (customer.insuranceCarrier && customer.insuranceCarrier !== 'None') || authData !== null
 
@@ -370,27 +406,42 @@ export default function CustomerInsurancePricing({
 
                   {/* Show copays and allowances from authorization */}
                   {authData && (
-                    <div className="mt-4 pt-4 border-t">
-                      <p className="text-sm font-semibold mb-3">Plan Benefits</p>
+                    <div className="mt-4 pt-4 border-t border-border">
+                      <div className="flex items-center justify-between mb-3">
+                        <p className="text-sm font-semibold text-foreground">Plan Benefits</p>
+                        <Button
+                          size="sm"
+                          onClick={handleGeneratePricePlan}
+                          disabled={generatingPrices}
+                          className="flex items-center gap-2"
+                        >
+                          {generatingPrices ? (
+                            <Loader2 className="h-4 w-4 animate-spin" />
+                          ) : (
+                            <Sparkles className="h-4 w-4" />
+                          )}
+                          {generatingPrices ? 'Generating...' : 'Generate Price Plan'}
+                        </Button>
+                      </div>
                       <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
-                        <div className="bg-muted/50 rounded-lg p-3">
+                        <div className="bg-emerald-500/10 border border-emerald-500/20 rounded-lg p-3">
                           <p className="text-xs font-medium text-muted-foreground">Exam Copay</p>
-                          <p className="text-lg font-semibold">{formatCurrency(authData.examCopay)}</p>
+                          <p className="text-lg font-semibold text-emerald-400">{formatCurrency(authData.examCopay)}</p>
                         </div>
-                        <div className="bg-muted/50 rounded-lg p-3">
+                        <div className="bg-blue-500/10 border border-blue-500/20 rounded-lg p-3">
                           <p className="text-xs font-medium text-muted-foreground">Materials Copay</p>
-                          <p className="text-lg font-semibold">{formatCurrency(authData.materialsCopay)}</p>
+                          <p className="text-lg font-semibold text-blue-400">{formatCurrency(authData.materialsCopay)}</p>
                         </div>
-                        <div className="bg-muted/50 rounded-lg p-3">
+                        <div className="bg-amber-500/10 border border-amber-500/20 rounded-lg p-3">
                           <p className="text-xs font-medium text-muted-foreground">Frame Allowance</p>
-                          <p className="text-lg font-semibold">{formatCurrency(authData.frameAllowance)}</p>
+                          <p className="text-lg font-semibold text-amber-400">{formatCurrency(authData.frameAllowance)}</p>
                           {authData.frameAllowanceFeatured && authData.frameAllowanceFeatured !== authData.frameAllowance && (
-                            <p className="text-xs text-muted-foreground">Featured: {formatCurrency(authData.frameAllowanceFeatured)}</p>
+                            <p className="text-xs text-amber-400/70">Featured: {formatCurrency(authData.frameAllowanceFeatured)}</p>
                           )}
                         </div>
-                        <div className="bg-muted/50 rounded-lg p-3">
+                        <div className="bg-purple-500/10 border border-purple-500/20 rounded-lg p-3">
                           <p className="text-xs font-medium text-muted-foreground">Contact Allowance</p>
-                          <p className="text-lg font-semibold">{formatCurrency(authData.contactAllowance)}</p>
+                          <p className="text-lg font-semibold text-purple-400">{formatCurrency(authData.contactAllowance)}</p>
                         </div>
                       </div>
                       {authData.expirationDate && (
@@ -430,7 +481,7 @@ export default function CustomerInsurancePricing({
       )}
 
       {/* Price Plan Section */}
-      <CustomerPricePlan customerId={customerId} />
+      <CustomerPricePlan key={pricePlanKey} customerId={customerId} />
 
       {/* Insurance Document Scanner Section */}
       <Card>
@@ -453,15 +504,17 @@ export default function CustomerInsurancePricing({
           <CardContent>
             <InlineScanner
               customerId={customerId}
-              onDocumentProcessed={(result) => {
+              onDocumentProcessed={async (result) => {
                 if (result.success) {
                   toast({
                     title: 'Document Processed',
-                    description: `${result.carrier || 'Insurance'} document scanned successfully.`
+                    description: `${result.carrier || 'Insurance'} document scanned successfully. Generating price plan...`
                   })
                   // Refresh authorization and benefits after scanning
-                  fetchAuthorization()
+                  await fetchAuthorization()
                   fetchBenefits()
+                  // Auto-generate price plan after scanning
+                  await handleGeneratePricePlan()
                   if (onUpdate) onUpdate()
                 }
               }}

@@ -8,7 +8,8 @@ function Input({ className, type, ...props }: React.ComponentProps<"input">) {
       type={type}
       data-slot="input"
       className={cn(
-        "h-11 w-full min-w-0 rounded-2xl px-4 py-2.5 text-base transition-all duration-200",
+        // Use specific transitions to avoid backdrop-filter rendering bugs during scroll
+        "h-11 w-full min-w-0 rounded-2xl px-4 py-2.5 text-base transition-[background-color,border-color,box-shadow] duration-200 transform-gpu",
         "bg-white/[0.08] backdrop-blur-sm border border-white/15",
         "text-foreground placeholder:text-muted-foreground",
         "shadow-[inset_0_1px_0_0_rgba(255,255,255,0.05)]",

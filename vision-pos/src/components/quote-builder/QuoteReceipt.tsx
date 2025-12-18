@@ -42,7 +42,6 @@ interface QuoteReceiptProps {
   retailTotal: number
   insuranceTotal: number
   patientTotal: number
-  materialsCopay: number
   tax: number
   grandTotal: number
 }
@@ -62,7 +61,6 @@ export const QuoteReceipt = forwardRef<HTMLDivElement, QuoteReceiptProps>(
       retailTotal,
       insuranceTotal,
       patientTotal,
-      materialsCopay,
       tax,
       grandTotal,
     },
@@ -233,16 +231,6 @@ export const QuoteReceipt = forwardRef<HTMLDivElement, QuoteReceiptProps>(
                     </td>
                   </tr>
                 ))}
-                {materialsCopay > 0 && (
-                  <tr className="border-b border-gray-200">
-                    <td className="py-1">Materials Copay</td>
-                    <td className="text-right">-</td>
-                    <td className="text-right">-</td>
-                    <td className="text-right font-medium">
-                      {formatPrice(materialsCopay)}
-                    </td>
-                  </tr>
-                )}
               </tbody>
             </table>
           </div>
