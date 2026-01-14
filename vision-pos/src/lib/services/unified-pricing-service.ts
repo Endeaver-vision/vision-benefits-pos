@@ -450,9 +450,12 @@ export async function lookupProduct(sku: string): Promise<ProductLookupResult> {
   // Try LensProduct
   const lens = await prisma.lensProduct.findFirst({
     where: { OR: [{ sku }, { id: sku }] },
-    include: { carrierTiers: true },
   })
   if (lens) {
+    // Fetch tier mappings from unified carrier_tiers table
+    const tiers = await prisma.carrierTier.findMany({
+      where: { productId: lens.id }
+    })
     return {
       found: true,
       product: {
@@ -462,9 +465,9 @@ export async function lookupProduct(sku: string): Promise<ProductLookupResult> {
         retailPrice: lens.retailPrice,
         source: 'lens',
         carrierTiers: {
-          vsp: lens.carrierTiers.find(t => t.carrier === 'VSP')?.tierCode,
-          eyemed: lens.carrierTiers.find(t => t.carrier === 'EyeMed')?.tierCode,
-          spectera: lens.carrierTiers.find(t => t.carrier === 'Spectera')?.tierCode,
+          vsp: tiers.find(t => t.carrier === 'VSP')?.tierCode,
+          eyemed: tiers.find(t => t.carrier === 'EYEMED')?.tierCode,
+          spectera: tiers.find(t => t.carrier === 'SPECTERA')?.tierCode,
         },
       },
     }

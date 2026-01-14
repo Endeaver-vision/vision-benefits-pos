@@ -214,10 +214,22 @@ CREATE INDEX idx_carrier_tiers_lookup ON carrier_tiers(carrier, tierCode);
 - MATERIAL: 15 (TIER_COPAY: 15)
 
 **Step 3**: Update scanner to read from `carrier_tiers` only
-- STATUS: PENDING
+- **STATUS: COMPLETE** (2026-01-13)
+- Updated all API routes to read tier codes from `carrier_tiers` table
+- Removed all reads from `product.tierVsp/tierEyemed/tierSpectera` columns
+- Removed all reads from `service_prices.tierVsp/tierEyemed/tierSpectera` columns
+- Removed relation include on `lensCarrierTiers`
+
+**Files Updated:**
+- `src/lib/services/price-mapping-service.ts` - Main price generation, now uses `buildCarrierTierMap()` helper
+- `src/app/api/pricing/calculate/route.ts` - Uses `prisma.carrierTier.findMany()` for tier lookups
+- `src/app/api/customers/[id]/insurance-summary/route.ts` - Updated `getTierProductMappings()`
+- `src/app/api/quote-builder/products/route.ts` - Uses `getVspTierProductIds()` for cash-pay detection
+- `src/app/api/pricing/services/route.ts` - Uses `getServiceTierMappings()` helper
+- `src/lib/services/unified-pricing-service.ts` - Updated lens lookup to query carrier_tiers
 
 **Step 4**: Drop old tier columns and `lens_carrier_tiers` table
-- STATUS: PENDING (wait until scanner is updated and verified)
+- STATUS: PENDING (ready after full testing of Step 3)
 
 ---
 

@@ -130,26 +130,26 @@ export async function POST(request: NextRequest) {
     // Create carrier-specific pricing calculator
     const calculator = createPricingCalculator(auth)
 
-    // Look up tier codes for all products from the database
+    // Look up tier codes for all products from the unified carrier_tiers table
     const productSkus = body.products.map(p => p.sku)
-    // Map carrier to the correct case used in lens_carrier_tiers table
+    // Map carrier to uppercase format used in carrier_tiers table
     const carrierMap: Record<string, string> = {
       'vsp': 'VSP',
-      'eyemed': 'EyeMed',
-      'spectera': 'Spectera',
+      'eyemed': 'EYEMED',
+      'spectera': 'SPECTERA',
     }
-    const tierCarrier = carrierMap[authResult.carrier] || authResult.carrier
-    const tierMappings = await prisma.lensCarrierTier.findMany({
+    const tierCarrier = carrierMap[authResult.carrier] || authResult.carrier.toUpperCase()
+    const tierMappings = await prisma.carrierTier.findMany({
       where: {
-        lensProductId: { in: productSkus },
+        productId: { in: productSkus },
         carrier: tierCarrier,
       },
     })
 
-    // Create a map of sku -> tierCode for quick lookup
+    // Create a map of productId -> tierCode for quick lookup
     const tierCodeMap = new Map<string, string>()
     for (const tier of tierMappings) {
-      tierCodeMap.set(tier.lensProductId, tier.tierCode)
+      tierCodeMap.set(tier.productId, tier.tierCode)
     }
 
     // Calculate pricing for each product

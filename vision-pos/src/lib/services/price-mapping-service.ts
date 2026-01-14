@@ -29,6 +29,49 @@ import { prisma } from '@/lib/prisma'
 import { getActiveAuthorizationForCustomer } from './authorization-service'
 
 /**
+ * Type for carrier tier lookup results
+ */
+interface CarrierTierLookup {
+  tierCode: string
+  tierLabel: string | null
+  pricingRule: string
+}
+
+/**
+ * Build a carrier tier lookup map from the unified carrier_tiers table
+ * Key format: "productType:productId" -> tier info
+ */
+async function buildCarrierTierMap(carrier: string): Promise<Map<string, CarrierTierLookup>> {
+  const tiers = await prisma.carrierTier.findMany({
+    where: { carrier: carrier.toUpperCase() }
+  })
+
+  const map = new Map<string, CarrierTierLookup>()
+  for (const tier of tiers) {
+    // Key by productType:productId for exact lookup
+    const key = `${tier.productType}:${tier.productId}`
+    map.set(key, {
+      tierCode: tier.tierCode,
+      tierLabel: tier.tierLabel,
+      pricingRule: tier.pricingRule
+    })
+  }
+
+  return map
+}
+
+/**
+ * Get tier code for a product from the carrier tier map
+ */
+function getTierForProduct(
+  tierMap: Map<string, CarrierTierLookup>,
+  productType: string,
+  productId: string
+): CarrierTierLookup | null {
+  return tierMap.get(`${productType}:${productId}`) || null
+}
+
+/**
  * Extract CL fitting copay from VSP rawPatientReport JSON
  * The copay is stored in rawPatientReport.contacts.clExamCopay.value
  */
@@ -301,6 +344,14 @@ export async function generatePriceMapping(
       where: { isActive: true }
     })
 
+    // Build carrier tier lookup map from unified carrier_tiers table
+    // This replaces the old product.tierVsp/tierEyemed/tierSpectera column reads
+    let carrierTierMap: Map<string, CarrierTierLookup> = new Map()
+    if (insuranceCarrier) {
+      carrierTierMap = await buildCarrierTierMap(insuranceCarrier)
+      console.log(`[PriceMapping] Loaded ${carrierTierMap.size} tier mappings for ${insuranceCarrier}`)
+    }
+
     const priceMappings: Array<{
       customerId: string
       productId: string
@@ -331,13 +382,18 @@ export async function generatePriceMapping(
       let tier: string | null = null
       let customerPrice: number | null = null // NULL means needs manual entry
 
-      if (authResult) {
+      // Look up tier from unified carrier_tiers table (replaces product.tierVsp/tierEyemed/tierSpectera)
+      const productTier = getTierForProduct(carrierTierMap, 'PRODUCT', product.id)
+      const tierCode = productTier?.tierCode || null
+      const pricingRule = productTier?.pricingRule || null
+
+      if (authResult && insuranceCarrier) {
         // === EXAMS ===
         if (categoryCode === 'EXAMS') {
-          if (product.tierVsp === 'covered' || product.tierVsp === 'EXAM') {
+          if (tierCode === 'exam_copay' || tierCode === 'covered' || tierCode === 'EXAM') {
             customerPrice = examCopay // NULL if not scanned
             tier = 'exam-copay'
-          } else if (product.tierVsp === 'CONTACT_EXAM') {
+          } else if (tierCode === 'CONTACT_EXAM' || tierCode === 'contact_exam') {
             // Contact lens exam - use CL exam copay if available
             customerPrice = contactLensExamCopay ?? examCopay
             tier = 'contact-exam'
@@ -354,61 +410,63 @@ export async function generatePriceMapping(
               customerPrice = contactLensExamCopay
               tier = 'cl-fitting'
             }
-          } else if (insuranceCarrier === 'EYEMED' && product.tierEyemed) {
-            customerPrice = eyemedCopays[product.tierEyemed] ?? null
-            tier = product.tierEyemed
-          } else if (insuranceCarrier === 'SPECTERA' && product.tierSpectera) {
-            customerPrice = specteraCopays[product.tierSpectera] ?? null
-            tier = product.tierSpectera
+          } else if (tierCode) {
+            // EyeMed/Spectera: lookup copay by tier code
+            if (insuranceCarrier === 'EYEMED') {
+              customerPrice = eyemedCopays[tierCode] ?? null
+            } else if (insuranceCarrier === 'SPECTERA') {
+              customerPrice = specteraCopays[tierCode] ?? null
+            }
+            tier = tierCode
           }
         }
         // === PROGRESSIVE LENSES ===
         else if (categoryCode === 'PROGRESSIVE_LENSES') {
-          if (insuranceCarrier === 'VSP' && product.tierVsp) {
-            customerPrice = getVspCopay(product.tierVsp, vspCopays, true)
-            tier = product.tierVsp
-          } else if (insuranceCarrier === 'EYEMED' && product.tierEyemed) {
-            customerPrice = eyemedCopays[product.tierEyemed] ?? null
-            tier = product.tierEyemed
-          } else if (insuranceCarrier === 'SPECTERA' && product.tierSpectera) {
-            customerPrice = specteraCopays[product.tierSpectera] ?? null
-            tier = product.tierSpectera
+          if (tierCode) {
+            if (insuranceCarrier === 'VSP') {
+              customerPrice = getVspCopay(tierCode, vspCopays, true)
+            } else if (insuranceCarrier === 'EYEMED') {
+              customerPrice = eyemedCopays[tierCode] ?? null
+            } else if (insuranceCarrier === 'SPECTERA') {
+              customerPrice = specteraCopays[tierCode] ?? null
+            }
+            tier = tierCode
           }
         }
         // === AR COATINGS ===
         else if (categoryCode === 'AR_COATINGS') {
-          if (insuranceCarrier === 'VSP' && product.tierVsp) {
-            customerPrice = getVspCopay(product.tierVsp, vspCopays, true)
-            tier = product.tierVsp
-          } else if (insuranceCarrier === 'EYEMED' && product.tierEyemed) {
-            customerPrice = eyemedCopays[`ar_${product.tierEyemed}`] ?? null
-            tier = product.tierEyemed
-          } else if (insuranceCarrier === 'SPECTERA' && product.tierSpectera) {
-            customerPrice = specteraCopays[`ar_${product.tierSpectera}`] ?? null
-            tier = product.tierSpectera
+          if (tierCode) {
+            if (insuranceCarrier === 'VSP') {
+              customerPrice = getVspCopay(tierCode, vspCopays, true)
+            } else if (insuranceCarrier === 'EYEMED') {
+              customerPrice = eyemedCopays[`ar_${tierCode}`] ?? null
+            } else if (insuranceCarrier === 'SPECTERA') {
+              customerPrice = specteraCopays[`ar_${tierCode}`] ?? null
+            }
+            tier = tierCode
           }
         }
         // === LENS MATERIALS ===
         else if (categoryCode === 'LENS_MATERIALS') {
           // Handle "standard" tier (CR-39) - covered with materials copay
-          if (product.tierVsp === 'standard' || product.tierVsp === 'covered') {
+          if (tierCode === 'standard' || tierCode === 'covered' || pricingRule === 'INCLUDED') {
             customerPrice = 0 // Covered - part of base lens benefit
             tier = 'covered'
-          } else if (insuranceCarrier === 'VSP' && product.tierVsp) {
-            customerPrice = getVspCopay(product.tierVsp, vspCopays, true)
-            tier = product.tierVsp
-          } else if (insuranceCarrier === 'EYEMED' && product.tierEyemed) {
-            customerPrice = eyemedCopays[product.tierEyemed] ?? null
-            tier = product.tierEyemed
-          } else if (insuranceCarrier === 'SPECTERA' && product.tierSpectera) {
-            customerPrice = specteraCopays[product.tierSpectera] ?? null
-            tier = product.tierSpectera
+          } else if (tierCode) {
+            if (insuranceCarrier === 'VSP') {
+              customerPrice = getVspCopay(tierCode, vspCopays, true)
+            } else if (insuranceCarrier === 'EYEMED') {
+              customerPrice = eyemedCopays[tierCode] ?? null
+            } else if (insuranceCarrier === 'SPECTERA') {
+              customerPrice = specteraCopays[tierCode] ?? null
+            }
+            tier = tierCode
           }
         }
         // === FRAMES ===
         else if (categoryCode === 'FRAMES') {
           if (frameAllowance !== null) {
-            const applicableAllowance = frameAllowanceFeatured && product.tierVsp === 'featured'
+            const applicableAllowance = frameAllowanceFeatured && tierCode === 'featured'
               ? frameAllowanceFeatured
               : frameAllowance
 
@@ -422,77 +480,102 @@ export async function generatePriceMapping(
                 customerPrice = overage
               }
             }
-            tier = product.tierVsp === 'featured' ? 'featured-frame' : 'frame-allowance'
+            tier = tierCode === 'featured' ? 'featured-frame' : 'frame-allowance'
           }
           // If no frame allowance scanned, customerPrice stays NULL
         }
+        // === MOUNT_FEES ===
+        // VSP: standard (full rim) and semi_rimless (grooved) are covered at $0
+        // SW (rimless drill) and SP (roll & polish) use enhancement copays
+        else if (categoryCode === 'MOUNT_FEES') {
+          if (tierCode) {
+            // Full rim and semi-rimless/grooved are covered at no charge
+            if (tierCode === 'standard' || tierCode === 'semi_rimless' || tierCode === 'groove' || pricingRule === 'INCLUDED') {
+              customerPrice = 0
+              tier = tierCode
+            } else {
+              // SW (rimless drill), SP (roll & polish) - use enhancement copays
+              if (insuranceCarrier === 'VSP') {
+                customerPrice = getVspCopay(tierCode, vspCopays, true)
+              } else if (insuranceCarrier === 'EYEMED') {
+                customerPrice = eyemedCopays[tierCode] ?? null
+              } else if (insuranceCarrier === 'SPECTERA') {
+                customerPrice = specteraCopays[tierCode] ?? null
+              }
+              tier = tierCode
+            }
+          }
+        }
         // === PHOTOCHROMIC ===
         else if (categoryCode === 'PHOTOCHROMIC') {
-          if (insuranceCarrier === 'VSP' && product.tierVsp) {
-            customerPrice = getVspCopay(product.tierVsp, vspCopays, true)
-            tier = product.tierVsp
-          } else if (insuranceCarrier === 'EYEMED') {
-            customerPrice = eyemedCopays['photochromic'] ?? null
-            tier = 'photochromic'
-          } else if (insuranceCarrier === 'SPECTERA') {
-            customerPrice = specteraCopays['photochromic'] ?? null
-            tier = 'photochromic'
+          if (tierCode) {
+            if (insuranceCarrier === 'VSP') {
+              customerPrice = getVspCopay(tierCode, vspCopays, true)
+            } else if (insuranceCarrier === 'EYEMED') {
+              customerPrice = eyemedCopays['photochromic'] ?? null
+            } else if (insuranceCarrier === 'SPECTERA') {
+              customerPrice = specteraCopays['photochromic'] ?? null
+            }
+            tier = tierCode
           }
         }
         // === SINGLE VISION ===
         else if (categoryCode === 'SINGLE_VISION_LENSES') {
-          if (product.tierVsp === 'standard' || product.tierVsp === 'covered' || product.tierVsp === 'COVERED') {
+          if (tierCode === 'standard' || tierCode === 'covered' || tierCode === 'COVERED' || pricingRule === 'INCLUDED') {
             customerPrice = 0 // Covered after materials copay
             tier = 'covered'
-          } else if (insuranceCarrier === 'VSP' && product.tierVsp) {
-            // Digital SV (Eyezen, etc.) with tier code BA or other
-            customerPrice = getVspCopay(product.tierVsp, vspCopays, false) // prefer SV copay
-            tier = product.tierVsp
-          } else if (insuranceCarrier === 'EYEMED' && product.tierEyemed) {
-            customerPrice = eyemedCopays[product.tierEyemed] ?? null
-            tier = product.tierEyemed
-          } else if (insuranceCarrier === 'SPECTERA' && product.tierSpectera) {
-            customerPrice = specteraCopays[product.tierSpectera] ?? null
-            tier = product.tierSpectera
+          } else if (tierCode) {
+            if (insuranceCarrier === 'VSP') {
+              // Digital SV (Eyezen, etc.) with tier code BA or other
+              customerPrice = getVspCopay(tierCode, vspCopays, false) // prefer SV copay
+            } else if (insuranceCarrier === 'EYEMED') {
+              customerPrice = eyemedCopays[tierCode] ?? null
+            } else if (insuranceCarrier === 'SPECTERA') {
+              customerPrice = specteraCopays[tierCode] ?? null
+            }
+            tier = tierCode
           }
         }
         // === LINED MULTIFOCAL ===
         else if (categoryCode === 'LINED_MULTIFOCAL') {
-          if (product.tierVsp === 'standard' || product.tierVsp === 'covered' ||
-              product.tierVsp === 'COVERED' || product.tierVsp === 'AA') {
+          if (tierCode === 'standard' || tierCode === 'covered' || tierCode === 'COVERED' || tierCode === 'AA' || pricingRule === 'INCLUDED') {
             customerPrice = 0 // Covered after materials copay
             tier = 'covered'
-          } else if (insuranceCarrier === 'VSP' && product.tierVsp) {
-            customerPrice = getVspCopay(product.tierVsp, vspCopays, true)
-            tier = product.tierVsp
+          } else if (tierCode) {
+            if (insuranceCarrier === 'VSP') {
+              customerPrice = getVspCopay(tierCode, vspCopays, true)
+            }
+            tier = tierCode
           }
         }
         // === POLARIZED ===
         else if (categoryCode === 'POLARIZED') {
-          if (insuranceCarrier === 'VSP' && product.tierVsp) {
-            customerPrice = getVspCopay(product.tierVsp, vspCopays, true)
-            tier = product.tierVsp
-          } else if (insuranceCarrier === 'EYEMED') {
-            customerPrice = eyemedCopays['polarized'] ?? null
-            tier = 'polarized'
-          } else if (insuranceCarrier === 'SPECTERA') {
-            customerPrice = specteraCopays['polarized'] ?? null
-            tier = 'polarized'
+          if (tierCode) {
+            if (insuranceCarrier === 'VSP') {
+              customerPrice = getVspCopay(tierCode, vspCopays, true)
+            } else if (insuranceCarrier === 'EYEMED') {
+              customerPrice = eyemedCopays['polarized'] ?? null
+            } else if (insuranceCarrier === 'SPECTERA') {
+              customerPrice = specteraCopays['polarized'] ?? null
+            }
+            tier = tierCode
           }
         }
         // === FALLBACK - try tier lookup ===
         else {
-          if (insuranceCarrier === 'VSP' && product.tierVsp) {
-            customerPrice = getVspCopay(product.tierVsp, vspCopays, true)
-            if (customerPrice !== null) {
-              tier = product.tierVsp
+          if (tierCode) {
+            if (insuranceCarrier === 'VSP') {
+              customerPrice = getVspCopay(tierCode, vspCopays, true)
+              if (customerPrice !== null) {
+                tier = tierCode
+              }
+            } else if (insuranceCarrier === 'EYEMED') {
+              customerPrice = eyemedCopays[tierCode] ?? null
+              tier = tierCode
+            } else if (insuranceCarrier === 'SPECTERA') {
+              customerPrice = specteraCopays[tierCode] ?? null
+              tier = tierCode
             }
-          } else if (insuranceCarrier === 'EYEMED' && product.tierEyemed) {
-            customerPrice = eyemedCopays[product.tierEyemed] ?? null
-            tier = product.tierEyemed
-          } else if (insuranceCarrier === 'SPECTERA' && product.tierSpectera) {
-            customerPrice = specteraCopays[product.tierSpectera] ?? null
-            tier = product.tierSpectera
           }
         }
       }
@@ -501,12 +584,22 @@ export async function generatePriceMapping(
       let needsTierAssignment = false
       let finalPrice: number
 
+      // Check if product is cash pay only - no tier mapping in carrier_tiers for ANY carrier
+      // A product is cash-pay if it has no tier mapping for the current carrier
+      const isCashPayOnly = !productTier || pricingRule === 'CASH_ONLY'
+
       if (customerPrice !== null) {
         // Has tier-based pricing from authorization
         finalPrice = customerPrice
         mappedCount++
+      } else if (isCashPayOnly) {
+        // Cash pay only product - full retail, no insurance discount
+        finalPrice = product.basePrice
+        tier = 'cash-pay'  // Mark as intentionally cash pay
+        needsTierAssignment = false  // Not missing a tier, intentionally cash pay
+        mappedCount++  // Count as mapped since it's correctly priced
       } else {
-        // No tier mapping - use 80% of retail (20% off) as fallback
+        // Has tier codes but no mapping found - use 80% of retail (20% off) as fallback
         finalPrice = Math.round(product.basePrice * (1 - FALLBACK_DISCOUNT) * 100) / 100
         needsTierAssignment = true
         fallbackCount++
@@ -544,28 +637,46 @@ export async function generatePriceMapping(
       let customerPrice: number | null = null
       const serviceCategory = service.category
 
-      if (authResult) {
-        // === ROUTINE EXAMS ===
-        if (serviceCategory === 'EXAM') {
-          // Routine vision exams use the exam copay
-          const isRoutineExam = service.name.toLowerCase().includes('routine') ||
-                                service.name.toLowerCase().includes('vision exam') ||
-                                service.pricingCategory === 'EXAM'
+      // Look up tier from unified carrier_tiers table for services
+      const serviceTier = getTierForProduct(carrierTierMap, 'SERVICE', service.id)
+      const serviceTierCode = serviceTier?.tierCode || null
+      const servicePricingRule = serviceTier?.pricingRule || null
 
-          if (isRoutineExam && examCopay !== null) {
-            customerPrice = examCopay
-            tier = 'exam-copay'
+      if (authResult && insuranceCarrier) {
+        // === EXAM SERVICES ===
+        if (serviceCategory === 'EXAM') {
+          // Refraction is bundled with the exam - $0 cost
+          if (service.name === 'Refraction' || servicePricingRule === 'INCLUDED') {
+            customerPrice = 0
+            tier = 'bundled'
           }
-          // Medical/comprehensive exams may have different copays or be full retail
-          // These use fallback pricing unless specifically mapped
+          // Routine Vision Exams use the vision plan exam copay
+          else if (serviceTierCode === 'exam_copay' || service.name.toLowerCase().includes('routine')) {
+            if (examCopay !== null) {
+              customerPrice = examCopay
+              tier = 'exam-copay'
+            }
+          }
+          // Medical Exam = full retail (billed to medical insurance, not vision plan)
+          else if (service.name === 'Medical Exam' || servicePricingRule === 'CASH_ONLY') {
+            customerPrice = service.retailPrice
+            tier = 'medical-retail'
+          }
+          // Comp/Interm Ophth services are medical billing codes - use fallback pricing
+          // They're not selectable in POS (showInPos = false) but still need price entries
         }
         // === CONTACT LENS FITTINGS ===
         else if (serviceCategory === 'CONTACT_LENS_FIT') {
           const nameLower = service.name.toLowerCase()
 
+          // Check if carrier_tiers says this is CASH_ONLY (specialty fittings)
+          if (servicePricingRule === 'CASH_ONLY') {
+            customerPrice = service.retailPrice
+            tier = 'specialty-retail'
+          }
           // Specialty fittings (Ortho-K, RGP, Scleral, MiSight, Specialty) - NOT covered
           // Patient pays full retail - these are specialty services outside vision plan
-          if (nameLower.includes('ortho-k') || nameLower.includes('rgp') ||
+          else if (nameLower.includes('ortho-k') || nameLower.includes('rgp') ||
               nameLower.includes('specialty') || nameLower.includes('misight') ||
               nameLower.includes('scleral')) {
             customerPrice = service.retailPrice
@@ -573,7 +684,7 @@ export async function generatePriceMapping(
           }
           // Standard soft lens fittings (Sphere, Toric, Multifocal, Monovision)
           // ALL use the same flat CL fitting copay from authorization
-          else if (nameLower.includes('sphere') || nameLower.includes('toric') ||
+          else if (serviceTierCode === 'cl_fitting_copay' || nameLower.includes('sphere') || nameLower.includes('toric') ||
                    nameLower.includes('multifocal') || nameLower.includes('monovision')) {
             if (insuranceCarrier === 'VSP') {
               if (contactFittingCovered) {
@@ -611,6 +722,11 @@ export async function generatePriceMapping(
           }
         }
         // === PROCEDURES & DIAGNOSTICS ===
+        // Check carrier_tiers for pricing rule
+        else if (servicePricingRule === 'CASH_ONLY') {
+          customerPrice = service.retailPrice
+          tier = 'cash-pay'
+        }
         // These are typically medical services, not vision plan covered
         // Use fallback pricing (80% retail)
       }
@@ -619,8 +735,17 @@ export async function generatePriceMapping(
       let needsTierAssignment = false
       let finalPrice: number
 
+      // Check if service is explicitly marked as cash-only
+      const isServiceCashOnly = servicePricingRule === 'CASH_ONLY'
+
       if (customerPrice !== null) {
         finalPrice = customerPrice
+        mappedCount++
+      } else if (isServiceCashOnly) {
+        // Cash pay service - full retail
+        finalPrice = service.retailPrice
+        tier = 'cash-pay'
+        needsTierAssignment = false
         mappedCount++
       } else {
         // Use 80% of retail as fallback
