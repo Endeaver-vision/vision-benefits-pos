@@ -1,23 +1,52 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { prisma } from '@/lib/prisma'
+import { OrderItemType } from '@prisma/client'
+
+// Structure of items stored in Quote.items JSON field
+interface QuoteItem {
+  sku: string
+  displayName: string
+  category: string
+  retailPrice: number
+  patientPays: number
+  insurancePays: number
+  quantity?: number
+  tierUsed?: string
+  notes?: string
+}
+
+// Map quote item category to OrderItemType enum
+function mapCategoryToOrderItemType(category: string): OrderItemType {
+  const categoryLower = category?.toLowerCase() || ''
+  
+  if (categoryLower.includes('frame')) return 'FRAME'
+  if (categoryLower.includes('lens') || categoryLower.includes('progressive') || 
+      categoryLower.includes('single_vision') || categoryLower.includes('bifocal') ||
+      categoryLower.includes('trifocal')) return 'LENS'
+  if (categoryLower.includes('coating') || categoryLower.includes('ar_coating')) return 'COATING'
+  if (categoryLower.includes('exam') || categoryLower.includes('service') || 
+      categoryLower.includes('fitting')) return 'SERVICE'
+  if (categoryLower.includes('addon') || categoryLower.includes('add-on') ||
+      categoryLower.includes('material') || categoryLower.includes('photochromic') ||
+      categoryLower.includes('polarized') || categoryLower.includes('transition')) return 'ADDON'
+  
+  // Default fallback
+  return 'ADDON'
+}
 
 export async function POST(
   request: NextRequest,
-  { params }: { params: { id: string } }
+  { params }: { params: Promise<{ id: string }> }
 ) {
   try {
-    const quoteId = params.id
+    const { id: quoteId } = await params
 
-    // Fetch the quote with all details
+    // Fetch the quote with customer details
+    // Note: items is a JSON field, not a relation
     const quote = await prisma.quote.findUnique({
       where: { id: quoteId },
       include: {
         customer: true,
-        items: {
-          include: {
-            product: true,
-          },
-        },
       },
     })
 
@@ -97,18 +126,16 @@ export async function POST(
         patientDeliveryDate,
         
         items: {
-          create: quote.items.map((item) => ({
-            type: item.type as any,
-            productName: item.productName || item.product?.name || 'Unknown Product',
-            description: item.description || '',
-            sku: item.sku || item.product?.sku || '',
-            lensType: item.lensType,
-            lensCoatings: item.lensCoatings || [],
-            quantity: item.quantity,
-            unitPrice: item.unitPrice,
-            finalPrice: item.totalPrice,
+          create: (quote.items as QuoteItem[]).map((item) => ({
+            type: mapCategoryToOrderItemType(item.category),
+            productName: item.displayName || 'Unknown Product',
+            description: item.notes || '',
+            sku: item.sku || '',
+            quantity: item.quantity || 1,
+            unitPrice: item.retailPrice,
+            finalPrice: item.patientPays * (item.quantity || 1),
+            insuranceCoverage: item.insurancePays,
             status: 'PENDING',
-            customizations: item.specifications || {},
           })),
         },
         

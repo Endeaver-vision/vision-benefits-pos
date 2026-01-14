@@ -842,6 +842,109 @@ model CustomerPriceList {
   @@map("customer_price_lists")
 }
 
+// ============================================================================
+// BATCH SCANNER + TEMPORARY PRICE LISTS
+// These models support scanning folders of documents without a customer
+// and creating price lists that can be assigned later
+// ============================================================================
+
+model BatchScanJob {
+  id              String              @id @default(cuid())
+  name            String              // User-friendly name for the batch
+  folderPath      String              // Source folder path
+  status          BatchScanStatus     @default(PENDING)
+  totalFiles      Int                 @default(0)
+  processedFiles  Int                 @default(0)
+  successfulFiles Int                 @default(0)
+  failedFiles     Int                 @default(0)
+  startedAt       DateTime?
+  completedAt     DateTime?
+  createdBy       String?
+  errorLog        Json?               // Array of { file, error } for failures
+  createdAt       DateTime            @default(now())
+  updatedAt       DateTime            @updatedAt
+  documents       BatchScanDocument[]
+
+  @@map("batch_scan_jobs")
+}
+
+enum BatchScanStatus {
+  PENDING
+  PROCESSING
+  COMPLETED
+  FAILED
+  CANCELLED
+}
+
+model BatchScanDocument {
+  id               String                @id @default(cuid())
+  batchJobId       String
+  fileName         String
+  filePath         String
+  fileSize         Int                   @default(0)
+  status           BatchDocStatus        @default(PENDING)
+  carrier          String?               // Detected carrier: VSP, EyeMed, Spectera
+  planName         String?               // Detected plan name
+  memberName       String?               // Extracted member name (for matching)
+  memberId         String?               // Extracted member ID (for matching)
+  extractedData    Json?                 // Full extraction result
+  confidenceScore  Float?
+  errorMessage     String?
+  processedAt      DateTime?
+  createdAt        DateTime              @default(now())
+  updatedAt        DateTime              @updatedAt
+  batchJob         BatchScanJob          @relation(fields: [batchJobId], references: [id], onDelete: Cascade)
+  temporaryPrices  TemporaryPriceList[]
+
+  @@index([batchJobId])
+  @@index([memberName])
+  @@index([memberId])
+  @@map("batch_scan_documents")
+}
+
+enum BatchDocStatus {
+  PENDING
+  PROCESSING
+  COMPLETED
+  FAILED
+  ASSIGNED  // Price list has been assigned to a customer
+}
+
+model TemporaryPriceList {
+  id                  String             @id @default(cuid())
+  batchDocumentId     String
+  productId           String
+  productName         String             // Denormalized for display
+  productSku          String?
+  productCategory     String?            // lens, frame, contact, service
+  finalPrice          Float?             // Calculated copay
+  retailPrice         Float
+  savings             Float              @default(0)
+  insuranceCarrier    String
+  planName            String?
+  tier                String?            // Tier code used
+  pricingRule         String?            // TIER_COPAY, 80_UC, etc.
+  needsTierAssignment Boolean            @default(false)
+  status              TempPriceStatus    @default(TEMPORARY)
+  assignedToCustomer  String?            // Customer ID when assigned
+  assignedAt          DateTime?
+  assignedBy          String?
+  createdAt           DateTime           @default(now())
+  updatedAt           DateTime           @updatedAt
+  batchDocument       BatchScanDocument  @relation(fields: [batchDocumentId], references: [id], onDelete: Cascade)
+
+  @@index([batchDocumentId])
+  @@index([assignedToCustomer])
+  @@index([status])
+  @@map("temporary_price_lists")
+}
+
+enum TempPriceStatus {
+  TEMPORARY   // Not assigned to any customer
+  ASSIGNED    // Assigned to a customer
+  EXPIRED     // No longer valid
+}
+
 model VspLensEnhancementCopay {
   id                String           @id @default(cuid())
   authorizationId   String
