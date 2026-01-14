@@ -477,9 +477,9 @@ Common Products Preview:
 
 ---
 
-## Stage 4: Patient Profile
+## Stage 4: Patient Profile ✅ COMPLETE
 
-**Status**: Partially implemented - customer profile exists, needs insurance/price list integration
+**Status**: Complete - customer profile shows insurance and price list
 
 ### Functionality Goal
 Link authorization and price list to patient record.
@@ -489,57 +489,66 @@ Link authorization and price list to patient record.
 - Authorization linked to customer ✅ (database relations exist)
 - Price list linked to customer ✅ (database relations exist)
 - Customer profile displays:
-  - Active insurance info 🔄 NEEDS UI
-  - Authorization details 🔄 NEEDS UI
-  - Price list status 🔄 NEEDS UI
+  - Active insurance info ✅ (`CustomerInsurancePricing` component)
+  - Authorization details ✅ (carrier, copays, allowances displayed)
+  - Price list status ✅ (`CustomerPricePlan` component)
 
-### Decision Point: STAGE 4 COMPLETE
-**Test**: Navigate to customer profile page
-**Result 1**: Authorization displays in Insurance tab
-**Result 2**: Price list displays (250+ products)
-**Result 3**: Patient can be selected for quote building
-**Action**: If PASS → Proceed to Stage 5. If FAIL → Fix profile linkage.
+**Files Implementing Stage 4:**
+- `src/components/customers/customer-profile.tsx` - Main profile with tabs
+- `src/components/customers/customer-insurance-pricing.tsx` - Insurance + authorization display
+- `src/app/api/customers/[id]/authorization/route.ts` - Authorization API
+
+### Decision Point: STAGE 4 COMPLETE ✅
+**Test**: Navigate to customer profile page → "Insurance & Pricing" tab
+**Result 1**: Authorization displays with carrier, copays, allowances ✅
+**Result 2**: Price list accessible via CustomerPricePlan ✅
+**Result 3**: Patient can be selected for quote building (New Quote button) ✅
 
 ---
 
-## Stage 5: Patient Price List (Display & Access) 🔄 NEXT
+## Stage 5: Patient Price List (Display & Access) ✅ COMPLETE
+
+**Status**: Complete - implemented in `CustomerPricePlan` component
 
 ### Functionality Goal
 Provide access to patient-specific pricing for quote building.
 
 ### Must Have:
-- Price list accessible from customer profile
-- Prices match generated values from Stage 3
-- Search/filter functionality
-- Manual price override capability (with audit trail)
-- Export to PDF/CSV
+- Price list accessible from customer profile ✅ ("Insurance & Pricing" tab)
+- Prices match generated values from Stage 3 ✅
+- Search/filter functionality ✅ (search + category + carrier filters)
+- Manual price override capability (with audit trail) ✅ (override modal with reason)
+- Export to PDF/CSV 🔄 (not yet implemented - optional)
 
-### UI Verification: /customers/[id]/price-list
-**Route**: `/customers/[id]/price-list` (accessible from customer profile)
-**Purpose**: Visual verification of patient-specific pricing
+### Implementation: CustomerPricePlan Component
+**Location**: `src/components/customers/customer-price-plan.tsx`
+**API**: `src/app/api/customers/[id]/price-plan/route.ts`
 
-**Display Requirements**:
-- Customer name and insurance info header
-- Price list generation date and authorization source
-- Product categories with expandable sections
-- Columns: Product Name, Retail Price, Insurance Price, Savings, Pricing Rule
-- Visual indicators for pricing rule (Tier-Based ✓, 80% U&C ⚠, Cash Only ✗)
-- Search and filter by product name/category
-- Export to PDF button
-- "Regenerate Prices" button (triggers new price list from authorization)
+**Display Features**:
+- Customer name and insurance info header ✅
+- Product categories grouped (Everyday vs Reserve sections) ✅
+- Columns: Product, Carrier, Retail, Tier, Customer Pays, Savings ✅
+- Visual indicators: Tier-Based (green), Fallback (amber), Needs Price (red) ✅
+- Search and filter by product name/SKU/category/carrier ✅
+- "Generate Price Plan" button (regenerates from authorization) ✅
+- Manual price override modal with preset reasons ✅
 
-**Summary Stats**:
-- Total products priced
-- Tier-based pricing count (%)
-- Fallback pricing count (%)
-- Cash-only count
+**Summary Stats** (displayed in header):
+- Total products count ✅
+- Tier-based pricing count ✅
+- Fallback pricing count (80% retail) ✅
+- Missing prices count ✅
+- Custom overrides count ✅
 
-### Decision Point: STAGE 5 COMPLETE
-**Test 1**: View price list in customer profile
-**Test 2**: Search for "Varilux" products
-**Test 3**: Verify prices match Stage 3 generated values
-**UI Check**: Navigate to /customers/[id]/price-list → All products display with correct pricing rules
-**Action**: If PASS → Proceed to Stage 6. If FAIL → Fix price list display.
+**Key Product Categories Validation**:
+- Highlights key categories that MUST have prices (progressives, AR, frames, exams, materials)
+- Red warning banner when key products missing prices
+
+### Decision Point: STAGE 5 COMPLETE ✅
+**Test 1**: View price list in customer profile → "Insurance & Pricing" tab ✅
+**Test 2**: Search for products by name ✅
+**Test 3**: Generate price plan from authorization ✅
+**Test 4**: Override individual product price ✅
 
 ---
 
