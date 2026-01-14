@@ -8,31 +8,31 @@ export async function GET(request: Request) {
     const category = searchParams.get('category')
     const tier = searchParams.get('tier')
     const carrier = searchParams.get('carrier')
-    
+
     const where: Prisma.ProductWhereInput = {
       active: true,
     }
-    
+
     // Filter by category
     if (category) {
       where.category = {
         code: category
       }
     }
-    
-    // Filter by insurance tier
+
+    // Filter by insurance tier - now uses carrier_tiers table
+    let productIdsWithTier: string[] | null = null
     if (tier && carrier) {
-      switch (carrier.toLowerCase()) {
-        case 'vsp':
-          where.tierVsp = tier
-          break
-        case 'eyemed':
-          where.tierEyemed = tier
-          break
-        case 'spectera':
-          where.tierSpectera = tier
-          break
-      }
+      const tierMappings = await prisma.carrierTier.findMany({
+        where: {
+          carrier: carrier.toUpperCase(),
+          tierCode: tier,
+          productType: 'PRODUCT'
+        },
+        select: { productId: true }
+      })
+      productIdsWithTier = tierMappings.map(t => t.productId)
+      where.id = { in: productIdsWithTier }
     }
 
     const products = await prisma.product.findMany({
@@ -46,7 +46,7 @@ export async function GET(request: Request) {
         }
       },
       orderBy: [
-        { displayTier: 'asc' },  // 'everyday' before 'reserve'
+        { displayGroup: 'asc' },  // 'everyday' before 'reserve'
         { category: { displayOrder: 'asc' } },
         { displayOrder: 'asc' },
         { name: 'asc' }

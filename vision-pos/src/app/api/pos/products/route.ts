@@ -184,6 +184,17 @@ export async function GET(request: NextRequest) {
 
       const paginatedLenses = visibleLenses.slice(0, limit)
 
+      // Pre-fetch tier mappings from carrier_tiers table for fallback calculation
+      const lensIds = paginatedLenses.map(l => l.id)
+      const lensTierMappings = carrier ? await prisma.carrierTier.findMany({
+        where: {
+          productId: { in: lensIds },
+          productType: 'LENS_PRODUCT',
+          carrier: carrier.toUpperCase()
+        }
+      }) : []
+      const lensTierMap = new Map(lensTierMappings.map(t => [t.productId, t.tierCode]))
+
       for (const lens of paginatedLenses) {
         // Check for pre-calculated price from price list
         const priceEntry = priceList.get(lens.id)
@@ -210,15 +221,13 @@ export async function GET(request: NextRequest) {
             pricingNotes = hasCustomPrice ? 'Custom price override' : undefined
           }
         } else {
-          // Fall back to real-time calculation
-          const tierMapping = lens.carrierTiers?.find(t =>
-            t.carrier.toLowerCase() === (carrier || '').toLowerCase()
-          )
+          // Fall back to real-time calculation using carrier_tiers table
+          const tierCode = lensTierMap.get(lens.id)
           const pricing = calculateLensPricingByCategory(
             lens.pricingCategory,
             lens.retailPrice,
             authorization,
-            tierMapping?.tierCode
+            tierCode
           )
           patientPays = pricing.patientPays
           insurancePays = pricing.insurancePays
@@ -448,7 +457,6 @@ async function fetchLenses(search: string, limit: number, page: number, includeH
 
   return prisma.lensProduct.findMany({
     where,
-    include: { carrierTiers: true },
     take: limit,
     skip: (page - 1) * limit,
     orderBy: [

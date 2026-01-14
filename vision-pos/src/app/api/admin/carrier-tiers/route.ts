@@ -52,18 +52,6 @@ export async function GET(request: NextRequest) {
     // Get total service count (for coverage calculation)
     const serviceCount = await prisma.servicePrice.count({ where: { isActive: true } })
 
-    // Get products with tier columns (old system)
-    const productsWithTiers = await prisma.product.count({
-      where: {
-        active: true,
-        OR: [
-          { tierVsp: { not: null } },
-          { tierEyemed: { not: null } },
-          { tierSpectera: { not: null } }
-        ]
-      }
-    })
-
     // Calculate coverage percentages
     const vspCount = stats.find(s => s.carrier === 'VSP')?._count?.id || 0
     const eyemedCount = stats.find(s => s.carrier === 'EYEMED')?._count?.id || 0
@@ -112,11 +100,7 @@ export async function GET(request: NextRequest) {
           acc[s.pricingRule] = s._count.id
           return acc
         }, {} as Record<string, number>),
-        coverage,
-        legacyMappings: {
-          lensCarrierTiers: await prisma.lensCarrierTier.count(),
-          productsWithTierColumns: productsWithTiers
-        }
+        coverage
       }
     })
   } catch (error) {

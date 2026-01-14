@@ -59,14 +59,14 @@ export async function GET(
     // Get active authorization (VSP/EyeMed/Spectera)
     const authResult = await getActiveAuthorizationForCustomer(id)
 
-    // Get all products - ordered by displayTier (everyday first), category displayOrder, then product displayOrder
+    // Get all products - ordered by displayGroup (everyday first), category displayOrder, then product displayOrder
     const products = await prisma.product.findMany({
       where: { active: true },
       include: {
         category: true
       },
       orderBy: [
-        { displayTier: 'asc' },  // 'everyday' sorts before 'reserve'
+        { displayGroup: 'asc' },  // 'everyday' sorts before 'reserve'
         { category: { displayOrder: 'asc' } },
         { displayOrder: 'asc' },
         { name: 'asc' }
@@ -133,7 +133,7 @@ export async function GET(
         category: product.category.name,
         categoryCode: product.category.code,
         categoryDisplayOrder: product.category.displayOrder,
-        displayTier: product.displayTier,  // 'everyday' or 'reserve'
+        displayGroup: product.displayGroup,  // 'everyday' or 'reserve'
         displayOrder: product.displayOrder,
         retailPrice: product.basePrice,
         customerPrice: effectivePrice,
@@ -240,21 +240,21 @@ export async function POST(
     // Get active authorization
     const authResult = await getActiveAuthorizationForCustomer(id)
 
-    // Calculate insurance tier for this product
-    let tier = null
-    let insuranceCarrier = null
+    // Calculate insurance tier for this product from carrier_tiers table
+    let tier: string | null = null
+    let insuranceCarrier: string | null = null
 
     if (authResult) {
       insuranceCarrier = authResult.carrier.toUpperCase()
 
-      // Get tier based on carrier
-      if (insuranceCarrier === 'VSP') {
-        tier = product.tierVsp
-      } else if (insuranceCarrier === 'EYEMED') {
-        tier = product.tierEyemed
-      } else if (insuranceCarrier === 'SPECTERA') {
-        tier = product.tierSpectera
-      }
+      // Look up tier from carrier_tiers table
+      const tierMapping = await prisma.carrierTier.findFirst({
+        where: {
+          productId: productId,
+          carrier: insuranceCarrier
+        }
+      })
+      tier = tierMapping?.tierCode || null
     }
 
     // Upsert price plan - use new unique constraint that includes insuranceCarrier

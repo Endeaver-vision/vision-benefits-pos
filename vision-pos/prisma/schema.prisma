@@ -62,9 +62,6 @@ model Product {
   categoryId         String
   manufacturer       String?
   basePrice          Float
-  tierVsp            String?
-  tierEyemed         String?
-  tierSpectera       String?
   active             Boolean             @default(true)
   displayGroup       String              @default("reserve") @map("displayGroup") // 'everyday' or 'reserve'
   displayOrder       Int                 @default(100)
@@ -444,7 +441,6 @@ model LensProduct {
   posDisplayOrder Int               @default(999)
   isPreferred     Boolean           @default(false)
   pricingCategory String?
-  carrierTiers    LensCarrierTier[]
 
   @@index([category])
   @@index([pricingCategory])
@@ -453,24 +449,7 @@ model LensProduct {
   @@map("lens_products")
 }
 
-model LensCarrierTier {
-  id            String      @id @default(cuid())
-  lensProductId String
-  carrier       String
-  tierCode      String
-  tierLabel     String?
-  patientCopay  Float?
-  createdAt     DateTime    @default(now())
-  updatedAt     DateTime    @updatedAt
-  lensProduct   LensProduct @relation(fields: [lensProductId], references: [id], onDelete: Cascade)
-
-  @@unique([lensProductId, carrier])
-  @@index([carrier, tierCode])
-  @@map("lens_carrier_tiers")
-}
-
 // Unified carrier tier mapping table - single source of truth for all product-to-carrier tier assignments
-// This replaces the scattered tier columns on products, service_prices, and lens_carrier_tiers junction table
 model CarrierTier {
   id          String   @id @default(cuid())
 
@@ -613,9 +592,6 @@ model ServicePrice {
   isFeatured         Boolean          @default(false)
   posDisplayOrder    Int              @default(999)
   pricingCategory    String?
-  tierVsp            String?
-  tierEyemed         String?
-  tierSpectera       String?
 
   @@index([name])
   @@index([code])
@@ -623,7 +599,6 @@ model ServicePrice {
   @@index([pricingCategory])
   @@index([billingBucket])
   @@index([showInPos, isFeatured, posDisplayOrder])
-  @@index([tierVsp, tierEyemed, tierSpectera])
   @@map("service_prices")
 }
 

@@ -39,12 +39,7 @@ export async function GET() {
           name: p.name,
           manufacturer: p.manufacturer,
           category: p.category.name,
-          price: p.basePrice,
-          tiers: {
-            vsp: p.tierVsp,
-            eyemed: p.tierEyemed,
-            spectera: p.tierSpectera
-          }
+          price: p.basePrice
         }))
       },
       timestamp: new Date().toISOString()

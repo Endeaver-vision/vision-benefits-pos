@@ -337,6 +337,16 @@ async function fetchProductInfo(skus: string[], carrier: string | null): Promise
     },
   })
 
+  // Fetch tier codes from carrier_tiers for all products
+  const productIds = generalProducts.map(p => p.id)
+  const productTierMappings = carrier ? await prisma.carrierTier.findMany({
+    where: {
+      productId: { in: productIds },
+      carrier: carrier.toUpperCase()
+    }
+  }) : []
+  const productTierMap = new Map(productTierMappings.map(t => [t.productId, t.tierCode]))
+
   for (const product of generalProducts) {
     // Map category codes to simplified categories
     const catCode = product.category?.code || ''
@@ -362,7 +372,7 @@ async function fetchProductInfo(skus: string[], carrier: string | null): Promise
       retailPrice: product.basePrice,
       category,
       pricingCategory: product.category?.code || null,
-      tierCode: product.tierVsp,
+      tierCode: productTierMap.get(product.id),
     })
   }
 
@@ -378,15 +388,19 @@ async function fetchProductInfo(skus: string[], carrier: string | null): Promise
       ],
       isActive: true,
     },
-    include: {
-      carrierTiers: carrier ? {
-        where: { carrier: { equals: carrier, mode: 'insensitive' } }
-      } : false,
-    },
   })
 
+  // Fetch tier codes for lens products from carrier_tiers
+  const lensProductIds = lensProducts.map(p => p.id)
+  const lensTierMappings = carrier ? await prisma.carrierTier.findMany({
+    where: {
+      productId: { in: lensProductIds },
+      carrier: carrier.toUpperCase()
+    }
+  }) : []
+  const lensTierMap = new Map(lensTierMappings.map(t => [t.productId, t.tierCode]))
+
   for (const product of lensProducts) {
-    const tierMapping = Array.isArray(product.carrierTiers) ? product.carrierTiers[0] : null
     const key = product.sku || product.id
     // Only add if not already in map from Product table
     if (!products.has(key)) {
@@ -397,7 +411,7 @@ async function fetchProductInfo(skus: string[], carrier: string | null): Promise
         retailPrice: product.retailPrice,
         category: 'lens',
         pricingCategory: product.pricingCategory,
-        tierCode: tierMapping?.tierCode,
+        tierCode: lensTierMap.get(product.id),
       })
     }
   }

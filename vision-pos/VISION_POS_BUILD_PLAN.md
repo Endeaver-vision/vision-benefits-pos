@@ -229,7 +229,22 @@ CREATE INDEX idx_carrier_tiers_lookup ON carrier_tiers(carrier, tierCode);
 - `src/lib/services/unified-pricing-service.ts` - Updated lens lookup to query carrier_tiers
 
 **Step 4**: Drop old tier columns and `lens_carrier_tiers` table
-- STATUS: PENDING (ready after full testing of Step 3)
+- **STATUS: COMPLETE** (2026-01-13)
+- Removed columns from `Product` model: tierVsp, tierEyemed, tierSpectera
+- Removed columns from `ServicePrice` model: tierVsp, tierEyemed, tierSpectera
+- Removed `LensCarrierTier` model entirely (junction table)
+- Removed `carrierTiers` relation from `LensProduct` model
+- Updated all TypeScript code to use `carrier_tiers` table queries
+
+**Files Updated for Step 4:**
+- `prisma/schema.prisma` - Removed tier columns and LensCarrierTier model
+- `src/app/api/admin/carrier-tiers/route.ts` - Removed legacy mapping stats
+- `src/app/api/customers/[id]/price-plan/route.ts` - Updated tier lookup
+- `src/app/api/health/route.ts` - Removed tier display
+- `src/app/api/pos/products/route.ts` - Updated lens tier fallback lookup
+- `src/app/api/products/route.ts` - Updated tier filtering
+- `src/app/api/quote/route.ts` - Updated product/lens tier lookups
+- `src/lib/services/price-list-precompute.ts` - Updated lens tier fetching
 
 ---
 
