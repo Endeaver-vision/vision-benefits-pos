@@ -82,7 +82,10 @@ SELECT COUNT(*) FROM Service WHERE cashPrice IS NULL OR sku IS NULL OR name IS N
 
 ---
 
-## Stage 2: Insurance Mapping
+## Stage 2: Insurance Mapping ✅ COMPLETE
+
+**Status**: All 4 migration steps complete (2026-01-13)
+**Result**: 916 tier mappings consolidated into unified `carrier_tiers` table
 
 ### Functionality Goal
 Single source of truth for all product-to-carrier tier assignments. The scanner reads ONE table.
