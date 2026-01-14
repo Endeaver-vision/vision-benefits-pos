@@ -326,8 +326,8 @@ ORDER BY productType, productName;
 
 ## Stage 3: Insurance Scanner + Price List Generation 🔄 IN PROGRESS
 
-**Status**: Backend complete, admin review UI added (2026-01-14)
-**Remaining**: End-to-end testing
+**Status**: Backend complete, admin review UI added, batch scanner added (2026-01-14)
+**Remaining**: End-to-end testing (requires Stage 5 price list display first)
 
 ### Functionality Goal
 Extract benefit data from insurance documents AND generate complete patient price list with validation.
@@ -360,10 +360,26 @@ Extract benefit data from insurance documents AND generate complete patient pric
 - Low confidence warnings (< 70%)
 - Verify & Generate Prices action
 
+**Batch Folder Scanner** ✅ COMPLETE (2026-01-14)
+- Scan folder of documents → `/admin/batch-scanner` page
+- Process multiple insurance documents from directory
+- Generate temporary (unassigned) price lists
+- Assign to customer when patient arrives
+- Database models: `BatchScanJob`, `BatchScanDocument`, `TemporaryPriceList`
+- API endpoints:
+  - `POST /api/batch-scan` - Create job from folder
+  - `POST /api/batch-scan/[id]/process` - Process all documents
+  - `POST /api/batch-scan/[id]/assign` - Assign to customer
+
 **Files Created/Updated:**
 - `src/app/admin/scanner/page.tsx` - Admin scanner queue UI
 - `src/app/api/customers/[id]/precompute-prices/route.ts` - Added GET for stats
 - `src/app/api/documents/[id]/verify/route.ts` - Verification + price generation
+- `src/app/admin/batch-scanner/page.tsx` - Batch folder scanner UI
+- `src/app/api/batch-scan/route.ts` - Batch scan job API
+- `src/app/api/batch-scan/[id]/process/route.ts` - Batch processing API
+- `src/app/api/batch-scan/[id]/assign/route.ts` - Price list assignment API
+- `src/lib/services/batch-price-generator.ts` - Temp price list generation
 
 ### Process Flow:
 1. **Upload** → Insurance document (PDF/image)
@@ -463,17 +479,19 @@ Common Products Preview:
 
 ## Stage 4: Patient Profile
 
+**Status**: Partially implemented - customer profile exists, needs insurance/price list integration
+
 ### Functionality Goal
 Link authorization and price list to patient record.
 
 ### Must Have:
-- Customer demographics complete
-- Authorization linked to customer
-- Price list linked to customer
+- Customer demographics complete ✅ (existing `/customers/[id]` page)
+- Authorization linked to customer ✅ (database relations exist)
+- Price list linked to customer ✅ (database relations exist)
 - Customer profile displays:
-  - Active insurance info
-  - Authorization details
-  - Price list status
+  - Active insurance info 🔄 NEEDS UI
+  - Authorization details 🔄 NEEDS UI
+  - Price list status 🔄 NEEDS UI
 
 ### Decision Point: STAGE 4 COMPLETE
 **Test**: Navigate to customer profile page
@@ -484,7 +502,7 @@ Link authorization and price list to patient record.
 
 ---
 
-## Stage 5: Patient Price List (Display & Access)
+## Stage 5: Patient Price List (Display & Access) 🔄 NEXT
 
 ### Functionality Goal
 Provide access to patient-specific pricing for quote building.
