@@ -324,10 +324,46 @@ ORDER BY productType, productName;
 
 ---
 
-## Stage 3: Insurance Scanner + Price List Generation
+## Stage 3: Insurance Scanner + Price List Generation 🔄 IN PROGRESS
+
+**Status**: Backend complete, admin review UI added (2026-01-14)
+**Remaining**: End-to-end testing
 
 ### Functionality Goal
 Extract benefit data from insurance documents AND generate complete patient price list with validation.
+
+### Implementation Status:
+
+**Backend Pipeline** ✅ COMPLETE
+- Document upload → `/api/documents/upload` route
+- OCR processing → integrated with OpenAI Vision
+- GPT-4o extraction → `src/lib/services/ocr/gpt-extraction.ts`
+- Authorization creation → all 3 carriers (VSP, EyeMed, Spectera)
+- Price precomputation → `src/lib/services/price-list-precompute.ts`
+- Customer price list storage → `customer_price_lists` table
+
+**Scanner UI** ✅ COMPLETE
+- Customer selection flow → `/scanner` page
+- Multi-document upload
+- Real-time processing status
+- Extracted benefits display
+- Auto-verification trigger
+
+**Admin Review Queue** ✅ COMPLETE (2026-01-14)
+- Pending documents queue → `/admin/scanner` page
+- Extraction validation checkpoints (4 checks):
+  - Carrier detected ✓
+  - Patient info extracted ✓
+  - Copays extracted ✓
+  - Confidence threshold (70%) ✓
+- Price list generation summary (when verified)
+- Low confidence warnings (< 70%)
+- Verify & Generate Prices action
+
+**Files Created/Updated:**
+- `src/app/admin/scanner/page.tsx` - Admin scanner queue UI
+- `src/app/api/customers/[id]/precompute-prices/route.ts` - Added GET for stats
+- `src/app/api/documents/[id]/verify/route.ts` - Verification + price generation
 
 ### Process Flow:
 1. **Upload** → Insurance document (PDF/image)
