@@ -557,9 +557,8 @@ export default function CustomerInsurancePricing({
 
       {/* Main Tabs */}
       <Tabs defaultValue="price-list" className="w-full">
-        <TabsList className="grid w-full grid-cols-3">
+        <TabsList className="grid w-full grid-cols-2">
           <TabsTrigger value="price-list">Products</TabsTrigger>
-          <TabsTrigger value="benefits">Benefits Detail</TabsTrigger>
           <TabsTrigger value="history" onClick={() => !priceListHistory.length && fetchHistory()}>
             History
           </TabsTrigger>
@@ -675,69 +674,6 @@ export default function CustomerInsurancePricing({
                     </Table>
                   </div>
                 ))
-              )}
-            </CardContent>
-          </Card>
-        </TabsContent>
-
-        {/* Benefits Detail Tab */}
-        <TabsContent value="benefits">
-          <Card>
-            <CardHeader>
-              <CardTitle>Full Benefits Breakdown</CardTitle>
-            </CardHeader>
-            <CardContent>
-              {authData ? (
-                <div className="space-y-6">
-                  {/* Copays section */}
-                  <div>
-                    <h4 className="font-semibold mb-3">Copays</h4>
-                    <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
-                      {authData.copays && Object.entries(authData.copays).map(([key, value]) => {
-                        if (value === null) return null
-                        const label = key.replace(/([A-Z])/g, ' $1').replace(/^./, str => str.toUpperCase())
-                        return (
-                          <div key={key} className="bg-muted/30 rounded-lg p-3">
-                            <div className="text-xs text-muted-foreground">{label}</div>
-                            <div className="font-semibold">
-                              {typeof value === 'number' ? formatPrice(value) : value}
-                            </div>
-                          </div>
-                        )
-                      })}
-                    </div>
-                  </div>
-
-                  {/* Allowances section */}
-                  <div>
-                    <h4 className="font-semibold mb-3">Allowances</h4>
-                    <div className="grid grid-cols-2 md:grid-cols-3 gap-4">
-                      <div className="bg-amber-500/10 border border-amber-500/20 rounded-lg p-4">
-                        <div className="text-sm text-muted-foreground">Frame Allowance</div>
-                        <div className="text-xl font-semibold text-amber-400">
-                          {authData.frameAllowanceMin && authData.frameAllowanceMax
-                            ? `${formatPrice(authData.frameAllowanceMin)} - ${formatPrice(authData.frameAllowanceMax)}`
-                            : formatPrice(authData.frameAllowance)}
-                        </div>
-                      </div>
-                      <div className="bg-purple-500/10 border border-purple-500/20 rounded-lg p-4">
-                        <div className="text-sm text-muted-foreground">Contact Allowance</div>
-                        <div className="text-xl font-semibold text-purple-400">
-                          {formatPrice(authData.contactAllowance)}
-                        </div>
-                        {authData.contactLensCost && (
-                          <div className="text-xs text-muted-foreground mt-1">
-                            Overage: {formatContactBenefit(authData.contactLensCost)}
-                          </div>
-                        )}
-                      </div>
-                    </div>
-                  </div>
-                </div>
-              ) : (
-                <div className="text-center py-12 text-muted-foreground">
-                  No authorization data available. Scan an insurance document to see benefits.
-                </div>
               )}
             </CardContent>
           </Card>
