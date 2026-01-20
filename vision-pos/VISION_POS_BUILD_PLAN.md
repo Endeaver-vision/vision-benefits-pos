@@ -1,6 +1,6 @@
 # Vision POS Build Plan
 
-**Last Updated**: 2026-01-13
+**Last Updated**: 2026-01-20
 **Architecture**: See `vision-pos-architecture.pdf` and `vision-pos-diagram-v5.jsx`
 
 ---
@@ -9,11 +9,11 @@
 
 Vision POS is a quote flow and point-of-sale system for optical practices. The system follows a **sequential data flow** to generate accurate patient quotes based on insurance benefits and product catalog.
 
-### 8 Components (7 with Databases):
+### 8 Components:
 
 1. **Products & Inventory** (Blue) - DATABASE
-2. **Insurance Mapping** (Indigo) - DATABASE
-3. **Insurance Scanner** (Purple) - Processing only, NO DATABASE
+2. **Insurance Mapping** (Indigo) - **FILE** (TypeScript mapping file, not database)
+3. **Insurance Scanner** (Purple) - Processing + DATABASE (unified authorizations table)
 4. **Patient Profile** (Emerald) - DATABASE
 5. **Patient Price List** (Teal) - DATABASE
 6. **Quote Generation** (Amber) - DATABASE
@@ -84,250 +84,186 @@ SELECT COUNT(*) FROM Service WHERE cashPrice IS NULL OR sku IS NULL OR name IS N
 
 ## Stage 2: Insurance Mapping ✅ COMPLETE
 
-**Status**: All 4 migration steps complete (2026-01-13)
-**Result**: 916 tier mappings consolidated into unified `carrier_tiers` table
+**Status**: TypeScript mapping file implemented (2026-01-15)
+**Architecture**: Single source of truth in `src/lib/data/insurance-tier-mappings.ts`
 
 ### Functionality Goal
-Single source of truth for all product-to-carrier tier assignments. The scanner reads ONE table.
+Map products to insurance tier codes, and tier codes to copay field names in authorization JSON. **No database lookups during pricing** - all mappings are compile-time constants.
 
 ---
 
-### Architecture: Unified carrier_tiers Table
+### Architecture: TypeScript Mapping File
 
 ```
 PRICE GENERATION FLOW:
 ═══════════════════════════════════════════════════════════════════════════════
 
 ┌─────────────────────┐      ┌─────────────────────┐      ┌─────────────────────┐
-│   CARRIER_TIERS     │      │  PATIENT AUTH       │      │ CUSTOMER_PRICE_LIST │
-│   (universal)       │  +   │  (scanned form)     │  =   │ (personalized)      │
+│ INSURANCE-TIER-     │      │  PATIENT AUTH       │      │ PATIENT_PRICE_LIST  │
+│ MAPPINGS.TS (FILE)  │  +   │  (unified table)    │  =   │ (personalized)      │
 ├─────────────────────┤      ├─────────────────────┤      ├─────────────────────┤
-│ Product: Varilux X  │      │ Patient: John Smith │      │ John Smith          │
-│ Carrier: VSP        │      │ Carrier: VSP        │      │ ─────────────────── │
-│ Tier: KA            │      │ KA Copay: $95       │      │ Varilux X: $95      │
-│                     │      │ Frame Allow: $150   │      │ Frame: $150 allow   │
-│ Product: Crizal     │      │ Exam Copay: $10     │      │ Crizal: $55         │
-│ Carrier: VSP        │      │ QV Copay: $55       │      │ Exam: $10           │
-│ Tier: QV            │      │                     │      │                     │
-│                     │      │                     │      │                     │
-│ Product: Exam       │      │                     │      │                     │
-│ Carrier: VSP        │      │                     │      │                     │
-│ Tier: exam_copay    │      │                     │      │                     │
+│ PRODUCT_TIERS:      │      │ copays JSON:        │      │ John Smith          │
+│  "Varilux X":       │      │ {                   │      │ ─────────────────── │
+│    eyemed: "tier_3" │      │   progressiveTier3: │      │ Varilux X: $110     │
+│                     │      │     110,            │      │ Crizal Rock: $68    │
+│ EYEMED_TIER_TO_     │      │   arTier2: 68,      │      │ Polycarbonate: $40  │
+│ COPAY:              │      │   polycarbonate: 40,│      │ Trivex: $68 (80%)   │
+│  "tier_3" →         │      │   allOtherLens      │      │                     │
+│    "progressiveTier3│      │     Options:        │      │                     │
+│                     │      │     "DISCOUNT_20"   │      │                     │
 └─────────────────────┘      └─────────────────────┘      └─────────────────────┘
         │                              │                           │
-        │         SCANNER             │                           │
-        └──────────────►──────────────┘                           │
+        │  PRECOMPUTE SERVICE          │                           │
+        └──────────────►───────────────┘                           │
                               │                                    │
                               └────────────► GENERATES ───────────┘
 ```
 
-**Key Principle**: Scanner reads carrier_tiers + patient authorization → outputs customer_price_list. One table to maintain. One table to query.
+**Key Principle**: Tier mappings in TypeScript file + copays in authorization JSON → patient price list. No database queries for tier lookups.
 
 ---
 
-### Database Schema: carrier_tiers
+### File Structure
 
-```sql
-CREATE TABLE carrier_tiers (
-  id              TEXT PRIMARY KEY,
+**Location**: `src/lib/data/insurance-tier-mappings.ts`
 
-  -- Product reference (polymorphic)
-  productType     TEXT NOT NULL,  -- 'LENS', 'SERVICE', 'MATERIAL', 'ADDON'
-  productId       TEXT NOT NULL,  -- FK to lens_products, service_prices, or products
-  productName     TEXT NOT NULL,  -- Denormalized for easy queries
+```typescript
+// 1. PRODUCT_TIERS - Maps products to tier codes per carrier
+export const PRODUCT_TIERS: Record<string, ProductTierMap> = {
+  "Varilux Comfort DRx": {
+    vsp: "JA",        // VSP tier code
+    eyemed: "tier_3", // EyeMed tier code
+    spectera: "III"   // Spectera tier code
+  },
+  "Polycarbonate": {
+    vsp: "AD",
+    eyemed: "polycarbonate",
+    spectera: "polycarbonate"
+  },
+  // null = not covered (cash only)
+  "Neurolens SV": { vsp: null, eyemed: null, spectera: null },
+  // ... 40+ products
+};
 
-  -- Carrier assignment
-  carrier         TEXT NOT NULL,  -- 'VSP', 'EYEMED', 'SPECTERA'
-  tierCode        TEXT NOT NULL,  -- e.g., 'KA', 'tier_3', 'exam_copay', '80_uc'
-  tierLabel       TEXT,           -- Human readable: "Progressive Tier 2"
+// 2. TIER_TO_COPAY - Maps tier codes to copay field names
+export const EYEMED_TIER_TO_COPAY: CopayFieldMap = {
+  "tier_3": "progressiveTier3",     // Look up copays.progressiveTier3
+  "ar_tier_3": "DISCOUNT_20_PERCENT", // Special: 20% off retail
+  "polycarbonate": "polycarbonate", // Look up copays.polycarbonate
+  // ...
+};
 
-  -- Pricing rule
-  pricingRule     TEXT NOT NULL,  -- 'TIER_COPAY', '80_UC', 'ALLOWANCE', 'INCLUDED', 'CASH_ONLY'
-
-  -- Timestamps
-  createdAt       TIMESTAMP DEFAULT NOW(),
-  updatedAt       TIMESTAMP,
-
-  UNIQUE(productType, productId, carrier)
-);
-
-CREATE INDEX idx_carrier_tiers_carrier ON carrier_tiers(carrier);
-CREATE INDEX idx_carrier_tiers_lookup ON carrier_tiers(carrier, tierCode);
+export const VSP_TIER_TO_COPAY: CopayFieldMap = { /* ... */ };
+export const SPECTERA_TIER_TO_COPAY: CopayFieldMap = { /* ... */ };
 ```
 
 ---
 
-### Pricing Rules Explained
+### Pricing Methods Explained
 
-| pricingRule | Meaning | Example |
-|-------------|---------|---------|
-| `TIER_COPAY` | Patient pays copay from auth form | Progressive KA → $95 copay |
-| `80_UC` | Patient pays 80% of retail (U&C) | Specialty lens → 80% of $400 = $320 |
-| `ALLOWANCE` | Apply allowance, patient pays overage | Frame $250, allowance $150 → $100 |
-| `INCLUDED` | Covered at $0 copay | Roll & polish, basic adjustments |
-| `CASH_ONLY` | Not covered, full retail | Optomap, Neurolens, specialty CL fits |
+| Method | Meaning | When Used |
+|--------|---------|-----------|
+| `by_tier` | Patient pays copay from authorization JSON | Product has explicit copay value |
+| `ins_discount` | Patient pays (100 - X)% of retail | Authorization has "DISCOUNT_XX" string |
+| `cash_only` | Patient pays full retail | Product tier is null (not covered) |
+| `uc_discount` | 80% fallback (DATA QUALITY ISSUE) | Should be rare - indicates missing data |
 
----
-
-### Products Requiring Tier Mapping
-
-**Lens Products** (complex tier codes):
-- Progressives: VSP (JA, KA, LA, MA, NA, OA), EyeMed (tier_1-5), Spectera (I-V)
-- Single Vision: VSP (AA, BA), EyeMed (standard, digital_sv), Spectera (standard)
-- AR Coatings: VSP (QM, QP, QR, QT, QV), EyeMed (Standard, Tier1-3), Spectera (tier_I-V)
-- Materials: VSP (AD, BH, BJ), EyeMed (polycarbonate, high_index), Spectera (same)
-- Photochromic: VSP (DA, FA, GA, PR), EyeMed (photochromic), Spectera (photochromic)
-- Polarized: VSP (MP, MN), EyeMed (polarized), Spectera (polarized)
-
-**Services** (simple mappings):
-- Routine Vision Exam → `exam_copay` (all carriers)
-- Refraction → `exam_copay` (included with exam)
-- CL Fitting (Sphere, Toric, Multifocal, Monovision) → `cl_fitting_copay` (VSP), `CASH_ONLY` (EyeMed/Spectera)
-- Optomap, OCT, Visual Fields → `CASH_ONLY` (all carriers)
+**IMPORTANT**: `uc_discount` indicates extraction or mapping issues. A well-functioning system should have ZERO `uc_discount` products.
 
 ---
 
-### Migration Plan
+### Special Values in Authorization copays JSON
 
-**Step 1**: Create new `carrier_tiers` table
-- **STATUS: COMPLETE** (2026-01-13)
-- Created `carrier_tiers` table via Supabase migration
-- Added to Prisma schema as `CarrierTier` model
-- Indexes created: carrier, carrier+tierCode, productType+carrier
-- Unique constraint: productType + productId + carrier
+The GPT extraction stores copays as numbers OR discount strings:
 
-**Step 2**: Migrate existing data
-- **STATUS: COMPLETE** (2026-01-13)
-- FROM `lens_carrier_tiers` (389 rows) → carrier_tiers ✓
-- FROM `products.tierVsp/tierEyemed/tierSpectera` columns → carrier_tiers ✓
-- FROM `service_prices.tierVsp/tierEyemed/tierSpectera` columns → carrier_tiers ✓
-
-**Migration Results:**
-| Carrier | Total Mappings |
-|---------|----------------|
-| VSP | 327 |
-| EyeMed | 325 |
-| Spectera | 264 |
-| **TOTAL** | **916** |
-
-**By Product Type & Pricing Rule:**
-- LENS: 637 (TIER_COPAY: 633, 80_UC: 4)
-- SERVICE: 144 (TIER_COPAY: 28, CASH_ONLY: 116)
-- ADDON: 120 (TIER_COPAY: 76, 80_UC: 30, INCLUDED: 14)
-- MATERIAL: 15 (TIER_COPAY: 15)
-
-**Step 3**: Update scanner to read from `carrier_tiers` only
-- **STATUS: COMPLETE** (2026-01-13)
-- Updated all API routes to read tier codes from `carrier_tiers` table
-- Removed all reads from `product.tierVsp/tierEyemed/tierSpectera` columns
-- Removed all reads from `service_prices.tierVsp/tierEyemed/tierSpectera` columns
-- Removed relation include on `lensCarrierTiers`
-
-**Files Updated:**
-- `src/lib/services/price-mapping-service.ts` - Main price generation, now uses `buildCarrierTierMap()` helper
-- `src/app/api/pricing/calculate/route.ts` - Uses `prisma.carrierTier.findMany()` for tier lookups
-- `src/app/api/customers/[id]/insurance-summary/route.ts` - Updated `getTierProductMappings()`
-- `src/app/api/quote-builder/products/route.ts` - Uses `getVspTierProductIds()` for cash-pay detection
-- `src/app/api/pricing/services/route.ts` - Uses `getServiceTierMappings()` helper
-- `src/lib/services/unified-pricing-service.ts` - Updated lens lookup to query carrier_tiers
-
-**Step 4**: Drop old tier columns and `lens_carrier_tiers` table
-- **STATUS: COMPLETE** (2026-01-13)
-- Removed columns from `Product` model: tierVsp, tierEyemed, tierSpectera
-- Removed columns from `ServicePrice` model: tierVsp, tierEyemed, tierSpectera
-- Removed `LensCarrierTier` model entirely (junction table)
-- Removed `carrierTiers` relation from `LensProduct` model
-- Updated all TypeScript code to use `carrier_tiers` table queries
-
-**Files Updated for Step 4:**
-- `prisma/schema.prisma` - Removed tier columns and LensCarrierTier model
-- `src/app/api/admin/carrier-tiers/route.ts` - Removed legacy mapping stats
-- `src/app/api/customers/[id]/price-plan/route.ts` - Updated tier lookup
-- `src/app/api/health/route.ts` - Removed tier display
-- `src/app/api/pos/products/route.ts` - Updated lens tier fallback lookup
-- `src/app/api/products/route.ts` - Updated tier filtering
-- `src/app/api/quote/route.ts` - Updated product/lens tier lookups
-- `src/lib/services/price-list-precompute.ts` - Updated lens tier fetching
-
----
-
-### UI Verification: /admin/carrier-tiers
-**Route**: `/admin/carrier-tiers`
-**Purpose**: Visual verification of carrier tier mappings
-**STATUS: IMPLEMENTED** (2026-01-13)
-
-**Display Requirements**:
-- Summary cards showing mapping counts per carrier (VSP, EyeMed, Spectera)
-- Products missing mappings (highlighted in red)
-- Filter by: carrier, productType, pricingRule
-- Ability to view/edit individual tier assignments ✅
-- Export to CSV for audit ✅
-- Coverage percentage indicator (e.g., "VSP: 95% mapped") ✅
-
-**Tabs**:
-1. **Overview** - Summary stats and coverage percentages ✅
-2. **By Carrier** - Filter view per carrier (VSP, EyeMed, Spectera tabs) ✅
-3. **Missing Mappings** - Products needing tier assignments ✅
-4. **Bulk Edit** - Assign tiers to multiple products (future)
-
-**Edit Functionality** (2026-01-13):
-- Edit modal with tier code, tier label, and pricing rule fields
-- Carrier-specific tier code suggestions (VSP: KA, JA, QV... | EyeMed: tier_1-5 | Spectera: tier_I-V)
-- Pricing rules: TIER_COPAY, 80_UC, ALLOWANCE, INCLUDED, CASH_ONLY
-- Save via POST API with upsert logic
-
-**Files Created**:
-- `src/app/admin/carrier-tiers/page.tsx` - Admin UI page with edit modal
-- `src/app/api/admin/carrier-tiers/route.ts` - API endpoint for CRUD operations
-
-### Decision Point: STAGE 2 COMPLETE
-
-**Test 1**: All lens products have tier mappings for all 3 carriers
-```sql
-SELECT lp.name,
-  COUNT(CASE WHEN ct.carrier = 'VSP' THEN 1 END) as vsp,
-  COUNT(CASE WHEN ct.carrier = 'EYEMED' THEN 1 END) as eyemed,
-  COUNT(CASE WHEN ct.carrier = 'SPECTERA' THEN 1 END) as spectera
-FROM lens_products lp
-LEFT JOIN carrier_tiers ct ON ct.productId = lp.id AND ct.productType = 'LENS'
-GROUP BY lp.id, lp.name
-HAVING COUNT(CASE WHEN ct.carrier = 'VSP' THEN 1 END) = 0
-    OR COUNT(CASE WHEN ct.carrier = 'EYEMED' THEN 1 END) = 0
-    OR COUNT(CASE WHEN ct.carrier = 'SPECTERA' THEN 1 END) = 0;
+```json
+{
+  "examCopay": 10,
+  "progressiveTier3": 110,
+  "arTier3": "DISCOUNT_20",    // String! Patient pays 80% retail
+  "allOtherLensOptions": "DISCOUNT_20"  // EyeMed catch-all
+}
 ```
-**Result**: Query returns 0 rows (all products mapped)
 
-**Test 2**: All covered services have tier mappings
-```sql
-SELECT sp.name
-FROM service_prices sp
-WHERE sp.category IN ('EXAM', 'CONTACT_LENS_FIT')
-  AND NOT EXISTS (
-    SELECT 1 FROM carrier_tiers ct
-    WHERE ct.productId = sp.id AND ct.productType = 'SERVICE'
-  );
-```
-**Result**: Query returns 0 rows
-
-**Test 3**: Scanner can query single table
-```sql
--- This single query returns all tier info for a carrier
-SELECT productType, productName, tierCode, tierLabel, pricingRule
-FROM carrier_tiers
-WHERE carrier = 'VSP'
-ORDER BY productType, productName;
-```
-**Result**: Returns all VSP mappings in one query
-
-**UI Check**: Navigate to /admin/carrier-tiers → All 3 carriers show 100% coverage
-**Action**: If ALL PASS → Proceed to Stage 3. If FAIL → Fix tier assignments.
+The precompute service handles both:
+- Number → use directly as copay
+- "DISCOUNT_XX" → calculate (100 - XX)% of retail price
 
 ---
 
-## Stage 3: Insurance Scanner + Price List Generation 🔄 IN PROGRESS
+### Product Categories (41 products mapped)
 
-**Status**: Backend complete, admin review UI added, batch scanner added (2026-01-14)
-**Remaining**: End-to-end testing (requires Stage 5 price list display first)
+**Single Vision**: 5 products (3 covered, 2 cash-only)
+**Bifocals**: 2 products (covered)
+**Progressives**: 6 products (3 covered, 3 cash-only)
+**Materials**: 5 products (4 covered, 1 cash-only)
+**AR Coatings**: 7 products (5 covered, 2 cash-only)
+**Photochromic**: 2 products (covered)
+**Addons**: 11 products (8 covered, 3 cash-only)
+**Mount Fees**: 3 products (covered)
+
+---
+
+### Consumer: Price List Precompute Service
+
+**Location**: `src/lib/services/price-list-precompute.ts`
+
+The precompute service:
+1. Gets product's tier code from `PRODUCT_TIERS`
+2. Maps tier code to copay field via `EYEMED_TIER_TO_COPAY` (etc)
+3. Looks up value in authorization's `copays` JSON
+4. Handles DISCOUNT_XX strings and allOtherLensOptions fallback
+5. Saves to `patient_price_lists` table
+
+```typescript
+// Simplified flow
+const tierCode = PRODUCT_TIERS[product.name]?.eyemed; // "tier_3"
+const copayField = EYEMED_TIER_TO_COPAY[tierCode];    // "progressiveTier3"
+const copayValue = auth.copays[copayField];           // 110 or "DISCOUNT_20"
+
+if (typeof copayValue === 'number') {
+  finalPrice = copayValue;
+  pricingMethod = 'by_tier';
+} else if (copayValue?.startsWith('DISCOUNT_')) {
+  const percent = parseInt(copayValue.replace('DISCOUNT_', ''));
+  finalPrice = retailPrice * (100 - percent) / 100;
+  pricingMethod = 'ins_discount';
+}
+```
+
+---
+
+### Decision Point: STAGE 2 COMPLETE ✅
+
+**Test 1**: TypeScript mapping file compiles without errors
+```bash
+npx tsc --noEmit src/lib/data/insurance-tier-mappings.ts
+```
+**Result**: No errors
+
+**Test 2**: All everyday products have tier mappings
+```typescript
+const products = Object.keys(PRODUCT_TIERS);
+console.log(`${products.length} products mapped`); // 41 products
+```
+**Result**: 41 products mapped
+
+**Test 3**: Tier-to-copay mappings exist for all 3 carriers
+```typescript
+Object.keys(EYEMED_TIER_TO_COPAY).length  // 20+ mappings
+Object.keys(VSP_TIER_TO_COPAY).length     // 20+ mappings
+Object.keys(SPECTERA_TIER_TO_COPAY).length // 15+ mappings
+```
+**Result**: All carriers have complete mappings
+
+**Action**: ✅ COMPLETE → Proceed to Stage 3
+
+---
+
+## Stage 3: Insurance Scanner + Price List Generation ✅ EYEMED COMPLETE
+
+**Status**: EyeMed fully working (2026-01-15), VSP/Spectera not yet tested
+**Test Patients**: 5 EyeMed patients available for UI verification (see below)
 
 ### Functionality Goal
 Extract benefit data from insurance documents AND generate complete patient price list with validation.
@@ -336,11 +272,22 @@ Extract benefit data from insurance documents AND generate complete patient pric
 
 **Backend Pipeline** ✅ COMPLETE
 - Document upload → `/api/documents/upload` route
-- OCR processing → integrated with OpenAI Vision
+- OCR processing → GPT-4o Vision (single call for OCR + extraction)
 - GPT-4o extraction → `src/lib/services/ocr/gpt-extraction.ts`
-- Authorization creation → all 3 carriers (VSP, EyeMed, Spectera)
+- Authorization creation → unified `insurance_authorizations` table (JSON copays)
 - Price precomputation → `src/lib/services/price-list-precompute.ts`
-- Customer price list storage → `customer_price_lists` table
+- Patient price list storage → `patient_price_lists` table
+
+**EyeMed Extraction** ✅ VERIFIED WORKING (2026-01-15)
+- Copays extracted correctly (including `allOtherLensOptions: "DISCOUNT_20"`)
+- Authorization copays JSON populated with all values
+- Price precomputation uses `ins_discount` method (NOT `uc_discount` fallback)
+- ZERO products falling back to 80% U&C discount
+
+**Key Fix (2026-01-15)**: Updated `/api/documents/[id]/verify/route.ts` to:
+- Handle DISCOUNT_XX strings (e.g., "DISCOUNT_20", "DISCOUNT_30")
+- Extract `allOtherLensOptions` field from GPT extraction
+- Store both numbers AND discount strings in copays JSON
 
 **Scanner UI** ✅ COMPLETE
 - Customer selection flow → `/scanner` page
@@ -349,45 +296,47 @@ Extract benefit data from insurance documents AND generate complete patient pric
 - Extracted benefits display
 - Auto-verification trigger
 
-**Admin Review Queue** ✅ COMPLETE (2026-01-14)
+**Admin Review Queue** ✅ COMPLETE
 - Pending documents queue → `/admin/scanner` page
-- Extraction validation checkpoints (4 checks):
-  - Carrier detected ✓
-  - Patient info extracted ✓
-  - Copays extracted ✓
-  - Confidence threshold (70%) ✓
-- Price list generation summary (when verified)
-- Low confidence warnings (< 70%)
+- Extraction validation checkpoints (4 checks)
+- Price list generation summary
 - Verify & Generate Prices action
 
-**Batch Folder Scanner** ✅ COMPLETE (2026-01-14)
-- Scan folder of documents → `/admin/batch-scanner` page
-- Process multiple insurance documents from directory
-- Generate temporary (unassigned) price lists
-- Assign to customer when patient arrives
-- Database models: `BatchScanJob`, `BatchScanDocument`, `TemporaryPriceList`
-- API endpoints:
-  - `POST /api/batch-scan` - Create job from folder
-  - `POST /api/batch-scan/[id]/process` - Process all documents
-  - `POST /api/batch-scan/[id]/assign` - Assign to customer
+**Files Updated (2026-01-15):**
+- `src/app/api/documents/[id]/verify/route.ts` - Fixed DISCOUNT_XX handling, added allOtherLensOptions
+- `src/lib/services/price-list-precompute.ts` - Uses TypeScript mappings, handles ins_discount
 
-**Files Created/Updated:**
-- `src/app/admin/scanner/page.tsx` - Admin scanner queue UI
-- `src/app/api/customers/[id]/precompute-prices/route.ts` - Added GET for stats
-- `src/app/api/documents/[id]/verify/route.ts` - Verification + price generation
-- `src/app/admin/batch-scanner/page.tsx` - Batch folder scanner UI
-- `src/app/api/batch-scan/route.ts` - Batch scan job API
-- `src/app/api/batch-scan/[id]/process/route.ts` - Batch processing API
-- `src/app/api/batch-scan/[id]/assign/route.ts` - Price list assignment API
-- `src/lib/services/batch-price-generator.ts` - Temp price list generation
+---
+
+### Test Patients for UI Verification (EyeMed)
+
+| Customer | Document | Customer ID |
+|----------|----------|-------------|
+| Marcell Bailey Ebdrup | SS_eyemed.pdf | cust_93800643 |
+| Jacquelyn Burke | AP_eyemed.pdf | cust_134599062 |
+| Christopher Irvine | GB_eyemed.pdf | cust_123160600 |
+| Priscila Pinto | eyemed2025-cs.pdf | cust_132371817 |
+| Juan Abadia | ER-eyemed.pdf | cust_99896041 |
+| Daniel Dasilveira | DD-INS.pdf | cminudpyls7ymp5h5ta |
+
+**How to verify in UI:**
+1. Go to `/customers/[customerId]?tab=price-plan`
+2. Check "Insurance & Pricing" tab
+3. Verify products show:
+   - `by_tier` for products with explicit copays
+   - `ins_discount` for products using allOtherLensOptions
+   - `cash_only` for uncovered products
+   - **NO** `uc_discount` (if you see this, there's a bug)
+
+---
 
 ### Process Flow:
 1. **Upload** → Insurance document (PDF/image)
-2. **Extract** → GPT-4o extracts benefit data
-3. **Store** → Save to authorization database (VSP, EyeMed, or Spectera table)
-4. **Generate** → Build patient price list (all products)
-5. **Validate** → Automated redundancy checks
-6. **Review** → Human visual inspection
+2. **Extract** → GPT-4o extracts benefit data (including DISCOUNT_XX strings)
+3. **Store** → Save to unified `insurance_authorizations` table (JSON copays)
+4. **Generate** → Build patient price list using TypeScript tier mappings
+5. **Validate** → Automated checks (pricing method distribution)
+6. **Review** → Human visual inspection in customer profile
 
 ### Extraction Data Points:
 - Member ID, Group Number, Plan Name
@@ -395,49 +344,52 @@ Extract benefit data from insurance documents AND generate complete patient pric
 - Progressive lens copays (Standard, Tier 1-5)
 - Material copays (Polycarbonate adult/child, Trivex, High Index)
 - Enhancement copays (Photochromic, Polarized, AR Coatings, Tint, Blue Light Filter)
-- Special rules (frame overage, age-based rules)
+- **allOtherLensOptions** - EyeMed catch-all (typically "DISCOUNT_20")
 
 ### Automated Redundancy Checkpoints:
 
-**Checkpoint 1: Extraction Completeness**
+**Checkpoint 1: Copays JSON Populated**
 ```sql
--- Verify all critical copay fields populated
+-- Verify authorization has copays JSON with values
 SELECT
-  CASE
-    WHEN progressiveTier1Copay IS NULL THEN 'MISSING: Progressive Tier 1'
-    WHEN progressiveTier2Copay IS NULL THEN 'MISSING: Progressive Tier 2'
-    WHEN polycarbonateAdultCopay IS NULL THEN 'MISSING: Polycarbonate'
-    WHEN photochromicCopay IS NULL THEN 'MISSING: Photochromic'
-    ELSE 'COMPLETE'
-  END AS validation_status
-FROM EyemedAuthorization
-WHERE id = [auth_id];
+  id,
+  carrier,
+  copays->>'progressiveTier3' as prog_tier3,
+  copays->>'allOtherLensOptions' as all_other
+FROM insurance_authorizations
+WHERE customer_id = '[customer_id]' AND is_active = true;
 ```
-**Result**: Status = "COMPLETE"
+**Result**: copays JSON has expected fields (numbers or "DISCOUNT_XX" strings)
 
-**Checkpoint 2: Price List Completeness**
+**Checkpoint 2: Price List Generated**
 ```sql
--- Verify all products have prices
-SELECT COUNT(*) as missing_prices
-FROM CustomerPriceList
-WHERE customerId = [customer_id]
-  AND authorizationId = [auth_id]
-  AND finalPrice IS NULL;
+-- Verify price list has entries
+SELECT COUNT(*) as total_products
+FROM patient_price_lists
+WHERE customer_id = '[customer_id]' AND active = true;
 ```
-**Result**: missing_prices = 0
+**Result**: total_products > 0 (should be ~41 for lens products)
 
-**Checkpoint 3: Tier-Based Pricing Ratio**
+**Checkpoint 3: Pricing Method Distribution (THE KEY TEST)**
 ```sql
--- Verify most products use tier-based pricing
+-- Verify NO products using uc_discount (bad fallback)
 SELECT
-  COUNT(*) as total_products,
-  SUM(CASE WHEN needsTierAssignment = false THEN 1 ELSE 0 END) as tier_based,
-  SUM(CASE WHEN needsTierAssignment = true THEN 1 ELSE 0 END) as fallback_80pct,
-  ROUND(100.0 * SUM(CASE WHEN needsTierAssignment = false THEN 1 ELSE 0 END) / COUNT(*), 1) as tier_based_percentage
-FROM CustomerPriceList
-WHERE customerId = [customer_id];
+  pricing_method,
+  COUNT(*) as count
+FROM patient_price_lists
+WHERE customer_id = '[customer_id]' AND active = true
+GROUP BY pricing_method
+ORDER BY count DESC;
 ```
-**Result**: tier_based_percentage > 70%
+**Expected Result**:
+| pricing_method | count | meaning |
+|---------------|-------|---------|
+| `by_tier` | 17 | Products with explicit copay |
+| `ins_discount` | 13 | Products using DISCOUNT_XX |
+| `cash_only` | 11 | Products not covered |
+| `uc_discount` | **0** | ⚠️ If > 0, there's a bug! |
+
+**CRITICAL**: `uc_discount` count MUST be 0. If you see `uc_discount` products, the extraction or mapping is broken.
 
 ### Human Visual Inspection UI:
 
@@ -470,10 +422,24 @@ Common Products Preview:
 - [Rescan Document] - Start over
 - [Flag for Review] - Save but mark for later verification
 
-### Decision Point: STAGE 3 COMPLETE
-**Automated Check**: All 3 redundancy checkpoints PASS
-**Human Check**: Staff clicks "Approve & Save"
-**Action**: If BOTH PASS → Proceed to Stage 4. If FAIL → Fix and regenerate.
+### Decision Point: STAGE 3 STATUS
+
+**EyeMed** ✅ COMPLETE (2026-01-15)
+- All 3 checkpoints PASS
+- 0 products with `uc_discount`
+- Test patients verified (see table above)
+
+**VSP** ⏳ NOT YET TESTED
+- GPT extraction schema may need updates
+- Tier mappings exist in TypeScript file
+- Needs test documents
+
+**Spectera** ⏳ NOT YET TESTED
+- GPT extraction schema may need updates
+- Tier mappings exist in TypeScript file
+- Needs test documents
+
+**Action**: EyeMed ready for production use. Test VSP/Spectera with real documents.
 
 ---
 
@@ -509,46 +475,92 @@ Link authorization and price list to patient record.
 ## Stage 5: Patient Price List (Display & Access) ✅ COMPLETE
 
 **Status**: Complete - implemented in `CustomerPricePlan` component
+**Updated**: 2026-01-20 - UI Consolidation for clarity
 
 ### Functionality Goal
 Provide access to patient-specific pricing for quote building.
 
 ### Must Have:
-- Price list accessible from customer profile ✅ ("Insurance & Pricing" tab)
+- Price list accessible from customer profile ✅ ("Price List" tab - now FIRST/default tab)
 - Prices match generated values from Stage 3 ✅
 - Search/filter functionality ✅ (search + category + carrier filters)
 - Manual price override capability (with audit trail) ✅ (override modal with reason)
+- Price list history (view old/inactive lists) ✅
 - Export to PDF/CSV 🔄 (not yet implemented - optional)
 
 ### Implementation: CustomerPricePlan Component
 **Location**: `src/components/customers/customer-price-plan.tsx`
 **API**: `src/app/api/customers/[id]/price-plan/route.ts`
 
-**Display Features**:
-- Customer name and insurance info header ✅
-- Product categories grouped (Everyday vs Reserve sections) ✅
-- Columns: Product, Carrier, Retail, Tier, Customer Pays, Savings ✅
-- Visual indicators: Tier-Based (green), Fallback (amber), Needs Price (red) ✅
-- Search and filter by product name/SKU/category/carrier ✅
-- "Generate Price Plan" button (regenerates from authorization) ✅
-- Manual price override modal with preset reasons ✅
+### UI Layout (Consolidated - 2026-01-20):
 
-**Summary Stats** (displayed in header):
-- Total products count ✅
-- Tier-based pricing count ✅
-- Fallback pricing count (80% retail) ✅
-- Missing prices count ✅
-- Custom overrides count ✅
+**Tab Order** (Price List is default):
+1. **Price List** (default) - Main pricing view
+2. Benefits Detail - Full copay breakdown
+3. Price List History - Old/inactive lists
 
-**Key Product Categories Validation**:
-- Highlights key categories that MUST have prices (progressives, AR, frames, exams, materials)
-- Red warning banner when key products missing prices
+**Price List Layout**:
+```
+┌─────────────────────────────────────────────────────────────────────┐
+│ 🏥 EyeMed - Humana VCP | Member: 22868382200                        │
+├─────────────────────────────────────────────────────────────────────┤
+│ BENEFITS SUMMARY ROW:                                               │
+│ Exam: $10 | CL Fit: $40 | Materials: $10 | Frame: $250-375 | CL: $150 │
+├─────────────────────────────────────────────────────────────────────┤
+│ [Search products...]                            [Filter: All ▼]     │
+├─────────────────────────────────────────────────────────────────────┤
+│ PRODUCTS (not "Everyday" - just "Products")                         │
+│ ┌─────────────────┬─────────┬───────────────────┬─────────────────┐│
+│ │ Product         │ Retail  │ You Pay           │ Savings         ││
+│ ├─────────────────┼─────────┼───────────────────┼─────────────────┤│
+│ │ Single Vision   │ $45     │ $10 copay         │ $35             ││
+│ │ Prog Tier 1     │ $195    │ $80 copay         │ $115            ││
+│ │ Polycarbonate   │ $85     │ $25 copay         │ $60             ││
+│ │ Hi-Index 1.67   │ $125    │ 20% off ($100)    │ $25             ││
+│ │ Trivex          │ $85     │ 20% off ($68)     │ $17             ││
+│ └─────────────────┴─────────┴───────────────────┴─────────────────┘│
+│                                                                     │
+│ CONTACT LENSES (special display for allowance-based pricing)        │
+│ ┌─────────────────────────────────────────────────────────────────┐│
+│ │ $150 allowance, then patient pays 100% of overage               ││
+│ │ CL Fitting: 85% of amount over allowance (15% discount)         ││
+│ └─────────────────────────────────────────────────────────────────┘│
+└─────────────────────────────────────────────────────────────────────┘
+```
+
+**Key Display Rules**:
+1. **"You Pay" column shows context**, not just numbers:
+   - `$10 copay` - explicit copay from tier
+   - `20% off ($80)` - when DISCOUNT_20 applies (show calculated amount)
+   - `$150 allowance + overage` - for allowance-based items like contacts
+   - Never show "N/A" for extracted values - show actual benefit text
+
+2. **Benefits Summary Row** (compact, always visible):
+   - Exam Copay
+   - CL Fit Copay (next to exam - both are service copays)
+   - Materials Copay
+   - Frame Allowance (show range if min/max)
+   - Contact Lens Allowance
+
+3. **Price List History** (new tab):
+   - Shows all price lists for customer (active + inactive)
+   - Date created, carrier, status, product count
+   - Can view/compare old lists
+   - Old lists auto-deactivated when new auth scanned (same carrier)
+
+**Special Pricing Values** (from insurance auth):
+- `"DISCOUNT_20"` → Display as "20% off" with calculated price
+- `"100% of amount over remaining balance"` → Patient pays full overage
+- `"85% of amount over remaining balance"` → Patient pays 85% of overage (15% discount)
+- `null` → Show as "At retail" (not "N/A")
 
 ### Decision Point: STAGE 5 COMPLETE ✅
-**Test 1**: View price list in customer profile → "Insurance & Pricing" tab ✅
+**Test 1**: View price list in customer profile → "Price List" tab (first tab) ✅
 **Test 2**: Search for products by name ✅
 **Test 3**: Generate price plan from authorization ✅
 **Test 4**: Override individual product price ✅
+**Test 5**: View price list history (old/inactive lists) ✅
+**Test 6**: Benefits summary row displays correctly ✅
 
 ---
 

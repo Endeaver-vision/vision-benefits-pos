@@ -18,10 +18,11 @@ export default function CustomerProfile() {
   const customerId = params.id as string
 
   // Read tab from URL query param (e.g., ?tab=price-plan)
+  // Price List is now the default/first tab
   const tabFromUrl = searchParams.get('tab')
-  const defaultTab = tabFromUrl && ['overview', 'contact', 'history', 'prescriptions', 'price-plan'].includes(tabFromUrl)
+  const defaultTab = tabFromUrl && ['price-plan', 'overview', 'contact', 'history', 'prescriptions'].includes(tabFromUrl)
     ? tabFromUrl
-    : 'overview'
+    : 'price-plan'
 
   const [customer, setCustomer] = useState<Customer | null>(null)
   const [loading, setLoading] = useState(true)
@@ -254,11 +255,11 @@ export default function CustomerProfile() {
       {/* Main Content Tabs */}
       <Tabs defaultValue={defaultTab} className="w-full">
         <TabsList className="grid w-full grid-cols-5">
+          <TabsTrigger value="price-plan">Price List</TabsTrigger>
           <TabsTrigger value="overview">Overview</TabsTrigger>
           <TabsTrigger value="contact">Contact & Address</TabsTrigger>
           <TabsTrigger value="history">Purchase History</TabsTrigger>
           <TabsTrigger value="prescriptions">Prescriptions</TabsTrigger>
-          <TabsTrigger value="price-plan">Insurance & Pricing</TabsTrigger>
         </TabsList>
 
         <TabsContent value="overview" className="space-y-6">
