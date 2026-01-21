@@ -84,6 +84,13 @@ function buildCopaysJson(extractedData: ExtractedInsuranceData): Record<string, 
     copays.clFitPremium = extractValue(clFit.premiumCost)
   }
 
+  // Frame overage discount percentage
+  const frame = extractedData.frame as Record<string, unknown> | undefined
+  const frameAllowances = frame?.allowances as Record<string, unknown> | undefined
+  if (frameAllowances?.frameOveragePercent) {
+    copays.frameOveragePercent = extractValue(frameAllowances.frameOveragePercent)
+  }
+
   return copays
 }
 

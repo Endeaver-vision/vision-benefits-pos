@@ -101,7 +101,11 @@ export async function GET(
       // Frame allowance
       frameAllowance: auth.frameAllowance ? Number(auth.frameAllowance) : null,
       frameAllowanceFeatured: auth.frameAllowance ? Number(auth.frameAllowance) : null,
-      frameOverageDiscount: 0.20,
+      // Frame overage discount - use extracted value or default to 20%
+      frameOverageDiscount: copays.frameOveragePercent
+        ? Number(copays.frameOveragePercent) / 100
+        : 0.20,
+      frameOveragePercent: copays.frameOveragePercent ? Number(copays.frameOveragePercent) : 20,
 
       // Contact lens benefits
       contactAllowance: auth.contactAllowance ? Number(auth.contactAllowance) : null,

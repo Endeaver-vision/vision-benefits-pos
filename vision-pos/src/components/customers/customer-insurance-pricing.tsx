@@ -58,6 +58,7 @@ interface AuthorizationData {
   frameAllowance: number | null
   frameAllowanceMin?: number | null
   frameAllowanceMax?: number | null
+  frameOveragePercent?: number | null
   contactAllowance: number | null
   isContactDecliningBalance?: boolean
   contactFittingCopay?: number | string | null
@@ -164,6 +165,7 @@ export default function CustomerInsurancePricing({
           frameAllowance: data.authorization.frameAllowance,
           frameAllowanceMin: data.authorization.frameAllowanceMin,
           frameAllowanceMax: data.authorization.frameAllowanceMax,
+          frameOveragePercent: data.authorization.frameOveragePercent,
           contactAllowance: data.authorization.contactAllowance,
           isContactDecliningBalance: data.authorization.isContactDecliningBalance,
           contactFittingCopay: data.authorization.contactFittingCopay,
@@ -389,18 +391,27 @@ export default function CustomerInsurancePricing({
     return { text: formatPrice(product.customerPrice), subtext: 'copay', color: 'text-emerald-400' }
   }
 
-  // Format contact lens benefit for display
-  const formatContactBenefit = (value: string | number | null | undefined): string => {
-    if (value === null || value === undefined) return 'Not covered'
+  // Format copay values - handles numbers, DISCOUNT_XX, and text descriptions
+  const formatCopayValue = (value: string | number | null | undefined): string => {
+    if (value === null || value === undefined) return '—'
     if (typeof value === 'number') return formatPrice(value)
-    // Handle text descriptions like "100% of amount over remaining balance"
-    if (value.includes('100%')) return 'Patient pays 100% of overage'
-    if (value.includes('85%')) return 'Patient pays 85% of overage (15% off)'
+    // Handle DISCOUNT_XX format (e.g., "DISCOUNT_20" -> "20% off")
     if (value.includes('DISCOUNT')) {
       const match = value.match(/DISCOUNT_(\d+)/)
-      if (match) return `${match[1]}% discount`
+      if (match) return `${match[1]}% off`
     }
+    // Handle text descriptions like "100% of amount over remaining balance"
+    if (value.includes('100%')) return 'Patient pays 100%'
+    if (value.includes('85%')) return '15% off overage'
+    if (value.includes('90%')) return '10% off'
+    if (value.includes('10% off')) return '10% off'
     return value
+  }
+
+  // Format contact lens benefit for display (uses formatCopayValue)
+  const formatContactBenefit = (value: string | number | null | undefined): string => {
+    if (value === null || value === undefined) return 'Not covered'
+    return formatCopayValue(value)
   }
 
   const hasInsurance = (customer.insuranceCarrier && customer.insuranceCarrier !== 'None') || authData !== null
@@ -485,10 +496,13 @@ export default function CustomerInsurancePricing({
                 <div className="flex items-center gap-2">
                   <span className="text-muted-foreground">Frame:</span>
                   <span className="font-semibold text-amber-400">
-                    {authData.frameAllowanceMin && authData.frameAllowanceMax && authData.frameAllowanceMin !== authData.frameAllowanceMax
-                      ? `${formatPrice(authData.frameAllowanceMin)}-${formatPrice(authData.frameAllowanceMax)}`
-                      : formatPrice(authData.frameAllowance)}
+                    {formatPrice(authData.frameAllowance)}
                   </span>
+                  {authData.frameOveragePercent && (
+                    <Badge variant="outline" className="text-[10px] px-1.5 py-0 h-5 border-amber-500 text-amber-400">
+                      {authData.frameOveragePercent}% off overage
+                    </Badge>
+                  )}
                 </div>
                 <div className="flex items-center gap-2">
                   <span className="text-muted-foreground">CL:</span>
