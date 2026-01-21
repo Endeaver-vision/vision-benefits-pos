@@ -59,6 +59,7 @@ interface AuthorizationData {
   frameAllowanceMin?: number | null
   frameAllowanceMax?: number | null
   contactAllowance: number | null
+  isContactDecliningBalance?: boolean
   contactFittingCopay?: number | string | null
   contactLensCost?: string | null
   expirationDate: string | null
@@ -164,6 +165,7 @@ export default function CustomerInsurancePricing({
           frameAllowanceMin: data.authorization.frameAllowanceMin,
           frameAllowanceMax: data.authorization.frameAllowanceMax,
           contactAllowance: data.authorization.contactAllowance,
+          isContactDecliningBalance: data.authorization.isContactDecliningBalance,
           contactFittingCopay: data.authorization.contactFittingCopay,
           contactLensCost: data.authorization.contactLensCost,
           expirationDate: data.authorization.expirationDate,
@@ -491,6 +493,11 @@ export default function CustomerInsurancePricing({
                 <div className="flex items-center gap-2">
                   <span className="text-muted-foreground">CL:</span>
                   <span className="font-semibold text-purple-400">{formatPrice(authData.contactAllowance)}</span>
+                  {authData.isContactDecliningBalance && (
+                    <Badge variant="outline" className="text-[10px] px-1.5 py-0 h-5 border-purple-500 text-purple-400">
+                      Declining
+                    </Badge>
+                  )}
                 </div>
               </div>
               {authData.contactLensCost && (
