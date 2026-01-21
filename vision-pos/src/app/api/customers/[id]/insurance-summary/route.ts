@@ -5,20 +5,11 @@
  * Returns copay and allowance information for display in the quote builder.
  * This is discrete summary info, not pricing data.
  *
- * Shows actual product names instead of tier codes for user-friendly display.
+ * Uses the unified insurance_authorizations table directly.
  */
 
 import { NextRequest, NextResponse } from 'next/server'
 import { prisma } from '@/lib/prisma'
-import { getActiveAuthorizationForCustomer } from '@/lib/services/authorization-service'
-import {
-  isVspAuth,
-  isEyemedAuth,
-  isSpecteraAuth,
-  VspBenefitAuthorization,
-  EyemedBenefitAuthorization,
-  SpecteraBenefitAuthorization,
-} from '@/types/benefit-authorization'
 
 interface InsuranceSummary {
   carrier: string
@@ -32,62 +23,55 @@ interface InsuranceSummary {
   }
   tierCopays: TierCopay[]
   expirationDate: string | null
+  // Declining balance support
+  benefitStructure: 'COPAY_ALLOWANCE' | 'DECLINING_BALANCE'
+  decliningBalance?: {
+    totalAllowance: number | null
+    appliesTo: string[]
+    overageDiscounts: {
+      frameLensPackage: number
+      contactsConventional: number
+      contactsDisposable: number
+    }
+    eitherOrRestriction: boolean
+  }
 }
 
 interface TierCopay {
   code: string
   description: string
   copay: number | null
-  products?: string[]  // Product names that use this tier
 }
 
-// Cache for tier-to-product mappings
-let tierProductCache: Map<string, Map<string, string[]>> | null = null
-
-/**
- * Fetch products grouped by their tier codes for a given carrier
- * Uses the unified carrier_tiers table instead of product tier columns
- */
-async function getTierProductMappings(carrier: 'VSP' | 'EyeMed' | 'Spectera'): Promise<Map<string, string[]>> {
-  // Use cached data if available
-  if (tierProductCache?.has(carrier)) {
-    return tierProductCache.get(carrier)!
-  }
-
-  // Map carrier name to the uppercase format used in carrier_tiers
-  const carrierMap: Record<string, string> = {
-    'VSP': 'VSP',
-    'EyeMed': 'EYEMED',
-    'Spectera': 'SPECTERA'
-  }
-  const carrierCode = carrierMap[carrier] || carrier.toUpperCase()
-
-  // Fetch tier mappings from unified carrier_tiers table
-  const tierMappings = await prisma.carrierTier.findMany({
-    where: {
-      carrier: carrierCode
-    },
-    select: {
-      productName: true,
-      tierCode: true
-    }
-  })
-
-  // Group products by tier code
-  const tierMap = new Map<string, string[]>()
-  for (const mapping of tierMappings) {
-    const existing = tierMap.get(mapping.tierCode) || []
-    existing.push(mapping.productName)
-    tierMap.set(mapping.tierCode, existing)
-  }
-
-  // Cache the result
-  if (!tierProductCache) {
-    tierProductCache = new Map()
-  }
-  tierProductCache.set(carrier, tierMap)
-
-  return tierMap
+// Type for the copays JSON structure in insurance_authorizations
+interface CopaysJson {
+  examCopay?: number
+  materialsCopay?: number
+  singleVision?: number
+  bifocal?: number
+  trifocal?: number
+  progressiveStandard?: number
+  progressiveTier1?: number
+  progressiveTier2?: number
+  progressiveTier3?: number
+  progressiveTier4?: number
+  progressiveTier5?: number
+  arStandard?: number
+  arTier1?: number
+  arTier2?: number
+  arTier3?: number
+  polycarbonate?: number
+  polycarbonateChild?: number
+  trivex?: number
+  highIndex167?: number
+  highIndex174?: number
+  photochromic?: number
+  polarized?: number
+  blueLight?: number
+  tint?: number
+  uvTreatment?: number
+  scratchCoating?: number
+  [key: string]: number | undefined
 }
 
 export async function GET(
@@ -97,9 +81,16 @@ export async function GET(
   try {
     const { id: customerId } = await params
 
-    const authResult = await getActiveAuthorizationForCustomer(customerId)
+    // Query the unified insurance_authorizations table directly
+    const authorization = await prisma.insuranceAuthorization.findFirst({
+      where: {
+        customerId,
+        isActive: true
+      },
+      orderBy: { createdAt: 'desc' }
+    })
 
-    if (!authResult) {
+    if (!authorization) {
       return NextResponse.json({
         success: true,
         hasInsurance: false,
@@ -107,33 +98,182 @@ export async function GET(
       })
     }
 
-    const { authorization, carrier, expirationDate } = authResult
-    let summary: InsuranceSummary
+    const carrier = authorization.carrier.toUpperCase()
+    const copays = (authorization.copays as CopaysJson) || {}
 
-    // Fetch product-to-tier mappings for this carrier
-    const carrierName = carrier.toUpperCase() === 'VSP' ? 'VSP'
-      : carrier.toUpperCase() === 'EYEMED' ? 'EyeMed'
-      : 'Spectera'
-    const tierProducts = await getTierProductMappings(carrierName)
+    // Build tier copays array based on carrier
+    const tierCopays: TierCopay[] = []
 
-    if (isVspAuth(authorization)) {
-      summary = buildVspSummary(authorization, expirationDate, tierProducts)
-    } else if (isEyemedAuth(authorization)) {
-      summary = buildEyemedSummary(authorization, expirationDate, tierProducts)
-    } else if (isSpecteraAuth(authorization)) {
-      summary = buildSpecteraSummary(authorization, expirationDate, tierProducts)
-    } else {
-      return NextResponse.json({
-        success: true,
-        hasInsurance: false,
-        summary: null,
-      })
+    // Build tier copays based on what's in the JSON
+    if (carrier === 'EYEMED') {
+      // Progressive tiers
+      const progressiveTiers = [
+        { code: 'standard', key: 'progressiveStandard', desc: 'Standard Progressive' },
+        { code: 'tier_1', key: 'progressiveTier1', desc: 'Tier 1 Progressive' },
+        { code: 'tier_2', key: 'progressiveTier2', desc: 'Tier 2 Progressive' },
+        { code: 'tier_3', key: 'progressiveTier3', desc: 'Tier 3 Progressive' },
+        { code: 'tier_4', key: 'progressiveTier4', desc: 'Tier 4 Progressive' },
+        { code: 'tier_5', key: 'progressiveTier5', desc: 'Premium Progressive' },
+      ]
+      for (const tier of progressiveTiers) {
+        const value = copays[tier.key]
+        if (value !== null && value !== undefined) {
+          tierCopays.push({
+            code: tier.code,
+            description: tier.desc,
+            copay: value,
+          })
+        }
+      }
+
+      // AR tiers
+      const arTiers = [
+        { code: 'ar_standard', key: 'arStandard', desc: 'Standard AR' },
+        { code: 'ar_tier_1', key: 'arTier1', desc: 'Tier 1 AR' },
+        { code: 'ar_tier_2', key: 'arTier2', desc: 'Tier 2 AR' },
+        { code: 'ar_tier_3', key: 'arTier3', desc: 'Tier 3 AR' },
+      ]
+      for (const tier of arTiers) {
+        const value = copays[tier.key]
+        if (value !== null && value !== undefined) {
+          tierCopays.push({
+            code: tier.code,
+            description: tier.desc,
+            copay: value,
+          })
+        }
+      }
+
+      // Lens types
+      const lensTypes = [
+        { code: 'sv', key: 'singleVision', desc: 'Single Vision' },
+        { code: 'bifocal', key: 'bifocal', desc: 'Bifocal' },
+        { code: 'trifocal', key: 'trifocal', desc: 'Trifocal' },
+      ]
+      for (const lens of lensTypes) {
+        const value = copays[lens.key]
+        if (value !== null && value !== undefined) {
+          tierCopays.push({ code: lens.code, description: lens.desc, copay: value })
+        }
+      }
+
+      // Materials
+      const materials = [
+        { code: 'poly', key: 'polycarbonate', desc: 'Polycarbonate' },
+        { code: 'trivex', key: 'trivex', desc: 'Trivex' },
+        { code: 'hi167', key: 'highIndex167', desc: 'High Index 1.67' },
+        { code: 'hi174', key: 'highIndex174', desc: 'High Index 1.74' },
+      ]
+      for (const mat of materials) {
+        const value = copays[mat.key]
+        if (value !== null && value !== undefined) {
+          tierCopays.push({ code: mat.code, description: mat.desc, copay: value })
+        }
+      }
+
+      // Enhancements
+      const enhancements = [
+        { code: 'photo', key: 'photochromic', desc: 'Photochromic' },
+        { code: 'polarized', key: 'polarized', desc: 'Polarized' },
+        { code: 'blue', key: 'blueLight', desc: 'Blue Light Filter' },
+        { code: 'tint', key: 'tint', desc: 'Tint' },
+      ]
+      for (const enh of enhancements) {
+        const value = copays[enh.key]
+        if (value !== null && value !== undefined) {
+          tierCopays.push({ code: enh.code, description: enh.desc, copay: value })
+        }
+      }
+    } else if (carrier === 'VSP') {
+      // VSP uses code-based system - check copays object for codes
+      const vspProgressives = [
+        { code: 'NA', desc: 'Standard Progressive' },
+        { code: 'OA', desc: 'Tier O Progressive' },
+        { code: 'FA', desc: 'Premium Progressive' },
+        { code: 'JA', desc: 'Tier J Progressive' },
+        { code: 'KA', desc: 'Ultra Progressive' },
+      ]
+      for (const prog of vspProgressives) {
+        const value = copays[prog.code] ?? copays[prog.code.toLowerCase()]
+        if (value !== undefined) {
+          tierCopays.push({
+            code: prog.code,
+            description: prog.desc,
+            copay: value,
+          })
+        }
+      }
+
+      const vspAr = [
+        { code: 'QM', desc: 'Standard AR' },
+        { code: 'QT', desc: 'Premium AR' },
+        { code: 'QV', desc: 'Ultra AR' },
+      ]
+      for (const ar of vspAr) {
+        const value = copays[ar.code] ?? copays[ar.code.toLowerCase()]
+        if (value !== undefined) {
+          tierCopays.push({
+            code: ar.code,
+            description: ar.desc,
+            copay: value,
+          })
+        }
+      }
+    } else if (carrier === 'SPECTERA') {
+      // Spectera uses Roman numerals
+      const specteraProgressives = [
+        { code: 'I', key: 'progressiveTierI', desc: 'Standard Progressive' },
+        { code: 'II', key: 'progressiveTierII', desc: 'Tier II Progressive' },
+        { code: 'III', key: 'progressiveTierIII', desc: 'Tier III Progressive' },
+        { code: 'IV', key: 'progressiveTierIV', desc: 'Tier IV Progressive' },
+        { code: 'V', key: 'progressiveTierV', desc: 'Premium Progressive' },
+      ]
+      for (const prog of specteraProgressives) {
+        const value = copays[prog.key]
+        if (value !== undefined) {
+          tierCopays.push({
+            code: prog.code,
+            description: prog.desc,
+            copay: value,
+          })
+        }
+      }
+    }
+
+    // Determine benefit structure
+    const benefitStructure = (authorization.benefitStructure as 'COPAY_ALLOWANCE' | 'DECLINING_BALANCE') || 'COPAY_ALLOWANCE'
+    const isDecliningBalance = benefitStructure === 'DECLINING_BALANCE'
+
+    const summary: InsuranceSummary = {
+      carrier: authorization.carrier,
+      planName: authorization.planName || 'Unknown Plan',
+      copays: {
+        exam: authorization.examCopay ? Number(authorization.examCopay) : (copays.examCopay ?? null),
+        materials: isDecliningBalance ? 0 : (authorization.materialsCopay ? Number(authorization.materialsCopay) : (copays.materialsCopay ?? null)),
+        frameAllowance: authorization.frameAllowance ? Number(authorization.frameAllowance) : null,
+        contactAllowance: authorization.contactAllowance ? Number(authorization.contactAllowance) : null,
+        contactFitting: null, // Not stored in unified table currently
+      },
+      tierCopays: isDecliningBalance ? [] : tierCopays, // No tier copays for declining balance plans
+      expirationDate: authorization.expirationDate?.toISOString().split('T')[0] ?? null,
+      benefitStructure,
+      // Include declining balance details if applicable
+      decliningBalance: isDecliningBalance ? {
+        totalAllowance: authorization.totalMaterialsAllowance ? Number(authorization.totalMaterialsAllowance) : null,
+        appliesTo: authorization.decliningBalanceAppliesTo || ['frame', 'lens', 'lensOptions', 'contacts'],
+        overageDiscounts: {
+          frameLensPackage: authorization.overageDiscountFrame ? Number(authorization.overageDiscountFrame) : 20,
+          contactsConventional: authorization.overageDiscountContactConv ? Number(authorization.overageDiscountContactConv) : 15,
+          contactsDisposable: authorization.overageDiscountContactDisp ? Number(authorization.overageDiscountContactDisp) : 0,
+        },
+        eitherOrRestriction: authorization.eitherOrRestriction ?? true,
+      } : undefined,
     }
 
     return NextResponse.json({
       success: true,
       hasInsurance: true,
-      carrier,
+      carrier: authorization.carrier.toLowerCase(),
       summary,
     })
   } catch (error) {
@@ -142,290 +282,5 @@ export async function GET(
       { success: false, error: 'Failed to fetch insurance summary' },
       { status: 500 }
     )
-  }
-}
-
-function buildVspSummary(
-  auth: VspBenefitAuthorization,
-  expirationDate: Date | null,
-  tierProducts: Map<string, string[]>
-): InsuranceSummary {
-  const tierCopays: TierCopay[] = []
-
-  // Helper to get product names for a tier, or fallback to generic description
-  const getProductDisplay = (code: string, fallback: string): string => {
-    const products = tierProducts.get(code)
-    if (products && products.length > 0) {
-      // Return first 2 product names (most common ones)
-      return products.slice(0, 2).join(', ')
-    }
-    return fallback
-  }
-
-  // Progressive tier codes - show product names
-  const progressiveCodes = [
-    { code: 'NA', desc: 'Standard Progressive' },
-    { code: 'OA', desc: 'Tier O Progressive' },
-    { code: 'FA', desc: 'Premium Progressive' },
-    { code: 'JA', desc: 'Tier J Progressive' },
-    { code: 'KA', desc: 'Ultra Progressive' },
-  ]
-
-  for (const prog of progressiveCodes) {
-    const copay = auth.planTier?.progressiveCopays?.[prog.code]
-    if (copay !== undefined) {
-      tierCopays.push({
-        code: prog.code,
-        description: getProductDisplay(prog.code, prog.desc),
-        copay,
-        products: tierProducts.get(prog.code)
-      })
-    }
-  }
-
-  // AR coating codes - show product names
-  const arCodes = [
-    { code: 'QM', desc: 'Standard AR' },
-    { code: 'QT', desc: 'Premium AR' },
-    { code: 'QV', desc: 'Ultra AR' },
-  ]
-
-  for (const ar of arCodes) {
-    const copay = auth.planTier?.arCopays?.[ar.code]
-    if (copay !== undefined) {
-      tierCopays.push({
-        code: ar.code,
-        description: getProductDisplay(ar.code, ar.desc),
-        copay,
-        products: tierProducts.get(ar.code)
-      })
-    }
-  }
-
-  // Material copays - these are generic, keep as-is
-  if (auth.planTier?.materialCopays) {
-    const materials = [
-      { code: 'AD', desc: 'Polycarbonate', key: 'polycarbonate' },
-      { code: 'AB', desc: 'Trivex', key: 'trivex' },
-      { code: 'AH', desc: 'High Index 1.67', key: 'highIndex167' },
-      { code: 'AJ', desc: 'High Index 1.74', key: 'highIndex174' },
-    ]
-    for (const mat of materials) {
-      const copay = auth.planTier.materialCopays[mat.key as keyof typeof auth.planTier.materialCopays]
-      if (copay !== undefined && copay !== 'covered') {
-        tierCopays.push({ code: mat.code, description: mat.desc, copay: copay as number })
-      }
-    }
-  }
-
-  // Enhancement copays - show product names where applicable
-  if (auth.planTier?.enhancementCopays) {
-    const enhancements = [
-      { code: 'PR', desc: 'Photochromic', key: 'photochromic' },
-      { code: 'DA', desc: 'Polarized', key: 'polarized' },
-      { code: 'LF', desc: 'Blue Light Filter', key: 'blueLightFilter' },
-    ]
-    for (const enh of enhancements) {
-      const copay = auth.planTier.enhancementCopays[enh.key as keyof typeof auth.planTier.enhancementCopays]
-      if (copay !== undefined) {
-        tierCopays.push({
-          code: enh.code,
-          description: getProductDisplay(enh.code, enh.desc),
-          copay: copay as number,
-          products: tierProducts.get(enh.code)
-        })
-      }
-    }
-  }
-
-  return {
-    carrier: 'VSP',
-    planName: auth.plan.planName,
-    copays: {
-      exam: auth.copays.examWellvision ?? null,
-      materials: auth.copays.materials ?? null,
-      frameAllowance: auth.copays.frameAllowanceNonFeatured ?? null,
-      contactAllowance: auth.copays.contactLensAllowance ?? null,
-      contactFitting: auth.copays.contactLensExamCopay ?? null,
-    },
-    tierCopays,
-    expirationDate: expirationDate?.toISOString().split('T')[0] ?? null,
-  }
-}
-
-function buildEyemedSummary(
-  auth: EyemedBenefitAuthorization,
-  expirationDate: Date | null,
-  tierProducts: Map<string, string[]>
-): InsuranceSummary {
-  const tierCopays: TierCopay[] = []
-
-  // Helper to get product names for a tier
-  const getProductDisplay = (code: string, fallback: string): string => {
-    const products = tierProducts.get(code)
-    if (products && products.length > 0) {
-      return products.slice(0, 2).join(', ')
-    }
-    return fallback
-  }
-
-  // Progressive tiers
-  if (auth.copays.progressiveCopays) {
-    const tiers = [
-      { code: 'tier_1', desc: 'Standard Progressive' },
-      { code: 'tier_2', desc: 'Tier 2 Progressive' },
-      { code: 'tier_3', desc: 'Tier 3 Progressive' },
-      { code: 'tier_4', desc: 'Tier 4 Progressive' },
-      { code: 'tier_5', desc: 'Premium Progressive' },
-    ]
-    for (const tier of tiers) {
-      const copay = auth.copays.progressiveCopays[tier.code]
-      if (copay !== undefined) {
-        tierCopays.push({
-          code: tier.code,
-          description: getProductDisplay(tier.code, tier.desc),
-          copay,
-          products: tierProducts.get(tier.code)
-        })
-      }
-    }
-  }
-
-  // AR tiers
-  if (auth.copays.arCoatingCopays) {
-    const arTiers = [
-      { code: 'ar_tier_1', desc: 'Standard AR' },
-      { code: 'ar_tier_2', desc: 'Premium AR' },
-      { code: 'ar_tier_3', desc: 'Ultra AR' },
-    ]
-    for (const tier of arTiers) {
-      const copay = auth.copays.arCoatingCopays[tier.code]
-      if (copay !== undefined) {
-        tierCopays.push({
-          code: tier.code,
-          description: getProductDisplay(tier.code, tier.desc),
-          copay,
-          products: tierProducts.get(tier.code)
-        })
-      }
-    }
-  }
-
-  // Material copays
-  if (auth.copays.materialCopays) {
-    const materials = [
-      { code: 'poly', desc: 'Polycarbonate', key: 'polycarbonateAdult' },
-      { code: 'trivex', desc: 'Trivex', key: 'trivex' },
-      { code: 'hi167', desc: 'High Index 1.67', key: 'highIndex167' },
-      { code: 'hi174', desc: 'High Index 1.74', key: 'highIndex174' },
-    ]
-    for (const mat of materials) {
-      const copay = auth.copays.materialCopays[mat.key as keyof typeof auth.copays.materialCopays]
-      if (copay !== undefined) {
-        tierCopays.push({ code: mat.code, description: mat.desc, copay: copay as number })
-      }
-    }
-  }
-
-  return {
-    carrier: 'EyeMed',
-    planName: auth.plan.planName,
-    copays: {
-      exam: auth.copays.exam ?? null,
-      materials: auth.copays.materials ?? null,
-      frameAllowance: auth.copays.frameAllowance ?? null,
-      contactAllowance: auth.copays.contactAllowance ?? null,
-      contactFitting: auth.copays.clFitStandardCopay ?? null,
-    },
-    tierCopays,
-    expirationDate: expirationDate?.toISOString().split('T')[0] ?? null,
-  }
-}
-
-function buildSpecteraSummary(
-  auth: SpecteraBenefitAuthorization,
-  expirationDate: Date | null,
-  tierProducts: Map<string, string[]>
-): InsuranceSummary {
-  const tierCopays: TierCopay[] = []
-
-  // Helper to get product names for a tier
-  const getProductDisplay = (code: string, fallback: string): string => {
-    const products = tierProducts.get(code)
-    if (products && products.length > 0) {
-      return products.slice(0, 2).join(', ')
-    }
-    return fallback
-  }
-
-  // Progressive tiers
-  if (auth.copays.progressiveCopays) {
-    const tiers = [
-      { code: 'I', desc: 'Standard Progressive' },
-      { code: 'II', desc: 'Tier II Progressive' },
-      { code: 'III', desc: 'Tier III Progressive' },
-      { code: 'IV', desc: 'Tier IV Progressive' },
-      { code: 'V', desc: 'Premium Progressive' },
-    ]
-    for (const tier of tiers) {
-      const copay = auth.copays.progressiveCopays[tier.code]
-      if (copay !== undefined) {
-        tierCopays.push({
-          code: tier.code,
-          description: getProductDisplay(tier.code, tier.desc),
-          copay,
-          products: tierProducts.get(tier.code)
-        })
-      }
-    }
-  }
-
-  // AR tiers
-  if (auth.copays.arCoatingCopays) {
-    const arTiers = [
-      { code: 'ar_I', desc: 'Standard AR' },
-      { code: 'ar_II', desc: 'Premium AR' },
-      { code: 'ar_III', desc: 'Ultra AR' },
-    ]
-    for (const tier of arTiers) {
-      const copay = auth.copays.arCoatingCopays[tier.code]
-      if (copay !== undefined) {
-        tierCopays.push({
-          code: tier.code,
-          description: getProductDisplay(tier.code, tier.desc),
-          copay,
-          products: tierProducts.get(tier.code)
-        })
-      }
-    }
-  }
-
-  // Material copays
-  if (auth.copays.materialCopays) {
-    const materials = [
-      { code: 'poly', desc: 'Polycarbonate', key: 'polycarbonateAdult' },
-      { code: 'trivex', desc: 'Trivex', key: 'trivex' },
-      { code: 'hi174', desc: 'High Index 1.74', key: 'highIndex174' },
-    ]
-    for (const mat of materials) {
-      const copay = auth.copays.materialCopays[mat.key as keyof typeof auth.copays.materialCopays]
-      if (copay !== undefined) {
-        tierCopays.push({ code: mat.code, description: mat.desc, copay: copay as number })
-      }
-    }
-  }
-
-  return {
-    carrier: 'Spectera',
-    planName: auth.plan.planName,
-    copays: {
-      exam: auth.copays.examAdult ?? null,
-      materials: auth.copays.materials ?? null,
-      frameAllowance: auth.copays.frameAllowance ?? null,
-      contactAllowance: auth.copays.nonSelectionClAllowance ?? null,
-      contactFitting: auth.copays.selectionClFitCopay ?? null,
-    },
-    tierCopays,
-    expirationDate: expirationDate?.toISOString().split('T')[0] ?? null,
   }
 }

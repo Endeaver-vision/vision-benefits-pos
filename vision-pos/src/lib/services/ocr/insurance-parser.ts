@@ -126,6 +126,30 @@ async function saveAuthorization(
     },
   })
 
+  // Determine benefit structure (COPAY_ALLOWANCE vs DECLINING_BALANCE)
+  const isUnifiedDecliningBalance = extractedData?.decliningBalance?.isUnified?.value === true
+  const benefitStructure = isUnifiedDecliningBalance ? 'DECLINING_BALANCE' : 'COPAY_ALLOWANCE'
+
+  // For unified declining balance, use the total allowance
+  const totalMaterialsAllowance = isUnifiedDecliningBalance
+    ? extractedData?.decliningBalance?.totalAllowance?.value ?? null
+    : null
+
+  // Extract overage discounts for unified declining balance
+  const overageDiscounts = extractedData?.decliningBalance?.overageDiscounts
+  const overageDiscountFrame = overageDiscounts?.frameLensPackage?.value ?? null
+  const overageDiscountContactConv = overageDiscounts?.contactsConventional?.value ?? null
+  const overageDiscountContactDisp = overageDiscounts?.contactsDisposable?.value ?? null
+
+  // Either/or restriction (contacts OR glasses)
+  const eitherOrRestriction = extractedData?.decliningBalance?.eitherOrRestriction?.value ??
+    extractedData?.eligibility?.restrictions?.contactsOrGlasses?.value ?? false
+
+  // Declining balance applies to (for unified plans)
+  const decliningBalanceAppliesTo = isUnifiedDecliningBalance
+    ? (extractedData?.decliningBalance?.appliesTo?.value ?? ['frame', 'lens', 'lensOptions', 'contacts'])
+    : []
+
   const authData = {
     customerId,
     carrier: carrier.toUpperCase(),
@@ -140,13 +164,26 @@ async function saveAuthorization(
     contactsEligible: extractedData?.eligibility?.contacts?.value !== null,
 
     // Core allowances
-    frameAllowance: extractedData?.frame?.allowances?.retailMinAllowance?.value ??
-      extractedData?.frame?.allowances?.nonAltairMarchonFrameAllowance?.allowance ?? null,
-    contactAllowance: extractedData?.contacts?.contactAllowance?.value ??
-      extractedData?.contacts?.clExamAndMaterialsAllowance?.value ??
-      extractedData?.decliningBalance?.clStarting?.value ?? null,
+    frameAllowance: isUnifiedDecliningBalance
+      ? totalMaterialsAllowance
+      : (extractedData?.frame?.allowances?.retailMinAllowance?.value ??
+         extractedData?.frame?.allowances?.nonAltairMarchonFrameAllowance?.allowance ?? null),
+    contactAllowance: isUnifiedDecliningBalance
+      ? totalMaterialsAllowance
+      : (extractedData?.contacts?.clExamAndMaterialsAllowance?.value ??
+         extractedData?.decliningBalance?.clStarting?.value ?? null),
     // Flag if contact allowance comes from declining balance (EyeMed style)
-    isContactDecliningBalance: extractedData?.decliningBalance?.clStarting?.value != null,
+    isContactDecliningBalance: extractedData?.decliningBalance?.clStarting?.value != null || isUnifiedDecliningBalance,
+
+    // NEW: Benefit structure fields
+    benefitStructure,
+    totalMaterialsAllowance,
+    decliningBalanceAppliesTo,
+    overageDiscountFrame,
+    overageDiscountContactConv,
+    overageDiscountContactDisp,
+    eitherOrRestriction,
+
     examCopay: copays.examCopay ?? null,
     materialsCopay: copays.singleVision ?? null,
 

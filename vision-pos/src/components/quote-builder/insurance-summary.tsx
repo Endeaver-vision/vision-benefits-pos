@@ -13,6 +13,8 @@ import {
   Glasses,
   Contact,
   Loader2,
+  Wallet,
+  AlertTriangle,
 } from 'lucide-react'
 
 interface CopayInfo {
@@ -29,12 +31,25 @@ interface TierCopay {
   copay: number | null
 }
 
+interface DecliningBalanceInfo {
+  totalAllowance: number | null
+  appliesTo: string[]
+  overageDiscounts: {
+    frameLensPackage: number
+    contactsConventional: number
+    contactsDisposable: number
+  }
+  eitherOrRestriction: boolean
+}
+
 interface InsuranceSummaryData {
   carrier: string
   planName: string
   copays: CopayInfo
   tierCopays: TierCopay[]
   expirationDate: string | null
+  benefitStructure: 'COPAY_ALLOWANCE' | 'DECLINING_BALANCE'
+  decliningBalance?: DecliningBalanceInfo
 }
 
 interface InsuranceSummaryProps {
@@ -146,37 +161,78 @@ export function InsuranceSummary({ customerId, className = '' }: InsuranceSummar
         {/* Plan Name */}
         <div className="text-xs text-white/60">{summary.planName}</div>
 
-        {/* Main Copays - Always Visible */}
-        <div className="grid grid-cols-2 gap-2 text-sm">
-          <div className="flex items-center gap-2 p-2 bg-white/5 rounded">
+        {/* Declining Balance Banner */}
+        {summary.benefitStructure === 'DECLINING_BALANCE' && summary.decliningBalance && (
+          <div className="p-3 rounded-lg bg-gradient-to-r from-amber-500/20 to-orange-500/20 border border-amber-400/50">
+            <div className="flex items-center gap-2 mb-2">
+              <Wallet className="h-4 w-4 text-amber-400" />
+              <span className="text-amber-300 font-semibold text-sm">Declining Balance Plan</span>
+            </div>
+            <div className="text-3xl font-bold text-amber-400 mb-1">
+              {formatCurrency(summary.decliningBalance.totalAllowance)}
+            </div>
+            <div className="text-xs text-white/60 space-y-1">
+              <div>Unified allowance for frames, lenses, options & contacts</div>
+              <div className="flex items-center gap-1">
+                <AlertTriangle className="h-3 w-3 text-amber-400" />
+                <span className="text-amber-400/80">
+                  {summary.decliningBalance.eitherOrRestriction
+                    ? 'Glasses OR Contacts (not both)'
+                    : 'Can use for glasses AND contacts'}
+                </span>
+              </div>
+            </div>
+            <div className="mt-2 pt-2 border-t border-white/10 text-xs text-white/50 space-y-0.5">
+              <div>Frame/Lens overage: {summary.decliningBalance.overageDiscounts.frameLensPackage}% off</div>
+              <div>Contact overage: {summary.decliningBalance.overageDiscounts.contactsConventional}% off conventional</div>
+            </div>
+          </div>
+        )}
+
+        {/* Main Copays - Only for COPAY_ALLOWANCE plans */}
+        {summary.benefitStructure !== 'DECLINING_BALANCE' && (
+          <div className="grid grid-cols-2 gap-2 text-sm">
+            <div className="flex items-center gap-2 p-2 bg-white/5 rounded">
+              <Eye className="h-3.5 w-3.5 text-blue-400" />
+              <div>
+                <div className="text-white/60 text-xs">Exam</div>
+                <div className="text-white font-medium">{formatCurrency(summary.copays.exam)}</div>
+              </div>
+            </div>
+            <div className="flex items-center gap-2 p-2 bg-white/5 rounded">
+              <DollarSign className="h-3.5 w-3.5 text-emerald-400" />
+              <div>
+                <div className="text-white/60 text-xs">Materials</div>
+                <div className="text-white font-medium">{formatCurrency(summary.copays.materials)}</div>
+              </div>
+            </div>
+            <div className="flex items-center gap-2 p-2 bg-white/5 rounded">
+              <Glasses className="h-3.5 w-3.5 text-amber-400" />
+              <div>
+                <div className="text-white/60 text-xs">Frame Allowance</div>
+                <div className="text-white font-medium">{formatCurrency(summary.copays.frameAllowance)}</div>
+              </div>
+            </div>
+            <div className="flex items-center gap-2 p-2 bg-white/5 rounded">
+              <Contact className="h-3.5 w-3.5 text-purple-400" />
+              <div>
+                <div className="text-white/60 text-xs">Contact Allowance</div>
+                <div className="text-white font-medium">{formatCurrency(summary.copays.contactAllowance)}</div>
+              </div>
+            </div>
+          </div>
+        )}
+
+        {/* Exam Copay for Declining Balance (still show exam copay separately) */}
+        {summary.benefitStructure === 'DECLINING_BALANCE' && (
+          <div className="flex items-center gap-2 p-2 bg-white/5 rounded text-sm">
             <Eye className="h-3.5 w-3.5 text-blue-400" />
             <div>
-              <div className="text-white/60 text-xs">Exam</div>
+              <div className="text-white/60 text-xs">Exam Copay</div>
               <div className="text-white font-medium">{formatCurrency(summary.copays.exam)}</div>
             </div>
           </div>
-          <div className="flex items-center gap-2 p-2 bg-white/5 rounded">
-            <DollarSign className="h-3.5 w-3.5 text-emerald-400" />
-            <div>
-              <div className="text-white/60 text-xs">Materials</div>
-              <div className="text-white font-medium">{formatCurrency(summary.copays.materials)}</div>
-            </div>
-          </div>
-          <div className="flex items-center gap-2 p-2 bg-white/5 rounded">
-            <Glasses className="h-3.5 w-3.5 text-amber-400" />
-            <div>
-              <div className="text-white/60 text-xs">Frame Allowance</div>
-              <div className="text-white font-medium">{formatCurrency(summary.copays.frameAllowance)}</div>
-            </div>
-          </div>
-          <div className="flex items-center gap-2 p-2 bg-white/5 rounded">
-            <Contact className="h-3.5 w-3.5 text-purple-400" />
-            <div>
-              <div className="text-white/60 text-xs">Contact Allowance</div>
-              <div className="text-white font-medium">{formatCurrency(summary.copays.contactAllowance)}</div>
-            </div>
-          </div>
-        </div>
+        )}
 
         {/* CL Fitting */}
         {summary.copays.contactFitting !== null && (
@@ -193,8 +249,8 @@ export function InsuranceSummary({ customerId, className = '' }: InsuranceSummar
           </div>
         )}
 
-        {/* Details Button */}
-        {summary.tierCopays.length > 0 && (
+        {/* Details Button - Only for copay-based plans */}
+        {summary.benefitStructure !== 'DECLINING_BALANCE' && summary.tierCopays.length > 0 && (
           <>
             <Button
               variant="ghost"
@@ -218,36 +274,36 @@ export function InsuranceSummary({ customerId, className = '' }: InsuranceSummar
             {/* Expanded Tier Details */}
             {expanded && (
               <div className="space-y-3 pt-2 border-t border-white/10">
-                {/* Progressive Tiers */}
+                {/* Progressive Lenses - show product names */}
                 {progressiveTiers.length > 0 && (
                   <div>
                     <div className="text-xs text-white/50 mb-1 font-medium">Progressive Lenses</div>
-                    <div className="grid grid-cols-2 gap-1">
+                    <div className="grid grid-cols-1 gap-1">
                       {progressiveTiers.map(tier => (
                         <div
                           key={tier.code}
                           className="flex items-center justify-between p-1.5 bg-white/5 rounded text-xs"
                         >
-                          <span className="text-white/70">{tier.code}</span>
-                          <span className="text-white font-medium">{formatCurrency(tier.copay)}</span>
+                          <span className="text-white/70 truncate mr-2">{tier.description}</span>
+                          <span className="text-white font-medium whitespace-nowrap">{formatCurrency(tier.copay)}</span>
                         </div>
                       ))}
                     </div>
                   </div>
                 )}
 
-                {/* AR Tiers */}
+                {/* AR Coatings - show product names */}
                 {arTiers.length > 0 && (
                   <div>
                     <div className="text-xs text-white/50 mb-1 font-medium">AR Coatings</div>
-                    <div className="grid grid-cols-2 gap-1">
+                    <div className="grid grid-cols-1 gap-1">
                       {arTiers.map(tier => (
                         <div
                           key={tier.code}
                           className="flex items-center justify-between p-1.5 bg-white/5 rounded text-xs"
                         >
-                          <span className="text-white/70">{tier.code}</span>
-                          <span className="text-white font-medium">{formatCurrency(tier.copay)}</span>
+                          <span className="text-white/70 truncate mr-2">{tier.description}</span>
+                          <span className="text-white font-medium whitespace-nowrap">{formatCurrency(tier.copay)}</span>
                         </div>
                       ))}
                     </div>

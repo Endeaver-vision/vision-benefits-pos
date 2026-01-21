@@ -167,13 +167,31 @@ export async function GET(
       },
 
       // ===== DECLINING BALANCE / FLEX PLAN SUPPORT =====
-      benefitStructure: 'COPAY_ALLOWANCE' as const,
-      totalMaterialsCredit: null,
+      // Benefit structure determines how pricing is calculated:
+      // - COPAY_ALLOWANCE: Traditional copay-based pricing (frame allowance + per-item copays)
+      // - DECLINING_BALANCE: Unified pool covers all materials, items consume from pool at retail price
+      benefitStructure: (auth.benefitStructure as 'COPAY_ALLOWANCE' | 'DECLINING_BALANCE') || 'COPAY_ALLOWANCE',
+
+      // Declining balance specific fields (only populated when benefitStructure = DECLINING_BALANCE)
+      decliningBalance: auth.benefitStructure === 'DECLINING_BALANCE' ? {
+        totalAllowance: auth.totalMaterialsAllowance ? Number(auth.totalMaterialsAllowance) : null,
+        appliesTo: auth.decliningBalanceAppliesTo || ['frame', 'lens', 'lensOptions', 'contacts'],
+        overageDiscounts: {
+          frameLensPackage: auth.overageDiscountFrame ? Number(auth.overageDiscountFrame) : 20,
+          contactsConventional: auth.overageDiscountContactConv ? Number(auth.overageDiscountContactConv) : 15,
+          contactsDisposable: auth.overageDiscountContactDisp ? Number(auth.overageDiscountContactDisp) : 0,
+        },
+        eitherOrRestriction: auth.eitherOrRestriction ?? true,
+      } : null,
+
+      // Legacy fields for backwards compatibility
+      totalMaterialsCredit: auth.totalMaterialsAllowance ? Number(auth.totalMaterialsAllowance) : null,
       creditAppliesToFrames: true,
       creditAppliesToLenses: true,
-      creditAppliesToContacts: false,
+      creditAppliesToContacts: auth.benefitStructure === 'DECLINING_BALANCE',
       creditAppliesToCoatings: true,
-      overageDiscountPercent: null,
+      overageDiscountPercent: auth.overageDiscountFrame ? Number(auth.overageDiscountFrame) : null,
+      eitherOrRestriction: auth.eitherOrRestriction ?? false,
     }
 
     return NextResponse.json({

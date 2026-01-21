@@ -123,7 +123,8 @@ Dates in YYYY-MM-DD. Money as numbers (no $).
   },
   "decliningBalance": {
     "clStarting": {"value": 150, "confidence": 0.95},
-    "clRemaining": {"value": 150, "confidence": 0.95}
+    "clRemaining": {"value": 150, "confidence": 0.95},
+    "isUnified": {"value": false, "confidence": 0.95}
   },
   "frame": {
     "promotions": {"extraFramePromotion": {"value": null, "confidence": 0}},
@@ -437,6 +438,46 @@ Dates in YYYY-MM-DD. Money as numbers (no $).
 - **PACKAGE PLANS**: Some EyeMed plans show "Frame, Lens and Lens Options Package" with:
   * "$0 copay; 20% off balance over $100 allowance" - extract the $100 as a COMBINED package allowance
   * Store in frame.allowances.retailMinAllowance (same field as regular frame allowance)
+
+- **CRITICAL - UNIFIED DECLINING BALANCE PLANS** (e.g., "Humana Medicare 703 PPO 400 Plus"):
+  These are SPECIAL plans where ONE unified allowance covers ALL materials (frames, lenses, lens options, AND contacts).
+
+  **How to detect:**
+  * Look for "Frame, Lens and Lens Options Package" with "$0 copay" and a single allowance amount
+  * The SAME allowance amount appears for contacts (conventional AND disposable)
+  * Example: "$0 copay; 20% off balance over $450 allowance" for frame/lens AND "$0 copay; 15% off balance over $450 allowance" for contacts
+  * Key indicator: The SAME dollar amount ($450) appears across frame/lens AND contact sections
+  * Another indicator: "Plan allows the member to receive either contacts or frame and lens services"
+
+  **How to extract:**
+  * Set decliningBalance.isUnified = true
+  * Set decliningBalance.totalAllowance = the unified allowance amount (e.g., 450)
+  * Set decliningBalance.appliesTo = ["frame", "lens", "lensOptions", "contacts"]
+  * Extract overage discounts from each section:
+    - Frame/Lens Package: "20% off balance over $450" → overageDiscounts.frameLensPackage = 20
+    - Contacts Conventional: "15% off balance over $450" → overageDiscounts.contactsConventional = 15
+    - Contacts Disposable: "100% of balance over $450" → overageDiscounts.contactsDisposable = 0 (patient pays 100% = 0% discount)
+  * Set decliningBalance.eitherOrRestriction = true if "either contacts or frame and lens services"
+
+  **Example output for unified declining balance:**
+  "decliningBalance": {
+    "clStarting": {"value": 450, "confidence": 0.95},
+    "clRemaining": {"value": 450, "confidence": 0.95},
+    "isUnified": {"value": true, "confidence": 0.95},
+    "totalAllowance": {"value": 450, "confidence": 0.95},
+    "appliesTo": {"value": ["frame", "lens", "lensOptions", "contacts"], "confidence": 0.95},
+    "overageDiscounts": {
+      "frameLensPackage": {"value": 20, "confidence": 0.95},
+      "contactsConventional": {"value": 15, "confidence": 0.95},
+      "contactsDisposable": {"value": 0, "confidence": 0.95}
+    },
+    "eitherOrRestriction": {"value": true, "confidence": 0.95}
+  }
+
+  **IMPORTANT**: For unified plans, ALSO set:
+  * frame.allowances.retailMinAllowance = totalAllowance (e.g., 450)
+  * contacts.contactAllowance = totalAllowance (e.g., 450)
+  * copays for frame/lens items should be 0 (they consume from the unified pool)
 
 ### Spectera-SPECIFIC:
 - Extract progressive tier copays: Tier I, II, III, IV, V.

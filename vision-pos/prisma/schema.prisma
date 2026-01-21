@@ -9,92 +9,59 @@ datasource db {
 }
 
 model Location {
-  id              String                    @id @default(cuid())
-  name            String                    @unique
-  address         String
-  phone           String?
-  timezone        String                    @default("America/Los_Angeles")
-  active          Boolean                   @default(true)
-  createdAt       DateTime                  @default(now())
-  updatedAt       DateTime                  @updatedAt
-  shortName       String?
-  city            String?
-  state           String?
-  zipCode         String?
-  email           String?
-  fax             String?
-  taxId           String?
-  npiNumber       String?
-  openingTime     DateTime?                 @db.Time
-  closingTime     DateTime?                 @db.Time
-  workingDays     String[]                  @default(["Monday", "Tuesday", "Wednesday", "Thursday", "Friday"])
-  customers       Customer[]
-  employees       Employee[]
-  frameInventory  FrameInventory[]
-  inventory       Inventory[]
-  productSettings LocationProductSettings[]
-  products        ProductLocation[]
-  purchaseOrders  PurchaseOrder[]
-  transactions    Transaction[]
+  id          String     @id @default(cuid())
+  name        String     @unique
+  address     String
+  phone       String?
+  timezone    String     @default("America/Los_Angeles")
+  active      Boolean    @default(true)
+  createdAt   DateTime   @default(now())
+  updatedAt   DateTime   @updatedAt
+  shortName   String?
+  city        String?
+  state       String?
+  zipCode     String?
+  email       String?
+  fax         String?
+  taxId       String?
+  npiNumber   String?
+  openingTime DateTime?  @db.Time(6)
+  closingTime DateTime?  @db.Time(6)
+  workingDays String[]   @default(["Monday", "Tuesday", "Wednesday", "Thursday", "Friday"])
+  customers   Customer[]
+  employees   Employee[]
 
   @@map("locations")
 }
 
-model ProductCategory {
-  id           String    @id @default(cuid())
-  name         String    @unique
-  code         String    @unique
-  description  String?
-  active       Boolean   @default(true)
-  displayOrder Int       @default(100)
-  createdAt    DateTime  @default(now())
-  updatedAt    DateTime  @updatedAt
-  products     Product[]
+model LensProduct {
+  id                            String   @id(map: "products_pkey") @default(cuid())
+  name                          String
+  sku                           String?  @unique(map: "products_sku_key")
+  manufacturer                  String?
+  basePrice                     Float
+  tierVsp                       String?
+  tierEyemed                    String?
+  tierSpectera                  String?
+  active                        Boolean  @default(true)
+  createdAt                     DateTime @default(now())
+  updatedAt                     DateTime @updatedAt
+  displayGroup                  String   @default("reserve") @map("displayGroup")
+  displayOrder                  Int      @default(100)
+  category                      String
+  rim_type_required             Boolean? @default(false)
+  normalized_rim_type           String?
+  pricing_method                String?  @default("by_tier")
+  eyemed_discount_default       Decimal? @db.Decimal(3, 2)
+  vsp_required_stack            String?
+  spectera_plan_lookup_required Boolean? @default(false)
+  enforcement_notes             String?
 
-  @@index([displayOrder])
-  @@map("product_categories")
-}
-
-model Product {
-  id                 String              @id @default(cuid())
-  name               String
-  sku                String?             @unique
-  categoryId         String
-  manufacturer       String?
-  basePrice          Float
-  active             Boolean             @default(true)
-  displayGroup       String              @default("reserve") @map("displayGroup") // 'everyday' or 'reserve'
-  displayOrder       Int                 @default(100)
-  createdAt          DateTime            @default(now())
-  updatedAt          DateTime            @updatedAt
-  inventory          Inventory[]
-  locations          ProductLocation[]
-  suppliers          ProductSupplier[]
-  category           ProductCategory     @relation(fields: [categoryId], references: [id])
-  purchaseOrderItems PurchaseOrderItem[]
-  transactionItems   TransactionItem[]
-
-  @@index([displayGroup, categoryId, displayOrder])
-  @@map("products")
-}
-
-model ProductLocation {
-  id            String   @id @default(cuid())
-  productId     String
-  locationId    String
-  priceOverride Float?
-  available     Boolean  @default(true)
-  createdAt     DateTime @default(now())
-  updatedAt     DateTime @updatedAt
-  location      Location @relation(fields: [locationId], references: [id])
-  product       Product  @relation(fields: [productId], references: [id])
-
-  @@unique([productId, locationId])
-  @@map("product_locations")
+  @@map("lens_products")
 }
 
 model Customer {
-  id                    String              @id @default(cuid())
+  id                    String                   @id @default(cuid())
   firstName             String
   lastName              String
   email                 String?
@@ -109,56 +76,32 @@ model Customer {
   memberId              String?
   groupNumber           String?
   eligibilityDate       DateTime?
-  active                Boolean             @default(true)
-  customerNumber        String?             @unique
-  accountStatus         AccountStatus       @default(ACTIVE)
-  registrationDate      DateTime            @default(now())
+  active                Boolean                  @default(true)
+  customerNumber        String?                  @unique
+  accountStatus         AccountStatus            @default(ACTIVE)
+  registrationDate      DateTime                 @default(now())
   lastVisit             DateTime?
-  totalSpent            Float               @default(0)
-  averageOrderValue     Float               @default(0)
-  customerLifetimeValue Float               @default(0)
+  totalSpent            Float                    @default(0)
+  averageOrderValue     Float                    @default(0)
+  customerLifetimeValue Float                    @default(0)
   lastPurchaseDate      DateTime?
-  isHighValueCustomer   Boolean             @default(false)
-  isFrequentCustomer    Boolean             @default(false)
-  riskLevel             RiskLevel           @default(LOW)
-  marketingConsent      Boolean             @default(false)
+  isHighValueCustomer   Boolean                  @default(false)
+  isFrequentCustomer    Boolean                  @default(false)
+  riskLevel             RiskLevel                @default(LOW)
+  marketingConsent      Boolean                  @default(false)
   notes                 String?
-  createdAt             DateTime            @default(now())
-  updatedAt             DateTime            @updatedAt
+  createdAt             DateTime                 @default(now())
+  updatedAt             DateTime                 @updatedAt
   createdBy             String?
   updatedBy             String?
   primaryLocationId     String?
-  primaryLocation       Location?           @relation(fields: [primaryLocationId], references: [id])
-  prescriptions         EyePrescription[]
-  insuranceCases        InsuranceCase[]
+  primaryLocation       Location?                @relation(fields: [primaryLocationId], references: [id])
+  authorizations        InsuranceAuthorization[]
   insuranceDocuments    InsuranceDocument[]
-  orders                Order[]             @relation("CustomerOrders")
-  priceList             CustomerPriceList[]
+  priceLists            PatientPriceList[]
   quotes                Quote[]
-  transactions          Transaction[]
 
   @@map("customers")
-}
-
-model EyePrescription {
-  id                String           @id @default(cuid())
-  customerId        String
-  prescriptionDate  DateTime
-  providerId        String?
-  providerName      String?
-  rightEyeJson      String           @default("{}")
-  leftEyeJson       String           @default("{}")
-  pupillaryDistance Float?
-  bifocalHeight     Float?
-  prescriptionType  PrescriptionType
-  notes             String?
-  expirationDate    DateTime?
-  isActive          Boolean          @default(true)
-  createdAt         DateTime         @default(now())
-  updatedAt         DateTime         @updatedAt
-  customer          Customer         @relation(fields: [customerId], references: [id])
-
-  @@map("eye_prescriptions")
 }
 
 model Quote {
@@ -176,12 +119,12 @@ model Quote {
   examItems            Json?
   secondPair           Json?
   contactLenses        Json?
+  materialsBenefitUsed String?
   notes                String?
   expiresAt            DateTime?
   createdAt            DateTime    @default(now())
   updatedAt            DateTime    @updatedAt
   createdBy            String?
-  materialsBenefitUsed String?
   customer             Customer    @relation(fields: [customerId], references: [id])
 
   @@index([customerId])
@@ -190,294 +133,40 @@ model Quote {
   @@map("quotes")
 }
 
-model Transaction {
-  id                String            @id @default(cuid())
-  customerId        String
-  userId            String
-  locationId        String
-  subtotal          Float
-  tax               Float
-  discount          Float             @default(0)
-  total             Float
-  insuranceCarrier  String?
-  insuranceDiscount Float             @default(0)
-  patientPortion    Float
-  status            TransactionStatus @default(PENDING)
-  paymentMethod     String?
-  createdAt         DateTime          @default(now())
-  updatedAt         DateTime          @updatedAt
-  items             TransactionItem[]
-  customer          Customer          @relation(fields: [customerId], references: [id])
-  location          Location          @relation(fields: [locationId], references: [id])
-  employee          Employee          @relation(fields: [userId], references: [id])
-
-  @@map("transactions")
-}
-
-model TransactionItem {
-  id                String      @id @default(cuid())
-  transactionId     String
-  productId         String
-  quantity          Int         @default(1)
-  unitPrice         Float
-  discount          Float       @default(0)
-  total             Float
-  insuranceTier     String?
-  insuranceDiscount Float       @default(0)
-  createdAt         DateTime    @default(now())
-  updatedAt         DateTime    @updatedAt
-  product           Product     @relation(fields: [productId], references: [id])
-  transaction       Transaction @relation(fields: [transactionId], references: [id])
-
-  @@map("transaction_items")
-}
-
-model Inventory {
-  id              String              @id @default(cuid())
-  productId       String
-  locationId      String
-  currentStock    Int                 @default(0)
-  reservedStock   Int                 @default(0)
-  availableStock  Int                 @default(0)
-  reorderPoint    Int                 @default(5)
-  reorderQuantity Int                 @default(20)
-  maxStock        Int?
-  costPrice       Float?
-  lastCostPrice   Float?
-  lastRestocked   DateTime?
-  lastSold        DateTime?
-  createdAt       DateTime            @default(now())
-  updatedAt       DateTime            @updatedAt
-  location        Location            @relation(fields: [locationId], references: [id])
-  product         Product             @relation(fields: [productId], references: [id])
-  movements       InventoryMovement[]
-
-  @@unique([productId, locationId])
-  @@map("inventory")
-}
-
-model InventoryMovement {
-  id            String       @id @default(cuid())
-  inventoryId   String
-  type          MovementType
-  quantity      Int
-  reason        String?
-  referenceType String?
-  referenceId   String?
-  unitCost      Float?
-  userId        String?
-  notes         String?
-  createdAt     DateTime     @default(now())
-  inventory     Inventory    @relation(fields: [inventoryId], references: [id])
-  employee      Employee?    @relation(fields: [userId], references: [id])
-
-  @@map("inventory_movements")
-}
-
-model Supplier {
-  id             String            @id @default(cuid())
-  name           String            @unique
-  contactName    String?
-  email          String?
-  phone          String?
-  address        String?
-  city           String?
-  state          String?
-  zipCode        String?
-  country        String            @default("USA")
-  website        String?
-  taxId          String?
-  paymentTerms   String?
-  active         Boolean           @default(true)
-  createdAt      DateTime          @default(now())
-  updatedAt      DateTime          @updatedAt
-  products       ProductSupplier[]
-  purchaseOrders PurchaseOrder[]
-
-  @@map("suppliers")
-}
-
-model ProductSupplier {
-  id            String   @id @default(cuid())
-  productId     String
-  supplierId    String
-  supplierSku   String?
-  supplierPrice Float?
-  leadTimeDays  Int?
-  minimumOrder  Int      @default(1)
-  isPrimary     Boolean  @default(false)
-  active        Boolean  @default(true)
-  createdAt     DateTime @default(now())
-  updatedAt     DateTime @updatedAt
-  product       Product  @relation(fields: [productId], references: [id])
-  supplier      Supplier @relation(fields: [supplierId], references: [id])
-
-  @@unique([productId, supplierId])
-  @@map("product_suppliers")
-}
-
-model PurchaseOrder {
-  id           String              @id @default(cuid())
-  supplierId   String
-  locationId   String
-  userId       String
-  orderNumber  String              @unique
-  status       PurchaseOrderStatus @default(PENDING)
-  subtotal     Float
-  tax          Float               @default(0)
-  shipping     Float               @default(0)
-  total        Float
-  orderDate    DateTime            @default(now())
-  expectedDate DateTime?
-  receivedDate DateTime?
-  notes        String?
-  createdAt    DateTime            @default(now())
-  updatedAt    DateTime            @updatedAt
-  items        PurchaseOrderItem[]
-  location     Location            @relation(fields: [locationId], references: [id])
-  supplier     Supplier            @relation(fields: [supplierId], references: [id])
-  employee     Employee            @relation(fields: [userId], references: [id])
-
-  @@map("purchase_orders")
-}
-
-model PurchaseOrderItem {
-  id               String        @id @default(cuid())
-  purchaseOrderId  String
-  productId        String
-  quantityOrdered  Int
-  quantityReceived Int           @default(0)
-  unitCost         Float
-  total            Float
-  notes            String?
-  createdAt        DateTime      @default(now())
-  updatedAt        DateTime      @updatedAt
-  product          Product       @relation(fields: [productId], references: [id])
-  purchaseOrder    PurchaseOrder @relation(fields: [purchaseOrderId], references: [id])
-
-  @@map("purchase_order_items")
-}
-
-model InsuranceCase {
-  id             String              @id @default(cuid())
-  customerId     String?
-  mergedData     Json?
-  mergedAt       DateTime?
-  createdAt      DateTime            @default(now())
-  updatedAt      DateTime            @updatedAt
-  externalCaseId String?             @unique
-  customer       Customer?           @relation(fields: [customerId], references: [id], onDelete: Cascade)
-  documents      InsuranceDocument[]
-
-  @@index([customerId])
-  @@map("insurance_cases")
-}
-
 model InsuranceDocument {
-  id                String         @id @default(cuid())
-  customerId        String?
-  caseId            String?
-  documentType      DocumentType   @default(INSURANCE_CARD_FRONT)
-  fileName          String
-  fileType          String
-  filePath          String
-  fileSize          Int
-  uploadedBy        String
-  rawOcrText        String?
-  ocrProcessedAt    DateTime?
-  ocrStatus         String         @default("pending")
-  ocrError          String?
-  carrier           String?
-  planName          String?
-  memberId          String?
-  groupNumber       String?
-  copayExam         Decimal?       @db.Decimal(10, 2)
-  copayMaterials    Decimal?       @db.Decimal(10, 2)
-  frameAllowance    Decimal?       @db.Decimal(10, 2)
-  lensAllowance     Decimal?       @db.Decimal(10, 2)
-  contactAllowance  Decimal?       @db.Decimal(10, 2)
-  networkTier       String?
-  effectiveDate     DateTime?
-  expirationDate    DateTime?
-  gptProcessedAt    DateTime?
-  gptStatus         String         @default("pending")
-  gptError          String?
-  confidenceScore   Float?
-  extractedData     Json?
-  verifiedBy        String?
-  verifiedAt        DateTime?
-  isVerified        Boolean        @default(false)
-  verificationNotes String?
-  createdAt         DateTime       @default(now())
-  updatedAt         DateTime       @updatedAt
-  case              InsuranceCase? @relation(fields: [caseId], references: [id])
-  customer          Customer?      @relation(fields: [customerId], references: [id], onDelete: Cascade)
+  id              String                  @id @default(dbgenerated("(gen_random_uuid())::text"))
+  customerId      String?                 @map("customer_id")
+  authorizationId String?                 @map("authorization_id")
+  fileName        String                  @map("file_name")
+  filePath        String                  @map("file_path")
+  fileType        String                  @map("file_type")
+  fileSize        Int?                    @default(0) @map("file_size")
+  ocrStatus       String?                 @default("pending") @map("ocr_status")
+  gptStatus       String?                 @default("pending") @map("gpt_status")
+  ocrError        String?                 @map("ocr_error")
+  gptError        String?                 @map("gpt_error")
+  carrier         String?
+  planName        String?                 @map("plan_name")
+  memberId        String?                 @map("member_id")
+  extractedData   Json?                   @map("extracted_data")
+  confidenceScore Decimal?                @map("confidence_score") @db.Decimal(3, 2)
+  rawOcrText      String?                 @map("raw_ocr_text")
+  isVerified      Boolean?                @default(false) @map("is_verified")
+  verifiedBy      String?                 @map("verified_by")
+  verifiedAt      DateTime?               @map("verified_at") @db.Timestamp(6)
+  uploadedBy      String?                 @map("uploaded_by")
+  createdAt       DateTime?               @default(now()) @map("created_at") @db.Timestamp(6)
+  updatedAt       DateTime?               @default(now()) @map("updated_at") @db.Timestamp(6)
+  authorization   InsuranceAuthorization? @relation(fields: [authorizationId], references: [id], onUpdate: NoAction)
+  customer        Customer?               @relation(fields: [customerId], references: [id], onDelete: Cascade, onUpdate: NoAction)
 
-  @@index([customerId])
-  @@index([caseId])
-  @@index([carrier])
-  @@index([isVerified])
-  @@index([ocrStatus])
-  @@index([gptStatus])
-  @@index([createdAt])
+  @@index([customerId], map: "idx_doc_customer")
+  @@index([ocrStatus, gptStatus], map: "idx_doc_status")
   @@map("insurance_documents")
 }
 
-model LensProduct {
-  id              String            @id @default(cuid())
-  name            String
-  category        LensCategory
-  wholesaleCost   Float?
-  multiplier      Float             @default(3.0)
-  retailPrice     Float
-  manufacturer    String?
-  sku             String?           @unique
-  description     String?
-  isActive        Boolean           @default(true)
-  createdAt       DateTime          @default(now())
-  updatedAt       DateTime          @updatedAt
-  showInPos       Boolean           @default(true)
-  isFeatured      Boolean           @default(false)
-  posDisplayOrder Int               @default(999)
-  isPreferred     Boolean           @default(false)
-  pricingCategory String?
-
-  @@index([category])
-  @@index([pricingCategory])
-  @@index([name])
-  @@index([showInPos, isFeatured, posDisplayOrder])
-  @@map("lens_products")
-}
-
-// Unified carrier tier mapping table - single source of truth for all product-to-carrier tier assignments
-model CarrierTier {
-  id          String   @id @default(cuid())
-
-  // Product reference (polymorphic - can reference any product type)
-  productType String   // 'LENS', 'SERVICE', 'MATERIAL', 'ADDON'
-  productId   String   // FK to lens_products, service_prices, or products table
-  productName String   // Denormalized for easy queries without joins
-
-  // Carrier assignment
-  carrier     String   // 'VSP', 'EYEMED', 'SPECTERA'
-  tierCode    String   // e.g., 'KA', 'tier_3', 'exam_copay', '80_uc'
-  tierLabel   String?  // Human readable: "Progressive Tier 2"
-
-  // Pricing rule determines how scanner calculates patient price
-  pricingRule String   // 'TIER_COPAY', '80_UC', 'ALLOWANCE', 'INCLUDED', 'CASH_ONLY'
-
-  createdAt   DateTime @default(now())
-  updatedAt   DateTime @updatedAt
-
-  @@unique([productType, productId, carrier])
-  @@index([carrier])
-  @@index([carrier, tierCode])
-  @@index([productType, carrier])
-  @@map("carrier_tiers")
-}
-
 model Frame {
-  id              String           @id @default(cuid())
+  id              String       @id @default(cuid())
   manufacturer    String
   brand           String
   collection      String?
@@ -488,21 +177,20 @@ model Frame {
   bridge          Int?
   temple          Int?
   upc             String?
-  sku             String?          @unique
+  sku             String?      @unique
   internalId      String?
   wholesaleCost   Float
   retailPrice     Float
-  stockQuantity   Int              @default(0)
+  stockQuantity   Int          @default(0)
   gender          FrameGender?
-  description     String?
-  isActive        Boolean          @default(true)
-  createdAt       DateTime         @default(now())
-  updatedAt       DateTime         @updatedAt
-  showInPos       Boolean          @default(true)
-  isFeatured      Boolean          @default(false)
-  posDisplayOrder Int              @default(999)
   pricingCategory String?
-  inventory       FrameInventory[]
+  description     String?
+  isActive        Boolean      @default(true)
+  createdAt       DateTime     @default(now())
+  updatedAt       DateTime     @updatedAt
+  showInPos       Boolean      @default(true)
+  isFeatured      Boolean      @default(false)
+  posDisplayOrder Int          @default(999)
 
   @@index([manufacturer])
   @@index([brand])
@@ -511,23 +199,6 @@ model Frame {
   @@index([pricingCategory])
   @@index([showInPos, isFeatured, posDisplayOrder])
   @@map("frames")
-}
-
-model FrameInventory {
-  id          String   @id @default(cuid())
-  frameId     String
-  locationId  String
-  quantity    Int      @default(0)
-  lastUpdated DateTime @default(now())
-  createdAt   DateTime @default(now())
-  updatedAt   DateTime @updatedAt
-  frame       Frame    @relation(fields: [frameId], references: [id], onDelete: Cascade)
-  location    Location @relation(fields: [locationId], references: [id], onDelete: Cascade)
-
-  @@unique([frameId, locationId])
-  @@index([locationId])
-  @@index([frameId])
-  @@map("frame_inventory")
 }
 
 model ContactLens {
@@ -575,6 +246,7 @@ model ServicePrice {
   code               String?
   retailPrice        Float
   category           ServiceCategory?
+  pricingCategory    String?
   description        String?
   isActive           Boolean          @default(true)
   createdAt          DateTime         @default(now())
@@ -591,7 +263,9 @@ model ServicePrice {
   showInPos          Boolean          @default(true)
   isFeatured         Boolean          @default(false)
   posDisplayOrder    Int              @default(999)
-  pricingCategory    String?
+  tierVsp            String?
+  tierEyemed         String?
+  tierSpectera       String?
 
   @@index([name])
   @@index([code])
@@ -599,273 +273,103 @@ model ServicePrice {
   @@index([pricingCategory])
   @@index([billingBucket])
   @@index([showInPos, isFeatured, posDisplayOrder])
+  @@index([tierVsp, tierEyemed, tierSpectera])
   @@map("service_prices")
 }
 
-model VspAuthorization {
-  id                      String                    @id @default(cuid())
-  customerId              String
-  authorizationNumber     String                    @unique
-  planName                String
-  planType                VspPlanType
-  examCopay               Float?
-  materialsCopay          Float?
-  frameAllowanceRetail    Float?
-  frameAllowanceMarchon   Float?
-  frameAllowancePromotionCode String? // e.g., "WFA84", "WFA142"
-  frameOverageDiscount    Float?
-  contactAllowance        Float?
-  contactFittingCovered   Boolean                   @default(false)
-  contactLensExamCopay    Float? // Numeric value from "lesser of $60 copay..."
-  contactFittingRule      String? // Full rule text for reference
-  authDate                DateTime                  @default(now())
-  expirationDate          DateTime?
-  serviceYear             Int?
-  isActive                Boolean                   @default(true)
-  usedForOrder            Boolean                   @default(false)
-  usedDate                DateTime?
-  rawPatientReport        Json?
-  rawLensEnhancements     Json?
-  // Declining balance support
-  benefitStructure        String? // 'COPAY_ALLOWANCE', 'DECLINING_BALANCE'
-  totalMaterialsCredit    Float?
-  creditAppliesToFrames   Boolean                   @default(true)
-  creditAppliesToLenses   Boolean                   @default(true)
-  creditAppliesToCoatings Boolean                   @default(true)
-  creditAppliesToContacts Boolean                   @default(false)
-  createdAt               DateTime                  @default(now())
-  updatedAt               DateTime                  @updatedAt
-  lensEnhancementCopays   VspLensEnhancementCopay[]
+model Employee {
+  id                String         @id @default(cuid())
+  externalId        String?        @unique
+  firstName         String
+  lastName          String
+  username          String         @unique
+  email             String?
+  phone             String?
+  address           String?
+  primaryLocationId String?
+  active            Boolean        @default(true)
+  hireDate          DateTime?
+  terminationDate   DateTime?
+  notes             String?
+  createdAt         DateTime       @default(now())
+  updatedAt         DateTime       @updatedAt
+  locationIds       String[]       @default([])
+  roles             EmployeeRole[]
+  primaryLocation   Location?      @relation(fields: [primaryLocationId], references: [id])
 
-  @@index([customerId])
-  @@index([authorizationNumber])
-  @@index([isActive])
-  @@map("vsp_authorizations")
+  @@map("employees")
 }
 
-model EyemedAuthorization {
-  id                         String                 @id @default(cuid())
-  customerId                 String
-  memberId                   String
-  memberName                 String
-  dateOfBirth                DateTime?
-  network                    String?
-  groupName                  String?
-  groupNumber                String?
-  benefitLevel               String?
-  examEligible               Boolean                @default(false)
-  lensesEligible             Boolean                @default(false)
-  frameEligible              Boolean                @default(false)
-  contactsEligible           Boolean                @default(false)
-  clFitEligible              Boolean                @default(false)
-  examEligibleDate           DateTime?
-  lensesEligibleDate         DateTime?
-  frameEligibleDate          DateTime?
-  contactsEligibleDate       DateTime?
-  examFrequency              String?
-  lensesFrequency            String?
-  frameFrequency             String?
-  contactsFrequency          String?
-  examCopay                  Float?
-  retinalImagingMax          Float?
-  clFitStandardCopay         String?
-  clFitPremiumCopay          String?
-  frameAllowance             Float?
-  frameOverageDiscount       Float?
-  frameCopay                 Float?
-  singleVisionCopay          Float?
-  bifocalCopay               Float?
-  trifocalCopay              Float?
-  lenticularCopay            String?
-  progressiveStandardCopay   Float?
-  progressiveTier1Copay      Float?
-  progressiveTier2Copay      Float?
-  progressiveTier3Copay      Float?
-  contactAllowance           Float?
-  contactConventionalOverage String?
-  contactDisposableOverage   String?
-  contactMedicallyNecessary  String?
-  additionalGlassesAllowance Float?
-  additionalGlassesDiscount  String?
-  dateOfService              DateTime               @default(now())
-  expirationDate             DateTime?
-  isActive                   Boolean                @default(true)
-  usedForOrder               Boolean                @default(false)
-  usedDate                   DateTime?
-  rawBenefitsData            Json?
-  createdAt                  DateTime               @default(now())
-  updatedAt                  DateTime               @updatedAt
-  blueLightFilterCopay       Float?
-  highIndex160Copay          Float?
-  highIndex167Copay          Float?
-  highIndex174Copay          Float?
-  mirrorCoatingCopay         Float?
-  photochromicCopay          Float?
-  polarizedCopay             Float?
-  polycarbonateAdultCopay    Float?
-  polycarbonateChildCopay    Float?
-  progressiveTier4CopayText  String?
-  progressiveTier5Copay      Float?
-  tintCopay                  Float?
-  trivexCopay                Float?
-  progressiveTier4Copay      Float?
-  benefitStructure           String?
-  creditAppliesToCoatings    Boolean                @default(true)
-  creditAppliesToContacts    Boolean                @default(false)
-  creditAppliesToFrames      Boolean                @default(true)
-  creditAppliesToLenses      Boolean                @default(true)
-  overageDiscountPercent     Float?
-  totalMaterialsCredit       Float?
-  arCoatingCopays            EyemedArCoatingCopay[]
+model InsuranceAuthorization {
+  id               String    @id @default(dbgenerated("(gen_random_uuid())::text"))
+  customerId       String    @map("customer_id")
+  carrier          String
+  planName         String?   @map("plan_name")
+  memberId         String?   @map("member_id")
+  memberName       String?   @map("member_name")
+  examEligible     Boolean?  @default(false) @map("exam_eligible")
+  lensesEligible   Boolean?  @default(false) @map("lenses_eligible")
+  frameEligible    Boolean?  @default(false) @map("frame_eligible")
+  contactsEligible Boolean?  @default(false) @map("contacts_eligible")
+  frameAllowance            Decimal?  @map("frame_allowance") @db.Decimal(10, 2)
+  contactAllowance          Decimal?  @map("contact_allowance") @db.Decimal(10, 2)
+  isContactDecliningBalance Boolean?  @default(false) @map("is_contact_declining_balance")
 
-  @@index([customerId])
-  @@index([memberId])
-  @@index([isActive])
-  @@map("eyemed_authorizations")
+  // Benefit structure: COPAY_ALLOWANCE (traditional) or DECLINING_BALANCE (unified pool)
+  benefitStructure          String?   @default("COPAY_ALLOWANCE") @map("benefit_structure")
+  // Unified declining balance fields (when benefitStructure = DECLINING_BALANCE)
+  totalMaterialsAllowance   Decimal?  @map("total_materials_allowance") @db.Decimal(10, 2)
+  decliningBalanceAppliesTo String[]  @default([]) @map("declining_balance_applies_to")  // ["frame", "lens", "lensOptions", "contacts"]
+  overageDiscountFrame      Decimal?  @map("overage_discount_frame") @db.Decimal(5, 2)  // e.g., 20.00 for 20%
+  overageDiscountContactConv Decimal? @map("overage_discount_contact_conv") @db.Decimal(5, 2)
+  overageDiscountContactDisp Decimal? @map("overage_discount_contact_disp") @db.Decimal(5, 2)
+  eitherOrRestriction       Boolean?  @default(false) @map("either_or_restriction")
+
+  examCopay                 Decimal?  @map("exam_copay") @db.Decimal(10, 2)
+  materialsCopay   Decimal?  @map("materials_copay") @db.Decimal(10, 2)
+  copays           Json      @default("{}")
+  rawExtractedData Json?     @map("raw_extracted_data")
+  confidenceScore  Decimal?  @map("confidence_score") @db.Decimal(3, 2)
+  isActive         Boolean?  @default(true) @map("is_active")
+  usedForOrder     Boolean?  @default(false) @map("used_for_order")
+  usedDate         DateTime? @map("used_date") @db.Timestamp(6)
+  expirationDate   DateTime? @map("expiration_date") @db.Date
+  createdAt        DateTime? @default(now()) @map("created_at") @db.Timestamp(6)
+  updatedAt        DateTime? @default(now()) @map("updated_at") @db.Timestamp(6)
+
+  customer   Customer            @relation(fields: [customerId], references: [id], onDelete: Cascade, onUpdate: NoAction)
+  documents  InsuranceDocument[]
+  priceLists PatientPriceList[]
+
+  @@index([isActive], map: "idx_auth_active")
+  @@index([carrier], map: "idx_auth_carrier")
+  @@index([customerId], map: "idx_auth_customer")
+  @@map("insurance_authorizations")
 }
 
-model SpecteraAuthorization {
-  id                           String                   @id @default(cuid())
-  customerId                   String
-  subscriberId                 String
-  memberName                   String
-  dateOfBirth                  DateTime?
-  productName                  String?
-  examEligible                 Boolean                  @default(false)
-  examFrequency                String?
-  maternityExamEligible        Boolean                  @default(false)
-  maternityExamFrequency       String?
-  pediatricExamEligible        Boolean                  @default(false)
-  pediatricExamFrequency       String?
-  frameEligible                Boolean                  @default(false)
-  frameFrequency               String?
-  lensesEligible               Boolean                  @default(false)
-  lensesFrequency              String?
-  selectionClDailyEligible     Boolean                  @default(false)
-  selectionClMonthlyEligible   Boolean                  @default(false)
-  nonSelectionClEligible       Boolean                  @default(false)
-  selectionClFitEligible       Boolean                  @default(false)
-  nonSelectionClFitEligible    Boolean                  @default(false)
-  examCopay                    Float?
-  maternityExamCopay           Float?
-  pediatricExamCopay           Float?
-  selectionClFitCopay          String?
-  nonSelectionClFitCopay       String?
-  frameAllowance               Float?
-  frameOveragePercent          Float?
-  standardLensCopay            Float?
-  progressiveTier1Copay        Float?
-  progressiveTier2Copay        Float?
-  progressiveTier3Copay        Float?
-  progressiveTier4Copay        Float?
-  progressiveTier5Copay        Float?
-  progressiveNonFormularyCopay String?
-  blendedBifocalsCopay         String?
-  freeformSvCopay              String?
-  svAsphericCopay              String?
-  mfAsphericCopay              String?
-  polycarbonate                String?
-  highIndex166                 Float?
-  highIndex167to173            Float?
-  highIndex174Plus             String?
-  selectionClDailyCopay        String?
-  selectionClMonthlyCopay      String?
-  nonSelectionClAllowance      Float?
-  nonSelectionClOverage        Float?
-  necessaryClCopay             Float?
-  dateOfService                DateTime                 @default(now())
-  expirationDate               DateTime?
-  dilatedRetinalExamRequired   Boolean                  @default(false)
-  isActive                     Boolean                  @default(true)
-  usedForOrder                 Boolean                  @default(false)
-  usedDate                     DateTime?
-  rawBenefitsData              Json?
-  createdAt                    DateTime                 @default(now())
-  updatedAt                    DateTime                 @updatedAt
-  blueLightFilterCopay         Float?
-  highIndex174Copay            Float?
-  mirrorCoatingCopay           Float?
-  photochromicCopay            Float?
-  polarizedCopay               Float?
-  polycarbonateAdultCopay      Float?
-  polycarbonateChildCopay      Float?
-  tintCopay                    Float?
-  trivexCopay                  Float?
-  // Declining balance support
-  benefitStructure             String? // 'COPAY_ALLOWANCE', 'DECLINING_BALANCE'
-  totalMaterialsCredit         Float?
-  creditAppliesToFrames        Boolean                  @default(true)
-  creditAppliesToLenses        Boolean                  @default(true)
-  creditAppliesToCoatings      Boolean                  @default(true)
-  creditAppliesToContacts      Boolean                  @default(false)
-  arCoatingCopays              SpecteraArCoatingCopay[]
+model PatientPriceList {
+  id                  String                  @id(map: "customer_price_lists_pkey") @default(dbgenerated("(gen_random_uuid())::text"))
+  customerId          String                  @map("customer_id")
+  productId           String                  @map("product_id")
+  authorizationId     String?                 @map("authorization_id")
+  retailPrice         Decimal                 @map("retail_price") @db.Decimal(10, 2)
+  finalPrice          Decimal?                @map("final_price") @db.Decimal(10, 2)
+  savings             Decimal?                @default(0) @db.Decimal(10, 2)
+  insuranceCarrier    String?                 @map("insurance_carrier")
+  planName            String?                 @map("plan_name")
+  tier                String?
+  pricingMethod       String?                 @map("pricing_method")
+  needsTierAssignment Boolean?                @default(false) @map("needs_tier_assignment")
+  active              Boolean?                @default(true)
+  createdAt           DateTime?               @default(now()) @map("created_at") @db.Timestamp(6)
+  updatedAt           DateTime?               @default(now()) @map("updated_at") @db.Timestamp(6)
+  authorization       InsuranceAuthorization? @relation(fields: [authorizationId], references: [id], onDelete: Cascade, onUpdate: NoAction, map: "customer_price_lists_authorization_id_fkey")
+  customer            Customer                @relation(fields: [customerId], references: [id], onDelete: Cascade, onUpdate: NoAction, map: "customer_price_lists_customer_id_fkey")
 
-  @@index([customerId])
-  @@index([subscriberId])
-  @@index([isActive])
-  @@map("spectera_authorizations")
-}
-
-// ============================================
-// INSURANCE COPAY JUNCTION TABLES
-// ============================================
-
-model CustomerPriceList {
-  id                    String    @id @default(cuid())
-  customerId            String
-  productId             String
-  authorizationId       String?   // Link to specific authorization
-  authorizationType     String?   // 'vsp', 'eyemed', 'spectera'
-  finalPrice            Float?    // Customer pays this (copay or 80% retail fallback)
-  retailPrice           Float
-  savings               Float     @default(0)
-  insuranceCarrier      String?
-  planName              String?
-  tier                  String?   // "K-1", "tier_1", "I", etc.
-  needsTierAssignment   Boolean   @default(false) // True if using fallback pricing (80% retail)
-  validFrom             DateTime?
-  validUntil            DateTime?
-  customPrice           Float?    // Manual override
-  priceOverrideReason   String?
-  priceOverrideBy       String?
-  priceOverrideDate     DateTime?
-  active                Boolean   @default(true)
-  createdAt             DateTime  @default(now())
-  updatedAt             DateTime  @updatedAt
-  customer              Customer  @relation(fields: [customerId], references: [id], onDelete: Cascade)
-
-  // Support multiple carriers per customer - one price per product per carrier
-  @@unique([customerId, productId, insuranceCarrier])
-  @@index([customerId])
-  @@index([productId])
-  @@index([authorizationId])
-  @@map("customer_price_lists")
-}
-
-// ============================================================================
-// BATCH SCANNER + TEMPORARY PRICE LISTS
-// These models support scanning folders of documents without a customer
-// and creating price lists that can be assigned later
-// ============================================================================
-
-model BatchScanJob {
-  id              String              @id @default(cuid())
-  name            String              // User-friendly name for the batch
-  folderPath      String              // Source folder path
-  status          BatchScanStatus     @default(PENDING)
-  totalFiles      Int                 @default(0)
-  processedFiles  Int                 @default(0)
-  successfulFiles Int                 @default(0)
-  failedFiles     Int                 @default(0)
-  startedAt       DateTime?
-  completedAt     DateTime?
-  createdBy       String?
-  errorLog        Json?               // Array of { file, error } for failures
-  createdAt       DateTime            @default(now())
-  updatedAt       DateTime            @updatedAt
-  documents       BatchScanDocument[]
-
-  @@map("batch_scan_jobs")
+  @@unique([customerId, productId, insuranceCarrier], map: "customer_price_lists_customer_id_product_id_insurance_carri_key")
+  @@index([active], map: "idx_price_active")
+  @@index([customerId], map: "idx_price_customer")
+  @@map("patient_price_lists")
 }
 
 enum BatchScanStatus {
@@ -876,348 +380,12 @@ enum BatchScanStatus {
   CANCELLED
 }
 
-model BatchScanDocument {
-  id               String                @id @default(cuid())
-  batchJobId       String
-  fileName         String
-  filePath         String
-  fileSize         Int                   @default(0)
-  status           BatchDocStatus        @default(PENDING)
-  carrier          String?               // Detected carrier: VSP, EyeMed, Spectera
-  planName         String?               // Detected plan name
-  memberName       String?               // Extracted member name (for matching)
-  memberId         String?               // Extracted member ID (for matching)
-  extractedData    Json?                 // Full extraction result
-  confidenceScore  Float?
-  errorMessage     String?
-  processedAt      DateTime?
-  createdAt        DateTime              @default(now())
-  updatedAt        DateTime              @updatedAt
-  batchJob         BatchScanJob          @relation(fields: [batchJobId], references: [id], onDelete: Cascade)
-  temporaryPrices  TemporaryPriceList[]
-
-  @@index([batchJobId])
-  @@index([memberName])
-  @@index([memberId])
-  @@map("batch_scan_documents")
-}
-
 enum BatchDocStatus {
   PENDING
   PROCESSING
   COMPLETED
   FAILED
-  ASSIGNED  // Price list has been assigned to a customer
-}
-
-model TemporaryPriceList {
-  id                  String             @id @default(cuid())
-  batchDocumentId     String
-  productId           String
-  productName         String             // Denormalized for display
-  productSku          String?
-  productCategory     String?            // lens, frame, contact, service
-  finalPrice          Float?             // Calculated copay
-  retailPrice         Float
-  savings             Float              @default(0)
-  insuranceCarrier    String
-  planName            String?
-  tier                String?            // Tier code used
-  pricingRule         String?            // TIER_COPAY, 80_UC, etc.
-  needsTierAssignment Boolean            @default(false)
-  status              TempPriceStatus    @default(TEMPORARY)
-  assignedToCustomer  String?            // Customer ID when assigned
-  assignedAt          DateTime?
-  assignedBy          String?
-  createdAt           DateTime           @default(now())
-  updatedAt           DateTime           @updatedAt
-  batchDocument       BatchScanDocument  @relation(fields: [batchDocumentId], references: [id], onDelete: Cascade)
-
-  @@index([batchDocumentId])
-  @@index([assignedToCustomer])
-  @@index([status])
-  @@map("temporary_price_lists")
-}
-
-enum TempPriceStatus {
-  TEMPORARY   // Not assigned to any customer
-  ASSIGNED    // Assigned to a customer
-  EXPIRED     // No longer valid
-}
-
-model VspLensEnhancementCopay {
-  id                String           @id @default(cuid())
-  authorizationId   String
-  code              String // KA, FA, QT, AD, PR, SW, etc.
-  description       String
-  copaySingleVision Float?
-  copayMultifocal   Float?
-  isAddonCode       Boolean          @default(false)
-  baseCode          String?
-  createdAt         DateTime         @default(now())
-  updatedAt         DateTime         @updatedAt
-  authorization     VspAuthorization @relation(fields: [authorizationId], references: [id], onDelete: Cascade)
-
-  @@unique([authorizationId, code])
-  @@index([authorizationId])
-  @@map("vsp_lens_enhancement_copays")
-}
-
-model EyemedArCoatingCopay {
-  id              String              @id @default(cuid())
-  authorizationId String
-  tier            String // 'standard', 'tier_1', 'tier_2', 'tier_3'
-  copay           String // Stored as string for flexibility
-  createdAt       DateTime            @default(now())
-  updatedAt       DateTime            @updatedAt
-  authorization   EyemedAuthorization @relation(fields: [authorizationId], references: [id], onDelete: Cascade)
-
-  @@unique([authorizationId, tier])
-  @@index([authorizationId])
-  @@map("eyemed_ar_coating_copays")
-}
-
-model SpecteraArCoatingCopay {
-  id              String                @id @default(cuid())
-  authorizationId String
-  tier            String // 'tier_1', 'tier_2', 'tier_3', 'tier_4'
-  copay           String
-  createdAt       DateTime              @default(now())
-  updatedAt       DateTime              @updatedAt
-  authorization   SpecteraAuthorization @relation(fields: [authorizationId], references: [id], onDelete: Cascade)
-
-  @@unique([authorizationId, tier])
-  @@index([authorizationId])
-  @@map("spectera_ar_coating_copays")
-}
-
-model LocationProductSettings {
-  id              String      @id @default(cuid())
-  locationId      String
-  productType     ProductType
-  productId       String
-  showInPos       Boolean     @default(true)
-  isFeatured      Boolean     @default(false)
-  posDisplayOrder Int         @default(999)
-  createdAt       DateTime    @default(now())
-  updatedAt       DateTime    @updatedAt
-  location        Location    @relation(fields: [locationId], references: [id], onDelete: Cascade)
-
-  @@unique([locationId, productType, productId])
-  @@index([locationId, productType])
-  @@index([productId, productType])
-  @@map("location_product_settings")
-}
-
-model Order {
-  id                      String               @id @default(cuid())
-  orderNumber             String               @unique
-  customerId              String
-  prescriptionId          String?
-  status                  OrderStatus          @default(DRAFT)
-  statusUpdatedAt         DateTime             @default(now())
-  statusUpdatedBy         String?
-  orderDate               DateTime             @default(now())
-  estimatedCompletionDate DateTime
-  actualCompletionDate    DateTime?
-  labId                   String?
-  labName                 String?
-  labOrderNumber          String?
-  labTrackingNumber       String?
-  labEstimatedDelivery    DateTime?
-  deliveryMethod          DeliveryMethod       @default(PICKUP)
-  deliveryAddress         Json?
-  deliveryInstructions    String?
-  subtotal                Decimal              @db.Decimal(10, 2)
-  taxAmount               Decimal              @db.Decimal(10, 2)
-  discountAmount          Decimal?             @db.Decimal(10, 2)
-  insuranceAmount         Decimal?             @db.Decimal(10, 2)
-  shippingAmount          Decimal?             @db.Decimal(10, 2)
-  totalAmount             Decimal              @db.Decimal(10, 2)
-  amountPaid              Decimal              @default(0) @db.Decimal(10, 2)
-  notes                   String?
-  internalNotes           String?
-  createdAt               DateTime             @default(now())
-  updatedAt               DateTime             @updatedAt
-  createdBy               String
-  isOverdue               Boolean              @default(false)
-  overdueReason           String?
-  patientDeliveryDate     DateTime?
-  shipmentEnd             DateTime?
-  shipmentStart           DateTime?
-  vendorPlacementDeadline DateTime?
-  vendorProcessingEnd     DateTime?
-  vendorProcessingStart   DateTime?
-  alerts                  OrderAlert[]         @relation("OrderAlerts")
-  communications          OrderCommunication[]
-  items                   OrderItem[]
-  qualityChecks           OrderQualityCheck[]
-  statusHistory           OrderStatusHistory[]
-  customer                Customer             @relation("CustomerOrders", fields: [customerId], references: [id])
-
-  @@index([customerId])
-  @@index([status])
-  @@index([orderDate])
-  @@index([orderNumber])
-  @@map("orders")
-}
-
-model OrderItem {
-  id                String          @id @default(cuid())
-  orderId           String
-  type              OrderItemType
-  productId         String?
-  productName       String
-  sku               String
-  description       String?
-  lensType          String?
-  lensCoatings      String[]
-  prescriptionId    String?
-  frameColor        String?
-  frameSize         String?
-  unitPrice         Decimal         @db.Decimal(10, 2)
-  discountAmount    Decimal?        @db.Decimal(10, 2)
-  insuranceCoverage Decimal?        @db.Decimal(10, 2)
-  finalPrice        Decimal         @db.Decimal(10, 2)
-  quantity          Int             @default(1)
-  status            OrderItemStatus @default(PENDING)
-  estimatedDelivery DateTime?
-  actualDelivery    DateTime?
-  labId             String?
-  labOrderNumber    String?
-  trackingNumber    String?
-  customizations    Json?
-  isCustom          Boolean         @default(false)
-  createdAt         DateTime        @default(now())
-  updatedAt         DateTime        @updatedAt
-  order             Order           @relation(fields: [orderId], references: [id], onDelete: Cascade)
-
-  @@index([orderId])
-  @@index([status])
-  @@index([productId])
-  @@map("order_items")
-}
-
-model OrderStatusHistory {
-  id             String       @id @default(cuid())
-  orderId        String
-  status         OrderStatus
-  previousStatus OrderStatus?
-  updatedBy      String
-  updatedByName  String?
-  notes          String?
-  timestamp      DateTime     @default(now())
-  order          Order        @relation(fields: [orderId], references: [id], onDelete: Cascade)
-
-  @@index([orderId])
-  @@index([timestamp])
-  @@map("order_status_history")
-}
-
-model OrderCommunication {
-  id         String                 @id @default(cuid())
-  orderId    String
-  type       CommunicationType
-  direction  CommunicationDirection
-  subject    String?
-  message    String
-  sentBy     String?
-  sentByName String?
-  sentTo     String?
-  sentToName String?
-  timestamp  DateTime               @default(now())
-  metadata   Json?
-  order      Order                  @relation(fields: [orderId], references: [id], onDelete: Cascade)
-
-  @@index([orderId])
-  @@index([timestamp])
-  @@index([type])
-  @@map("order_communications")
-}
-
-model OrderQualityCheck {
-  id              String   @id @default(cuid())
-  orderId         String
-  performedBy     String
-  performedByName String?
-  performedAt     DateTime @default(now())
-  passed          Boolean
-  notes           String?
-  issues          String[]
-  checklist       Json?
-  order           Order    @relation(fields: [orderId], references: [id], onDelete: Cascade)
-
-  @@index([orderId])
-  @@index([performedAt])
-  @@map("order_quality_checks")
-}
-
-model OrderStageConfig {
-  id                     String      @id @default(cuid())
-  stage                  OrderStatus @unique
-  expectedDurationHours  Int
-  warningThresholdHours  Int
-  criticalThresholdHours Int
-  autoNotify             Boolean     @default(true)
-  notifyRoles            String[]
-  active                 Boolean     @default(true)
-  createdAt              DateTime    @default(now())
-  updatedAt              DateTime    @updatedAt
-
-  @@map("order_stage_configs")
-}
-
-model OrderAlert {
-  id              String         @id @default(cuid())
-  orderId         String
-  orderNumber     String
-  stage           OrderStatus
-  alertType       OrderAlertType
-  severity        AlertSeverity
-  message         String
-  notifiedAt      DateTime?
-  acknowledgedAt  DateTime?
-  acknowledgedBy  String?
-  resolved        Boolean        @default(false)
-  resolvedAt      DateTime?
-  resolvedBy      String?
-  resolutionNotes String?
-  createdAt       DateTime       @default(now())
-  order           Order          @relation("OrderAlerts", fields: [orderId], references: [id], onDelete: Cascade)
-
-  @@index([orderId])
-  @@index([stage])
-  @@index([severity])
-  @@index([resolved])
-  @@index([createdAt])
-  @@map("order_alerts")
-}
-
-// Employee model with locationIds array (replaces employee_locations junction table)
-model Employee {
-  id                 String              @id @default(cuid())
-  externalId         String?             @unique
-  firstName          String
-  lastName           String
-  username           String              @unique
-  email              String?
-  phone              String?
-  address            String?
-  roles              EmployeeRole[]
-  primaryLocationId  String?
-  locationIds        String[]            @default([])
-  active             Boolean             @default(true)
-  hireDate           DateTime?
-  terminationDate    DateTime?
-  notes              String?
-  createdAt          DateTime            @default(now())
-  updatedAt          DateTime            @updatedAt
-  inventoryMovements InventoryMovement[]
-  purchaseOrders     PurchaseOrder[]
-  transactions       Transaction[]
-  primaryLocation    Location?           @relation(fields: [primaryLocationId], references: [id])
-
-  @@map("employees")
+  ASSIGNED
 }
 
 enum Gender {
@@ -1294,15 +462,6 @@ enum DocumentType {
   OTHER
 }
 
-enum LensCategory {
-  LENS
-  AR_COATING
-  TRANSITIONS
-  MATERIAL
-  ADDON
-  SERVICE
-}
-
 enum FrameGender {
   MENS
   WOMENS
@@ -1356,19 +515,19 @@ enum OrderStatus {
   DRAFT
   SUBMITTED
   CONFIRMED
-  IN_PRODUCTION
-  QUALITY_CHECK
-  READY_FOR_PICKUP
-  READY_FOR_SHIPPING
-  SHIPPED
-  DELIVERED
-  CANCELLED
-  ON_HOLD
   SHIPPED_TO_VENDOR
   VENDOR_PROCESSING
   VENDOR_SHIPPED
   RECEIVED
+  IN_PRODUCTION
+  QUALITY_CHECK
+  READY_FOR_PICKUP
+  READY_FOR_SHIPPING
   PATIENT_NOTIFIED
+  SHIPPED
+  DELIVERED
+  CANCELLED
+  ON_HOLD
 }
 
 enum OrderItemStatus {
@@ -1421,4 +580,19 @@ enum EmployeeRole {
   patient_care_coordinator
   nurse
   billing
+}
+
+enum LensCategory {
+  LENS
+  AR_COATING
+  TRANSITIONS
+  MATERIAL
+  ADDON
+  SERVICE
+}
+
+enum TempPriceStatus {
+  TEMPORARY
+  ASSIGNED
+  EXPIRED
 }

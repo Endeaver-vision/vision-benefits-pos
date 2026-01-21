@@ -238,9 +238,21 @@ export interface ExtractedInsuranceData {
   }
 
   // EyeMed declining balance (new section)
+  // This can be EITHER contact-lens-only OR unified (all materials)
   decliningBalance?: {
+    // Contact lens specific (legacy)
     clStarting: FieldWithConfidence<number | null>
     clRemaining: FieldWithConfidence<number | null>
+    // Unified declining balance (covers frames, lenses, lens options, AND contacts)
+    isUnified?: FieldWithConfidence<boolean | null>
+    totalAllowance?: FieldWithConfidence<number | null>
+    appliesTo?: FieldWithConfidence<string[] | null>  // ['frame', 'lens', 'lensOptions', 'contacts']
+    overageDiscounts?: {
+      frameLensPackage?: FieldWithConfidence<number | null>  // e.g., 20 for 20% off
+      contactsConventional?: FieldWithConfidence<number | null>  // e.g., 15 for 15% off
+      contactsDisposable?: FieldWithConfidence<number | null>  // e.g., 0 for no discount
+    }
+    eitherOrRestriction?: FieldWithConfidence<boolean | null>  // contacts OR glasses, not both
   }
   contacts: {
     clExamDiscount: FieldWithConfidence<string | null>
