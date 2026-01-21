@@ -148,9 +148,23 @@ export function ContactLensCalculator({ className, onNext, onBack }: ContactLens
   // This uses the automatic conflict detection system
   const isContactsInsured = usesMaterialsAllowance('contacts')
 
+  // Check for declining balance either/or restriction
+  const isDecliningBalance = authorization?.benefitStructure === 'DECLINING_BALANCE'
+  const hasEitherOrRestriction = authorization?.eitherOrRestriction || authorization?.decliningBalance?.eitherOrRestriction
+
+  // Check if glasses are already in the quote (for either/or warning)
+  const hasGlassesInQuote = useMemo(() => {
+    return Array.from(selectedItems.values()).some(
+      item => item.category === 'frame' || item.category === 'lens' || item.category === 'coating'
+    )
+  }, [selectedItems])
+
   // Show retail-only mode banner ONLY when there's a conflict AND glasses is active
   // This means the user has both glasses and contacts in the quote, and chose glasses for the allowance
   const showRetailOnlyBanner = materialsConflict.hasConflict && materialsConflict.activeBenefit === 'glasses'
+
+  // Show either/or warning for declining balance plans when glasses are already selected
+  const showEitherOrWarning = isDecliningBalance && hasEitherOrRestriction && hasGlassesInQuote && materialsConflict.activeBenefit === 'glasses'
 
   // Load contact lenses from API
   useEffect(() => {
@@ -373,8 +387,20 @@ export function ContactLensCalculator({ className, onNext, onBack }: ContactLens
 
   return (
     <div className={`space-y-6 ${className}`}>
+      {/* Either/Or Warning - Declining balance plans where glasses already selected */}
+      {showEitherOrWarning && (
+        <Alert className="bg-amber-500/20 border-amber-400/50">
+          <Shield className="h-4 w-4 text-amber-400" />
+          <AlertDescription className="text-amber-200">
+            <strong className="text-amber-300">Declining Balance Plan - Glasses OR Contacts:</strong> This plan only allows <span className="font-semibold">one benefit</span> to be used.
+            You have already selected eyeglasses materials which are using the insurance allowance.
+            To use contact lenses with insurance, you must remove all eyeglasses from your quote first.
+          </AlertDescription>
+        </Alert>
+      )}
+
       {/* Retail-Only Mode Banner - When glasses benefit is using the allowance */}
-      {showRetailOnlyBanner && (
+      {showRetailOnlyBanner && !showEitherOrWarning && (
         <Alert className="bg-blue-500/20 border-blue-400/50">
           <Shield className="h-4 w-4 text-blue-400" />
           <AlertDescription className="text-blue-200">

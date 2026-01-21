@@ -1,18 +1,51 @@
+/**
+ * Pricing Calculate API
+ * POST /api/pricing/calculate
+ *
+ * Calculates insurance pricing for products based on customer's active authorization.
+ * Uses the unified insurance_authorizations table.
+ */
+
 import { NextRequest, NextResponse } from 'next/server'
 import { prisma } from '@/lib/prisma'
-import {
-  createPricingCalculator,
-  PricingResult,
-  FramePricingResult,
-} from '@/lib/services/pricing-calculator'
-import { getActiveAuthorizationForCustomer } from '@/lib/services/authorization-service'
-import { ProductCatalogEntry } from '@/types/product-catalog'
+import { EYEMED_TIER_TO_COPAY, VSP_TIER_TO_COPAY, SPECTERA_TIER_TO_COPAY } from '@/lib/data/insurance-tier-mappings'
+
+// Type for the copays JSON structure in unified authorization table
+interface CopaysJson {
+  examCopay?: number
+  materialsCopay?: number
+  singleVision?: number
+  bifocal?: number
+  trifocal?: number
+  progressiveStandard?: number
+  progressiveTier1?: number
+  progressiveTier2?: number
+  progressiveTier3?: number
+  progressiveTier4?: number
+  progressiveTier5?: number
+  arStandard?: number
+  arTier1?: number
+  arTier2?: number
+  arTier3?: number
+  polycarbonate?: number
+  polycarbonateChild?: number
+  trivex?: number
+  highIndex167?: number
+  highIndex174?: number
+  photochromic?: number
+  polarized?: number
+  blueLight?: number
+  tint?: number
+  uvTreatment?: number
+  scratchCoating?: number
+  [key: string]: number | undefined
+}
 
 export interface PricingRequest {
   customerId: string
   products: Array<{
     sku: string
-    productType: 'progressive' | 'ar_coating' | 'frame' | 'lens_sv' | 'material' | 'photochromic' | 'polarized' | 'blue_light' | 'tint' | 'mount_fee' | 'other'
+    productType: 'progressive' | 'ar_coating' | 'frame' | 'lens_sv' | 'material' | 'photochromic' | 'polarized' | 'blue_light' | 'tint' | 'mount_fee' | 'exam' | 'other'
     brand?: string
     productName?: string
     retailPrice: number
@@ -63,16 +96,18 @@ export async function POST(request: NextRequest) {
       )
     }
 
-    // First, try to get authorization from carrier-specific tables
-    const authResult = await getActiveAuthorizationForCustomer(body.customerId)
+    // Get active authorization from unified table
+    const auth = await prisma.insuranceAuthorization.findFirst({
+      where: {
+        customerId: body.customerId,
+        isActive: true,
+      },
+      orderBy: { createdAt: 'desc' },
+    })
 
     const warnings: string[] = []
-    let carrier: string | null = null
-    let planName: string | null = null
-    let examCopay = 0
-    let materialsCopay = 0
 
-    if (!authResult) {
+    if (!auth) {
       // No authorization found - calculate at retail prices
       warnings.push('No active authorization found - pricing at retail')
 
@@ -108,167 +143,207 @@ export async function POST(request: NextRequest) {
       })
     }
 
-    // Use the authorization from the carrier-specific table
-    const auth = authResult.authorization
-    carrier = authResult.carrier
-    planName = auth.plan.planName
+    const carrier = auth.carrier.toUpperCase()
+    const planName = auth.planName
+    const copays = (auth.copays as CopaysJson) || {}
+
+    // Check if this is a declining balance plan
+    const isDecliningBalance = auth.benefitStructure === 'DECLINING_BALANCE'
+    const totalMaterialsAllowance = auth.totalMaterialsAllowance ? Number(auth.totalMaterialsAllowance) : 0
+    const overageDiscountFrame = auth.overageDiscountFrame ? Number(auth.overageDiscountFrame) / 100 : 0.20
 
     // Get copays from authorization
-    // eslint-disable-next-line @typescript-eslint/no-explicit-any
-    const copays = auth.copays as any
-    if (authResult.carrier === 'vsp') {
-      examCopay = copays.examWellvision || 0
-      materialsCopay = copays.materials || 0
-    } else if (authResult.carrier === 'eyemed') {
-      examCopay = copays.exam || 0
-      materialsCopay = copays.materials || 0
-    } else if (authResult.carrier === 'spectera') {
-      examCopay = copays.examAdult || 0
-      materialsCopay = copays.materials || 0
+    const examCopay = auth.examCopay ? Number(auth.examCopay) : (copays.examCopay ?? 0)
+    const materialsCopay = auth.materialsCopay ? Number(auth.materialsCopay) : (copays.materialsCopay ?? 0)
+    const frameAllowance = auth.frameAllowance ? Number(auth.frameAllowance) : null
+    const frameOverageDiscount = 0.20 // Standard 20% discount on overage
+
+    // Get tier-to-copay mapping for this carrier
+    const tierToCopay = getTierToCopayMap(carrier)
+
+    // =============================================================================
+    // DECLINING BALANCE PRICING - Unified allowance covers all materials
+    // =============================================================================
+    if (isDecliningBalance) {
+      // For declining balance: all materials consume from a unified pool at retail price
+      // Patient pays only overage (with discount)
+      const materialsItems = body.products.filter(p =>
+        p.productType !== 'exam' // Exclude exam from materials pool
+      )
+
+      const totalRetail = materialsItems.reduce((sum, p) => sum + p.retailPrice, 0)
+      const creditApplied = Math.min(totalRetail, totalMaterialsAllowance)
+      const overage = Math.max(0, totalRetail - totalMaterialsAllowance)
+      const overageDiscountAmount = overage * overageDiscountFrame
+      const patientPaysOverage = overage - overageDiscountAmount
+
+      // Build items - for declining balance, show retail price and allocation from pool
+      const items: PricingResponse['items'] = body.products.map(product => {
+        if (product.productType === 'exam') {
+          // Exam uses copay, not declining balance
+          return {
+            sku: product.sku,
+            productName: product.productName || product.sku,
+            retailPrice: product.retailPrice,
+            patientCopay: examCopay,
+            insurancePays: product.retailPrice - examCopay,
+            savings: product.retailPrice - examCopay,
+            tierUsed: 'exam-copay',
+            notes: `$${examCopay} exam copay`,
+          }
+        }
+
+        // For declining balance, proportionally allocate the pool
+        const proportionOfTotal = totalRetail > 0 ? product.retailPrice / totalRetail : 0
+        const creditForThisItem = creditApplied * proportionOfTotal
+        const overageForThisItem = overage * proportionOfTotal
+        const overageDiscountForItem = overageForThisItem * overageDiscountFrame
+        const patientPaysForItem = Math.round((overageForThisItem - overageDiscountForItem) * 100) / 100
+
+        return {
+          sku: product.sku,
+          productName: product.productName || product.sku,
+          retailPrice: product.retailPrice,
+          patientCopay: patientPaysForItem,
+          insurancePays: creditForThisItem + overageDiscountForItem,
+          savings: creditForThisItem + overageDiscountForItem,
+          tierUsed: 'declining-balance',
+          notes: creditForThisItem >= product.retailPrice
+            ? 'Covered by declining balance'
+            : `${Math.round(overageDiscountFrame * 100)}% off overage`,
+        }
+      })
+
+      const retailTotal = items.reduce((sum, item) => sum + item.retailPrice, 0)
+      const patientTotal = items.reduce((sum, item) => sum + item.patientCopay, 0)
+      const insuranceTotal = items.reduce((sum, item) => sum + item.insurancePays, 0)
+      const totalSavings = items.reduce((sum, item) => sum + item.savings, 0)
+
+      return NextResponse.json({
+        success: true,
+        data: {
+          customerId: body.customerId,
+          carrier: carrier.toLowerCase(),
+          planName,
+          benefitStructure: 'DECLINING_BALANCE',
+          decliningBalance: {
+            totalAllowance: totalMaterialsAllowance,
+            totalRetail,
+            creditApplied,
+            overage,
+            overageDiscount: overageDiscountFrame * 100,
+            overageDiscountAmount,
+            creditRemaining: Math.max(0, totalMaterialsAllowance - totalRetail),
+          },
+          items,
+          summary: {
+            retailTotal,
+            patientTotal,
+            insuranceTotal,
+            totalSavings,
+            examCopay,
+            materialsCopay: 0, // No materials copay for declining balance
+          },
+          warnings: warnings.length > 0 ? warnings : undefined,
+        } as PricingResponse,
+      })
     }
 
-    // Create carrier-specific pricing calculator
-    const calculator = createPricingCalculator(auth)
+    // =============================================================================
+    // COPAY-BASED PRICING - Traditional copay structure
+    // =============================================================================
 
-    // Look up tier codes for all products from the unified carrier_tiers table
+    // Look up tier codes for all products from the lens_products table
     const productSkus = body.products.map(p => p.sku)
-    // Map carrier to uppercase format used in carrier_tiers table
-    const carrierMap: Record<string, string> = {
-      'vsp': 'VSP',
-      'eyemed': 'EYEMED',
-      'spectera': 'SPECTERA',
-    }
-    const tierCarrier = carrierMap[authResult.carrier] || authResult.carrier.toUpperCase()
-    const tierMappings = await prisma.carrierTier.findMany({
+    const lensProducts = await prisma.lensProduct.findMany({
       where: {
-        productId: { in: productSkus },
-        carrier: tierCarrier,
+        sku: { in: productSkus },
       },
     })
 
-    // Create a map of productId -> tierCode for quick lookup
-    const tierCodeMap = new Map<string, string>()
-    for (const tier of tierMappings) {
-      tierCodeMap.set(tier.productId, tier.tierCode)
+    // Create a map of sku -> tier code
+    const tierCodeMap = new Map<string, string | null>()
+    for (const product of lensProducts) {
+      let tierCode: string | null = null
+      if (carrier === 'VSP') {
+        tierCode = product.tierVsp
+      } else if (carrier === 'EYEMED') {
+        tierCode = product.tierEyemed
+      } else if (carrier === 'SPECTERA') {
+        tierCode = product.tierSpectera
+      }
+      tierCodeMap.set(product.sku, tierCode)
     }
 
     // Calculate pricing for each product
     const items: PricingResponse['items'] = []
 
     for (const product of body.products) {
-      // Get the tier code for this product
       const tierCode = tierCodeMap.get(product.sku)
+      let patientCopay = product.retailPrice
+      let tierUsed: string | undefined
+      let notes: string | undefined
 
-      // Create a ProductCatalogEntry with carrier-specific tier mapping
-      const catalogEntry: ProductCatalogEntry = {
-        sku: product.sku,
-        displayName: product.productName || product.sku,
-        category: mapProductType(product.productType),
-        retailPrice: product.retailPrice,
-        isActive: true,
-      }
-
-      // Add carrier-specific mapping based on product type and tier code
-      if (tierCode) {
-        if (authResult.carrier === 'vsp') {
-          catalogEntry.vsp = {
-            isFeaturedBrand: product.isFeaturedBrand,
-          }
-          // Map tier code to VSP property based on product type
-          if (product.productType === 'progressive') {
-            catalogEntry.vsp.baseCode = tierCode as 'KA' | 'JA' | 'FA' | 'NA' | 'OA'
-          } else if (product.productType === 'ar_coating') {
-            catalogEntry.vsp.arCode = tierCode as 'QM' | 'QT' | 'QV'
-          } else if (product.productType === 'material') {
-            // Map VSP material codes (AD=poly, AB=hi-index 1.60, AH=hi-index 1.67)
-            const materialMap: Record<string, 'D' | 'T' | 'H'> = {
-              'AD': 'D', 'BD': 'D', 'DD': 'D', 'FD': 'D', 'JD': 'D', 'KD': 'D', 'ND': 'D', 'OD': 'D', // Poly codes
-              'AB': 'T', // Trivex/1.60
-              'AH': 'H', 'AJ': 'H', // High index
-            }
-            if (materialMap[tierCode]) {
-              catalogEntry.vsp.materialModifier = materialMap[tierCode]
-            }
-          } else if (product.productType === 'mount_fee') {
-            // Mount fee codes: standard, semi_rimless, SW (rimless)
-            catalogEntry.vsp.baseCode = tierCode as 'standard' | 'semi_rimless' | 'SW'
-          }
-        } else if (authResult.carrier === 'eyemed') {
-          catalogEntry.eyemed = {}
-          if (product.productType === 'progressive') {
-            catalogEntry.eyemed.progressiveTier = tierCode as 'standard' | 'tier_1' | 'tier_2' | 'tier_3' | 'tier_4' | 'tier_5'
-          } else if (product.productType === 'ar_coating') {
-            catalogEntry.eyemed.arTier = tierCode as 'standard' | 'tier_1' | 'tier_2' | 'tier_3'
-          } else if (product.productType === 'material') {
-            const materialMap: Record<string, 'polycarbonate' | 'trivex' | 'high_index_167' | 'high_index_174'> = {
-              'polycarbonate': 'polycarbonate',
-              'trivex': 'trivex',
-              'high_index_167': 'high_index_167',
-              'high_index_174': 'high_index_174',
-            }
-            if (materialMap[tierCode]) {
-              catalogEntry.eyemed.materialType = materialMap[tierCode]
-            }
-          } else if (product.productType === 'mount_fee') {
-            // Mount fee codes: standard, semi_rimless, rimless
-            catalogEntry.eyemed.materialType = tierCode as 'standard' | 'semi_rimless' | 'rimless'
-          }
-        } else if (authResult.carrier === 'spectera') {
-          catalogEntry.spectera = {}
-          if (product.productType === 'progressive') {
-            catalogEntry.spectera.progressiveTier = tierCode as 'I' | 'II' | 'III' | 'IV' | 'V'
-          } else if (product.productType === 'ar_coating') {
-            catalogEntry.spectera.arTier = tierCode as 'I' | 'II' | 'III' | 'IV'
-          } else if (product.productType === 'material') {
-            const materialMap: Record<string, 'polycarbonate' | 'trivex' | 'high_index'> = {
-              'polycarbonate': 'polycarbonate',
-              'trivex': 'trivex',
-              'high_index': 'high_index',
-            }
-            if (materialMap[tierCode]) {
-              catalogEntry.spectera.materialType = materialMap[tierCode]
-            }
-          } else if (product.productType === 'mount_fee') {
-            // Mount fee codes: standard, semi_rimless, rimless
-            catalogEntry.spectera.materialType = tierCode as 'standard' | 'semi_rimless' | 'rimless'
-          }
-        }
-      } else if (product.isFeaturedBrand !== undefined && authResult.carrier === 'vsp') {
-        // VSP frame with no tier code, still set featured brand flag
-        catalogEntry.vsp = { isFeaturedBrand: product.isFeaturedBrand }
-      }
-
-      let result: PricingResult | FramePricingResult
-
+      // Handle frame pricing separately (allowance-based)
       if (product.productType === 'frame') {
-        result = calculator.calculateFrame(
-          catalogEntry,
-          auth,
-          product.retailPrice,
-          product.isFeaturedBrand
-        )
-      } else {
-        result = calculator.calculateProduct(
-          catalogEntry,
-          auth,
-          product.retailPrice
-        )
+        if (frameAllowance !== null) {
+          if (product.retailPrice <= frameAllowance) {
+            patientCopay = 0
+            tierUsed = 'frame-allowance'
+            notes = `Covered by $${frameAllowance} allowance`
+          } else {
+            const overage = product.retailPrice - frameAllowance
+            patientCopay = Math.round(overage * (1 - frameOverageDiscount) * 100) / 100
+            tierUsed = 'frame-overage'
+            notes = `$${frameAllowance} allowance + ${Math.round(frameOverageDiscount * 100)}% off overage`
+          }
+        } else {
+          notes = 'No frame allowance found'
+        }
       }
+      // Handle tier-based pricing for other products
+      else if (tierCode) {
+        const copayField = tierToCopay[tierCode]
+
+        if (copayField) {
+          if (copayField === 'ZERO_COPAY') {
+            patientCopay = 0
+            tierUsed = tierCode
+            notes = 'Covered by insurance'
+          } else if (copayField === 'DISCOUNT_20_PERCENT') {
+            patientCopay = Math.round(product.retailPrice * 0.80 * 100) / 100
+            tierUsed = tierCode
+            notes = '20% insurance discount'
+          } else {
+            const copayValue = copays[copayField]
+            if (copayValue !== null && copayValue !== undefined) {
+              patientCopay = copayValue
+              tierUsed = tierCode
+              notes = `Tier ${tierCode} copay`
+            } else {
+              notes = `Copay not found for tier ${tierCode}`
+            }
+          }
+        } else {
+          notes = `No copay mapping for tier ${tierCode}`
+        }
+      } else {
+        notes = 'No tier mapping - retail price'
+      }
+
+      const insurancePays = Math.max(0, product.retailPrice - patientCopay)
+      const savings = insurancePays
 
       items.push({
-        sku: result.sku,
-        productName: result.displayName,
-        retailPrice: result.retailPrice,
-        patientCopay: result.patientCopay,
-        insurancePays: result.insurancePays,
-        savings: result.savings,
-        tierUsed: result.tierUsed,
-        notes: result.notes,
+        sku: product.sku,
+        productName: product.productName || product.sku,
+        retailPrice: product.retailPrice,
+        patientCopay,
+        insurancePays,
+        savings,
+        tierUsed,
+        notes,
       })
-
-      if (result.warnings) {
-        warnings.push(...result.warnings)
-      }
     }
 
     // Calculate totals
@@ -281,7 +356,7 @@ export async function POST(request: NextRequest) {
       success: true,
       data: {
         customerId: body.customerId,
-        carrier,
+        carrier: carrier.toLowerCase(),
         planName,
         items,
         summary: {
@@ -304,34 +379,15 @@ export async function POST(request: NextRequest) {
   }
 }
 
-/**
- * Map API product type to ProductCategory
- */
-function mapProductType(
-  productType: string
-): ProductCatalogEntry['category'] {
-  switch (productType) {
-    case 'progressive':
-      return 'lens_progressive'
-    case 'ar_coating':
-      return 'ar_coating'
-    case 'frame':
-      return 'frame'
-    case 'lens_sv':
-      return 'lens_sv'
-    case 'material':
-      return 'material'
-    case 'photochromic':
-      return 'photochromic'
-    case 'polarized':
-      return 'polarized'
-    case 'blue_light':
-      return 'blue_light'
-    case 'tint':
-      return 'tint'
-    case 'mount_fee':
-      return 'mount_fee'
+function getTierToCopayMap(carrier: string): Record<string, string> {
+  switch (carrier) {
+    case 'EYEMED':
+      return EYEMED_TIER_TO_COPAY
+    case 'VSP':
+      return VSP_TIER_TO_COPAY
+    case 'SPECTERA':
+      return SPECTERA_TIER_TO_COPAY
     default:
-      return 'other'
+      return {}
   }
 }

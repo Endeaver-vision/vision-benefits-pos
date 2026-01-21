@@ -138,6 +138,18 @@ interface Authorization {
   creditAppliesToContacts?: boolean
   creditAppliesToCoatings?: boolean
   overageDiscountPercent?: number | null  // Discount after credit exhausted (e.g., 0.20 = 20%)
+  eitherOrRestriction?: boolean  // Contacts OR glasses, not both
+  // Unified declining balance object (from API)
+  decliningBalance?: {
+    totalAllowance: number | null
+    appliesTo: string[]
+    overageDiscounts: {
+      frameLensPackage: number
+      contactsConventional: number
+      contactsDisposable: number
+    }
+    eitherOrRestriction: boolean
+  } | null
 
   // ===== PRICING TIERS FOR POS =====
   // Lens copays
@@ -997,18 +1009,28 @@ export function useAuthorizationPricing() {
       }
     }
 
-    const totalCredit = authorization.totalMaterialsCredit ?? 0
-    const overageDiscountRate = authorization.overageDiscountPercent ?? 0
+    // Get total credit from new or legacy fields
+    const totalCredit = authorization.decliningBalance?.totalAllowance
+      ?? authorization.totalMaterialsCredit
+      ?? 0
 
-    // Filter items eligible for credit
+    // Get overage discount rate - use frameLensPackage for eyeglasses, legacy field as fallback
+    const overageDiscountRate = authorization.decliningBalance?.overageDiscounts?.frameLensPackage
+      ? authorization.decliningBalance.overageDiscounts.frameLensPackage / 100
+      : (authorization.overageDiscountPercent ?? 0)
+
+    // Determine what the declining balance applies to
+    const appliesTo = authorization.decliningBalance?.appliesTo ?? ['frame', 'lens', 'lensOptions', 'contacts']
+
+    // Filter items eligible for credit based on appliesTo
     const eligibleItems = items.filter(item => {
       // Exams are always separate - not covered by declining balance credit
       if (item.category === 'exam') return false
 
-      if (item.category === 'frame') return authorization.creditAppliesToFrames !== false
-      if (item.category === 'lens') return authorization.creditAppliesToLenses !== false
-      if (item.category === 'coating' || item.category === 'addon') return authorization.creditAppliesToCoatings !== false
-      if (item.category === 'contact') return authorization.creditAppliesToContacts === true
+      if (item.category === 'frame') return appliesTo.includes('frame') || authorization.creditAppliesToFrames !== false
+      if (item.category === 'lens') return appliesTo.includes('lens') || authorization.creditAppliesToLenses !== false
+      if (item.category === 'coating' || item.category === 'addon') return appliesTo.includes('lensOptions') || authorization.creditAppliesToCoatings !== false
+      if (item.category === 'contact') return appliesTo.includes('contacts') || authorization.creditAppliesToContacts === true
       return false
     })
 
@@ -1022,7 +1044,7 @@ export function useAuthorizationPricing() {
     const creditApplied = Math.min(eligibleRetail, totalCredit)
     const afterCredit = eligibleRetail - creditApplied
 
-    // Apply overage discount to remaining amount
+    // Apply overage discount to remaining amount (overage)
     const overageDiscount = afterCredit * overageDiscountRate
     const eligiblePatientPays = afterCredit - overageDiscount
 

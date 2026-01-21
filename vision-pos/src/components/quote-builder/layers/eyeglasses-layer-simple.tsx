@@ -4,7 +4,7 @@ import { useState, useEffect, useCallback, useMemo } from 'react'
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
 import { Button } from '@/components/ui/button'
 import { Badge } from '@/components/ui/badge'
-import { Check, Loader2, Shield, AlertTriangle, Search, X, Glasses } from 'lucide-react'
+import { Check, Loader2, Shield, AlertTriangle, Search, X, Glasses, Wallet } from 'lucide-react'
 import { Input } from '@/components/ui/input'
 import { Alert, AlertDescription } from '@/components/ui/alert'
 import { useQuotePricingContext } from '@/contexts/quote-pricing-context'
@@ -55,9 +55,10 @@ interface EyeglassesLayerProps {
   className?: string
   onNext?: () => void
   onBack?: () => void
+  onSkipSecondPair?: () => void
 }
 
-export function EyeglassesLayerSimple({ className, onNext, onBack }: EyeglassesLayerProps) {
+export function EyeglassesLayerSimple({ className, onNext, onBack, onSkipSecondPair }: EyeglassesLayerProps) {
   const [showResetConfirm, setShowResetConfirm] = useState(false)
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState<string | null>(null)
@@ -88,6 +89,15 @@ export function EyeglassesLayerSimple({ className, onNext, onBack }: EyeglassesL
   // Show retail-only mode banner ONLY when there's a conflict AND contacts is active
   // This means the user has both glasses and contacts in the quote, and chose contacts for the allowance
   const showRetailOnlyBanner = materialsConflict.hasConflict && materialsConflict.activeBenefit === 'contacts'
+
+  // Check for declining balance plan
+  const isDecliningBalancePlan = authorization?.benefitStructure === 'DECLINING_BALANCE'
+
+  // Check for declining balance either/or restriction
+  const hasEitherOrRestriction = authorization?.eitherOrRestriction || authorization?.decliningBalance?.eitherOrRestriction
+
+  // Show either/or warning for declining balance plans when contacts are already using the allowance
+  const showEitherOrWarning = isDecliningBalancePlan && hasEitherOrRestriction && contactLenses?.enabled && materialsConflict.activeBenefit === 'contacts'
 
   // Products from database
   const [products, setProducts] = useState<ProductsData | null>(null)
@@ -163,6 +173,33 @@ export function EyeglassesLayerSimple({ className, onNext, onBack }: EyeglassesL
       totalSavings: insuranceTotal,
     }
   }, [existingEyeglassItems])
+
+  // Declining balance specific calculations
+  const decliningBalanceInfo = useMemo(() => {
+    if (!isDecliningBalancePlan || !authorization?.decliningBalance) {
+      return null
+    }
+
+    const totalAllowance = authorization.decliningBalance.totalAllowance ?? 0
+    const balanceUsed = eyeglassesSummary.retailTotal
+    const balanceRemaining = Math.max(0, totalAllowance - balanceUsed)
+    const overage = Math.max(0, balanceUsed - totalAllowance)
+    const overageDiscount = authorization.decliningBalance.overageDiscounts.frameLensPackage / 100
+    const overageDiscountAmount = overage * overageDiscount
+    const patientPaysOverage = overage - overageDiscountAmount
+
+    return {
+      totalAllowance,
+      balanceUsed,
+      balanceRemaining,
+      overage,
+      overageDiscount: authorization.decliningBalance.overageDiscounts.frameLensPackage,
+      overageDiscountAmount,
+      patientPaysOverage,
+      patientPaysTotal: patientPaysOverage, // For glasses, patient only pays overage
+      eitherOrRestriction: authorization.decliningBalance.eitherOrRestriction,
+    }
+  }, [isDecliningBalancePlan, authorization, eyeglassesSummary.retailTotal])
 
   // Helper to add product to pricing context
   const addProductToQuote = useCallback((product: Product, category: 'frame' | 'lens' | 'coating' | 'addon') => {
@@ -755,8 +792,86 @@ export function EyeglassesLayerSimple({ className, onNext, onBack }: EyeglassesL
         </Alert>
       )}
 
-      {/* Insurance Mode Banner - When glasses benefit is selected */}
-      {isGlassesInsured && authorization && (
+      {/* Either/Or Warning - Declining balance plans where contacts already selected */}
+      {showEitherOrWarning && (
+        <Alert className="bg-amber-500/20 border-amber-400/50">
+          <AlertTriangle className="h-4 w-4 text-amber-400" />
+          <AlertDescription className="text-amber-200">
+            <strong className="text-amber-300">Declining Balance Plan - Glasses OR Contacts:</strong>{' '}
+            This plan only allows the use of one benefit type per benefit period.
+            <span className="font-semibold text-amber-300"> Contact lenses</span> have already been selected for this allowance.
+            Eyeglasses will be priced at <span className="font-semibold">full retail</span>.
+          </AlertDescription>
+        </Alert>
+      )}
+
+      {/* Declining Balance Tracker - For unified declining balance plans */}
+      {isDecliningBalancePlan && decliningBalanceInfo && (
+        <div className="p-4 rounded-lg bg-gradient-to-r from-amber-500/20 to-orange-500/20 border border-amber-400/50">
+          <div className="flex items-center justify-between mb-3">
+            <div className="flex items-center gap-2">
+              <Wallet className="h-5 w-5 text-amber-400" />
+              <span className="text-amber-300 font-semibold">Declining Balance</span>
+              <Badge variant="outline" className="text-xs border-amber-500 text-amber-400">
+                {authorization?.carrier}
+              </Badge>
+            </div>
+            {decliningBalanceInfo.eitherOrRestriction && (
+              <div className="flex items-center gap-1 text-xs text-amber-400/80">
+                <AlertTriangle className="h-3 w-3" />
+                <span>Glasses OR Contacts only</span>
+              </div>
+            )}
+          </div>
+
+          {/* Balance Progress Bar */}
+          <div className="space-y-2">
+            <div className="flex justify-between text-sm">
+              <span className="text-white/60">Balance Used</span>
+              <span className="text-white font-medium">
+                {formatPrice(decliningBalanceInfo.balanceUsed)} / {formatPrice(decliningBalanceInfo.totalAllowance)}
+              </span>
+            </div>
+            <div className="h-3 bg-white/10 rounded-full overflow-hidden">
+              <div
+                className={`h-full transition-all duration-300 ${
+                  decliningBalanceInfo.overage > 0
+                    ? 'bg-gradient-to-r from-amber-500 to-red-500'
+                    : 'bg-gradient-to-r from-emerald-500 to-amber-500'
+                }`}
+                style={{
+                  width: `${Math.min(100, (decliningBalanceInfo.balanceUsed / decliningBalanceInfo.totalAllowance) * 100)}%`
+                }}
+              />
+            </div>
+            <div className="flex justify-between text-xs">
+              <span className="text-emerald-400">
+                {decliningBalanceInfo.balanceRemaining > 0
+                  ? `${formatPrice(decliningBalanceInfo.balanceRemaining)} remaining`
+                  : 'Allowance used'}
+              </span>
+              {decliningBalanceInfo.overage > 0 && (
+                <span className="text-amber-400">
+                  {formatPrice(decliningBalanceInfo.overage)} over • {decliningBalanceInfo.overageDiscount}% off
+                </span>
+              )}
+            </div>
+          </div>
+
+          {/* Patient Pays Summary */}
+          {decliningBalanceInfo.balanceUsed > 0 && (
+            <div className="mt-3 pt-3 border-t border-white/10 flex justify-between items-center">
+              <span className="text-white/60 text-sm">Patient Pays (Eyeglasses)</span>
+              <span className="text-xl font-bold text-white">
+                {formatPrice(decliningBalanceInfo.patientPaysTotal)}
+              </span>
+            </div>
+          )}
+        </div>
+      )}
+
+      {/* Insurance Mode Banner - When glasses benefit is selected (copay-based plans only) */}
+      {!isDecliningBalancePlan && isGlassesInsured && authorization && (
         <Alert className="bg-emerald-500/20 border-emerald-400/50">
           <Shield className="h-4 w-4 text-emerald-400" />
           <AlertDescription className="text-emerald-200">
@@ -767,16 +882,113 @@ export function EyeglassesLayerSimple({ className, onNext, onBack }: EyeglassesL
       )}
 
 
-      {/* Reset Button */}
-      <div className="flex justify-end">
-        <Button
-          onClick={() => setShowResetConfirm(true)}
-          variant="outline"
-          className="text-red-400 border-red-400/50 hover:bg-red-500/20"
-        >
-          Reset Eyeglasses
-        </Button>
-      </div>
+      {/* Progress Indicator - Shows next action needed */}
+      {(() => {
+        // Determine current status and next action
+        let statusMessage = ''
+        let isComplete = false
+        let stepNumber = 0
+
+        if (!frame && !isPatientOwnedFrame) {
+          statusMessage = 'Select a frame to begin'
+          stepNumber = 1
+        } else if (!lensType) {
+          statusMessage = 'Select lens type'
+          stepNumber = 2
+        } else if (!lensMaterial) {
+          statusMessage = 'Select lens material'
+          stepNumber = 3
+        } else if (!arCoating) {
+          statusMessage = 'Select AR coating (or No Charge)'
+          stepNumber = 4
+        } else if (transitions === null) {
+          statusMessage = 'Select transitions (or None)'
+          stepNumber = 5
+        } else if (!mountFee) {
+          statusMessage = 'Select mount type'
+          stepNumber = 7
+        } else {
+          statusMessage = 'Eyeglasses complete'
+          isComplete = true
+        }
+
+        return (
+          <div className={`sticky top-0 z-10 flex items-center justify-between p-4 rounded-lg border backdrop-blur-sm ${
+            isComplete
+              ? 'bg-emerald-500/30 border-emerald-400/50'
+              : 'bg-amber-500/30 border-amber-400/50'
+          }`}>
+            <div className="flex items-center gap-3">
+              {!isComplete ? (
+                <>
+                  <div className="flex items-center justify-center w-8 h-8 rounded-full bg-amber-500 text-white font-bold text-sm">
+                    {stepNumber}
+                  </div>
+                  <div>
+                    <div className="text-lg font-semibold text-amber-300">
+                      {statusMessage}
+                    </div>
+                    <div className="text-white/50 text-xs">
+                      Polarized and Add-ons are optional
+                    </div>
+                  </div>
+                </>
+              ) : (
+                <>
+                  <div className="flex items-center justify-center w-8 h-8 rounded-full bg-emerald-500 text-white font-bold">
+                    <Check className="h-5 w-5" />
+                  </div>
+                  <div>
+                    <div className="text-lg font-semibold text-emerald-300">
+                      {statusMessage}
+                    </div>
+                    <div className="text-emerald-400/70 text-xs">
+                      You can add optional items or continue
+                    </div>
+                  </div>
+                </>
+              )}
+            </div>
+            <div className="flex items-center gap-2">
+              {onBack && (
+                <Button
+                  onClick={onBack}
+                  variant="outline"
+                  size="sm"
+                >
+                  ← Back
+                </Button>
+              )}
+              {isComplete && onNext && (
+                <Button
+                  onClick={onNext}
+                  className="bg-emerald-600 hover:bg-emerald-700"
+                >
+                  Continue →
+                </Button>
+              )}
+              {!isComplete && onNext && (
+                <Button
+                  onClick={onNext}
+                  variant="outline"
+                  size="sm"
+                  className="text-white/70 border-white/30"
+                >
+                  Skip Eyeglasses
+                </Button>
+              )}
+              <Button
+                onClick={() => setShowResetConfirm(true)}
+                variant="ghost"
+                size="sm"
+                className="text-red-400 hover:bg-red-500/20"
+              >
+                Reset
+              </Button>
+            </div>
+          </div>
+        )
+      })()}
 
       {/* Reset Confirmation Dialog */}
       {showResetConfirm && (
@@ -1042,14 +1254,6 @@ export function EyeglassesLayerSimple({ className, onNext, onBack }: EyeglassesL
                         </div>
                       </div>
                     )}
-                    {/* Show tier badge if from price list */}
-                    {priceListInfo.tier && (
-                      <div className="absolute top-3 left-3">
-                        <Badge className="bg-blue-500/30 text-blue-300 text-xs border-blue-400/50">
-                          {priceListInfo.tier}
-                        </Badge>
-                      </div>
-                    )}
                     <div className="text-lg font-semibold mb-1 text-white">{product.name}</div>
                     {product.notes && (
                       <div className="text-xs text-yellow-400 mb-2">{product.notes}</div>
@@ -1183,6 +1387,7 @@ export function EyeglassesLayerSimple({ className, onNext, onBack }: EyeglassesL
             <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-5 gap-4">
               {products.lensMaterial?.map((product) => {
                 const insurancePricing = getInsurancePricing(product.sku || product.id)
+                const priceListInfo = getProductDisplayPrice(product)
                 const isSelected = lensMaterial === product.id
                 return (
                   <button
@@ -1191,7 +1396,9 @@ export function EyeglassesLayerSimple({ className, onNext, onBack }: EyeglassesL
                     className={`relative p-5 rounded-lg border-2 transition-all text-left ${
                       isSelected
                         ? 'border-emerald-400 bg-emerald-500/30'
-                        : 'border-white/20 hover:border-white/40 bg-white/10'
+                        : priceListInfo.needsPricing
+                          ? 'border-yellow-400/50 hover:border-yellow-400 bg-yellow-500/10'
+                          : 'border-white/20 hover:border-white/40 bg-white/10'
                     }`}
                   >
                     {isSelected && (
@@ -1204,7 +1411,30 @@ export function EyeglassesLayerSimple({ className, onNext, onBack }: EyeglassesL
                     <div className="text-lg font-semibold mb-2 text-white">{product.name}</div>
                     {product.price === 0 ? (
                       <div className="text-2xl font-bold text-emerald-400">Included</div>
+                    ) : priceListInfo.hasPriceListEntry ? (
+                      /* Price List pricing (pre-computed) */
+                      <div className="space-y-1">
+                        <div className="text-sm text-white/60 line-through">
+                          {formatPrice(priceListInfo.retailPrice)}
+                        </div>
+                        {priceListInfo.patientPays !== null ? (
+                          <div className="text-2xl font-bold text-emerald-400">
+                            {formatPrice(priceListInfo.patientPays)}
+                          </div>
+                        ) : (
+                          <div className="text-lg font-bold text-yellow-400">
+                            <AlertTriangle className="h-4 w-4 inline mr-1" />
+                            Needs pricing
+                          </div>
+                        )}
+                        {priceListInfo.insuranceSavings > 0 && (
+                          <div className="text-xs text-emerald-400">
+                            Saves: {formatPrice(priceListInfo.insuranceSavings)}
+                          </div>
+                        )}
+                      </div>
                     ) : authorization ? (
+                      /* Real-time pricing fallback */
                       <div className="space-y-1">
                         <div className="text-sm text-white/60 line-through">
                           {formatPrice(product.price)}
@@ -1224,8 +1454,8 @@ export function EyeglassesLayerSimple({ className, onNext, onBack }: EyeglassesL
                         {formatPrice(product.price)}
                       </div>
                     )}
-                    {/* Show insurance savings if selected */}
-                    {isSelected && insurancePricing && insurancePricing.savings > 0 && (
+                    {/* Show insurance savings if selected (real-time fallback) */}
+                    {isSelected && insurancePricing && !priceListInfo.hasPriceListEntry && insurancePricing.savings > 0 && (
                       <div className="mt-2 pt-2 border-t border-white/20">
                         <div className="text-xs text-emerald-400">
                           Insurance saves: {formatPrice(insurancePricing.insurancePays)}
@@ -1270,14 +1500,6 @@ export function EyeglassesLayerSimple({ className, onNext, onBack }: EyeglassesL
                         <div className="bg-orange-500 rounded-full p-1">
                           <Check className="h-4 w-4 text-white" />
                         </div>
-                      </div>
-                    )}
-                    {/* Show tier badge if from price list */}
-                    {priceListInfo.tier && (
-                      <div className="absolute top-3 left-3">
-                        <Badge className="bg-orange-500/30 text-orange-300 text-xs border-orange-400/50">
-                          {priceListInfo.tier}
-                        </Badge>
                       </div>
                     )}
                     <div className="text-lg font-semibold mb-1 text-white">{product.name}</div>
@@ -1397,6 +1619,7 @@ export function EyeglassesLayerSimple({ className, onNext, onBack }: EyeglassesL
             <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
               {products.transitions?.map((product) => {
                 const insurancePricing = getInsurancePricing(product.sku || product.id)
+                const priceListInfo = getProductDisplayPrice(product)
                 const isSelected = transitions === product.id
                 return (
                   <button
@@ -1418,7 +1641,31 @@ export function EyeglassesLayerSimple({ className, onNext, onBack }: EyeglassesL
                     <div className="text-lg font-semibold mb-2 text-white">{product.name}</div>
                     {product.price === 0 ? (
                       <div className="text-2xl font-bold text-purple-400">No charge</div>
+                    ) : priceListInfo.hasPriceListEntry ? (
+                      /* Price List pricing (pre-computed) */
+                      <div className="space-y-1">
+                        <div className="text-sm text-white/60 line-through">
+                          {formatPrice(priceListInfo.retailPrice)}
+                        </div>
+                        {priceListInfo.patientPays !== null ? (
+                          <div className="text-2xl font-bold text-emerald-400">
+                            {formatPrice(priceListInfo.patientPays)}
+                          </div>
+                        ) : (
+                          <div className="text-2xl font-bold text-purple-400">
+                            Needs pricing
+                          </div>
+                        )}
+                        {priceListInfo.insuranceSavings > 0 && (
+                          <div className="mt-2 pt-2 border-t border-white/20">
+                            <div className="text-xs text-emerald-400">
+                              Insurance saves: {formatPrice(priceListInfo.insuranceSavings)}
+                            </div>
+                          </div>
+                        )}
+                      </div>
                     ) : authorization ? (
+                      /* Real-time pricing fallback */
                       <div className="space-y-1">
                         <div className="text-sm text-white/60 line-through">
                           {formatPrice(product.price)}
@@ -1438,8 +1685,8 @@ export function EyeglassesLayerSimple({ className, onNext, onBack }: EyeglassesL
                         {formatPrice(product.price)}
                       </div>
                     )}
-                    {/* Show insurance savings if selected */}
-                    {isSelected && insurancePricing && insurancePricing.savings > 0 && (
+                    {/* Show insurance savings if selected (real-time fallback) */}
+                    {!priceListInfo.hasPriceListEntry && isSelected && insurancePricing && insurancePricing.savings > 0 && (
                       <div className="mt-2 pt-2 border-t border-white/20">
                         <div className="text-xs text-emerald-400">
                           Insurance saves: {formatPrice(insurancePricing.insurancePays)}
@@ -1454,83 +1701,17 @@ export function EyeglassesLayerSimple({ className, onNext, onBack }: EyeglassesL
         </Card>
       )}
 
-      {/* Step 6: Polarized */}
-      {(transitions || polarized) && (
+      {/* Step 6: Mount Type */}
+      {(transitions !== null || mountFee) && (
         <Card>
           <CardHeader>
-            <CardTitle className="text-lg text-white">Step 6: Polarized</CardTitle>
-          </CardHeader>
-          <CardContent className="space-y-3">
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-              {products.polarized?.map((product) => {
-                const insurancePricing = getInsurancePricing(product.sku || product.id)
-                const isSelected = polarized === product.id
-                return (
-                  <button
-                    key={product.id}
-                    onClick={() => handlePolarizedSelect(product)}
-                    className={`relative p-5 rounded-lg border-2 transition-all text-left ${
-                      isSelected
-                        ? 'border-cyan-400 bg-cyan-500/30'
-                        : 'border-white/20 hover:border-white/40 bg-white/10'
-                    }`}
-                  >
-                    {isSelected && (
-                      <div className="absolute top-3 right-3">
-                        <div className="bg-cyan-500 rounded-full p-1">
-                          <Check className="h-4 w-4 text-white" />
-                        </div>
-                      </div>
-                    )}
-                    <div className="text-lg font-semibold mb-2 text-white">{product.name}</div>
-                    {product.price === 0 ? (
-                      <div className="text-2xl font-bold text-cyan-400">No charge</div>
-                    ) : authorization ? (
-                      <div className="space-y-1">
-                        <div className="text-sm text-white/60 line-through">
-                          {formatPrice(product.price)}
-                        </div>
-                        {isSelected && insurancePricing ? (
-                          <div className="text-2xl font-bold text-emerald-400">
-                            {formatPrice(insurancePricing.patientPays)}
-                          </div>
-                        ) : (
-                          <div className="text-2xl font-bold text-cyan-400">
-                            Select to see price
-                          </div>
-                        )}
-                      </div>
-                    ) : (
-                      <div className="text-2xl font-bold text-cyan-400">
-                        {formatPrice(product.price)}
-                      </div>
-                    )}
-                    {/* Show insurance savings if selected */}
-                    {isSelected && insurancePricing && insurancePricing.savings > 0 && (
-                      <div className="mt-2 pt-2 border-t border-white/20">
-                        <div className="text-xs text-emerald-400">
-                          Insurance saves: {formatPrice(insurancePricing.insurancePays)}
-                        </div>
-                      </div>
-                    )}
-                  </button>
-                )
-              })}
-            </div>
-          </CardContent>
-        </Card>
-      )}
-
-      {/* Step 7: Mount Fee */}
-      {(polarized || mountFee) && (
-        <Card>
-          <CardHeader>
-            <CardTitle className="text-lg text-white">Step 7: Select Mount Type</CardTitle>
+            <CardTitle className="text-lg text-white">Step 6: Select Mount Type</CardTitle>
           </CardHeader>
           <CardContent className="space-y-3">
             <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
               {products.mountFee?.map((product) => {
                 const insurancePricing = getInsurancePricing(product.sku || product.id)
+                const priceListInfo = getProductDisplayPrice(product)
                 const isSelected = mountFee === product.id
                 return (
                   <button
@@ -1552,7 +1733,31 @@ export function EyeglassesLayerSimple({ className, onNext, onBack }: EyeglassesL
                     <div className="text-lg font-semibold mb-2 text-white">{product.name}</div>
                     {product.price === 0 ? (
                       <div className="text-2xl font-bold text-pink-400">Included</div>
+                    ) : priceListInfo.hasPriceListEntry ? (
+                      /* Price List pricing (pre-computed) */
+                      <div className="space-y-1">
+                        <div className="text-sm text-white/60 line-through">
+                          {formatPrice(priceListInfo.retailPrice)}
+                        </div>
+                        {priceListInfo.patientPays !== null ? (
+                          <div className="text-2xl font-bold text-emerald-400">
+                            {formatPrice(priceListInfo.patientPays)}
+                          </div>
+                        ) : (
+                          <div className="text-2xl font-bold text-pink-400">
+                            Needs pricing
+                          </div>
+                        )}
+                        {priceListInfo.insuranceSavings > 0 && (
+                          <div className="mt-2 pt-2 border-t border-white/20">
+                            <div className="text-xs text-emerald-400">
+                              Insurance saves: {formatPrice(priceListInfo.insuranceSavings)}
+                            </div>
+                          </div>
+                        )}
+                      </div>
                     ) : authorization ? (
+                      /* Real-time pricing fallback */
                       <div className="space-y-1">
                         <div className="text-sm text-white/60 line-through">
                           {formatPrice(product.price)}
@@ -1572,8 +1777,8 @@ export function EyeglassesLayerSimple({ className, onNext, onBack }: EyeglassesL
                         {formatPrice(product.price)}
                       </div>
                     )}
-                    {/* Show insurance savings if selected */}
-                    {isSelected && insurancePricing && insurancePricing.savings > 0 && (
+                    {/* Show insurance savings if selected (real-time fallback) */}
+                    {!priceListInfo.hasPriceListEntry && isSelected && insurancePricing && insurancePricing.savings > 0 && (
                       <div className="mt-2 pt-2 border-t border-white/20">
                         <div className="text-xs text-emerald-400">
                           Insurance saves: {formatPrice(insurancePricing.insurancePays)}
@@ -1592,12 +1797,16 @@ export function EyeglassesLayerSimple({ className, onNext, onBack }: EyeglassesL
       {(mountFee || addons.length > 0) && (
         <Card>
           <CardHeader>
-            <CardTitle className="text-lg text-white">Step 8: Select Add-ons</CardTitle>
+            <CardTitle className="text-lg text-white">Step 7: Select Add-ons</CardTitle>
           </CardHeader>
           <CardContent className="space-y-3">
             <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
-              {products.addons?.map((product) => {
+              {products.addons?.filter(p =>
+                // Never show tech addons as selectable options - they only appear via VSP auto-add
+                !p.name.toLowerCase().includes('tech add-on')
+              ).map((product) => {
                 const insurancePricing = getInsurancePricing(product.sku || product.id)
+                const priceListInfo = getProductDisplayPrice(product)
                 const isSelected = addons.includes(product.id)
                 const isPrism = product.id === 'preferred-prism' || product.name.toLowerCase().includes('prism (per diopter)')
                 const displayPrice = isPrism ? product.price * prismDiopters : product.price
@@ -1607,7 +1816,9 @@ export function EyeglassesLayerSimple({ className, onNext, onBack }: EyeglassesL
                     className={`relative p-5 rounded-lg border-2 transition-all text-left cursor-pointer ${
                       isSelected
                         ? 'border-emerald-400 bg-emerald-500/30'
-                        : 'border-white/20 hover:border-white/40 bg-white/10'
+                        : priceListInfo.needsPricing
+                          ? 'border-yellow-400/50 hover:border-yellow-400 bg-yellow-500/10'
+                          : 'border-white/20 hover:border-white/40 bg-white/10'
                     }`}
                     onClick={() => !isPrism || !isSelected ? handleAddonToggle(product) : undefined}
                   >
@@ -1638,7 +1849,30 @@ export function EyeglassesLayerSimple({ className, onNext, onBack }: EyeglassesL
 
                     {product.price === 0 ? (
                       <div className="text-2xl font-bold text-emerald-400">Included</div>
+                    ) : priceListInfo.hasPriceListEntry ? (
+                      /* Price List pricing (pre-computed) */
+                      <div className="space-y-1">
+                        <div className="text-sm text-white/60 line-through">
+                          +{formatPrice(priceListInfo.retailPrice)}
+                        </div>
+                        {priceListInfo.patientPays !== null ? (
+                          <div className="text-2xl font-bold text-emerald-400">
+                            +{formatPrice(priceListInfo.patientPays)}
+                          </div>
+                        ) : (
+                          <div className="text-lg font-bold text-yellow-400">
+                            <AlertTriangle className="h-4 w-4 inline mr-1" />
+                            Needs pricing
+                          </div>
+                        )}
+                        {priceListInfo.insuranceSavings > 0 && (
+                          <div className="text-xs text-emerald-400">
+                            Saves: {formatPrice(priceListInfo.insuranceSavings)}
+                          </div>
+                        )}
+                      </div>
                     ) : authorization ? (
+                      /* Real-time pricing fallback */
                       <div className="space-y-1">
                         <div className="text-sm text-white/60 line-through">
                           +{formatPrice(displayPrice)}
@@ -1658,8 +1892,8 @@ export function EyeglassesLayerSimple({ className, onNext, onBack }: EyeglassesL
                         +{formatPrice(displayPrice)}
                       </div>
                     )}
-                    {/* Show insurance savings if selected */}
-                    {isSelected && insurancePricing && insurancePricing.savings > 0 && (
+                    {/* Show insurance savings if selected (real-time fallback) */}
+                    {isSelected && insurancePricing && !priceListInfo.hasPriceListEntry && insurancePricing.savings > 0 && (
                       <div className="mt-2 pt-2 border-t border-white/20">
                         <div className="text-xs text-emerald-400">
                           Insurance saves: {formatPrice(insurancePricing.insurancePays)}
@@ -1687,94 +1921,107 @@ export function EyeglassesLayerSimple({ className, onNext, onBack }: EyeglassesL
         </Card>
       )}
 
-      {/* Total */}
+      {/* Eyeglasses Total Summary + Navigation */}
       {(frame || isPatientOwnedFrame) && (
         <Card className="bg-white/20">
           <CardContent className="p-6">
             <div className="flex items-center justify-between">
               <div>
                 {authorization ? (
-                  <>
-                    <div className="text-sm text-white/70 mb-1">Eyeglasses Retail</div>
-                    <div className="text-xl text-white/60 line-through">{formatPrice(eyeglassesSummary.retailTotal)}</div>
-                    <div className="flex items-center gap-3 mt-2">
-                      <div>
-                        <div className="text-sm text-emerald-400">Insurance saves</div>
-                        <div className="text-lg font-semibold text-emerald-400">{formatPrice(eyeglassesSummary.insuranceTotal)}</div>
-                      </div>
-                      <div>
-                        <div className="text-sm text-amber-400">Eyeglasses Total</div>
-                        <div className="text-3xl font-bold text-amber-400">
-                          {isCalculating ? (
-                            <Loader2 className="h-6 w-6 animate-spin inline" />
-                          ) : (
-                            formatPrice(eyeglassesSummary.patientTotal)
-                          )}
-                        </div>
+                  <div className="flex items-center gap-6">
+                    <div>
+                      <div className="text-sm text-white/70 mb-1">Eyeglasses Retail</div>
+                      <div className="text-xl text-white/60 line-through">{formatPrice(eyeglassesSummary.retailTotal)}</div>
+                    </div>
+                    <div>
+                      <div className="text-sm text-emerald-400">Insurance saves</div>
+                      <div className="text-lg font-semibold text-emerald-400">{formatPrice(eyeglassesSummary.insuranceTotal)}</div>
+                    </div>
+                    <div>
+                      <div className="text-sm text-amber-400">You Pay</div>
+                      <div className="text-3xl font-bold text-amber-400">
+                        {isCalculating ? (
+                          <Loader2 className="h-6 w-6 animate-spin inline" />
+                        ) : (
+                          formatPrice(eyeglassesSummary.patientTotal)
+                        )}
                       </div>
                     </div>
-                  </>
+                  </div>
                 ) : (
-                  <>
-                    <div className="text-sm text-white/70 mb-1">Eyeglasses Total</div>
+                  <div className="flex items-center gap-4">
+                    <div className="text-sm text-white/70">Eyeglasses Total:</div>
                     <div className="text-3xl font-bold text-white">{formatPrice(calculateTotal())}</div>
-                  </>
+                  </div>
                 )}
               </div>
-              {mountFee && (
-                <div className="flex gap-3">
-                  {onBack && (
-                    <Button
-                      onClick={onBack}
-                      variant="outline"
-                      size="lg"
-                    >
-                      Back
-                    </Button>
-                  )}
-                  {onNext && (
-                    <Button
-                      onClick={onNext}
-                      size="lg"
-                    >
-                      Continue to Second Pair
-                    </Button>
-                  )}
-                </div>
-              )}
-            </div>
-          </CardContent>
-        </Card>
-      )}
 
-      {/* Skip Eyeglasses - Show when no frame selected */}
-      {!frame && !isPatientOwnedFrame && onNext && (
-        <Card className="glass-card border-white/20 bg-white/10">
-          <CardContent className="p-6">
-            <div className="flex items-center justify-between">
-              <div className="text-white/70">
-                <div className="font-medium text-white">No eyeglasses selected</div>
-                <div className="text-sm">You can skip eyeglasses and proceed to contact lenses or review.</div>
-              </div>
+              {/* Navigation buttons */}
               <div className="flex gap-3">
                 {onBack && (
                   <Button
                     onClick={onBack}
                     variant="outline"
-                    size="lg"
+                    className="border-white/30 text-white hover:bg-white/10"
                   >
                     Back
                   </Button>
                 )}
+                {onSkipSecondPair && (
+                  <Button
+                    onClick={onSkipSecondPair}
+                    variant="outline"
+                    className="border-white/30 text-white hover:bg-white/10"
+                  >
+                    Skip Second Pair
+                  </Button>
+                )}
+                {onNext && (
+                  <Button
+                    onClick={onNext}
+                    className="bg-gradient-to-r from-blue-600 to-indigo-600 hover:from-blue-700 hover:to-indigo-700"
+                  >
+                    Continue to Second Pair
+                  </Button>
+                )}
+              </div>
+            </div>
+          </CardContent>
+        </Card>
+      )}
+
+      {/* Navigation when no frame selected yet */}
+      {!frame && !isPatientOwnedFrame && (onBack || onNext || onSkipSecondPair) && (
+        <Card className="bg-white/10">
+          <CardContent className="p-4">
+            <div className="flex justify-end gap-3">
+              {onBack && (
+                <Button
+                  onClick={onBack}
+                  variant="outline"
+                  className="border-white/30 text-white hover:bg-white/10"
+                >
+                  Back
+                </Button>
+              )}
+              {onSkipSecondPair && (
+                <Button
+                  onClick={onSkipSecondPair}
+                  variant="outline"
+                  className="border-white/30 text-white hover:bg-white/10"
+                >
+                  Skip to Contacts
+                </Button>
+              )}
+              {onNext && (
                 <Button
                   onClick={onNext}
                   variant="outline"
-                  size="lg"
-                  className="border-amber-400/50 text-amber-400 hover:bg-amber-500/20"
+                  className="border-white/30 text-white hover:bg-white/10"
                 >
-                  Skip Eyeglasses →
+                  Continue to Second Pair
                 </Button>
-              </div>
+              )}
             </div>
           </CardContent>
         </Card>
