@@ -32,8 +32,9 @@ import {
 import { Textarea } from '@/components/ui/textarea'
 import {
   Shield, Edit, Save, X, FileSearch, Sparkles, Loader2, RefreshCw,
-  DollarSign, Clock, CheckCircle, AlertTriangle, History
+  DollarSign, Clock, CheckCircle, AlertTriangle, History, Download, Grid3X3
 } from 'lucide-react'
+import { buildVspPriceMatrix, PROGRESSIVE_TIER_LABELS, MATERIAL_CODE_LABELS, TIER_TO_PRODUCT_NAMES, MATERIAL_TO_PRODUCT_NAMES, ProgressiveTier, MaterialCode } from '@/lib/services/vsp-matrix-lookup'
 import InsuranceSelector, { InsuranceData } from '@/components/insurance-selector'
 import { useToast } from '@/components/ui/use-toast'
 import { InlineScanner } from '@/components/scanner'
@@ -371,8 +372,74 @@ export default function CustomerInsurancePricing({
     }
   }
 
+  // VSP-specific product display logic
+  const getVspProductDisplay = (product: Product, copays: Record<string, number | string | null> | undefined): {
+    text: string;
+    subtext?: string;
+    color: string;
+    badge?: string;
+  } | null => {
+    if (!copays) return null
+
+    const productNameLower = product.name.toLowerCase()
+
+    // Materials that depend on progressive selection (show "See Matrix")
+    // Trivex, Hi-Index 1.67, Hi-Index 1.74 - these have different SV/MF prices AND depend on progressive tier
+    if (productNameLower.includes('trivex') ||
+        productNameLower.includes('hi-index 1.67') ||
+        productNameLower.includes('hi-index 1.74') ||
+        productNameLower.includes('1.67') ||
+        productNameLower.includes('1.74')) {
+      return {
+        text: 'See Matrix',
+        subtext: 'depends on lens type',
+        color: 'text-blue-400',
+        badge: 'Matrix'
+      }
+    }
+
+    // Polycarbonate - flat $35 across all progressives
+    if (productNameLower.includes('polycarbonate') && !productNameLower.includes('plus')) {
+      const polyPrice = copays['AD'] ?? copays['AD_sv'] ?? 35
+      return {
+        text: formatPrice(typeof polyPrice === 'number' ? polyPrice : 35),
+        subtext: 'flat copay',
+        color: 'text-emerald-400'
+      }
+    }
+
+    // Polarized (DA) - different SV/MF pricing
+    if (productNameLower.includes('polarized')) {
+      const svPrice = copays['DA_sv'] ?? copays['DE_sv'] ?? 57
+      const mfPrice = copays['DA'] ?? copays['DE'] ?? 77
+      return {
+        text: `SV: $${svPrice} / MF: $${mfPrice}`,
+        color: 'text-purple-400'
+      }
+    }
+
+    // Technical Add-On (TA) - different SV/MF pricing
+    if (productNameLower.includes('tech') && productNameLower.includes('add')) {
+      const svPrice = copays['TA_sv'] ?? 10
+      const mfPrice = copays['TA'] ?? 40
+      return {
+        text: `SV: $${svPrice} / MF: $${mfPrice}`,
+        color: 'text-purple-400'
+      }
+    }
+
+    // Return null for products that should use default display
+    return null
+  }
+
   // Format special pricing values for display
-  const formatYouPay = (product: Product): { text: string; subtext?: string; color: string } => {
+  const formatYouPay = (product: Product): { text: string; subtext?: string; color: string; badge?: string } => {
+    // Check for VSP-specific display first
+    if (effectiveCarrier === 'VSP' && authData?.copays) {
+      const vspDisplay = getVspProductDisplay(product, authData.copays)
+      if (vspDisplay) return vspDisplay
+    }
+
     if (product.customerPrice === null) {
       return { text: 'At retail', subtext: formatPrice(product.retailPrice), color: 'text-amber-400' }
     }
@@ -417,6 +484,86 @@ export default function CustomerInsurancePricing({
   const hasInsurance = (customer.insuranceCarrier && customer.insuranceCarrier !== 'None') || authData !== null
   const effectiveCarrier = authData?.carrier?.toUpperCase() || customer.insuranceCarrier?.toUpperCase() || null
 
+  // Export price list to CSV - grouped by category
+  const exportPriceList = () => {
+    // Define logical category order for optical products
+    const categoryOrder = [
+      'Single Vision',
+      'Bifocal',
+      'Progressive Lenses',
+      'Lens Materials',
+      'AR Coatings',
+      'Photochromic',
+      'Add-ons',
+      'Mount Fees',
+      'Contact Lenses',
+      'Exams',
+      'Services'
+    ]
+
+    // Group products by category
+    const grouped = products.reduce((acc, product) => {
+      if (!acc[product.category]) acc[product.category] = []
+      acc[product.category].push(product)
+      return acc
+    }, {} as Record<string, Product[]>)
+
+    // Sort categories by defined order, unknown categories go at the end
+    const sortedCategories = Object.keys(grouped).sort((a, b) => {
+      const indexA = categoryOrder.indexOf(a)
+      const indexB = categoryOrder.indexOf(b)
+      if (indexA === -1 && indexB === -1) return a.localeCompare(b)
+      if (indexA === -1) return 1
+      if (indexB === -1) return -1
+      return indexA - indexB
+    })
+
+    // Build rows with category headers
+    const rows: string[][] = []
+    const headers = ['Product', 'Category', 'SKU', 'Retail Price', 'Customer Price', 'Savings', 'Tier', 'Carrier']
+
+    for (const category of sortedCategories) {
+      const categoryProducts = grouped[category].sort((a, b) => a.name.localeCompare(b.name))
+
+      // Add category header row
+      rows.push([`--- ${category} (${categoryProducts.length}) ---`, '', '', '', '', '', '', ''])
+
+      // Add products in this category
+      for (const p of categoryProducts) {
+        rows.push([
+          p.name,
+          p.category,
+          p.sku || '',
+          p.retailPrice.toFixed(2),
+          p.customerPrice !== null ? p.customerPrice.toFixed(2) : 'N/A',
+          p.savings > 0 ? p.savings.toFixed(2) : '0.00',
+          p.insuranceTier || '',
+          p.insuranceCarrier || 'Cash'
+        ])
+      }
+    }
+
+    const customerName = authData?.patientName || 'Customer'
+    const csvContent = [
+      `Price List for ${customerName}`,
+      `Generated: ${new Date().toLocaleDateString()}`,
+      `Insurance: ${effectiveCarrier || 'None'}`,
+      '',
+      headers.join(','),
+      ...rows.map(row => row.map(cell => `"${cell}"`).join(','))
+    ].join('\n')
+
+    const blob = new Blob([csvContent], { type: 'text/csv;charset=utf-8;' })
+    const link = document.createElement('a')
+    const url = URL.createObjectURL(blob)
+    link.setAttribute('href', url)
+    link.setAttribute('download', `price-list-${customerName.replace(/\s+/g, '-')}-${new Date().toISOString().split('T')[0]}.csv`)
+    link.style.visibility = 'hidden'
+    document.body.appendChild(link)
+    link.click()
+    document.body.removeChild(link)
+  }
+
   // Filter products
   const categories = Array.from(new Set(products.map(p => p.category)))
   const filteredProducts = products.filter(product => {
@@ -435,95 +582,6 @@ export default function CustomerInsurancePricing({
 
   return (
     <div className="space-y-4">
-      {/* Compact Insurance Header */}
-      <Card>
-        <CardContent className="py-4">
-          <div className="flex items-center justify-between">
-            <div className="flex items-center gap-4">
-              <Shield className="h-5 w-5 text-blue-500" />
-              {loadingAuth ? (
-                <span className="text-muted-foreground">Loading...</span>
-              ) : hasInsurance ? (
-                <>
-                  <Badge className={`${getCarrierColor(effectiveCarrier)} text-white`}>
-                    {effectiveCarrier}
-                  </Badge>
-                  <span className="text-sm text-muted-foreground">
-                    {authData?.planName || 'Insurance Plan'}
-                  </span>
-                  {(customer.memberId || authData?.memberId) && (
-                    <>
-                      <span className="text-muted-foreground">|</span>
-                      <span className="text-sm">Member: {customer.memberId || authData?.memberId}</span>
-                    </>
-                  )}
-                </>
-              ) : (
-                <span className="text-muted-foreground">No insurance on file</span>
-              )}
-            </div>
-            <div className="flex items-center gap-2">
-              <Button size="sm" variant="outline" onClick={() => setShowScanner(!showScanner)}>
-                <FileSearch className="h-4 w-4 mr-2" />
-                {showScanner ? 'Hide Scanner' : 'Scan Document'}
-              </Button>
-              <Button size="sm" variant="ghost" onClick={() => setIsEditing(true)}>
-                <Edit className="h-4 w-4" />
-              </Button>
-            </div>
-          </div>
-
-          {/* Benefits Summary Row */}
-          {authData && (
-            <div className="mt-4 pt-4 border-t border-border">
-              <div className="flex flex-wrap gap-4 text-sm">
-                <div className="flex items-center gap-2">
-                  <span className="text-muted-foreground">Exam:</span>
-                  <span className="font-semibold text-emerald-400">{formatPrice(authData.examCopay)}</span>
-                </div>
-                <div className="flex items-center gap-2">
-                  <span className="text-muted-foreground">CL Fit:</span>
-                  <span className="font-semibold text-emerald-400">
-                    {typeof authData.contactFittingCopay === 'number'
-                      ? formatPrice(authData.contactFittingCopay)
-                      : formatContactBenefit(authData.contactFittingCopay)}
-                  </span>
-                </div>
-                <div className="flex items-center gap-2">
-                  <span className="text-muted-foreground">Materials:</span>
-                  <span className="font-semibold text-blue-400">{formatPrice(authData.materialsCopay)}</span>
-                </div>
-                <div className="flex items-center gap-2">
-                  <span className="text-muted-foreground">Frame:</span>
-                  <span className="font-semibold text-amber-400">
-                    {formatPrice(authData.frameAllowance)}
-                  </span>
-                  {authData.frameOveragePercent && (
-                    <Badge variant="outline" className="text-[10px] px-1.5 py-0 h-5 border-amber-500 text-amber-400">
-                      {authData.frameOveragePercent}% off overage
-                    </Badge>
-                  )}
-                </div>
-                <div className="flex items-center gap-2">
-                  <span className="text-muted-foreground">CL:</span>
-                  <span className="font-semibold text-purple-400">{formatPrice(authData.contactAllowance)}</span>
-                  {authData.isContactDecliningBalance && (
-                    <Badge variant="outline" className="text-[10px] px-1.5 py-0 h-5 border-purple-500 text-purple-400">
-                      Declining
-                    </Badge>
-                  )}
-                </div>
-              </div>
-              {authData.contactLensCost && (
-                <div className="mt-2 text-xs text-muted-foreground">
-                  Contact lens overage: {formatContactBenefit(authData.contactLensCost)}
-                </div>
-              )}
-            </div>
-          )}
-        </CardContent>
-      </Card>
-
       {/* Scanner (collapsible) */}
       {showScanner && (
         <Card>
@@ -576,19 +634,111 @@ export default function CustomerInsurancePricing({
         </Card>
       )}
 
-      {/* Main Tabs */}
-      <Tabs defaultValue="price-list" className="w-full">
-        <TabsList className="grid w-full grid-cols-2">
-          <TabsTrigger value="price-list">Products</TabsTrigger>
-          <TabsTrigger value="history" onClick={() => !priceListHistory.length && fetchHistory()}>
-            History
-          </TabsTrigger>
-        </TabsList>
+      {/* Unified Price List Card - Insurance Header + Products Together */}
+      <Card>
+        <CardContent className="pt-4">
+          {/* Insurance Header Row */}
+          <div className="flex items-center justify-between mb-4">
+            <div className="flex items-center gap-4">
+              <Shield className="h-5 w-5 text-blue-500" />
+              {loadingAuth ? (
+                <span className="text-muted-foreground">Loading...</span>
+              ) : hasInsurance ? (
+                <>
+                  <Badge className={`${getCarrierColor(effectiveCarrier)} text-white`}>
+                    {effectiveCarrier}
+                  </Badge>
+                  <span className="text-sm text-muted-foreground">
+                    {authData?.planName || 'Insurance Plan'}
+                  </span>
+                  {(customer.memberId || authData?.memberId) && (
+                    <>
+                      <span className="text-muted-foreground">|</span>
+                      <span className="text-sm">Member: {customer.memberId || authData?.memberId}</span>
+                    </>
+                  )}
+                </>
+              ) : (
+                <span className="text-muted-foreground">No insurance on file</span>
+              )}
+            </div>
+            <div className="flex items-center gap-2">
+              <Button size="sm" variant="outline" onClick={() => setShowScanner(!showScanner)}>
+                <FileSearch className="h-4 w-4 mr-2" />
+                {showScanner ? 'Hide Scanner' : 'Scan Document'}
+              </Button>
+              <Button size="sm" variant="ghost" onClick={() => setIsEditing(true)}>
+                <Edit className="h-4 w-4" />
+              </Button>
+            </div>
+          </div>
 
-        {/* Products Tab */}
-        <TabsContent value="price-list" className="space-y-4">
-          <Card>
-            <CardContent className="pt-4">
+          {/* Benefits Summary Row */}
+          {authData && (
+            <div className="mb-4 pb-4 border-b border-border">
+              <div className="flex flex-wrap gap-4 text-sm">
+                <div className="flex items-center gap-2">
+                  <span className="text-muted-foreground">Exam:</span>
+                  <span className="font-semibold text-emerald-400">{formatPrice(authData.examCopay)}</span>
+                </div>
+                <div className="flex items-center gap-2">
+                  <span className="text-muted-foreground">CL Fit:</span>
+                  <span className="font-semibold text-emerald-400">
+                    {typeof authData.contactFittingCopay === 'number'
+                      ? formatPrice(authData.contactFittingCopay)
+                      : formatContactBenefit(authData.contactFittingCopay)}
+                  </span>
+                </div>
+                <div className="flex items-center gap-2">
+                  <span className="text-muted-foreground">Materials:</span>
+                  <span className="font-semibold text-blue-400">{formatPrice(authData.materialsCopay)}</span>
+                </div>
+                <div className="flex items-center gap-2">
+                  <span className="text-muted-foreground">Frame:</span>
+                  <span className="font-semibold text-amber-400">
+                    {formatPrice(authData.frameAllowance)}
+                  </span>
+                  {authData.frameOveragePercent && (
+                    <Badge variant="outline" className="text-[10px] px-1.5 py-0 h-5 border-amber-500 text-amber-400">
+                      {authData.frameOveragePercent}% off overage
+                    </Badge>
+                  )}
+                </div>
+                <div className="flex items-center gap-2">
+                  <span className="text-muted-foreground">CL:</span>
+                  <span className="font-semibold text-purple-400">{formatPrice(authData.contactAllowance)}</span>
+                  {authData.isContactDecliningBalance && (
+                    <Badge variant="outline" className="text-[10px] px-1.5 py-0 h-5 border-purple-500 text-purple-400">
+                      Declining
+                    </Badge>
+                  )}
+                </div>
+              </div>
+              {authData.contactLensCost && (
+                <div className="mt-2 text-xs text-muted-foreground">
+                  Contact lens overage: {formatContactBenefit(authData.contactLensCost)}
+                </div>
+              )}
+            </div>
+          )}
+
+          {/* Tabs within the same card */}
+          <Tabs defaultValue="price-list" className="w-full">
+            <TabsList className={`grid w-full ${effectiveCarrier === 'VSP' ? 'grid-cols-3' : 'grid-cols-2'} mb-4`}>
+              <TabsTrigger value="price-list">Products</TabsTrigger>
+              {effectiveCarrier === 'VSP' && (
+                <TabsTrigger value="vsp-matrix">
+                  <Grid3X3 className="h-4 w-4 mr-1" />
+                  Matrix
+                </TabsTrigger>
+              )}
+              <TabsTrigger value="history" onClick={() => !priceListHistory.length && fetchHistory()}>
+                History
+              </TabsTrigger>
+            </TabsList>
+
+            {/* Products Tab */}
+            <TabsContent value="price-list" className="mt-0">
               {/* Search and filters */}
               <div className="flex gap-4 mb-4">
                 <Input
@@ -608,7 +758,16 @@ export default function CustomerInsurancePricing({
                     ))}
                   </SelectContent>
                 </Select>
-                <div className="ml-auto">
+                <div className="ml-auto flex gap-2">
+                  <Button
+                    variant="outline"
+                    onClick={exportPriceList}
+                    disabled={products.length === 0}
+                    className="flex items-center gap-2"
+                  >
+                    <Download className="h-4 w-4" />
+                    Export CSV
+                  </Button>
                   <Button
                     onClick={handleGeneratePricePlan}
                     disabled={generatingPrices || !authData}
@@ -667,15 +826,25 @@ export default function CustomerInsurancePricing({
                                 {formatPrice(product.retailPrice)}
                               </TableCell>
                               <TableCell className="text-right">
-                                <div className={`font-semibold ${youPay.color}`}>
-                                  {youPay.text}
+                                <div className="flex items-center justify-end gap-2">
+                                  {youPay.badge && (
+                                    <Badge variant="outline" className="text-[10px] px-1.5 py-0 h-5 border-blue-500 text-blue-400">
+                                      <Grid3X3 className="h-3 w-3 mr-1" />
+                                      {youPay.badge}
+                                    </Badge>
+                                  )}
+                                  <div>
+                                    <div className={`font-semibold ${youPay.color}`}>
+                                      {youPay.text}
+                                    </div>
+                                    {youPay.subtext && (
+                                      <div className="text-xs text-muted-foreground">{youPay.subtext}</div>
+                                    )}
+                                  </div>
                                 </div>
-                                {youPay.subtext && (
-                                  <div className="text-xs text-muted-foreground">{youPay.subtext}</div>
-                                )}
                               </TableCell>
                               <TableCell className="text-right">
-                                {product.savings > 0 ? (
+                                {product.savings > 0 && !youPay.badge ? (
                                   <span className="text-emerald-400 font-medium">
                                     {formatPrice(product.savings)}
                                   </span>
@@ -696,20 +865,207 @@ export default function CustomerInsurancePricing({
                   </div>
                 ))
               )}
-            </CardContent>
-          </Card>
-        </TabsContent>
+            </TabsContent>
 
-        {/* History Tab */}
-        <TabsContent value="history">
-          <Card>
-            <CardHeader>
-              <CardTitle className="flex items-center gap-2">
-                <History className="h-5 w-5" />
-                Price List History
-              </CardTitle>
-            </CardHeader>
-            <CardContent>
+            {/* VSP Matrix Tab - Only shown for VSP customers */}
+            {effectiveCarrier === 'VSP' && authData?.copays && (
+              <TabsContent value="vsp-matrix" className="mt-0">
+                {(() => {
+                  const { matrix, flatAddons } = buildVspPriceMatrix(authData.copays as Record<string, number | null>)
+
+                  // Filter tiers and materials based on products we actually have in the catalog
+                  const productNames = products.map(p => p.name.toLowerCase())
+
+                  // Find which progressive tiers have products in our catalog
+                  const availableProgressiveTiers = (['K', 'J', 'F', 'O', 'N'] as ProgressiveTier[]).filter(tier => {
+                    const tierProducts = TIER_TO_PRODUCT_NAMES[tier]
+                    return tierProducts.some(name =>
+                      productNames.some(pn => pn.includes(name.toLowerCase()))
+                    )
+                  })
+
+                  // Find which materials we have in our catalog
+                  const availableMaterialCodes = (['A', 'D', 'B', 'H', 'J', 'P'] as MaterialCode[]).filter(mat => {
+                    const matProducts = MATERIAL_TO_PRODUCT_NAMES[mat]
+                    return matProducts.some(name =>
+                      productNames.some(pn => pn.includes(name.toLowerCase()))
+                    )
+                  })
+
+                  // Use available tiers/materials, or fall back to all if none found
+                  const progressiveTiers = availableProgressiveTiers.length > 0 ? availableProgressiveTiers : ['K', 'J', 'F', 'O', 'N'] as ProgressiveTier[]
+                  const materialCodes = availableMaterialCodes.length > 0 ? availableMaterialCodes : ['A', 'D', 'B', 'H', 'J'] as MaterialCode[]
+
+                  return (
+                    <div className="space-y-6">
+                      {/* Matrix Header */}
+                      <div className="flex items-center gap-2 text-sm text-muted-foreground mb-2">
+                        <Grid3X3 className="h-4 w-4" />
+                        <span>
+                          VSP combined codes: Progressive (column) + Material (row) = Copay
+                        </span>
+                      </div>
+
+                      {/* Progressive + Material Matrix */}
+                      <div className="border rounded-lg overflow-hidden">
+                        <div className="bg-muted px-4 py-2 font-semibold text-sm">
+                          Progressive Lens + Material Copays
+                        </div>
+                        <div className="overflow-x-auto">
+                          <table className="w-full text-sm">
+                            <thead className="bg-muted/50">
+                              <tr>
+                                <th className="px-3 py-2 text-left font-medium">Material</th>
+                                {progressiveTiers.map(tier => (
+                                  <th key={tier} className="px-3 py-2 text-center font-medium min-w-[120px]">
+                                    <div className="text-xs leading-tight">{PROGRESSIVE_TIER_LABELS[tier]}</div>
+                                    <div className="text-[10px] text-muted-foreground font-normal">Code: {tier}</div>
+                                  </th>
+                                ))}
+                              </tr>
+                            </thead>
+                            <tbody>
+                              {materialCodes.map(mat => (
+                                <tr key={mat} className="border-t hover:bg-muted/20">
+                                  <td className="px-3 py-2 font-medium">
+                                    <div className="text-sm">{MATERIAL_CODE_LABELS[mat]}</div>
+                                    <div className="text-[10px] text-muted-foreground">Code: {mat}</div>
+                                  </td>
+                                  {progressiveTiers.map(tier => {
+                                    const code = tier + mat
+                                    const copay = matrix[tier][mat]
+                                    return (
+                                      <td key={code} className="px-3 py-2 text-center">
+                                        {copay !== null ? (
+                                          <div>
+                                            <span className="font-semibold text-emerald-400 text-lg">
+                                              ${copay}
+                                            </span>
+                                            <div className="text-[10px] text-muted-foreground font-mono">{code}</div>
+                                          </div>
+                                        ) : (
+                                          <span className="text-muted-foreground">—</span>
+                                        )}
+                                      </td>
+                                    )
+                                  })}
+                                </tr>
+                              ))}
+                            </tbody>
+                          </table>
+                        </div>
+                      </div>
+
+                      {/* Single Vision Materials */}
+                      <div className="border rounded-lg overflow-hidden">
+                        <div className="bg-muted px-4 py-2 font-semibold text-sm">
+                          Single Vision Material Copays
+                        </div>
+                        <div className="p-4 grid grid-cols-2 md:grid-cols-4 gap-4">
+                          {['D', 'B', 'H', 'J'].map(mat => {
+                            const svCode = `A${mat}_sv`
+                            const mfCode = `A${mat}`
+                            const svCopay = (authData.copays as Record<string, number | null>)[svCode]
+                            const mfCopay = (authData.copays as Record<string, number | null>)[mfCode]
+                            return (
+                              <div key={mat} className="p-3 bg-muted/30 rounded-lg">
+                                <div className="font-medium text-sm">
+                                  {MATERIAL_CODE_LABELS[mat as MaterialCode]}
+                                </div>
+                                <div className="mt-1 flex items-center gap-3 text-sm">
+                                  <div>
+                                    <span className="text-muted-foreground">SV:</span>{' '}
+                                    <span className="text-emerald-400">${svCopay ?? '—'}</span>
+                                  </div>
+                                  <div>
+                                    <span className="text-muted-foreground">MF:</span>{' '}
+                                    <span className="text-blue-400">${mfCopay ?? '—'}</span>
+                                  </div>
+                                </div>
+                              </div>
+                            )
+                          })}
+                        </div>
+                      </div>
+
+                      {/* Flat Add-ons */}
+                      <div className="border rounded-lg overflow-hidden">
+                        <div className="bg-muted px-4 py-2 font-semibold text-sm">
+                          Flat Add-On Copays (same for all lenses)
+                        </div>
+                        <div className="p-4 grid grid-cols-2 md:grid-cols-3 lg:grid-cols-5 gap-4">
+                          {Object.entries(flatAddons).map(([code, prices]) => {
+                            const labels: Record<string, string> = {
+                              QM: 'Basic AR',
+                              QT: 'Standard AR',
+                              QV: 'Premium AR',
+                              PR: 'Transitions',
+                              LF: 'Light Filter',
+                              MN: 'Tint',
+                              DA: 'Polarized',
+                              SP: 'Roll & Polish',
+                              SW: 'Rimless Mount',
+                              TA: 'Tech Add-On'
+                            }
+                            const label = labels[code] || code
+                            const isSame = prices.sv === prices.mf
+                            return (
+                              <div key={code} className="p-3 bg-muted/30 rounded-lg">
+                                <div className="font-medium text-sm">{label}</div>
+                                <div className="text-xs text-muted-foreground mb-1">{code}</div>
+                                {isSame ? (
+                                  <div className="text-emerald-400 font-semibold">
+                                    ${prices.mf ?? '—'}
+                                  </div>
+                                ) : (
+                                  <div className="flex gap-2 text-sm">
+                                    <span className="text-muted-foreground">SV:</span>
+                                    <span className="text-emerald-400">${prices.sv ?? '—'}</span>
+                                    <span className="text-muted-foreground">MF:</span>
+                                    <span className="text-blue-400">${prices.mf ?? '—'}</span>
+                                  </div>
+                                )}
+                              </div>
+                            )
+                          })}
+                        </div>
+                      </div>
+
+                      {/* Base Copays */}
+                      <div className="border rounded-lg p-4 bg-muted/20">
+                        <div className="flex items-center gap-6">
+                          <div>
+                            <span className="text-muted-foreground text-sm">Materials Copay:</span>{' '}
+                            <span className="font-semibold text-blue-400">
+                              ${(authData.copays as Record<string, number | null>)['materialsCopay'] ?? '—'}
+                            </span>
+                            <span className="text-xs text-muted-foreground ml-1">(always added)</span>
+                          </div>
+                          <div>
+                            <span className="text-muted-foreground text-sm">Exam Copay:</span>{' '}
+                            <span className="font-semibold text-emerald-400">
+                              ${(authData.copays as Record<string, number | null>)['examCopay'] ?? authData.examCopay ?? '—'}
+                            </span>
+                          </div>
+                        </div>
+                      </div>
+
+                      {/* Example Calculation */}
+                      <div className="border rounded-lg p-4 bg-blue-500/10">
+                        <div className="font-semibold text-sm mb-2">Example: Varilux X (N) + Hi-Index 1.74 (J)</div>
+                        <div className="text-sm text-muted-foreground">
+                          Combined code: <span className="font-mono font-semibold text-white">NJ</span> = ${matrix['N']['J'] ?? '—'}
+                          <span className="ml-2">(NOT: NA ${matrix['N']['A'] ?? '—'} + AJ ${(authData.copays as Record<string, number | null>)['AJ'] ?? '—'} = ${(matrix['N']['A'] ?? 0) + ((authData.copays as Record<string, number | null>)['AJ'] ?? 0)})</span>
+                        </div>
+                      </div>
+                    </div>
+                  )
+                })()}
+              </TabsContent>
+            )}
+
+            {/* History Tab */}
+            <TabsContent value="history" className="mt-0">
               {loadingHistory ? (
                 <div className="flex items-center justify-center py-12">
                   <Loader2 className="h-8 w-8 animate-spin" />
@@ -772,10 +1128,10 @@ export default function CustomerInsurancePricing({
                   </TableBody>
                 </Table>
               )}
-            </CardContent>
-          </Card>
-        </TabsContent>
-      </Tabs>
+            </TabsContent>
+          </Tabs>
+        </CardContent>
+      </Card>
 
       {/* Override Modal */}
       <Dialog open={overrideModalOpen} onOpenChange={setOverrideModalOpen}>

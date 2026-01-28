@@ -1,7 +1,8 @@
 # Vision POS Build Plan
 
-**Last Updated**: 2026-01-20
+**Last Updated**: 2026-01-27
 **Architecture**: See `vision-pos-architecture.pdf` and `vision-pos-diagram-v5.jsx`
+**Current Focus**: Stage 3 - Scanner + Price List Generation (VSP material SV/MF pricing complete)
 
 ---
 
@@ -429,17 +430,783 @@ Common Products Preview:
 - 0 products with `uc_discount`
 - Test patients verified (see table above)
 
-**VSP** ⏳ NOT YET TESTED
-- GPT extraction schema may need updates
+**VSP** 🔄 IN PROGRESS - Two-Document Handling
+- GPT extraction schema updated for two-document flow
 - Tier mappings exist in TypeScript file
-- Needs test documents
+- Test documents available (57 files in Test Documents/Insurance Auths/VSP/)
+- See **Stage 3.1: VSP Two-Document Authorization** below
 
 **Spectera** ⏳ NOT YET TESTED
 - GPT extraction schema may need updates
 - Tier mappings exist in TypeScript file
 - Needs test documents
 
-**Action**: EyeMed ready for production use. Test VSP/Spectera with real documents.
+**Action**: EyeMed ready for production use. VSP two-document handling in progress.
+
+---
+
+## Stage 3.1: VSP Two-Document Authorization ✅ COMPLETE
+
+**Status**: Implementation complete (2026-01-21)
+**Challenge**: VSP requires TWO separate documents that must be paired and merged
+**Solution**: Implemented two-document pairing with Auth# as linking key
+
+### VSP Document Structure
+
+VSP authorizations consist of TWO document types that must be processed together:
+
+#### Document Type 1: VSP PATIENT RECORD REPORT (Auth Document)
+**Identifier**: Contains "VSP PATIENT RECORD REPORT" or "VSP.com" header
+**Content**:
+- **Auth Number** (KEY FOR PAIRING) - e.g., "82317089"
+- Patient/Member Info: Name, DOB, Member ID, Group
+- Exam Benefits: Exam copay, WellVision Exam details
+- Frame Benefits: WFA (Wholesale Frame Allowance) codes, Featured/Non-Featured amounts
+- Contact Lens: Materials allowance, fitting coverage
+- Eligibility: Valid from/to dates
+- EasyOptions: Upgrade features if applicable
+
+**Sample Extracted Fields**:
+```json
+{
+  "authNumber": "82317089",
+  "memberName": "John Smith",
+  "memberId": "123456789",
+  "examCopay": 10,
+  "frameAllowanceFeatured": 200,
+  "frameAllowanceNonFeatured": 120,
+  "contactAllowance": 150,
+  "eligibleFrom": "01/01/2026",
+  "eligibleTo": "12/31/2026",
+  "easyOptions": {
+    "frameUpgrade": true,
+    "clUpgrade": false,
+    "progressiveCovered": true,
+    "arCovered": true,
+    "photochromicCovered": true
+  }
+}
+```
+
+#### Document Type 2: VSP Lens Enhancement Charges (Lens Document)
+**Identifier**: Contains "VSP Lens Enhancement Charges" or table of two-letter codes
+**Content**:
+- **Auth Number** (same as Document 1 - used for pairing)
+- Patient Name (confirmation)
+- Two-letter code table with Single Vision and Multifocal costs
+
+**Sample Layout**:
+```
+Auth# 82317089                    SMITH, JOHN
+
+Code  Description                Single    Multi
+──────────────────────────────────────────────────
+KA    Standard Progressive        N/A       $0
+FA    Premium Progressive F       N/A       $75
+JA    Premium Progressive J       N/A       $95
+NA    Custom Progressive          N/A       $175
+QM    AR Coating Tier A           $0        $0
+QT    AR Coating Tier C           $35       $35
+QV    AR Coating Tier D           $65       $65
+AD    Polycarbonate               $35       $35
+AB    Hi-Index 1.60               $60       $60
+AH    Hi-Index 1.67               $80       $80
+PR    Photochromic (plastic)      $82       $82
+PM    Photochromic (glass)        $25       $25
+DA    Polarized                   $75       $75
+UV    UV Protection               $0        $0
+```
+
+---
+
+### VSP Two-Letter Code Mapping
+
+| Code | Category | Description | Maps To |
+|------|----------|-------------|---------|
+| **Progressives** |
+| KA/KE | Progressive | Standard Progressive | progressiveStandard |
+| FA/FE | Progressive | Premium F (Varilux Comfort) | progressiveTier1 |
+| JA/JE | Progressive | Premium J (Varilux Physio) | progressiveTier2 |
+| NA | Progressive | Custom (Varilux X) | progressiveTier3 |
+| OA | Progressive | Ultra Custom | progressiveTier4 |
+| **AR Coatings** |
+| QM | AR Coating | Tier A (Basic) | arStandard |
+| QT | AR Coating | Tier C (Mid) | arTier1 |
+| QV | AR Coating | Tier D (Premium) | arTier2 |
+| **Materials** |
+| AD | Material | Polycarbonate | polycarbonate |
+| AB | Material | Hi-Index 1.60 | highIndex160 |
+| AH | Material | Hi-Index 1.67 | highIndex167 |
+| AJ | Material | Hi-Index 1.74 | highIndex174 |
+| **Photochromic** |
+| PR | Photochromic | Transitions (plastic) | photochromic |
+| PM | Photochromic | Photochromic (glass) | photochromicGlass |
+| **Other** |
+| DA/DE | Polarized | Polarized lenses | polarized |
+| UV | Treatment | UV Protection | uvTreatment |
+| TN | Tint | Solid tint | tint |
+| GR | Tint | Gradient tint | tintGradient |
+
+---
+
+### Pairing Strategy
+
+**Auth# is the linking key** - Both documents contain the same Auth# that must match.
+
+```
+┌─────────────────────────┐     ┌─────────────────────────┐
+│ PATIENT RECORD REPORT   │     │ LENS ENHANCEMENT CHARGES│
+│ Auth# 82317089          │     │ Auth# 82317089          │
+│ ───────────────────     │     │ ───────────────────     │
+│ Patient info            │     │ Two-letter codes        │
+│ Frame allowances        │     │ Single/Multi costs      │
+│ CL allowance            │     │                         │
+│ Eligibility dates       │     │                         │
+└───────────┬─────────────┘     └───────────┬─────────────┘
+            │                               │
+            └───────────────┬───────────────┘
+                            ▼
+              ┌─────────────────────────────┐
+              │ MERGED VSP AUTHORIZATION     │
+              │ ─────────────────────────── │
+              │ Auth#: 82317089             │
+              │ Patient: John Smith         │
+              │ Exam Copay: $10             │
+              │ Frame Allowance: $200       │
+              │ Progressive KA: $0 (Multi)  │
+              │ Progressive FA: $75 (Multi) │
+              │ AR QM: $0                   │
+              │ AR QT: $35                  │
+              │ Poly AD: $35                │
+              │ Photochromic PR: $82        │
+              └─────────────────────────────┘
+```
+
+---
+
+### Implementation Plan
+
+#### Step 1: Document Type Detection ✅
+Update GPT extraction to identify document type:
+- `vsp-auth`: Contains "VSP PATIENT RECORD REPORT" or member eligibility
+- `vsp-lens`: Contains two-letter code table
+
+**Location**: `src/lib/services/ocr/gpt-extraction.ts`
+
+#### Step 2: Auth# Extraction ✅
+Extract Auth# from both document types for pairing:
+- Auth document: Usually in header or near patient info
+- Lens document: Usually in top-left corner
+
+**Extraction Pattern**:
+```typescript
+authNumber: string // 8-digit number, e.g., "82317089"
+```
+
+#### Step 3: Document Pairing Logic ✅
+When uploading VSP documents:
+1. First document uploaded → Create pending authorization with partial data
+2. Check if matching Auth# exists in pending state
+3. If match found → Merge data from both documents
+4. If no match → Hold as pending, wait for paired document
+
+**Database Fields**:
+```sql
+-- Added to insurance_authorizations
+vsp_auth_number VARCHAR(20),     -- The Auth# for pairing
+vsp_document_type VARCHAR(20),   -- 'auth' or 'lens' or 'complete'
+vsp_pending_pair BOOLEAN,        -- Waiting for second document
+```
+
+#### Step 4: Merged Copays JSON Structure ✅
+After pairing, the copays JSON contains:
+
+```json
+{
+  // From Auth Document
+  "examCopay": 10,
+  "frameAllowanceFeatured": 200,
+  "frameAllowanceNonFeatured": 120,
+  "contactAllowance": 150,
+
+  // From Lens Document (two-letter codes with values)
+  "KA": 0,          // Standard Progressive (Multi)
+  "FA": 75,         // Premium Progressive F (Multi)
+  "JA": 95,         // Premium Progressive J (Multi)
+  "NA": 175,        // Custom Progressive (Multi)
+  "QM": 0,          // AR Tier A
+  "QT": 35,         // AR Tier C
+  "QV": 65,         // AR Tier D
+  "AD": 35,         // Polycarbonate
+  "AB": 60,         // Hi-Index 1.60
+  "AH": 80,         // Hi-Index 1.67
+  "PR": 82,         // Photochromic Transitions
+  "DA": 75,         // Polarized
+  "UV": 0,          // UV Protection
+
+  // EasyOptions flags
+  "easyOptionsFrameUpgrade": true,
+  "easyOptionsProgressiveCovered": true,
+  "easyOptionsARCovered": true,
+  "easyOptionsPhotochromicCovered": true
+}
+```
+
+#### Step 5: Price List Generation ✅
+Use VSP_TIER_TO_COPAY mapping to convert two-letter codes to price list:
+
+```typescript
+// In insurance-tier-mappings.ts
+export const VSP_TIER_TO_COPAY: Record<string, string> = {
+  "KA": "KA",   // Maps directly to copays.KA
+  "FA": "FA",   // Maps directly to copays.FA
+  "JA": "JA",   // etc.
+  "NA": "NA",
+  "QM": "QM",
+  "QT": "QT",
+  "QV": "QV",
+  "AD": "AD",
+  "AB": "AB",
+  "AH": "AH",
+  "PR": "PR",
+  "DA": "DA",
+  "UV": "UV",
+}
+```
+
+---
+
+### EasyOptions Handling
+
+Some VSP plans include "EasyOptions" which provide additional covered upgrades:
+
+| EasyOption | Effect |
+|------------|--------|
+| Frame Upgrade | Higher frame allowance |
+| CL Upgrade | Higher contact lens allowance |
+| Progressive Covered | Standard progressive at $0 |
+| AR Covered | Basic AR coating at $0 |
+| Photochromic Covered | Transitions at $0 |
+
+**When EasyOptions are present**:
+- Override the lens document copay with $0 for covered items
+- Display "EasyOptions" badge in UI
+
+---
+
+### Either/Or Restriction (VSP-Specific)
+
+VSP always has materials exclusivity:
+- **"Contacts are instead of [lens, frame]"**
+- Patient must choose: Eyeglasses OR Contact Lenses for the benefit year
+- If contacts selected, eyeglasses priced at retail
+
+This is handled by the `eitherOrRestriction` field (already implemented in declining balance work).
+
+---
+
+### Test Documents Available
+
+**Location**: `/Users/cmac/let/vision-pos/Test Documents/Insurance Auths/VSP/`
+**Count**: 57 files (paired auth + lens documents)
+
+**Sample Pairs**:
+| Auth Document | Lens Document | Auth# |
+|---------------|---------------|-------|
+| AB-vsp-auth-1.pdf | AB-vsp-lens-1.pdf | To extract |
+| TR_Auth-VSP.pdf | TR_Lens-Enhancement-VSP.pdf | To extract |
+| EH-exam-bene.pdf | EH-lens-bene.pdf | To extract |
+| MS_zvsp_cl.pdf | (single doc with EasyOptions) | To extract |
+
+---
+
+### Decision Point: STAGE 3.1 COMPLETE
+
+**Test 1**: Document type detection works
+```
+Upload vsp-auth document → GPT returns documentType: "vsp-auth"
+Upload vsp-lens document → GPT returns documentType: "vsp-lens"
+```
+**Result**: Both document types correctly identified
+
+**Test 2**: Auth# extraction works
+```
+Upload AB-vsp-auth-1.pdf → authNumber extracted
+Upload AB-vsp-lens-1.pdf → same authNumber extracted
+```
+**Result**: Auth# matches between paired documents
+
+**Test 3**: Document pairing works
+```
+1. Upload vsp-auth → Creates pending authorization
+2. Upload vsp-lens with same Auth# → Merges into complete authorization
+3. Query database → Single authorization with all data
+```
+**Result**: Merged authorization has data from both documents
+
+**Test 4**: Price list generates correctly
+```sql
+SELECT pricing_method, COUNT(*) FROM patient_price_lists
+WHERE customer_id = '[vsp_customer_id]'
+GROUP BY pricing_method;
+```
+**Expected Result**:
+| pricing_method | count |
+|----------------|-------|
+| by_tier | 20+ |
+| cash_only | 10+ |
+| uc_discount | **0** |
+
+**Test 5**: EasyOptions applied correctly
+```
+For EasyOptions patient:
+- Standard progressive → $0 (not lens document value)
+- Basic AR → $0 (not lens document value)
+```
+**Result**: EasyOptions overrides applied
+
+**Action**: If ALL PASS → VSP support complete. If FAIL → Fix document pairing/extraction.
+
+---
+
+## Stage 3.2: VSP Price List Issues (2026-01-26)
+
+**Status**: IN PROGRESS - Fixing tier mapping and copay extraction issues
+**Issue**: Patient price lists showing 20% fallback (`uc_discount`) instead of proper copay values
+
+### Root Cause Analysis
+
+When testing VSP patients (Susan McCrae), the price list showed incorrect 20% discount for many products that should have specific copay values.
+
+**Why 20% fallback is triggered:**
+
+1. **`materialsCopay` is NULL** in copays JSON
+   - Products with tier "COVERED" map to `materialsCopay` field
+   - If `materialsCopay` is null, lookup fails → 20% fallback
+   - Affects: Single Vision, Bifocal, Trifocal
+
+2. **Invalid tier codes in product catalog**
+   - Some products have tier codes that aren't standard VSP codes
+   - Example: "TA" (Tech Add-On), "SV", "PS" are not in VSP lens enhancement tables
+   - When tier code doesn't exist in patient's extracted data → 20% fallback
+
+3. **Wrong tier assignments for products**
+   - Bifocals use "COVERED" tier but should use "GA" (Blended Bifocal = $30)
+   - Products mapped to wrong VSP codes
+
+### Products Affected (Examples)
+
+| Product | Current Tier | Problem | Correct Tier |
+|---------|-------------|---------|--------------|
+| Single Vision | COVERED | materialsCopay=null | Keep COVERED, fix extraction |
+| Flat Top 28 Bifocal | COVERED | Should use blended | GA |
+| Trifocal | COVERED | Should use blended | GA |
+| Transitions XTRActive | PS | PS not in VSP codes | PR |
+| Tech Add-Ons | TA | Invalid code | Remove or map to addon |
+| UV Protection | SV | Invalid code | UV or null |
+
+### Fixes Required
+
+**Fix 1: Extract and save `materialsCopay` for VSP**
+- VSP "Materials Copay" is typically $25 for lenses
+- Must be extracted from auth document and saved to copays JSON
+- Location: `src/lib/services/ocr/insurance-parser.ts`
+
+**Fix 2: Update product tier mappings**
+- Change Bifocal/Trifocal from "COVERED" to "GA"
+- Change Transitions XTRActive from "PS" to "PR"
+- Remove or fix invalid codes (TA, SV)
+- Location: `src/lib/data/insurance-tier-mappings.ts`
+
+**Fix 3: Regenerate affected price lists**
+- After fixes, regenerate price lists for VSP patients
+- Verify `uc_discount` count drops to 0
+
+### Decision Point: STAGE 3.2 COMPLETE
+
+**Test 1**: `materialsCopay` is extracted and saved
+```sql
+SELECT copays->>'materialsCopay' FROM insurance_authorizations
+WHERE carrier = 'VSP' AND is_active = true;
+```
+**Result**: Should return value (typically 25), not null
+
+**Test 2**: Price list has no `uc_discount` fallback
+```sql
+SELECT pricing_method, COUNT(*) FROM patient_price_lists
+WHERE customer_id = '[vsp_customer_id]' AND active = true
+GROUP BY pricing_method;
+```
+**Result**: `uc_discount` count should be 0
+
+**Test 3**: Products use correct copay values
+- Single Vision → materialsCopay ($25)
+- Bifocal → GA code ($30)
+- Transitions → PR code (from patient data)
+
+---
+
+## Stage 3.3: VSP Extraction Robustness (2026-01-26)
+
+**Status**: COMPLETE - Post-processing implemented and tested
+**Fix Date**: 2026-01-26
+**Issue Resolved**: VSP extraction was non-deterministic; LLM missed codes on different runs
+
+### Root Cause Analysis
+
+VSP lens enhancement documents have a specific OCR format that GPT extraction sometimes misses:
+
+**OCR Format (Multi-line)**:
+```
+QP - Mirror Solid
+$49$49
+
+SW - Rimless Drill Mount
+$65$65
+
+LF - Light Filter
+$30$30
+```
+
+**Problems Identified:**
+1. **Code and prices on separate lines** - Code on line N, prices on line N+1
+2. **Concatenated prices** - No space between SV/MF prices: `$49$49`
+3. **Auth number not extracted** - Required for two-document pairing
+4. **LLM non-determinism** - Different codes missed on each run
+
+### VSP Two-Letter Codes to Extract
+
+All of these codes MUST be extracted from lens enhancement documents:
+
+| Code | Description | Typical Format |
+|------|-------------|----------------|
+| LF | Light Filter | "LF - Light Filter $30$30" |
+| TA | Technical Add-On | "TA - Technical Add On $40$40" |
+| SV | UV Protection | "SV - UV Protection $15$15" |
+| QP | Mirror Coating | "QP - Mirror Solid $49$49" |
+| MN | Solid Tint | "MN - Solid Tint $25$25" |
+| SW | Rimless Drill Mount | "SW - Rimless Drill $65$65" |
+| GA | Blended Bifocal | "GA - Blended Bifocal $30$30" |
+| BA | Basic Bifocal | "BA - Lined Bifocal $0$0" |
+| WFA | Frame Allowance | "WFA73 $190.00 for Featured" |
+
+### Solution: Robust Post-Processing
+
+Added `postProcessVspCodes()` function in `gpt-extraction.ts` that:
+
+1. **Scans OCR text line-by-line** looking for two-letter code patterns
+2. **Checks next line for prices** in format `$XX$YY` or `$XX $YY`
+3. **Extracts auth number** from pattern `Auth# XXXXXXXX`
+4. **Extracts frame allowances** from WFA codes
+5. **Never overwrites existing values** - only fills in missing data
+
+**Code Location**: `src/lib/services/ocr/gpt-extraction.ts` - `postProcessVspCodes()`
+
+### Test Results (Susan McCrae - 2026-01-26)
+
+**Before Fix**: 8 products with `uc_discount` (20% fallback)
+**After Fix**: 1 product with `uc_discount` (compound tier issue)
+
+| Product | Before | After |
+|---------|--------|-------|
+| Rimless (drill mount) | uc_discount | by_tier $30 ✓ |
+| Mirror - Solid Color | uc_discount | by_tier $49 ✓ |
+| Light Filter (VSP LF) | uc_discount | by_tier $15 ✓ |
+| Solid Tint | uc_discount | by_tier $15 ✓ |
+| UV Protection | uc_discount | by_tier $16 ✓ |
+| Technical Add-On | uc_discount | by_tier $40 ✓ |
+
+Post-processing extracted **66 additional codes** from OCR that LLM missed, bringing total from 15 to 81 codes.
+
+### Key Fix: Auth Number Extraction
+
+VSP document pairing requires Auth# to link auth + lens documents:
+
+```typescript
+// Extract Auth# for document pairing
+const authNumMatch = ocrText.match(/Auth\s*#?\s*(\d{8})/i)
+if (authNumMatch) {
+  parsed.patient.authNumber = { value: authNumMatch[1], confidence: 0.95 }
+}
+```
+
+Without auth number, lens document codes never merge into authorization.
+
+### Products Still Showing Incorrect Pricing
+
+| Product | Issue | Root Cause |
+|---------|-------|------------|
+| Rimless Mounting | 20% fallback | SW code not in copays JSON |
+| Mirror Solid Color | 20% fallback | QP code not in copays JSON |
+| Frame Allowance | Missing | WFA codes not extracted |
+| Crizal Sunshield UV | Wrong tier | Should be Tier D ($95 SV / $105 MF) |
+
+### Crizal Sunshield UV Pricing (Reference)
+
+User confirmed correct pricing for Crizal Sunshield UV (Tier D):
+- Single Vision: $95
+- Multifocal: $105
+
+This maps to VSP tier code **QV** (AR Coating Tier D).
+
+### Remaining Issue: Compound Tiers
+
+One product still uses `uc_discount`: **Crizal Sunshield Mirrors UV** with tier "QV+QP".
+
+Compound tiers (combining two codes like "QV+QP") need special handling:
+- Option 1: Sum individual copays (QV=$85 + QP=$49 = $134)
+- Option 2: Simplify product tier to single code (e.g., just "QP")
+
+This is a tier mapping configuration issue, not an extraction issue.
+
+---
+
+## Stage 3.5: VSP Material SV/MF Pricing ✅ COMPLETE
+
+**Status**: COMPLETE (2026-01-27)
+**Issue Resolved**: Materials have different copays for Single Vision vs Multifocal lenses
+
+### Problem Statement
+
+VSP lens enhancement documents show TWO copay columns for materials:
+- **Single Vision column**: Lower copay (e.g., Hi-Index 1.67 = $83)
+- **Multifocal column**: Higher copay (e.g., Hi-Index 1.67 = $98)
+
+Products were only mapped to one tier code, causing incorrect pricing when SV vs MF mattered.
+
+### Solution: Duplicate Products with SV/MF Variants
+
+Created separate products for each material variant:
+
+| Material | SV Product | MF Product | SV Tier | MF Tier |
+|----------|-----------|------------|---------|---------|
+| Polycarbonate | Polycarbonate (Single Vision) | Polycarbonate (Multifocal) | AD_SV | AD |
+| Trivex | Trivex (Single Vision) | Trivex (Multifocal) | AB_SV | AB |
+| Hi-Index 1.67 | Hi-Index 1.67 (Single Vision) | Hi-Index 1.67 (Multifocal) | AH_SV | AH |
+| Hi-Index 1.74 | Hi-Index 1.74 (Single Vision) | Hi-Index 1.74 (Multifocal) | AJ_SV | AJ |
+
+### Tier Mapping Updates
+
+Added SV tier codes that map to `_sv` copay fields:
+
+```typescript
+// In insurance-tier-mappings.ts
+export const VSP_TIER_TO_COPAY: Record<string, string> = {
+  // Multifocal (standard)
+  "AD": "AD",
+  "AB": "AB",
+  "AH": "AH",
+  "AJ": "AJ",
+
+  // Single Vision variants (map to _sv fields)
+  "AD_SV": "AD_sv",
+  "AB_SV": "AB_sv",
+  "AH_SV": "AH_sv",
+  "AJ_SV": "AJ_sv",
+}
+```
+
+### Database: 8 New Material Products
+
+Created 8 new products (4 SV + 4 MF variants):
+- `displayGroup`: 'everyday' (appears in standard quote flow)
+- `category`: 'material' (lowercase for consistency)
+- `tierVsp`: SV or MF tier code
+- `isActive`: true
+
+Old generic products (Polycarbonate, Trivex, Hi-Index 1.67) deactivated.
+
+### Quote Builder: Side-by-Side Display
+
+Updated `eyeglasses-layer-simple.tsx` to show both SV and MF prices in a 3-column layout:
+
+```
+┌─────────────────┬──────────────────┬──────────────────────┐
+│ Material        │ Single Vision    │ Progressive/Bifocal  │
+├─────────────────┼──────────────────┼──────────────────────┤
+│ Polycarbonate   │ $31              │ $35                  │
+│ Trivex          │ $55              │ $60                  │
+│ Hi-Index 1.67   │ $83              │ $98                  │
+│ Hi-Index 1.74   │ $119             │ $143                 │
+└─────────────────┴──────────────────┴──────────────────────┘
+```
+
+User clicks the appropriate column to select that variant.
+
+### Files Modified
+
+- `src/lib/data/insurance-tier-mappings.ts` - Added SV tier codes and mappings
+- `src/components/quote-builder/layers/eyeglasses-layer-simple.tsx` - Grouped materials UI
+- Database: Created 8 material product variants
+
+### Decision Point: STAGE 3.5 COMPLETE ✅
+
+**Test 1**: Both SV and MF prices display in quote builder
+**Result**: 3-column layout shows Material | SV Price | MF Price
+
+**Test 2**: Selecting SV vs MF adds correct product to quote
+**Result**: Correct tier applied, correct copay used
+
+**Test 3**: Price list shows separate SV/MF entries
+**Result**: Both variants appear with distinct prices
+
+---
+
+## Stage 3.6: VSP Products Tab Display ✅ COMPLETE
+
+**Status**: COMPLETE (2026-01-28)
+**Issue Resolved**: Products tab was not useful for VSP customers due to matrix-based pricing
+
+### Problem Statement
+
+VSP uses combined progressive+material codes (e.g., "NJ" = Varilux X + Hi-Index 1.74 = $125), not additive pricing. The Products tab needed special handling to show:
+- Materials that require matrix lookup (not individual prices)
+- Add-ons with different SV/MF pricing (Polarized, Tech Add-On)
+- Flat add-ons with single price
+
+### VSP Products Tab Display Rules
+
+| Category | Products | Display Method |
+|----------|----------|----------------|
+| **Lens Materials** | Polycarbonate | Show locked $35 price (flat across all) |
+| | Trivex, Hi-Index 1.67, Hi-Index 1.74 | Show "See Matrix" badge (copay depends on progressive tier) |
+| | CR-39 | Show $0 (covered) or matrix price |
+| **Dependent Add-ons** | Polarized (DA) | SV: $57 / MF: $77 |
+| | Technical Add-On (TA) | SV: $10 / MF: $40 |
+| **Flat Add-ons** | AR Coatings (QM, QT, QV) | Single price (same SV/MF) |
+| | Photochromic (PR) | Single price |
+| | Light Filter (LF) | Single price |
+| | Tint (MN) | Single price |
+| | Blue Light | Single price |
+| **Other** | Progressive Lenses | As-is (tier-based) |
+| | Single Vision | As-is |
+| | Mount Fees | As-is |
+
+### VSP Two-Letter Codes Reference
+
+**Dependent Add-ons (different SV vs MF)**:
+| Code | Description | SV Copay | MF Copay |
+|------|-------------|----------|----------|
+| DA | Polarized | $57 | $77 |
+| TA | Technical Add-On | $10 | $40 |
+| AB | Trivex | $56 | $60 |
+| AH | Hi-Index 1.67 | $83 | $98 |
+| AJ | Hi-Index 1.74 | $111 | $118 |
+
+**Flat Add-ons (same SV = MF)**:
+| Code | Description | Copay |
+|------|-------------|-------|
+| AD | Polycarbonate | $35 |
+| QM | Basic AR | $0 |
+| QT | Standard AR | $35 |
+| QV | Premium AR | $85 |
+| PR | Photochromic | $75 |
+| LF | Light Filter | $15 |
+| MN | Tint | $15 |
+
+### Implementation
+
+**File**: `src/components/customers/customer-insurance-pricing.tsx`
+
+**Changes**:
+1. Detect VSP carrier and get copays from authorization
+2. For materials (Trivex, Hi-Index): Show "See Matrix" badge instead of price
+3. For Polycarbonate: Show locked $35 price
+4. For Polarized/Tech Add-On: Show SV/MF split (e.g., "SV: $57 / MF: $77")
+5. For flat add-ons: Show single copay value
+
+### Decision Point: STAGE 3.6 COMPLETE ✅
+
+**Test 1**: VSP customer products tab shows "See Matrix" for dependent materials
+**Result**: Trivex, Hi-Index 1.67, Hi-Index 1.74 show "See Matrix" badge
+
+**Test 2**: Polarized and Tech Add-On show SV/MF split pricing
+**Result**: "SV: $57 / MF: $77" format displays correctly
+
+**Test 3**: Flat add-ons show single price
+**Result**: AR coatings, photochromic show single copay value
+
+**Test 4**: Polycarbonate shows $35 (flat price)
+**Result**: Locked price displays correctly
+
+---
+
+## Stage 3.4: Authorization Data Persistence (NEW)
+
+**Status**: NOT YET IMPLEMENTED
+**Priority**: HIGH - User pain point (re-scanning documents)
+
+### Problem Statement
+
+Currently, users must re-scan insurance documents when:
+1. Authorization expires and is renewed
+2. Price list needs regeneration
+3. System needs to re-extract data
+
+### Requirements
+
+**Requirement 1: Store Raw Extraction Data**
+- Save GPT extraction JSON separately from authorization
+- Allow re-processing without re-scanning
+- Store OCR text for debugging
+
+**Database Changes**:
+```sql
+ALTER TABLE insurance_authorizations ADD COLUMN
+  raw_extraction JSONB,        -- Full GPT extraction response
+  ocr_text TEXT,               -- Raw OCR text for debugging
+  extraction_model VARCHAR(50), -- "gpt-4o-2024-05-13"
+  extraction_timestamp TIMESTAMP; -- When extraction occurred
+```
+
+**Requirement 2: Price History with Timestamps**
+- Date alone is insufficient when user scans multiple times per day
+- Add full timestamp to price list records
+
+**Database Changes**:
+```sql
+ALTER TABLE patient_price_lists ADD COLUMN
+  generated_at TIMESTAMP DEFAULT NOW(),  -- Full timestamp (not just date)
+  source_document_id UUID,               -- Link to source document
+  extraction_version VARCHAR(20);        -- Track extraction algorithm version
+```
+
+**Requirement 3: Price List History UI**
+- Show all price lists for customer (not just active)
+- Display generation timestamp
+- Allow comparison between versions
+- Show source document for each list
+
+### Benefits
+
+1. **No re-scanning** - Re-process from stored extraction data
+2. **Audit trail** - Full history of all price lists
+3. **Debugging** - Access to OCR text when extraction fails
+4. **Versioning** - Track which extraction algorithm generated each list
+
+### Decision Point: STAGE 3.4 COMPLETE
+
+**Test 1**: Raw extraction stored
+```sql
+SELECT raw_extraction, ocr_text FROM insurance_authorizations
+WHERE id = '[auth_id]';
+```
+**Result**: Both fields populated
+
+**Test 2**: Price history has timestamps
+```sql
+SELECT generated_at, source_document_id FROM patient_price_lists
+WHERE customer_id = '[customer_id]' ORDER BY generated_at DESC;
+```
+**Result**: Full timestamps (not just dates), multiple entries visible
+
+**Test 3**: Regenerate without re-scan
+```
+1. Call regenerate API with existing auth_id
+2. New price list created from stored extraction
+3. No document upload required
+```
+**Result**: Price list regenerated successfully
 
 ---
 
@@ -486,11 +1253,22 @@ Provide access to patient-specific pricing for quote building.
 - Search/filter functionality ✅ (search + category + carrier filters)
 - Manual price override capability (with audit trail) ✅ (override modal with reason)
 - Price list history (view old/inactive lists) ✅
-- Export to PDF/CSV 🔄 (not yet implemented - optional)
+- Export to CSV ✅ (implemented 2026-01-27)
 
 ### Implementation: CustomerPricePlan Component
 **Location**: `src/components/customers/customer-price-plan.tsx`
 **API**: `src/app/api/customers/[id]/price-plan/route.ts`
+
+### Export Functionality (Added 2026-01-27)
+**Feature**: Export CSV button next to "Regenerate Prices"
+**Location**: `src/components/customers/customer-insurance-pricing.tsx`
+**Output**: CSV file with columns: Product, Category, SKU, Retail Price, Customer Price, Savings, Tier, Carrier
+**Filename**: `price-list-{customername}-{date}.csv`
+
+### Unified Price List UI (Updated 2026-01-27)
+**Change**: Merged insurance benefits and products into ONE card (not separate cards)
+**Layout**: Insurance header → Benefits row → Products/History tabs (all in same card)
+**Result**: Benefits section flows directly into product list, no visual separation
 
 ### UI Layout (Consolidated - 2026-01-20):
 
@@ -561,6 +1339,18 @@ Provide access to patient-specific pricing for quote building.
 **Test 4**: Override individual product price ✅
 **Test 5**: View price list history (old/inactive lists) ✅
 **Test 6**: Benefits summary row displays correctly ✅
+
+### Insurance Summary Component (Updated 2026-01-27)
+
+**Location**: `src/components/quote-builder/insurance-summary.tsx`
+
+**UI Improvements**:
+- Header: "Insurance Copays" with plan name inline (unified appearance)
+- Tier details toggle: "Lens & Enhancement Copays" with item count
+- Tier copays flow naturally from base copays (not visually separate sections)
+- Consistent emerald color for copay values
+
+**Design Principle**: Benefits and copays appear as ONE unified section, not separate components.
 
 ---
 
@@ -1074,6 +1864,70 @@ COMPLETE
 3. **Automated + Human Validation**: 3 automated checkpoints + human visual inspection before approval
 4. **Accurate Price Calculation**: Price list must use tier-based pricing when mappings exist
 5. **Sequential Validation**: Each stage must pass decision point before proceeding
+
+---
+
+## Validation Workflow (CRITICAL)
+
+**The only validation that matters is what users see in the browser.**
+
+### Three-Layer Validation
+
+```
+PDF → Database → API → UI Display
+     ↑            ↑        ↑
+   Layer 1    Layer 2   Layer 3 (MOST IMPORTANT)
+```
+
+Validating only Layer 1 (PDF → DB) will miss bugs where data is stored correctly but displayed incorrectly.
+
+### Validation Commands
+
+**Layer 3: UI Display Validation (USE THIS)**
+```bash
+npx playwright test e2e/validate-insurance-display.spec.ts --headed
+```
+- Loads actual browser and checks rendered DOM
+- Validates insurance values display correctly (not "Not covered")
+- This catches ALL display bugs
+
+**Layer 2: API Response Validation**
+```bash
+npx tsx scripts/validate-ui-display.ts
+```
+- Checks what APIs return vs database values
+- Faster but doesn't catch UI rendering issues
+
+**Layer 1: PDF Extraction Validation**
+```bash
+npx tsx scripts/run-vsp-validation.ts
+```
+- Validates PDF → Database extraction
+- Does NOT validate display
+
+### When to Run Validations
+
+| After This Action | Run This Validation |
+|-------------------|---------------------|
+| Processing insurance documents | UI Display (Layer 3) |
+| Changing API routes | Restart server, then UI Display (Layer 3) |
+| Extraction code changes | All three layers |
+| Before reporting "X customers processed" | UI Display (Layer 3) |
+
+### Key Files
+
+- `/e2e/validate-insurance-display.spec.ts` - Playwright UI tests
+- `/scripts/validate-ui-display.ts` - API validation script
+- `/src/app/api/customers/[id]/authorization/route.ts` - Authorization API
+- `/src/app/api/customers/[id]/insurance-summary/route.ts` - Summary banner API
+
+### Lessons Learned
+
+1. **VSP CL Exam Copay = Contact Lens Fitting** - Same value, different names. The `clExamCopay` DB column displays as "CL Fit" in UI.
+
+2. **Prisma Decimal fields need `Number()` conversion** - Always wrap Decimal values in `Number()` when returning from APIs.
+
+3. **After API changes, restart Next.js server** - Code changes don't take effect until server restarts.
 
 ---
 
