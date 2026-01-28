@@ -55,10 +55,10 @@ export function CustomerSelector({ onSelect }: CustomerSelectorProps) {
     fetchCustomers()
   }, [fetchCustomers])
 
-  // Search with debounce
+  // Search with debounce - trigger on any input (1+ chars)
   useEffect(() => {
     const timer = setTimeout(() => {
-      if (searchTerm.length >= 2 || searchTerm.length === 0) {
+      if (searchTerm.length >= 1 || searchTerm.length === 0) {
         fetchCustomers(searchTerm)
       }
     }, 300)
@@ -91,7 +91,7 @@ export function CustomerSelector({ onSelect }: CustomerSelectorProps) {
         <div className="relative">
           <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
           <Input
-            placeholder="Search by name, email, phone, or member ID..."
+            placeholder="Search: mcc, j smith, susan m..."
             value={searchTerm}
             onChange={(e) => setSearchTerm(e.target.value)}
             className="pl-10"
