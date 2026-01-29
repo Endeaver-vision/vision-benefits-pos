@@ -415,23 +415,6 @@ function buildEyemedNormalizedCopays(values: Record<string, string | number | nu
   const arStandard = findValue(['anti_reflective_coating_(standard)', 'anti_reflective_coating_standard', 'ar_standard'])
   if (arStandard !== null) result['arStandard'] = arStandard
 
-  // Progressive Standard copay (used for tier 1-3 fallback)
-  const progressiveStandard = findValue(['progressive_-_standard', 'progressive_standard'])
-  if (progressiveStandard !== null) result['progressiveStandard'] = progressiveStandard
-
-  // Progressive Allowance - extract from discount notes (e.g., "20% off retail price less $120 allowance")
-  for (const [key, value] of Object.entries(values)) {
-    const keyLower = key.toLowerCase()
-    if (keyLower.includes('progressive') && keyLower.includes('notes') && typeof value === 'string') {
-      // Look for "$XXX allowance" pattern
-      const allowanceMatch = value.match(/\$(\d+)\s*allowance/i)
-      if (allowanceMatch) {
-        result['progressiveAllowance'] = parseInt(allowanceMatch[1], 10)
-        console.log(`[EyeMed Extraction] Found progressive allowance: $${allowanceMatch[1]}`)
-      }
-    }
-  }
-
   return result
 }
 
