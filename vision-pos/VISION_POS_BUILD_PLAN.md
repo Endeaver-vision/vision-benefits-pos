@@ -1,8 +1,8 @@
 # Vision POS Build Plan
 
-**Last Updated**: 2026-01-27
+**Last Updated**: 2026-01-28
 **Architecture**: See `vision-pos-architecture.pdf` and `vision-pos-diagram-v5.jsx`
-**Current Focus**: Stage 3 - Scanner + Price List Generation (VSP material SV/MF pricing complete)
+**Current Focus**: Stage 5.5 - Insurance Verification Gate (Quote Builder entry point)
 
 ---
 
@@ -1131,6 +1131,183 @@ VSP uses combined progressive+material codes (e.g., "NJ" = Varilux X + Hi-Index 
 
 ---
 
+## Stage 3.7: Extraction Architecture Overhaul (CRITICAL)
+
+**Status**: IN PROGRESS (2026-01-28)
+**Priority**: CRITICAL - Current extraction system is fundamentally broken
+
+### What Failed: Field-Specific JSON Extraction
+
+The previous approach used rigid JSON path matching to extract insurance data:
+
+```typescript
+// FAILED APPROACH - Hardcoded paths break on every new document
+function extractFrameAllowance(extracted) {
+  // VSP path - doesn't work for EyeMed
+  return getNestedValue(extracted, 'frame.allowances.altairMarchonFrameAllowance.allowance')
+}
+
+function extractContactAllowance(extracted) {
+  // Another VSP-specific path
+  return getNestedValue(extracted, 'contacts.clExamAndMaterialsAllowance.value')
+}
+```
+
+**Problems Encountered:**
+1. **Every new document breaks extraction** - Paths are carrier-specific and even vary within same carrier
+2. **GPT outputs inconsistent JSON structure** - Same field appears at different paths on different runs
+3. **Maintenance nightmare** - Every new path variation requires code changes
+4. **False confidence** - Data extracts to `raw_extracted_data` correctly but verify route can't find it
+
+**Specific Failures (Angela Clayton - EyeMed):**
+| Field | Expected | Extraction Path Used | Actual Path in Data | Result |
+|-------|----------|---------------------|---------------------|--------|
+| Frame allowance | $180 | `frame.allowances.altairMarchonFrameAllowance.allowance` | `frame.allowances.retailMinAllowance.value` | NULL ❌ |
+| Contact allowance | $130 | `contacts.clExamAndMaterialsAllowance.value` | `contacts.contactAllowance.value` | NULL ❌ |
+| Materials copay | $25 | `copays.materialsCopay` | `copays.singleVisionCopay.value` | NULL ❌ |
+| CL Fit | $0 | Not extracted | `clFit.standardCost.value` | "Not covered" ❌ |
+
+**Conclusion:** Field-specific JSON extraction is architecturally flawed. The system cannot scale.
+
+---
+
+### New Approach: Two-Part Open-Ended Extraction
+
+**Architecture:**
+```
+┌─────────────────────────────────────────────────────────────────────────┐
+│ PART 1: OPEN-ENDED READ (Haiku)                                         │
+│ ────────────────────────────────────────────────────────────────────── │
+│ Input: Raw document (PDF/image) - NO OCR STEP                           │
+│ Prompt: "Read this insurance document. Extract ALL benefit information  │
+│          you can find. Return as plain text summary."                   │
+│ Output: Unstructured text with all extracted values                     │
+│                                                                         │
+│ Example output:                                                         │
+│ "This is an EyeMed plan for Angela Clayton. Exam copay is $0.           │
+│  Frame allowance is $180 with 20% off overage. Contact lens allowance   │
+│  is $130. Materials copay for single vision is $25. CL fitting is       │
+│  covered at $0 for standard fits..."                                    │
+└─────────────────────────────────────────────────────────────────────────┘
+                                    │
+                                    ▼
+┌─────────────────────────────────────────────────────────────────────────┐
+│ PART 2: CATALOG ASSIGNMENT (Haiku)                                      │
+│ ────────────────────────────────────────────────────────────────────── │
+│ Input: Part 1 output + Our copay field catalog                          │
+│ Prompt: "Given this extracted text and our field catalog, assign        │
+│          values to each field. If a field is not mentioned, mark null." │
+│                                                                         │
+│ Field Catalog:                                                          │
+│ - examCopay: number (patient pays for routine exam)                     │
+│ - materialsCopay: number (patient pays for basic lenses)                │
+│ - frameAllowance: number (insurance pays toward frame)                  │
+│ - contactAllowance: number (insurance pays toward contacts)             │
+│ - clFitCopay: number (patient pays for contact lens fitting)            │
+│ - [EyeMed specific fields...]                                           │
+│ - [VSP specific fields...]                                              │
+│                                                                         │
+│ Output: Structured JSON with our exact field names                      │
+└─────────────────────────────────────────────────────────────────────────┘
+```
+
+**Benefits:**
+1. **Open-ended read captures everything** - No rigid paths to miss data
+2. **Catalog assignment maps to OUR schema** - Consistent output regardless of input format
+3. **Carrier-agnostic Part 1** - Same prompt works for VSP, EyeMed, Spectera
+4. **Carrier-specific Part 2** - Catalog includes all fields we need per carrier
+5. **Easier debugging** - Can see exactly what was extracted vs how it was assigned
+
+---
+
+### Eliminating OCR: Accuracy vs Cost Trade-off
+
+**Current Flow (Broken):**
+```
+PDF → Google Vision OCR → GPT-4o extraction (rigid JSON paths) → Storage
+```
+
+**New Flow (Reliable):**
+```
+PDF → Haiku Vision (open-ended read) → Haiku (catalog assignment) → Storage
+```
+
+**Cost Reality:**
+- Haiku vision (processing images directly) costs MORE than OCR → text processing
+- Two Haiku calls per document adds cost
+- **This is a trade-off: higher cost for a system that actually works**
+
+**Why it's worth it:**
+- Current system extracts data but can't use it (wrong paths = NULL values)
+- A working system at higher cost beats a broken system at lower cost
+- Accuracy is the priority - cost optimization comes later
+
+---
+
+### Implementation Plan
+
+**Step 1: Build Haiku Vision Reader**
+- Direct PDF/image input to Haiku
+- Open-ended extraction prompt
+- Returns unstructured text summary
+
+**Step 2: Build Catalog Assignment Function**
+- Takes extracted text + field catalog
+- Maps values to our schema fields
+- Handles carrier-specific fields
+
+**Step 3: Update Verify Route**
+- Remove all hardcoded path lookups
+- Use assigned values directly
+- Simplify to just reading the structured output
+
+**Step 4: Test Accuracy and Document Cost**
+- Process 20 documents with new approach
+- Compare accuracy to old approach (target: 95%+ vs current ~20%)
+- Document actual cost per document
+
+---
+
+### Decision Point: STAGE 3.7 COMPLETE
+
+**Test 1**: Open-ended read captures all values
+```
+Process Angela Clayton document → Check extracted text includes:
+- Exam copay $0
+- Frame allowance $180
+- Contact allowance $130
+- Materials copay $25
+- CL Fit $0
+```
+**Result**: All values present in extracted text
+
+**Test 2**: Catalog assignment maps correctly
+```
+Run assignment on extracted text → Check JSON output:
+- examCopay: 0
+- frameAllowance: 180
+- contactAllowance: 130
+- materialsCopay: 25
+- clFitCopay: 0
+```
+**Result**: All fields populated with correct values
+
+**Test 3**: End-to-end accuracy
+```
+Process 10 EyeMed documents → Compare to manual extraction
+```
+**Result**: 95%+ accuracy (vs current ~20% for affected fields)
+
+**Test 4**: Cost is acceptable for accuracy gained
+```
+Calculate cost for 100 documents with new approach
+```
+**Result**: Cost documented, accuracy justifies expense
+
+**Action**: If ALL PASS → Deploy new extraction architecture
+
+---
+
 ## Stage 3.4: Authorization Data Persistence (NEW)
 
 **Status**: NOT YET IMPLEMENTED
@@ -1339,6 +1516,172 @@ Provide access to patient-specific pricing for quote building.
 **Test 4**: Override individual product price ✅
 **Test 5**: View price list history (old/inactive lists) ✅
 **Test 6**: Benefits summary row displays correctly ✅
+
+---
+
+## Stage 5.5: Insurance Verification Gate (NEW)
+
+**Status**: IN PROGRESS (2026-01-28)
+**Priority**: HIGH - Required before quote building
+
+### Functionality Goal
+
+Create a verification gate in the Quote Builder that displays insurance benefits, verifies data freshness, and provides clear paths forward (proceed to quote, re-scan, or self-pay).
+
+### Why This Gate?
+
+1. **EyeMed**: Simple product price list mapped from authorization
+2. **VSP**: Matrix-based pricing mapped from two-page authorizations
+3. **Both require**: Clear display of benefits before quoting to ensure accurate pricing
+
+### Insurance Verification Gate Requirements
+
+**Display (from Patient Profile - READ ONLY):**
+- Carrier (VSP, EyeMed, Spectera)
+- Plan Name
+- Exam Copay
+- Materials Copay
+- Frame Allowance (show range if Featured/Non-Featured)
+- Contact Lens Allowance
+- CL Fit Copay (Contact Lens Fitting copay)
+- Last Verified timestamp
+
+**Staleness Check:**
+- **48-hour threshold**: If authorization verified > 48 hours ago, show warning
+- Warning message: "Insurance last verified X days ago. Re-scan recommended."
+- Warning does NOT block quote - user can proceed anyway
+
+**Actions:**
+1. **[Proceed to Quote]** - Continue with current insurance benefits
+2. **[Go to Scanner]** - Redirect to `/scanner` page to re-scan documents
+3. **[Self-Pay]** - Always available, bypasses insurance entirely
+
+### Data Flow (CRITICAL)
+
+```
+┌─────────────────────────────────────────────────────────────────────┐
+│ PATIENT PROFILE (Source of Truth)                                   │
+│ ─────────────────────────────────────────────────────────────────── │
+│ • insurance_authorizations table                                    │
+│ • patient_price_lists table                                         │
+│ • Authorization copays JSON                                         │
+└───────────────────────────────┬─────────────────────────────────────┘
+                                │
+                                │ READ ONLY (no regeneration!)
+                                ▼
+┌─────────────────────────────────────────────────────────────────────┐
+│ INSURANCE VERIFICATION GATE (Quote Builder Entry Point)            │
+│ ─────────────────────────────────────────────────────────────────── │
+│ • Displays benefits from authorization                              │
+│ • Checks staleness (48-hour warning)                               │
+│ • Provides action buttons                                          │
+│                                                                     │
+│ ┌─────────────────────────────────────────────────────────────────┐ │
+│ │ 🏥 VSP - Choice Plan                    Last Verified: 2 days ago │
+│ │ ────────────────────────────────────────────────────────────────  │
+│ │ ⚠️ Insurance benefits may be outdated. Re-scan recommended.      │
+│ │                                                                   │
+│ │ Exam: $10 | Materials: $25 | Frame: $200 | CL: $150 | CL Fit: $40│
+│ │                                                                   │
+│ │ [Proceed to Quote]  [Go to Scanner]  [Self-Pay]                  │
+│ └─────────────────────────────────────────────────────────────────┘ │
+└───────────────────────────────┬─────────────────────────────────────┘
+                                │
+                ┌───────────────┼───────────────┐
+                ▼               ▼               ▼
+         [Quote Builder]   [/scanner]     [Quote Builder]
+         (with insurance)  (re-scan)      (self-pay mode)
+```
+
+### Implementation Plan
+
+**Component Location**: `src/components/quote-builder/insurance-verification-gate.tsx`
+
+**API Data Source**:
+- `/api/customers/[id]/authorization` - Get authorization details
+- `/api/customers/[id]/insurance-summary` - Get copay summary
+
+**No New APIs**: Uses existing patient profile APIs (read-only)
+
+### UI Specification
+
+```
+┌─────────────────────────────────────────────────────────────────────┐
+│ SELECT INSURANCE                                                    │
+├─────────────────────────────────────────────────────────────────────┤
+│                                                                     │
+│ ● VSP - Choice Plan                                                │
+│   Member: 123456789 | Group: 00012345                              │
+│   Last Verified: Jan 26, 2026 at 3:45 PM                           │
+│                                                                     │
+│   ┌───────────────────────────────────────────────────────────────┐│
+│   │ ⚠️ Insurance verified 2 days ago. Re-scan for latest benefits.││
+│   └───────────────────────────────────────────────────────────────┘│
+│                                                                     │
+│   BENEFITS SUMMARY:                                                 │
+│   ┌─────────┬────────────┬─────────┬─────────┬────────┐           │
+│   │ Exam    │ Materials  │ Frame   │ CL      │ CL Fit │           │
+│   │ $10     │ $25        │ $200    │ $150    │ $40    │           │
+│   └─────────┴────────────┴─────────┴─────────┴────────┘           │
+│                                                                     │
+│   [Proceed with VSP]    [Re-scan Documents]                        │
+│                                                                     │
+├─────────────────────────────────────────────────────────────────────┤
+│ ○ EyeMed (no active authorization)                                 │
+│   [Scan Documents]                                                  │
+├─────────────────────────────────────────────────────────────────────┤
+│ ○ Self-Pay (No Insurance)                                          │
+│   Patient pays retail prices                                        │
+│   [Continue as Self-Pay]                                           │
+└─────────────────────────────────────────────────────────────────────┘
+```
+
+### Staleness Logic
+
+```typescript
+const STALE_THRESHOLD_HOURS = 48;
+
+function isAuthorizationStale(authorization: { updatedAt: Date }): boolean {
+  const hoursSinceUpdate = (Date.now() - authorization.updatedAt.getTime()) / (1000 * 60 * 60);
+  return hoursSinceUpdate > STALE_THRESHOLD_HOURS;
+}
+```
+
+### Decision Point: STAGE 5.5 COMPLETE
+
+**Test 1**: Insurance gate displays benefits from patient profile
+```
+Navigate to Quote Builder → Select customer with VSP authorization
+```
+**Result**: Benefits summary shows Exam, Materials, Frame, CL, CL Fit copays
+
+**Test 2**: Staleness warning appears for old authorizations
+```
+Navigate to Quote Builder → Select customer with authorization > 48 hours old
+```
+**Result**: Warning banner appears: "Insurance verified X days ago..."
+
+**Test 3**: Scanner redirect works
+```
+Click [Go to Scanner] or [Re-scan Documents]
+```
+**Result**: Navigates to /scanner page with customer pre-selected
+
+**Test 4**: Self-pay bypasses insurance
+```
+Select "Self-Pay" option → Proceed to quote
+```
+**Result**: Quote builder loads in self-pay mode (retail prices)
+
+**Test 5**: Data is read-only (no regeneration)
+```
+Verify no API calls to regenerate price lists when entering gate
+```
+**Result**: Only GET requests to authorization/summary APIs
+
+**Action**: If ALL PASS → Gate complete, proceed with quote building
+
+---
 
 ### Insurance Summary Component (Updated 2026-01-27)
 
@@ -1931,6 +2274,173 @@ npx tsx scripts/run-vsp-validation.ts
 
 ---
 
+## Stage 7: Insurance Verification Framework ✅ COMPLETE
+
+**Status**: Implementation complete (2026-01-28)
+**Purpose**: Systematic testing and validation of insurance extraction and pricing accuracy
+
+### Components Implemented
+
+1. **Database Schema** - Verification tracking tables
+   - `verification_runs` - Track each verification run with status and summary
+   - `verification_results` - Per-field results (expected vs extracted vs database)
+   - `expected_values` - Ground truth values from PDFs
+
+2. **Verification Pipeline** (`scripts/verify-insurance-pipeline.ts`)
+   - Loads expected values from JSON files
+   - Compares against database authorization data
+   - Verifies VSP matrix codes and EyeMed tier pricing
+   - Records pass/fail/warning status for each field
+   - Generates summary reports
+
+3. **Export Tools** (`scripts/export-verification-results.ts`)
+   - CSV export for agent review
+   - JSON export for programmatic access
+   - HTML dashboard for visual audit
+
+4. **Test Data Structure**
+   ```
+   /test-documents/
+   ├── vsp/
+   │   ├── auth/           # VSP authorization PDFs
+   │   ├── lens/           # VSP lens enhancement PDFs
+   │   └── expected/       # Expected values JSON files
+   ├── eyemed/
+   │   ├── benefits/       # EyeMed benefits PDFs
+   │   └── expected/       # Expected values JSON files
+   └── eops/               # End-of-period statements for final verification
+   ```
+
+### Usage
+
+```bash
+# Run VSP verification
+npx tsx scripts/verify-insurance-pipeline.ts --carrier=VSP --format=json
+
+# Run EyeMed verification
+npx tsx scripts/verify-insurance-pipeline.ts --carrier=EyeMed --format=json
+
+# Export results for agent review
+npx tsx scripts/export-verification-results.ts --latest --format=csv
+
+# Export HTML dashboard
+npx tsx scripts/export-verification-results.ts --latest --format=html
+```
+
+### Verification Workflow
+
+1. **Create Expected Values** - Manually extract values from PDFs into JSON files
+2. **Run Verification** - Compare expected values against database
+3. **Review Results** - Export CSV/HTML for agent verification
+4. **Audit** - User spot-checks random samples against source PDFs
+5. **EOP Validation** - Final proof using actual insurance company EOPs
+
+### Current Test Coverage
+
+- **VSP**: 5 customers with expected values (Susan McCrae, Tyler Richards, Sarah Rivera, Maritza Kuzian, Tamara Carr)
+- **EyeMed**: 5 customers with expected values (Yuenmei Kwan, Thomas Chadwick, Joseph Hernandez, Emilia A'bell, Steven Zhang)
+
+### Last Verification Run Results (2026-01-28)
+
+**VSP**: 209 pass, 0 fail, 33 warnings (86.4% pass rate)
+- Warnings are null values for fields not in all PDFs (expected behavior)
+
+**EyeMed**: 15 pass, 0 fail, 0 warnings (100% pass rate)
+- All base copays verified correctly
+
+### Decision Point: STAGE 7 COMPLETE
+
+**Test 1**: Verification runs without errors
+```bash
+npx tsx scripts/verify-insurance-pipeline.ts --carrier=ALL
+```
+**Result**: Runs complete with summary output
+
+**Test 2**: Export generates valid files
+```bash
+ls reports/verification-results-*.csv
+ls reports/verification-results-*.html
+```
+**Result**: Files exist and contain verification data
+
+**Test 3**: No critical failures in expected fields
+- Base copays (examCopay, materialsCopay, frameAllowance) all pass
+- Matrix codes match expected values
+
+---
+
+## Stage 8: EyeMed Pricing Accuracy Fixes ✅ COMPLETE
+
+**Status**: Implementation complete (2026-01-29)
+**Purpose**: Fix EyeMed price list generation to correctly apply tier-based copays and discounts
+
+### Issues Identified
+
+1. **Extraction Normalization Missing** - Haiku extraction stored raw field names like `COPAYS_SINGLE_VISION_LENSES` but precompute expected normalized names like `singleVision`
+2. **Missing Tier Mapping** - `high_index_174` was not in EYEMED_TIER_TO_COPAY
+3. **Wrong Tier Assignment** - Technical Add-On had `eyemed: "all_other_lens_options"` but is VSP-only
+4. **Database Tier Codes** - Hi-Index products had NULL tierEyemed values
+
+### Fixes Implemented
+
+1. **haiku-extraction.ts** - Added `buildEyemedNormalizedCopays()` function
+   - Maps raw extracted keys to normalized field names
+   - Flexible search across COPAYS_, COVERAGE_DETAILS_, and other sections
+   - Handles "All Other Lens Options" 20% discount detection
+   - Output now includes normalized copays for precompute compatibility
+
+2. **insurance-tier-mappings.ts** - Updated tier mappings
+   - Added `high_index_174: "DISCOUNT_20_PERCENT"` to EYEMED_TIER_TO_COPAY
+   - Changed Technical Add-On to `eyemed: null` (VSP-only product)
+   - Changed Hi-Index 1.72 to `eyemed: "all_other_lens_options"`
+
+3. **Database Updates** - Updated lens_products table
+   - Hi-Index 1.74: tierEyemed = "high_index_174"
+   - Hi-Index 1.72: tierEyemed = "all_other_lens_options"
+   - Technical Add-On: tierEyemed = null
+
+### Pricing Categories (EyeMed)
+
+| Category | Products | Pricing Method |
+|----------|----------|----------------|
+| `ins_benefit` | Single Vision, Bifocal, Trifocal, Polycarbonate, AR coatings, Transitions | Fixed copay from authorization |
+| `ins_discount` | Hi-Index 1.67/1.72/1.74, Prism, Oversize (when covered Rx) | 20% off retail ("All Other Lens Options") |
+| `cash_only` | Neurolens, Sequel, Stellest, Varilux I design, Technical Add-On | Full retail price |
+
+### Verification Results (Angela Clayton - EyeMed)
+
+After fixes:
+- 12 cash_only products correctly identified
+- 23 ins_discount products (20% off retail)
+- 11 by_tier products with correct copays ($25 SV, $25 Bifocal, $40 Poly, etc.)
+
+### Customer Selection Persistence Fix
+
+Also fixed patient selection not persisting when navigating away:
+- Added localStorage as backup to sessionStorage
+- Updated quote-builder/page.tsx, customer-profile.tsx, customer-management.tsx
+- Customer selection now survives browser refresh and tab navigation
+
+### Decision Point: STAGE 8 COMPLETE
+
+**Test 1**: EyeMed extraction produces normalized copay fields
+```bash
+npx tsx scripts/reprocess-angela.ts
+# Output shows: singleVision: 25, bifocal: 25, polycarbonate: 40, etc.
+```
+
+**Test 2**: Price list shows correct pricing methods
+- Visit customer profile > Price List tab
+- Hi-Index products show "ins_discount" (not "cash_only")
+- Technical Add-On shows "cash_only"
+
+**Test 3**: Customer selection persists across navigation
+- Select customer in Quote Builder
+- Navigate away and return
+- Customer is still selected
+
+---
+
 ## Gate Checks (Go/No-Go)
 
 - **Stage 1 Gate**: Zero products with NULL cash prices
@@ -1969,6 +2479,190 @@ Analytics working? → NO → Fix queries → Test again
   ↓ YES
 LAUNCH READY
 ```
+
+---
+
+## Pricing Rules Reference (AUTHORITATIVE)
+
+**Created:** 2026-01-29
+
+### Three Pricing Categories
+
+Every product falls into ONE of these categories:
+
+#### 1. Insurance Benefit (`ins_benefit`)
+Pricing defined by the member's insurance plan. Includes:
+- **Flat copays** - e.g., Single Vision: $25
+- **Tiered copays** - e.g., Progressive Tier 3: $110
+- **Allowances** - e.g., Frame: $180 allowance, 20% off overage
+- **Plan discounts** - e.g., "All Other Lens Options: 20% off retail"
+- **Complex formulas** - e.g., Progressive Premium: $25 copay + 80% of (retail - $120 allowance)
+
+**Rule:** If a product is a lens or lens option and NOT explicitly listed in the plan, it falls under "All Other Lens Options" and gets the plan's discount (typically 20% off retail for EyeMed).
+
+#### 2. Provider Contract Discount (`contract_discount`)
+Discounts we are contractually obligated to provide when part of a covered order. This is NOT an insurance benefit - it's our agreement with the carrier.
+
+**Products in this category:**
+- Oversize Lenses
+- Prism
+
+**Rule:** These get 20% off retail ONLY when bundled with a covered pair of glasses. If the patient is paying cash for everything, no contract discount applies.
+
+**Flag:** `requiresCoveredRx: true`
+
+#### 3. Cash Only (`cash_only`)
+Products completely outside insurance. Patient pays full retail. No discounts.
+
+**Products in this category:**
+- Neurolens SV
+- Neurolens Progressive
+- Neurolens Premium AR
+- Neurolens Blue AR
+- Sequel Single Vision
+- Sequel PAL
+- Varilux I design
+- Stellest
+
+**Rule:** These are NEVER covered by insurance. Always full retail price regardless of carrier or plan.
+
+---
+
+### Pricing Methods Reference
+
+| Method | Description | Example |
+|--------|-------------|---------|
+| `copay` | Flat dollar copay from plan | SV: $25 |
+| `copay_plus_allowance` | Copay + percentage of amount over allowance | Progressive Premium: $25 + 80% of (retail - $120) |
+| `ins_discount` | Percentage discount defined by insurance plan | All Other: 20% off |
+| `allowance` | Dollar allowance, discount on overage | Frame: $180 allowance, 20% off overage |
+| `contract_discount` | Provider contract discount (requires covered Rx) | Oversize: 20% off with covered glasses |
+| `cash_only` | Full retail, no coverage | Neurolens: $700 |
+| `covered` | $0 - fully covered by plan | Exam: $0 copay |
+
+---
+
+### EyeMed Specific Rules
+
+#### "All Other Lens Options"
+This is EyeMed's catch-all benefit. ANY lens option not explicitly listed gets this discount (typically 20% off retail).
+
+**Applies to:**
+- Materials not listed (Trivex, Hi-Index variants)
+- AR coatings not in Standard tier
+- Photochromic lenses
+- Polarized lenses
+- Blue light filters
+- Specialty progressives not in tier list
+- Edge treatments
+- Tints beyond basic
+- Any other lens enhancement
+
+**Does NOT apply to:**
+- Cash-only products (Neurolens, Sequel, Varilux I design, Stellest)
+- Contract discount products when Rx is not covered
+
+#### Progressive Premium Formula
+Many EyeMed plans use: `$25 copay + 80% of (retail - $120 allowance)`
+
+```
+if (retail <= allowance) {
+  patientPays = copay  // Just the copay, nothing extra
+} else {
+  overage = retail - allowance
+  patientPays = copay + (overage * 0.80)
+}
+```
+
+**Example:** Varilux Comfort Max @ $393.30 retail
+- Copay: $25
+- Allowance: $120
+- Overage: $393.30 - $120 = $273.30
+- Patient pays for overage: $273.30 × 0.80 = $218.64
+- **Total: $25 + $218.64 = $243.64**
+
+#### Age-Based Pricing
+- **Polycarbonate (under 19):** $0 copay
+- **Polycarbonate (19 and over):** $40 copay
+
+System must check patient age and apply correct copay.
+
+---
+
+### Implementation Checklist
+
+When building/updating pricing:
+
+- [ ] Check if product is in "Cash Only" list → full retail
+- [ ] Check if product is in "Contract Discount" list → 20% off IF covered Rx
+- [ ] Otherwise, look up insurance benefit
+- [ ] If no specific benefit found, use "All Other Lens Options" discount
+- [ ] For complex formulas, implement copay + allowance + discount logic
+- [ ] Check patient age for age-based copays
+
+---
+
+## Pricing Example: Angela Clayton (EyeMed)
+
+**Member ID:** 20706244103 | **DOB:** 02/15/1970 (Age 55) | **Network:** Access 101 FF 360
+
+### Benefits from Document
+
+| Category | Benefit |
+|----------|---------|
+| Exam | $0 copay |
+| Frame | $0 copay; 20% off balance over $180 allowance |
+| Single Vision / Bifocal / Trifocal | $25 copay |
+| Progressive - Standard | $25 copay |
+| Progressive - Premium / Tier 4 | $25 copay + 80% of (retail - $120 allowance) |
+| AR Coating - Standard | $45 |
+| AR Coating - Premium | 20% off retail |
+| Polycarbonate (age 19+) | $40 |
+| Polycarbonate (under 19) | $0 |
+| Scratch / Tint / UV | $15 |
+| All Other Lens Options | 20% off retail |
+
+### Calculated Price List
+
+| Product | Retail | Patient Pays | Method |
+|---------|--------|--------------|--------|
+| **LENSES** |
+| Single Vision | $80 | **$25** | copay |
+| Essilor Eyezen+ | $129 | **$103** | ins_discount (All Other) |
+| Flat Top 28 | $126 | **$25** | copay |
+| Varilux Comfort DRx | $254 | **$132** | copay_plus_allowance |
+| Varilux Comfort Max | $393 | **$244** | copay_plus_allowance |
+| Varilux X Design | $600 | **$409** | copay_plus_allowance |
+| Varilux I design | $480 | $480 | cash_only |
+| Sequel PAL | $535 | $535 | cash_only |
+| Neurolens Progressive | $700 | $700 | cash_only |
+| **MATERIALS** |
+| CR-39 (Standard) | $0 | **$0** | covered |
+| Polycarbonate | $65 | **$40** | copay (age 19+) |
+| Trivex | $85 | **$68** | ins_discount (All Other) |
+| Hi-Index 1.67 | $125 | **$100** | ins_discount (All Other) |
+| Hi-Index 1.74 | $175 | **$140** | ins_discount (All Other) |
+| Hi-Index 1.72 | $150 | **$120** | ins_discount (All Other) |
+| **AR COATINGS** |
+| Crizal Easy Pro | $148 | **$118** | ins_discount (Premium AR) |
+| Crizal Rock | $145 | **$116** | ins_discount (Premium AR) |
+| Crizal Sapphire HR | $180 | **$144** | ins_discount (Premium AR) |
+| Crizal Sunshield UV | $178 | **$15** | copay (UV Treatment) |
+| Neurolens AR | $180 | $180 | cash_only |
+| **PHOTOCHROMIC** |
+| Transitions GEN S | $175 | **$140** | ins_discount (All Other) |
+| Transitions XTRActive | $145 | **$116** | ins_discount (All Other) |
+| **MOUNT FEES** |
+| Full Rim | $0 | **$0** | covered |
+| Semi Rimless | $35 | **$28** | ins_discount (All Other) |
+| Rimless (drill) | $47 | **$38** | ins_discount (All Other) |
+| **ADDONS** |
+| UV Protection | $15 | **$15** | copay |
+| Solid Tint | $18 | **$15** | copay |
+| Essential Blue Series | $30 | **$24** | ins_discount (All Other) |
+| Polarized | $156 | **$125** | ins_discount (All Other) |
+| Oversize | $30 | **$24** | contract_discount |
+| Prism | $8 | **$7** | contract_discount |
 
 ---
 

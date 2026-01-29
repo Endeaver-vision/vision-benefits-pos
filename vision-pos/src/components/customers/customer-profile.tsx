@@ -20,7 +20,7 @@ export default function CustomerProfile() {
   // Read tab from URL query param (e.g., ?tab=price-plan)
   // Price List is now the default/first tab
   const tabFromUrl = searchParams.get('tab')
-  const defaultTab = tabFromUrl && ['price-plan', 'overview', 'contact', 'history', 'prescriptions'].includes(tabFromUrl)
+  const defaultTab = tabFromUrl && ['price-plan', 'overview', 'history', 'prescriptions'].includes(tabFromUrl)
     ? tabFromUrl
     : 'price-plan'
 
@@ -181,7 +181,9 @@ export default function CustomerProfile() {
           </Button>
           <Button
             onClick={() => {
-              sessionStorage.setItem('selectedCustomer', JSON.stringify(customer))
+              const customerJson = JSON.stringify(customer)
+              sessionStorage.setItem('selectedCustomer', customerJson)
+              localStorage.setItem('quoteBuilderCustomer', customerJson)
               router.push('/quote-builder')
             }}
           >
@@ -254,10 +256,9 @@ export default function CustomerProfile() {
 
       {/* Main Content Tabs */}
       <Tabs defaultValue={defaultTab} className="w-full">
-        <TabsList className="grid w-full grid-cols-5">
+        <TabsList className="grid w-full grid-cols-4">
           <TabsTrigger value="price-plan">Price List</TabsTrigger>
           <TabsTrigger value="overview">Overview</TabsTrigger>
-          <TabsTrigger value="contact">Contact & Address</TabsTrigger>
           <TabsTrigger value="history">Purchase History</TabsTrigger>
           <TabsTrigger value="prescriptions">Prescriptions</TabsTrigger>
         </TabsList>
@@ -298,12 +299,12 @@ export default function CustomerProfile() {
               </CardContent>
             </Card>
 
-            {/* Quick Contact */}
+            {/* Contact & Address */}
             <Card>
               <CardHeader>
                 <CardTitle className="flex items-center gap-2">
                   <Phone className="h-5 w-5" />
-                  Contact Information
+                  Contact & Address
                 </CardTitle>
               </CardHeader>
               <CardContent className="space-y-4">
@@ -325,14 +326,20 @@ export default function CustomerProfile() {
                     </div>
                   </div>
                 )}
-                {(customer.city || customer.state) && (
-                  <div className="flex items-center gap-3">
-                    <MapPin className="h-4 w-4 text-muted-foreground" />
+                {(customer.address || customer.city || customer.state || customer.zipCode) && (
+                  <div className="flex items-start gap-3">
+                    <MapPin className="h-4 w-4 text-muted-foreground mt-0.5" />
                     <div>
-                      <p className="text-sm font-medium text-muted-foreground">Location</p>
-                      <p className="text-base">
-                        {customer.city && customer.state ? `${customer.city}, ${customer.state}` : customer.city || customer.state}
-                      </p>
+                      <p className="text-sm font-medium text-muted-foreground">Address</p>
+                      <div className="text-base">
+                        {customer.address && <p>{customer.address}</p>}
+                        {(customer.city || customer.state || customer.zipCode) && (
+                          <p>
+                            {[customer.city, customer.state].filter(Boolean).join(', ')}
+                            {customer.zipCode && ` ${customer.zipCode}`}
+                          </p>
+                        )}
+                      </div>
                     </div>
                   </div>
                 )}
@@ -389,20 +396,6 @@ export default function CustomerProfile() {
               </CardContent>
             </Card>
           )}
-        </TabsContent>
-
-        <TabsContent value="contact" className="space-y-6">
-          <Card>
-            <CardHeader>
-              <CardTitle>Contact & Address Information</CardTitle>
-            </CardHeader>
-            <CardContent>
-              <div className="text-center text-muted-foreground py-8">
-                <MapPin className="h-12 w-12 mx-auto mb-4 opacity-50" />
-                <p>Address management coming in the next update</p>
-              </div>
-            </CardContent>
-          </Card>
         </TabsContent>
 
         <TabsContent value="history" className="space-y-6">

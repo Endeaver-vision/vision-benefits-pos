@@ -438,9 +438,11 @@ export default function CustomerManagement({ onSelectCustomer, showActions = tru
                             </Button>
                           </DropdownMenuTrigger>
                           <DropdownMenuContent align="end">
-                            <DropdownMenuItem onClick={(e) => { 
+                            <DropdownMenuItem onClick={(e) => {
                               e.stopPropagation()
-                              sessionStorage.setItem('selectedCustomer', JSON.stringify(customer))
+                              const customerJson = JSON.stringify(customer)
+                              sessionStorage.setItem('selectedCustomer', customerJson)
+                              localStorage.setItem('quoteBuilderCustomer', customerJson)
                               window.location.href = '/quote-builder'
                             }}>
                               Start Quote

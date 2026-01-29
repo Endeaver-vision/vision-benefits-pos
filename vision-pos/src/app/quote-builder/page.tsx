@@ -73,9 +73,16 @@ function QuoteBuilderContent() {
   const [loading, setLoading] = useState(false)
   const [isLoadingCustomer, setIsLoadingCustomer] = useState(false)
 
-  // Load customer from URL param (highest priority - for returning from scanner)
+  // Load customer - URL param takes absolute priority, then sessionStorage, then localStorage
   useEffect(() => {
-    if (urlCustomerId && !selectedCustomer) {
+    // URL param present - ALWAYS fetch, even if selectedCustomer exists
+    // This handles returning from scanner with a (possibly different) customer
+    if (urlCustomerId) {
+      // Skip if we already loaded this exact customer
+      if (selectedCustomer?.id === urlCustomerId) {
+        return
+      }
+
       setIsLoadingCustomer(true)
       fetch(`/api/customers/${urlCustomerId}`)
         .then(res => res.json())
@@ -95,19 +102,29 @@ function QuoteBuilderContent() {
             setSelectedCustomer(customer)
             setCustomer(customer.id, `${customer.firstName} ${customer.lastName}`)
             setCurrentLayer('insurance')
-            // Store in sessionStorage for persistence
-            sessionStorage.setItem('selectedCustomer', JSON.stringify(customer))
+            // Store in both sessionStorage and localStorage for persistence
+            const customerJson = JSON.stringify(customer)
+            sessionStorage.setItem('selectedCustomer', customerJson)
+            localStorage.setItem('quoteBuilderCustomer', customerJson)
           }
         })
         .catch(err => console.error('Error loading customer from URL:', err))
         .finally(() => setIsLoadingCustomer(false))
     }
-  }, [urlCustomerId, selectedCustomer, setCustomer])
+    // No URL param - try sessionStorage first, then localStorage as fallback
+    else if (!selectedCustomer) {
+      // Try sessionStorage first (same-tab persistence)
+      let storedCustomer = sessionStorage.getItem('selectedCustomer')
 
-  // Check for selected customer from session storage (fallback if no URL param)
-  useEffect(() => {
-    if (!urlCustomerId && !selectedCustomer) {
-      const storedCustomer = sessionStorage.getItem('selectedCustomer')
+      // If not in sessionStorage, try localStorage (cross-session persistence)
+      if (!storedCustomer) {
+        storedCustomer = localStorage.getItem('quoteBuilderCustomer')
+        // If found in localStorage, sync back to sessionStorage
+        if (storedCustomer) {
+          sessionStorage.setItem('selectedCustomer', storedCustomer)
+        }
+      }
+
       if (storedCustomer) {
         try {
           const customer = JSON.parse(storedCustomer)
@@ -117,6 +134,9 @@ function QuoteBuilderContent() {
           setCurrentLayer('insurance')
         } catch (error) {
           console.error('Error parsing stored customer:', error)
+          // Clear corrupted storage
+          sessionStorage.removeItem('selectedCustomer')
+          localStorage.removeItem('quoteBuilderCustomer')
         }
       }
     }
@@ -151,8 +171,10 @@ function QuoteBuilderContent() {
     setCurrentLayer('insurance')
     setCustomerSearch('')
     setCustomerResults([])
-    // Persist to sessionStorage for navigation resilience
-    sessionStorage.setItem('selectedCustomer', JSON.stringify(customer))
+    // Persist to both sessionStorage and localStorage for navigation resilience
+    const customerJson = JSON.stringify(customer)
+    sessionStorage.setItem('selectedCustomer', customerJson)
+    localStorage.setItem('quoteBuilderCustomer', customerJson)
   }
 
   // Handle layer navigation
@@ -479,8 +501,9 @@ function QuoteBuilderContent() {
                         setSelectedCustomer(null)
                         clearCustomer()
                         setCurrentLayer('customer')
-                        // Clear persisted customer
+                        // Clear persisted customer from both storages
                         sessionStorage.removeItem('selectedCustomer')
+                        localStorage.removeItem('quoteBuilderCustomer')
                         // Clear URL param by navigating to base URL
                         router.replace('/quote-builder')
                       }}
@@ -610,6 +633,7 @@ function QuoteBuilderContent() {
               <EyeglassesLayerSimple
                 onNext={() => setCurrentLayer('second-pair')}
                 onBack={() => setCurrentLayer('exam-services')}
+                onSkipSecondPair={() => setCurrentLayer('contacts')}
               />
             )}
 
