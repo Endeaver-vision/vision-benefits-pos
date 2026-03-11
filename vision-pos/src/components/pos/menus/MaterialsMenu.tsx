@@ -161,7 +161,7 @@ export default function MaterialsMenu() {
     <div className="p-[2%] space-y-[3%]">
       {/* ===== MATERIALS ===== */}
       <div>
-        <div className="flex items-center gap-2 mb-3">
+        <div className="flex items-center gap-2 mb-[1.5%]">
           <Layers className="h-4 w-4 text-white/60" />
           <h3 className="text-xs font-medium text-white/60 uppercase tracking-wide">Materials</h3>
         </div>
@@ -184,7 +184,7 @@ export default function MaterialsMenu() {
 
       {/* ===== AR COATINGS ===== */}
       <div>
-        <div className="flex items-center gap-2 mb-3">
+        <div className="flex items-center gap-2 mb-[1.5%]">
           <Sparkles className="h-4 w-4 text-white/60" />
           <h3 className="text-xs font-medium text-white/60 uppercase tracking-wide">AR Coatings</h3>
         </div>
@@ -210,7 +210,7 @@ export default function MaterialsMenu() {
 
       {/* ===== PHOTOCHROMICS ===== */}
       <div>
-        <div className="flex items-center gap-2 mb-3">
+        <div className="flex items-center gap-2 mb-[1.5%]">
           <Sun className="h-4 w-4 text-white/60" />
           <h3 className="text-xs font-medium text-white/60 uppercase tracking-wide">Photochromics</h3>
         </div>

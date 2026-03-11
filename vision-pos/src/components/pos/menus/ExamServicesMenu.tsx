@@ -79,7 +79,7 @@ export default function ExamServicesMenu() {
     <div className="p-[2%] space-y-[3%]">
       {/* Eye Exams */}
       <div>
-        <div className="flex items-center gap-2 mb-3">
+        <div className="flex items-center gap-2 mb-[1.5%]">
           <Stethoscope className="h-4 w-4 text-white/60" />
           <h3 className="text-xs font-medium text-white/60 uppercase tracking-wide">Eye Exams</h3>
         </div>
@@ -98,7 +98,7 @@ export default function ExamServicesMenu() {
 
       {/* Contact Lens Fittings */}
       <div>
-        <div className="flex items-center gap-2 mb-3">
+        <div className="flex items-center gap-2 mb-[1.5%]">
           <Eye className="h-4 w-4 text-white/60" />
           <h3 className="text-xs font-medium text-white/60 uppercase tracking-wide">Contact Lens Fittings</h3>
         </div>
@@ -117,7 +117,7 @@ export default function ExamServicesMenu() {
 
       {/* Screenings & Diagnostics */}
       <div>
-        <div className="flex items-center gap-2 mb-3">
+        <div className="flex items-center gap-2 mb-[1.5%]">
           <Activity className="h-4 w-4 text-white/60" />
           <h3 className="text-xs font-medium text-white/60 uppercase tracking-wide">Screenings & Diagnostics</h3>
         </div>

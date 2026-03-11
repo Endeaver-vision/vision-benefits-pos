@@ -243,7 +243,7 @@ export default function LensesMenu() {
     <div className="p-[2%] space-y-[3%]">
       {/* ===== PACKAGES ===== */}
       <div>
-        <div className="flex items-center gap-2 mb-3">
+        <div className="flex items-center gap-2 mb-[1.5%]">
           <Package className="h-4 w-4 text-emerald-400" />
           <h3 className="text-xs font-medium text-white/60 uppercase tracking-wide">Packages</h3>
         </div>
@@ -261,7 +261,7 @@ export default function LensesMenu() {
 
       {/* ===== LENS TYPE ===== */}
       <div>
-        <div className="flex items-center gap-2 mb-3">
+        <div className="flex items-center gap-2 mb-[1.5%]">
           <Eye className="h-4 w-4 text-white/60" />
           <h3 className="text-xs font-medium text-white/60 uppercase tracking-wide">Lens Type</h3>
         </div>
