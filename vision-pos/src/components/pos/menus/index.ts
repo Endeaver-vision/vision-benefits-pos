@@ -1,0 +1,6 @@
+export { default as ExamServicesMenu } from './ExamServicesMenu'
+export { default as LensesMenu } from './LensesMenu'
+export { default as MaterialsMenu } from './MaterialsMenu'
+export { default as AddOnsMenu } from './AddOnsMenu'
+export { default as FramesMenu } from './FramesMenu'
+export { default as ContactsMenu } from './ContactsMenu'
