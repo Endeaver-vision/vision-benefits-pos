@@ -1,4 +1,3 @@
-import { prisma } from '@/lib/prisma'
 import { Card, CardContent } from '@/components/ui/card'
 import { Button } from '@/components/ui/button'
 import { Package, AlertTriangle, Home, Clock, ArrowLeft } from 'lucide-react'
@@ -10,87 +9,18 @@ import { OrderTrackingNavigation, OrderTrackingFooter } from '@/components/order
 export const dynamic = 'force-dynamic'
 
 async function getOrders() {
-  try {
-    const orders = await prisma.order.findMany({
-      include: {
-        customer: {
-          select: {
-            firstName: true,
-            lastName: true,
-            email: true,
-            phone: true,
-          }
-        },
-        items: true,
-        statusHistory: {
-          orderBy: { timestamp: 'desc' },
-          take: 10
-        },
-        communications: {
-          orderBy: { timestamp: 'desc' },
-          take: 5
-        },
-        qualityChecks: {
-          orderBy: { performedAt: 'desc' },
-          take: 3
-        },
-        _count: {
-          select: {
-            statusHistory: true,
-            communications: true,
-            qualityChecks: true,
-          }
-        }
-      },
-      orderBy: {
-        createdAt: 'desc'
-      },
-      take: 50
-    })
-    return orders
-  } catch (error) {
-    console.error('Failed to fetch orders:', error)
-    return []
-  }
+  // Order model not yet implemented in schema
+  // Return empty array until schema is updated
+  return []
 }
 
 async function getAlertSummary() {
-  try {
-    const alerts = await prisma.orderAlert.findMany({
-      where: { resolved: false },
-      include: {
-        order: {
-          select: {
-            orderNumber: true,
-            status: true,
-          }
-        }
-      },
-      orderBy: [
-        { severity: 'desc' },
-        { createdAt: 'asc' }
-      ]
-    })
-
-    const bySeverity = {
-      URGENT: alerts.filter(a => a.severity === 'URGENT'),
-      CRITICAL: alerts.filter(a => a.severity === 'CRITICAL'),
-      WARNING: alerts.filter(a => a.severity === 'WARNING'),
-      INFO: alerts.filter(a => a.severity === 'INFO'),
-    }
-
-    return {
-      total: alerts.length,
-      bySeverity,
-      topAlerts: alerts.slice(0, 5) // Top 5 most critical
-    }
-  } catch (error) {
-    console.error('Failed to fetch alert summary:', error)
-    return {
-      total: 0,
-      bySeverity: { URGENT: [], CRITICAL: [], WARNING: [], INFO: [] },
-      topAlerts: []
-    }
+  // OrderAlert model not yet implemented in schema
+  // Return empty data until schema is updated
+  return {
+    total: 0,
+    bySeverity: { URGENT: [], CRITICAL: [], WARNING: [], INFO: [] },
+    topAlerts: []
   }
 }
 

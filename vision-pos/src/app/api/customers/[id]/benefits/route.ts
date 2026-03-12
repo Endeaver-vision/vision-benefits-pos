@@ -2,10 +2,43 @@
  * Insurance Benefits API
  * GET /api/customers/[id]/benefits - Get customer's insurance benefits from authorization
  * POST /api/customers/[id]/benefits - Create/update insurance benefits
+ *
+ * Uses the unified insurance_authorizations table.
  */
 
 import { NextRequest, NextResponse } from 'next/server';
 import { prisma } from '@/lib/prisma';
+
+// Type for the copays JSON structure
+interface CopaysJson {
+  examCopay?: number
+  materialsCopay?: number
+  singleVision?: number
+  bifocal?: number
+  trifocal?: number
+  progressiveStandard?: number
+  progressiveTier1?: number
+  progressiveTier2?: number
+  progressiveTier3?: number
+  progressiveTier4?: number
+  progressiveTier5?: number
+  arStandard?: number
+  arTier1?: number
+  arTier2?: number
+  arTier3?: number
+  polycarbonate?: number
+  polycarbonateChild?: number
+  trivex?: number
+  highIndex167?: number
+  highIndex174?: number
+  photochromic?: number
+  polarized?: number
+  blueLight?: number
+  tint?: number
+  uvTreatment?: number
+  scratchCoating?: number
+  [key: string]: number | undefined
+}
 
 /**
  * GET - Fetch customer's current insurance benefits from active authorization
@@ -44,125 +77,57 @@ export async function GET(
 
     console.log('[Benefits API] Customer found:', customer.firstName, customer.lastName);
 
-    // Try to find active authorization from any carrier
+    // Try to find active authorization from unified table
     let benefits = getDefaultBenefits();
     let carrier = customer.insuranceCarrier || 'None';
 
-    // Check VSP authorization
-    const vspAuth = await prisma.vspAuthorization.findFirst({
+    // Check unified InsuranceAuthorization table
+    const authorization = await prisma.insuranceAuthorization.findFirst({
       where: { customerId, isActive: true },
       orderBy: { createdAt: 'desc' }
     });
 
-    if (vspAuth) {
-      carrier = 'VSP';
-      // NO DEFAULTS - only show what was actually scanned
+    if (authorization) {
+      carrier = authorization.carrier;
+      const copays = (authorization.copays as CopaysJson) || {};
+
+      // Build benefits from unified authorization
       benefits = {
         planYear: new Date().getFullYear(),
-        examCopay: vspAuth.examCopay,
-        examCovered: vspAuth.examCopay !== null,
-        examEligible: vspAuth.examCopay !== null,
+        examCopay: authorization.examCopay ? Number(authorization.examCopay) : (copays.examCopay ?? null),
+        examCovered: authorization.examCopay !== null || copays.examCopay !== undefined,
+        examEligible: authorization.examEligible ?? false,
         examFrequency: 12,
-        materialsCopay: vspAuth.materialsCopay,
-        materialsEligible: vspAuth.materialsCopay !== null,
-        materialsFrequency: 12,
-        frameAllowance: vspAuth.frameAllowanceRetail,
-        frameAllowanceFeatured: vspAuth.frameAllowanceMarchon,
-        frameOverageDiscount: vspAuth.frameOverageDiscount,
+        materialsCopay: authorization.materialsCopay ? Number(authorization.materialsCopay) : (copays.materialsCopay ?? null),
+        materialsEligible: authorization.lensesEligible ?? true,
+        materialsFrequency: authorization.carrier === 'VSP' ? 12 : 24,
+        frameAllowance: authorization.frameAllowance ? Number(authorization.frameAllowance) : null,
+        frameAllowanceFeatured: authorization.frameAllowance ? Number(authorization.frameAllowance) : null,
+        frameOverageDiscount: 0.20, // Default 20% discount
         frameAllowanceUsed: 0,
-        frameAllowanceRemaining: vspAuth.frameAllowanceRetail,
-        lensAllowance: 0, // VSP covers lenses fully with copay
+        frameAllowanceRemaining: authorization.frameAllowance ? Number(authorization.frameAllowance) : null,
+        lensAllowance: 0, // Most plans cover lenses with copay, not allowance
         lensAllowanceUsed: 0,
         lensAllowanceRemaining: 0,
-        contactAllowance: vspAuth.contactAllowance,
+        contactAllowance: authorization.contactAllowance ? Number(authorization.contactAllowance) : null,
         contactAllowanceUsed: 0,
-        contactAllowanceRemaining: vspAuth.contactAllowance,
-        contactFittingCovered: vspAuth.contactFittingCovered,
-        contactFittingCopay: null, // Will be null unless scanned
-        contactsEligible: vspAuth.contactAllowance !== null,
+        contactAllowanceRemaining: authorization.contactAllowance ? Number(authorization.contactAllowance) : null,
+        contactFittingCovered: false,
+        contactFittingCopay: null,
+        contactsEligible: authorization.contactsEligible ?? false,
         contactFrequency: 12,
-        // VSP plans: glasses and contacts are mutually exclusive per benefit period
-        glassesContactsExclusive: true,
+        glassesContactsExclusive: authorization.carrier === 'VSP',
       };
-    }
-
-    // Check EyeMed authorization
-    if (!vspAuth) {
-      const eyemedAuth = await prisma.eyemedAuthorization.findFirst({
-        where: { customerId, isActive: true },
-        orderBy: { createdAt: 'desc' }
-      });
-
-      if (eyemedAuth) {
-        carrier = 'EyeMed';
-        // NO DEFAULTS - only show what was actually scanned
-        benefits = {
-          planYear: new Date().getFullYear(),
-          examCopay: eyemedAuth.examCopay,
-          examCovered: eyemedAuth.examCopay !== null,
-          examEligible: eyemedAuth.examCopay !== null,
-          examFrequency: 12,
-          materialsCopay: null,
-          materialsEligible: true,
-          materialsFrequency: 24,
-          frameAllowance: eyemedAuth.frameAllowance,
-          frameAllowanceUsed: 0,
-          frameAllowanceRemaining: eyemedAuth.frameAllowance,
-          lensAllowance: 0,
-          lensAllowanceUsed: 0,
-          lensAllowanceRemaining: 0,
-          contactAllowance: eyemedAuth.contactAllowance,
-          contactAllowanceUsed: 0,
-          contactAllowanceRemaining: eyemedAuth.contactAllowance,
-          contactFittingCopay: null,
-          contactsEligible: eyemedAuth.contactAllowance !== null,
-          contactFrequency: 12,
-        };
-      }
-    }
-
-    // Check Spectera authorization
-    if (!vspAuth) {
-      const specteraAuth = await prisma.specteraAuthorization.findFirst({
-        where: { customerId, isActive: true },
-        orderBy: { createdAt: 'desc' }
-      });
-
-      if (specteraAuth) {
-        carrier = 'Spectera';
-        // NO DEFAULTS - only show what was actually scanned
-        benefits = {
-          planYear: new Date().getFullYear(),
-          examCopay: specteraAuth.examCopay,
-          examCovered: specteraAuth.examCopay !== null,
-          examEligible: specteraAuth.examCopay !== null,
-          examFrequency: 12,
-          materialsCopay: null,
-          materialsEligible: true,
-          materialsFrequency: 24,
-          frameAllowance: specteraAuth.frameAllowance,
-          frameAllowanceUsed: 0,
-          frameAllowanceRemaining: specteraAuth.frameAllowance,
-          lensAllowance: 0,
-          lensAllowanceUsed: 0,
-          lensAllowanceRemaining: 0,
-          contactAllowance: specteraAuth.nonSelectionClAllowance,
-          contactAllowanceUsed: 0,
-          contactAllowanceRemaining: specteraAuth.nonSelectionClAllowance,
-          contactFittingCopay: null,
-          contactsEligible: specteraAuth.nonSelectionClAllowance !== null,
-          contactFrequency: 12,
-        };
-      }
     }
 
     const response = {
       customerId: customer.id,
       customerName: `${customer.firstName} ${customer.lastName}`,
       carrier,
-      memberId: customer.memberId,
+      memberId: customer.memberId || authorization?.memberId,
       groupNumber: customer.groupNumber,
       eligibilityDate: customer.eligibilityDate,
+      planName: authorization?.planName,
       benefits,
     };
 
@@ -184,26 +149,26 @@ export async function GET(
 function getDefaultBenefits() {
   return {
     planYear: new Date().getFullYear(),
-    examCopay: 0,
+    examCopay: null as number | null,
     examCovered: false,
     examEligible: false,
     examFrequency: 12,
-    materialsCopay: 0,
+    materialsCopay: null as number | null,
     materialsEligible: false,
     materialsFrequency: 24,
-    frameAllowance: 0,
-    frameAllowanceFeatured: 0,
+    frameAllowance: null as number | null,
+    frameAllowanceFeatured: null as number | null,
     frameOverageDiscount: 0,
     frameAllowanceUsed: 0,
-    frameAllowanceRemaining: 0,
+    frameAllowanceRemaining: null as number | null,
     lensAllowance: 0,
     lensAllowanceUsed: 0,
     lensAllowanceRemaining: 0,
-    contactAllowance: 0,
+    contactAllowance: null as number | null,
     contactAllowanceUsed: 0,
-    contactAllowanceRemaining: 0,
+    contactAllowanceRemaining: null as number | null,
     contactFittingCovered: false,
-    contactFittingCopay: 0,
+    contactFittingCopay: null as number | null,
     contactsEligible: false,
     contactFrequency: 12,
     glassesContactsExclusive: false,

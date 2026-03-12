@@ -11,6 +11,7 @@ import {
   Layers,
   Sparkles,
   Sun,
+  AlertTriangle,
 } from 'lucide-react'
 import ProductTile from '../ProductTile'
 
@@ -18,8 +19,10 @@ export default function MaterialsMenu() {
   const {
     quote,
     priceList,
+    isSingleVision,
     addLineItem,
     removeLineItem,
+    hasContactItems,
   } = usePOSStore()
 
   // ===== SELECTION STATE =====
@@ -41,15 +44,36 @@ export default function MaterialsMenu() {
 
   // ===== PRICING =====
 
-  const getPrice = (product: Product): number => {
+  const getPrice = (product: Product, category?: string): number => {
     if (product.retail === 0) return 0
-    if (!priceList || !quote.insurance.hasActiveAuth) {
+
+    // No insurance = retail price
+    if (!quote.insurance.hasActiveAuth) {
       return product.retail
     }
-    const priceData = priceList.prices[product.id]
-    if (typeof priceData === 'number') {
-      return priceData
+
+    // First check price list (from uploaded PDF or synthesized from authorization)
+    if (priceList) {
+      const priceData = priceList.prices[product.id]
+
+      // Simple number price
+      if (typeof priceData === 'number') {
+        return priceData
+      }
+
+      // SV/MF variance price (materials)
+      if (priceData && typeof priceData === 'object') {
+        const prices = priceData as Record<string, number>
+        return isSingleVision ? (prices.sv ?? product.retail) : (prices.mf ?? product.retail)
+      }
     }
+
+    // Fallback: use generic materialCopay from authorization if available
+    // This applies to all material upgrades when no specific price is found
+    if (quote.insurance.materialCopay !== undefined && quote.insurance.materialCopay !== null) {
+      return quote.insurance.materialCopay
+    }
+
     return product.retail
   }
 
@@ -102,7 +126,15 @@ export default function MaterialsMenu() {
     } else {
       if (selectedAR) removeLineItem(selectedAR.id)
 
-      const price = getPrice(product)
+      let price = getPrice(product)
+
+      // EyeMed backside UV surcharge: $15 extra for AR coatings with backsideUV
+      const isEyeMed = quote.insurance.carrier === 'EYEMED'
+      const hasBacksideUV = product.backsideUV === true
+      if (isEyeMed && hasBacksideUV && quote.insurance.hasActiveAuth) {
+        price += 15
+      }
+
       const insurancePays = quote.insurance.hasActiveAuth
         ? Math.max(0, product.retail - price)
         : 0
@@ -117,6 +149,7 @@ export default function MaterialsMenu() {
         insurancePays,
         tier: product.vspTier,
         pairId: quote.activePairId,
+        note: isEyeMed && hasBacksideUV ? 'Includes $15 backside UV' : undefined,
       })
     }
   }
@@ -157,8 +190,21 @@ export default function MaterialsMenu() {
   const arCoatingsFiltered = AR_COATINGS.filter((p) => p.id !== 'none')
   const photochromicsFiltered = PHOTOCHROMICS.filter((p) => p.id !== 'none')
 
+  // Check for benefit conflict
+  const contactItemsExist = hasContactItems()
+
   return (
     <div className="p-[2%] space-y-[3%]">
+      {/* Benefit conflict warning */}
+      {contactItemsExist && quote.insurance.hasActiveAuth && (
+        <div className="flex items-center gap-2 p-3 bg-amber-500/20 border border-amber-500/30 rounded-lg">
+          <AlertTriangle className="h-5 w-5 text-amber-400 flex-shrink-0" />
+          <span className="text-sm text-amber-300">
+            <strong>Benefit Conflict:</strong> Contact lenses are in this order. Most vision plans do not cover both contacts and glasses in the same benefit period.
+          </span>
+        </div>
+      )}
+
       {/* ===== MATERIALS ===== */}
       <div>
         <div className="flex items-center gap-2 mb-[1.5%]">
@@ -171,6 +217,9 @@ export default function MaterialsMenu() {
               key={product.id}
               icon={Layers}
               name={product.name}
+              price={getPrice(product)}
+              retailPrice={product.retail}
+              showPrice={quote.insurance.hasActiveAuth}
               isSelected={
                 product.id === 'cr39'
                   ? !selectedMaterial
@@ -192,6 +241,8 @@ export default function MaterialsMenu() {
           <ProductTile
             icon={Sparkles}
             name="None"
+            price={0}
+            showPrice={quote.insurance.hasActiveAuth}
             isSelected={!selectedAR}
             onClick={() => handleSelectAR(AR_COATINGS[0])}
           />
@@ -200,6 +251,9 @@ export default function MaterialsMenu() {
               key={product.id}
               icon={Sparkles}
               name={product.name}
+              price={getPrice(product)}
+              retailPrice={product.retail}
+              showPrice={quote.insurance.hasActiveAuth}
               isSelected={selectedAR?.productId === product.id}
               disabled={product.cashOnly && quote.insurance.hasActiveAuth}
               onClick={() => handleSelectAR(product)}
@@ -218,6 +272,8 @@ export default function MaterialsMenu() {
           <ProductTile
             icon={Sun}
             name="None"
+            price={0}
+            showPrice={quote.insurance.hasActiveAuth}
             isSelected={!selectedPhotochromic}
             onClick={() => handleSelectPhotochromic(PHOTOCHROMICS[0])}
           />
@@ -226,6 +282,9 @@ export default function MaterialsMenu() {
               key={product.id}
               icon={Sun}
               name={product.name}
+              price={getPrice(product)}
+              retailPrice={product.retail}
+              showPrice={quote.insurance.hasActiveAuth}
               isSelected={selectedPhotochromic?.productId === product.id}
               onClick={() => handleSelectPhotochromic(product)}
             />

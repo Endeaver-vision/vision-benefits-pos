@@ -1,0 +1,625 @@
+{
+  "metadata": {
+    "carrier": "EyeMed",
+    "totalDocuments": 48,
+    "originalDocuments": 26,
+    "autheopsDocuments": 22,
+    "analysisDate": "February 2026",
+    "categories": 11,
+    "totalVariations": 100,
+    "structure": "Clean terminology reference - all values are observations/commonalities, not validation constraints"
+  },
+  "carrierMarkers": [
+    "First American Administrators, Inc.",
+    "inFocus",
+    "EyeMed",
+    "EyeMed branding"
+  ],
+  "categories": {
+    "exam": [
+      {
+        "canonicalName": "Exam",
+        "variations": ["Exam", "Eye Exam"],
+        "observedCopays": [0, 10, 15, 20],
+        "observedRange": "$0-$20",
+        "commonalities": "Most plans charge $10-$20, some cover free",
+        "frequency": {
+          "common": ["Once every 12 months from date of service", "Once every calendar year"],
+          "alternative": "Once every 24 months from date of service"
+        },
+        "notes": "Standard benefit in all documents"
+      },
+      {
+        "canonicalName": "Retinal Imaging",
+        "variations": ["Retinal Imaging"],
+        "observedCopays": [39],
+        "observedRange": "Up to $39",
+        "commonalities": "Not consistently offered across plans",
+        "notes": "When offered, typically $39 copay"
+      },
+      {
+        "canonicalName": "Exam Services (Section Header)",
+        "variations": ["Exam Services"],
+        "commonalities": "Section header combining exam benefits",
+        "notes": "Found in 18 newer benefit documents"
+      },
+      {
+        "canonicalName": "Contact Lens Exam",
+        "variations": ["Contact Lens Exam", "CL Exam Services"],
+        "commonalities": "Referenced for contact lens fitting eligibility",
+        "notes": "Different from regular eye exam"
+      }
+    ],
+    "contactLensFitting": [
+      {
+        "canonicalName": "Contact Lens Fit and Follow-up",
+        "variations": [
+          "Contact Lens Fit and Follow-up",
+          "Contact Lenses and Contacts Fit and Follow Up",
+          "Contact Lens Fit and Follow",
+          "Contact Lens Fit and Follow-Up"
+        ],
+        "commonalities": "Standard terminology in eligibility sections",
+        "notes": "Hyphenation varies: Follow-Up vs Follow-up"
+      },
+      {
+        "canonicalName": "Fit and Follow-up - Standard",
+        "variations": ["Fit and Follow-up - Standard"],
+        "observedCopays": [0, 40, 55],
+        "observedOptions": ["Up to $40", "Up to $55", "$40 copay", "$0 copay"],
+        "pricingFormula": "85% of amount over remaining balance",
+        "commonalities": "Standard tier, most accessible option",
+        "notes": "Pricing may be copay or formula"
+      },
+      {
+        "canonicalName": "Fit and Follow-up - Premium",
+        "variations": ["Fit and Follow-up - Premium"],
+        "observedOptions": [
+          "10% off retail price",
+          "$0 copay; 10% off retail price less $40 allowance",
+          "$40 copay; 10% off retail price less $55 allowance"
+        ],
+        "commonalities": "Premium tier with additional benefits",
+        "notes": "Can be simple discount or formula-based"
+      }
+    ],
+    "frameAllowance": [
+      {
+        "canonicalName": "Frame",
+        "variations": ["Frame", "Frames"],
+        "commonalities": "Standard single frame benefit"
+      },
+      {
+        "canonicalName": "Eyeglass Frames",
+        "variations": ["glasses", "eyeglass"],
+        "commonalities": "Informal reference in service restrictions"
+      },
+      {
+        "canonicalName": "Frame Allowance",
+        "variations": ["Frame Allowance", "Glasses Allowance"],
+        "commonalities": "Specific benefit terminology for frame budget"
+      },
+      {
+        "canonicalName": "Additional Glasses Allowance",
+        "variations": ["Additional Glasses Allowance"],
+        "commonalities": "Appears in supplementary benefits sections"
+      },
+      {
+        "canonicalName": "Frame Balance",
+        "variations": ["Frame Balance over $250 to $375 Retail, equal to $125 Wholesale"],
+        "commonalities": "Specific balance structure with retail/wholesale conversion"
+      },
+      {
+        "canonicalName": "Frame with Allowance",
+        "variations": [
+          "Frame $0 copay; 20% off balance over $200 allowance",
+          "Frame $0 copay; 20% off balance over $450 allowance"
+        ],
+        "observedAllowances": [100, 130, 150, 175, 200, 230, 250, 450],
+        "observedRange": "$100-$450",
+        "observedDiscounts": [10, 15, 20],
+        "commonalities": "Allowance amounts vary by plan, typically 20% off overage",
+        "notes": "Common structure: fixed allowance + discount on balance"
+      },
+      {
+        "canonicalName": "Frame with Retail Discount",
+        "variations": ["Frame - Retail $0 copay; 20% off balance over $130 allowance"],
+        "commonalities": "Includes explicit retail specification"
+      },
+      {
+        "canonicalName": "Frame with Off-Network Discount",
+        "variations": ["Frame 35% off retail price"],
+        "commonalities": "Off-network discount structure"
+      },
+      {
+        "canonicalName": "Frame Allowance - Branded",
+        "variations": [
+          "Frame Allowance Extra $20 promotion on Altair Eyewear/Marchon frames",
+          "$160.00 for bebe, Converse, Dragon or Nike brand frames",
+          "$140.00 for Altair Eyewear/Marchon frames",
+          "$120.00 for non-Altair Eyewear/Marchon frames",
+          "Patient receives 20% savings on frame overage"
+        ],
+        "commonalities": "Brand-specific promotions and pricing appear in some plans"
+      },
+      {
+        "canonicalName": "Frame - Retail",
+        "variations": ["Frame - Retail"],
+        "commonalities": "Explicit retail designation for frame benefit",
+        "notes": "Found in 3 newer documents"
+      },
+      {
+        "canonicalName": "Frame and/or Lens",
+        "variations": ["glasses (frame and/or lens, lens options)"],
+        "commonalities": "Specific structure in additional benefits"
+      },
+      {
+        "canonicalName": "Frame, Lens/Lens Options",
+        "variations": ["Frame, Lens/Lens Options"],
+        "commonalities": "Combined benefit structure for flexible choice"
+      }
+    ],
+    "contactLensAllowance": [
+      {
+        "canonicalName": "Contact Lenses",
+        "variations": ["Contact Lenses", "Contacts"],
+        "commonalities": "Standard terminology"
+      },
+      {
+        "canonicalName": "Contacts - Conventional",
+        "variations": ["Contacts - Conventional"],
+        "commonalities": "Longer-wear conventional lenses"
+      },
+      {
+        "canonicalName": "Contacts - Disposable",
+        "variations": ["Contacts - Disposable"],
+        "commonalities": "Disposable/frequent replacement lenses"
+      },
+      {
+        "canonicalName": "Contacts - Medically Necessary",
+        "variations": ["Contacts - Medically Necessary"],
+        "observedCopays": [0],
+        "commonalities": "Typically covered, criteria applies per VSP Manual"
+      },
+      {
+        "canonicalName": "Contacts - Therapeutic",
+        "variations": ["Contacts - Therapeutic"],
+        "observedCopays": [0],
+        "commonalities": "Alternative medical classification"
+      },
+      {
+        "canonicalName": "Contacts - Therapeutic (Medically Necessary)",
+        "variations": ["Contacts - Therapeutic (Medically Necessary)"],
+        "commonalities": "Merged terminology combining both terms",
+        "notes": "Found in 3 newer documents"
+      },
+      {
+        "canonicalName": "Contacts (Service Restriction)",
+        "variations": ["Contacts only"],
+        "commonalities": "Plans restricted to contact lenses only"
+      },
+      {
+        "canonicalName": "Contact Lenses (in restrictions)",
+        "variations": ["contacts or frame and lens services"],
+        "commonalities": "Either/or benefit structure"
+      },
+      {
+        "canonicalName": "Contact Lenses (combined benefit)",
+        "variations": ["contacts, frame and lens services"],
+        "commonalities": "All three benefits combined (rare)"
+      },
+      {
+        "canonicalName": "Contact Lenses Pricing",
+        "variations": [
+          "100% of amount over remaining balance",
+          "100% of retail price applied to remaining balance",
+          "$0 copay; 15% off balance over $200 allowance",
+          "85% of retail price applied to remaining balance"
+        ],
+        "observedAllowances": [100, 150, 200, 250, 450],
+        "observedRange": "$100-$450",
+        "commonalities": "Multiple pricing models observed"
+      }
+    ],
+    "lensTypes": [
+      {
+        "canonicalName": "Single Vision",
+        "variations": ["Single Vision"],
+        "observedCopays": [10, 15, 20, 25, 55],
+        "observedRange": "$10-$55",
+        "observedAlternatives": ["20% off retail price", "$0 copay"],
+        "commonalities": "Most common lens type, copay or discount pricing"
+      },
+      {
+        "canonicalName": "Bifocal",
+        "variations": ["Bifocal"],
+        "observedCopays": [10, 25, 75],
+        "observedRange": "$10-$75",
+        "observedAlternatives": ["20% off retail price"],
+        "commonalities": "Two-distance lens, pricing varies"
+      },
+      {
+        "canonicalName": "Bifocal - Blended",
+        "variations": ["Bifocal - Blended"],
+        "observedOptions": ["20% off retail price"],
+        "commonalities": "Premium variant of bifocal"
+      },
+      {
+        "canonicalName": "Trifocal",
+        "variations": ["Trifocal"],
+        "observedCopays": [10, 25, 105],
+        "observedRange": "$10-$105",
+        "observedAlternatives": ["20% off retail price"],
+        "commonalities": "Three-distance lens, less common"
+      },
+      {
+        "canonicalName": "Lenticular",
+        "variations": ["Lenticular"],
+        "observedCopays": [10],
+        "observedAlternatives": ["20% off retail price", "Single Vision 30% off retail price"],
+        "commonalities": "Specialty high-power lens"
+      },
+      {
+        "canonicalName": "Lenticular with Lenses",
+        "variations": ["Lenticular Single Vision"],
+        "commonalities": "Specific product structure"
+      }
+    ],
+    "progressive": [
+      {
+        "canonicalName": "Progressive - Standard",
+        "variations": ["Progressive - Standard"],
+        "observedCopays": [0, 25, 50, 55, 65],
+        "observedRange": "$0-$135",
+        "commonalities": "Entry-level progressive, appears in nearly all documents"
+      },
+      {
+        "canonicalName": "Progressive - Premium",
+        "variations": ["Progressive - Premium"],
+        "observedOptions": ["30% off retail price", "20% off retail price"],
+        "commonalities": "Discount-based progressive option"
+      },
+      {
+        "canonicalName": "Progressive - Premium Tier 1",
+        "variations": ["Progressive - Premium Tier 1", "Premium Tier 1", "Tier 1"],
+        "observedCopays": [55, 65, 75, 85, 95],
+        "observedRange": "$30-$110",
+        "commonalities": "Entry-level premium progressive, most common Tier 1",
+        "notes": "Tier system used when specific quality levels offered"
+      },
+      {
+        "canonicalName": "Progressive - Premium Tier 2",
+        "variations": ["Progressive - Premium Tier 2"],
+        "observedCopays": [80, 95, 110, 120, 135],
+        "observedRange": "$40-$115",
+        "commonalities": "Mid-range premium progressive"
+      },
+      {
+        "canonicalName": "Progressive - Premium Tier 3",
+        "variations": ["Progressive - Premium Tier 3"],
+        "observedCopays": [105, 120, 135, 150, 165, 175],
+        "observedRange": "$55-$145",
+        "commonalities": "High-end premium progressive"
+      },
+      {
+        "canonicalName": "Progressive - Premium Tier 4",
+        "variations": ["Progressive - Premium Tier 4"],
+        "observedCopays": [20, 95, 145, 175, 185, 190],
+        "observedRange": "$15-$185 or formula",
+        "pricingFormula": "20% off retail price less $120 allowance (when applicable)",
+        "commonalities": "Highest standard tier, can be simple copay or complex formula"
+      },
+      {
+        "canonicalName": "Progressive with Age Variation",
+        "variations": [
+          "Progressive - Premium Tier 4 - age 19 and over",
+          "Progressive - Premium Tier 4 - under age 19"
+        ],
+        "commonalities": "Age-dependent copay in some documents"
+      },
+      {
+        "canonicalName": "Standard Progressives",
+        "variations": ["Standard Progressives"],
+        "commonalities": "Product description in benefit notes section"
+      },
+      {
+        "canonicalName": "Premium Progressives",
+        "variations": ["Premium Progressives"],
+        "commonalities": "Product description in benefit notes section"
+      },
+      {
+        "canonicalName": "Custom Progressives",
+        "variations": ["Custom Progressives (includes Custom..."],
+        "commonalities": "Referenced but often incomplete in extracted text"
+      }
+    ],
+    "arCoating": [
+      {
+        "canonicalName": "Anti-Reflective Coating - Standard",
+        "variations": ["Anti Reflective Coating - Standard"],
+        "observedCopays": [0, 15, 25, 45],
+        "observedRange": "$0-$45",
+        "commonalities": "Space without hyphen: 'Anti Reflective' is common",
+        "notes": "Standard/basic AR coating"
+      },
+      {
+        "canonicalName": "Anti-Reflective Coating - Standard (Alternative)",
+        "variations": ["Anti-Reflective Coating - Standard"],
+        "commonalities": "Hyphenated version (less common than space version)"
+      },
+      {
+        "canonicalName": "Anti-Reflective Coating - Premium Tier 1",
+        "variations": ["Anti Reflective Coating - Premium Tier 1"],
+        "observedCopays": [35, 45, 50, 55],
+        "observedRange": "$0-$57",
+        "commonalities": "Tier 1 usually lowest-cost premium AR option"
+      },
+      {
+        "canonicalName": "Anti-Reflective Coating - Premium Tier 2",
+        "variations": ["Anti Reflective Coating - Premium Tier 2"],
+        "observedCopays": [23, 55, 60, 65, 70, 75, 85],
+        "observedRange": "$23-$85",
+        "commonalities": "Mid-tier premium AR option"
+      },
+      {
+        "canonicalName": "Anti-Reflective Coating - Premium Tier 3",
+        "variations": ["Anti Reflective Coating - Premium Tier 3"],
+        "observedCopays": [85, 95, 100, 105],
+        "observedRange": "$85-$105 or 20% discount",
+        "observedAlternative": "20% off retail price",
+        "commonalities": "Highest standard tier, can be copay or discount"
+      },
+      {
+        "canonicalName": "Anti-Reflective Coating - Premium (no tier)",
+        "variations": ["Anti Reflective Coating - Premium"],
+        "observedOptions": ["30% off retail price", "20% off retail price"],
+        "commonalities": "Discount-based premium AR option"
+      }
+    ],
+    "photochromic": [
+      {
+        "canonicalName": "Photochromic",
+        "variations": ["Photochromic"],
+        "commonalities": "Standard terminology"
+      },
+      {
+        "canonicalName": "Photochromic - Non-Glass",
+        "variations": ["Photochromic - Non-Glass"],
+        "observedCopays": [70, 75, 80, 85, 88],
+        "observedRange": "$0-$88",
+        "commonalities": "Most common photochromic version"
+      },
+      {
+        "canonicalName": "Photochromic - Non-Glass (Age-dependent)",
+        "variations": [
+          "Photochromic - Non-Glass - age 19 and over",
+          "Photochromic - Non-Glass - under age 19"
+        ],
+        "ageDependentRule": {
+          "under19": 0,
+          "age19Plus": 75
+        },
+        "commonalities": "Age-dependent copay in some documents"
+      },
+      {
+        "canonicalName": "Photochromic Product Name",
+        "variations": ["Blended Bifocal Photochromics"],
+        "commonalities": "Product description in benefit notes"
+      }
+    ],
+    "lensMaterials": [
+      {
+        "canonicalName": "Polycarbonate - Standard",
+        "variations": ["Polycarbonate - Standard"],
+        "observedCopays": [20, 25, 40],
+        "observedRange": "$0-$40",
+        "commonalities": "Most common standard material, free for children"
+      },
+      {
+        "canonicalName": "Polycarbonate - Standard (Age-dependent)",
+        "variations": [
+          "Polycarbonate - Standard - age 19 and over",
+          "Polycarbonate - Standard - under age 19"
+        ],
+        "ageDependentRule": {
+          "under19": 0,
+          "age19Plus": "20-40"
+        },
+        "commonalities": "Free for children under 19, charged for adults"
+      },
+      {
+        "canonicalName": "High Index Material",
+        "variations": ["High Index"],
+        "observedCopays": [95],
+        "commonalities": "Premium material for strong prescriptions"
+      },
+      {
+        "canonicalName": "Mid Index Material",
+        "variations": ["Mid Index"],
+        "observedCopays": [55],
+        "commonalities": "Intermediate material option"
+      },
+      {
+        "canonicalName": "Trivex Material",
+        "variations": ["Trivex"],
+        "commonalities": "Alternative thinner/lighter material (rare in EyeMed docs)"
+      },
+      {
+        "canonicalName": "Hi-Index 1.67",
+        "variations": ["1.67"],
+        "commonalities": "Specific high index variant (possibly bundled under High Index)"
+      },
+      {
+        "canonicalName": "Hi-Index 1.74",
+        "variations": ["1.74"],
+        "commonalities": "Thinnest high index option (possibly bundled under High Index)"
+      }
+    ],
+    "additionalOptions": [
+      {
+        "canonicalName": "Scratch Coating - Standard Plastic",
+        "variations": ["Scratch Coating - Standard Plastic"],
+        "observedCopays": [0, 10, 15],
+        "observedRange": "$0-$15",
+        "commonalities": "Usually minimal or no cost"
+      },
+      {
+        "canonicalName": "Scratch Coating - Premium",
+        "variations": ["Scratch Coating - Premium"],
+        "observedCopays": [0],
+        "commonalities": "Premium version typically free"
+      },
+      {
+        "canonicalName": "Tint",
+        "variations": ["Tint - Solid and Gradient"],
+        "observedCopays": [0, 10, 15],
+        "observedRange": "$0-$15",
+        "commonalities": "Includes both solid and gradient tints"
+      },
+      {
+        "canonicalName": "UV Treatment",
+        "variations": ["UV Treatment"],
+        "observedCopays": [0, 10, 15],
+        "observedRange": "$0-$15",
+        "commonalities": "Often bundled with tints"
+      },
+      {
+        "canonicalName": "Polarized",
+        "variations": ["Polarized"],
+        "observedCopays": [66, 75],
+        "observedRange": "$66-$75",
+        "commonalities": "Premium add-on for glare reduction"
+      },
+      {
+        "canonicalName": "Edge Polish",
+        "variations": ["Edge Polish"],
+        "observedCopays": [14],
+        "commonalities": "Minor finishing option"
+      },
+      {
+        "canonicalName": "Oversize Lens",
+        "variations": ["Oversize Lens"],
+        "observedCopays": [0, 14],
+        "observedRange": "$0-$14",
+        "commonalities": "Sometimes free depending on plan"
+      },
+      {
+        "canonicalName": "All Other Lens Options",
+        "variations": ["All Other Lens Options"],
+        "observedOptions": ["20% off retail price"],
+        "commonalities": "Catch-all category for unlisted options"
+      },
+      {
+        "canonicalName": "Aspheric Design",
+        "variations": ["Aspheric (plastic & digital)"],
+        "commonalities": "Referenced in product descriptions"
+      },
+      {
+        "canonicalName": "Lens Option - Tints",
+        "variations": ["Solid Tints and Plastic Dyes (Pink I & II)"],
+        "commonalities": "Specific tint varieties listed in some documents"
+      },
+      {
+        "canonicalName": "Lens Option - Materials",
+        "variations": ["High Index Polycarbonate"],
+        "commonalities": "Material combination available"
+      },
+      {
+        "canonicalName": "Lens Material/Option",
+        "variations": ["Glass Color Coatings"],
+        "commonalities": "Referenced in product notes section"
+      },
+      {
+        "canonicalName": "Lens Product",
+        "variations": ["Light Filter Premium Progressives"],
+        "commonalities": "Premium product with integrated filtering"
+      }
+    ],
+    "commonTerminology": [
+      {
+        "canonicalName": "Routine Vision Benefits",
+        "variations": ["Routine refers to routine vision benefits, including eye exams, lenses, frames and contact lenses"],
+        "commonalities": "Standard definition appears in ALL documents"
+      },
+      {
+        "canonicalName": "Medical Eye Care",
+        "variations": ["Medical refers to benefits for medical eye care services, including diabetic eye care"],
+        "commonalities": "Separate benefit category referenced"
+      },
+      {
+        "canonicalName": "Diabetic Eyecare",
+        "variations": ["Diabetic Eyecare Plus Program"],
+        "commonalities": "Special medical benefit program"
+      },
+      {
+        "canonicalName": "Additional Purchases",
+        "variations": ["Additional Purchases will calculate member payments on additional pairs of glasses"],
+        "commonalities": "Discount structure for secondary purchases"
+      },
+      {
+        "canonicalName": "Declining Balance Package",
+        "variations": ["Declining Balance Package"],
+        "commonalities": "Shared allowance for contacts + fitting"
+      },
+      {
+        "canonicalName": "Service Restrictions",
+        "variations": ["Plan allows the member to receive either contacts or frame and lens services"],
+        "commonalities": "Either/or restriction (most common)",
+        "restrictionType": "either_contacts_or_frames"
+      },
+      {
+        "canonicalName": "Service Restrictions (Alternative)",
+        "variations": ["Plan allows the member to receive either contacts and frame, or frame and lens services"],
+        "commonalities": "Modified restriction allowing contacts + frame",
+        "restrictionType": "contacts_and_frame"
+      },
+      {
+        "canonicalName": "Service Restrictions (Expanded)",
+        "variations": ["Plan allows the member to receive contacts, frame and lens services"],
+        "commonalities": "All three benefits available (rare)",
+        "restrictionType": "all_three_combined"
+      },
+      {
+        "canonicalName": "Balance-Based Pricing",
+        "variations": ["100% of amount over remaining balance", "85% of retail price applied to remaining balance"],
+        "commonalities": "Pricing structures after allowance exhausted"
+      },
+      {
+        "canonicalName": "Discount Model",
+        "variations": ["20% off balance over $X allowance", "% off retail price"],
+        "commonalities": "Discount structures instead of fixed copays"
+      },
+      {
+        "canonicalName": "U&C Pricing",
+        "variations": ["85% U&C"],
+        "commonalities": "Usual and Customary pricing for some services"
+      },
+      {
+        "canonicalName": "Lens Benefits Section Header",
+        "variations": ["Lens Options", "Lenses"],
+        "commonalities": "Section headers for organizing lens-related benefits"
+      }
+    ]
+  },
+  "businessRules": {
+    "ageDependentBenefits": [
+      {
+        "benefit": "Polycarbonate",
+        "under19": 0,
+        "age19Plus": "varies ($20-$40)",
+        "note": "Free for children, charged for adults"
+      },
+      {
+        "benefit": "Photochromic (Non-Glass)",
+        "under19": 0,
+        "age19Plus": 75,
+        "note": "Free for children, standard copay for adults"
+      }
+    ],
+    "servicRestrictionTypes": [
+      "either_contacts_or_frames",
+      "contacts_and_frame",
+      "all_three_combined"
+    ]
+  }
+}

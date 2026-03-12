@@ -1,32 +1,21 @@
 import { NextRequest, NextResponse } from 'next/server'
-import { prisma } from '@/lib/prisma'
 
+/**
+ * Order Communications API
+ * NOTE: Order model not yet implemented in database schema
+ */
+
+/**
+ * POST /api/order-tracking/[id]/communications
+ * Create a communication record
+ */
 export async function POST(
   request: NextRequest,
   { params }: { params: Promise<{ id: string }> }
 ) {
-  try {
-    const { id } = await params
-    const body = await request.json()
-    const { type, message, sentBy, sentByName } = body
-
-    const communication = await prisma.orderCommunication.create({
-      data: {
-        orderId: id,
-        type,
-        message,
-        sentBy,
-        sentByName,
-        timestamp: new Date(),
-      },
-    })
-
-    return NextResponse.json(communication)
-  } catch (error) {
-    console.error('Error creating communication:', error)
-    return NextResponse.json(
-      { error: 'Failed to create communication' },
-      { status: 500 }
-    )
-  }
+  // Order model not yet implemented
+  return NextResponse.json(
+    { error: 'Order tracking not yet implemented' },
+    { status: 501 }
+  )
 }

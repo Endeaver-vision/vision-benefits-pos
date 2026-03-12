@@ -1,0 +1,944 @@
+{
+  "metadata": {
+    "version": "1.0.0",
+    "lastUpdated": "February 2026",
+    "description": "Comprehensive business rules for vision insurance pricing and benefit management",
+    "carriers": ["EyeMed", "VSP"],
+    "dataSource": "Insurance authorization documents and pricing tables",
+    "documentsCovered": {
+      "EyeMed": 48,
+      "VSP": 93
+    }
+  },
+  "vsp": {
+    "metadata": {
+      "carrier": "VSP",
+      "totalDocuments": 93,
+      "planTypes": 5,
+      "consistency": "100% pricing uniform across all plan types (Choice, Signature, Advantage)"
+    },
+    "progressiveTiers": {
+      "K": {
+        "name": "Standard Progressive",
+        "basePrice": 55,
+        "glasPrice": 80,
+        "tier": "standard",
+        "minPrice": 55,
+        "maxPrice": 180
+      },
+      "J": {
+        "name": "Mid-Grade Progressive",
+        "basePrice": 95,
+        "glassPrice": 105,
+        "tier": "mid",
+        "minPrice": 95,
+        "maxPrice": 220
+      },
+      "F": {
+        "name": "Premium Progressive",
+        "basePrice": 105,
+        "glassPrice": 110,
+        "tier": "premium",
+        "minPrice": 105,
+        "maxPrice": 230
+      },
+      "N": {
+        "name": "Professional Progressive",
+        "basePrice": 175,
+        "tier": "professional",
+        "minPrice": 175,
+        "maxPrice": 300,
+        "note": "Custom measurement available: +$10"
+      },
+      "O": {
+        "name": "Ultra-Premium Progressive",
+        "basePrice": 150,
+        "tier": "ultra-premium",
+        "minPrice": 150,
+        "maxPrice": 275,
+        "note": "Custom measurement available: +$10"
+      }
+    },
+    "materials": {
+      "plastic": {
+        "category": "standard",
+        "name": "Standard Plastic",
+        "index": "1.50",
+        "pricing": {
+          "singleVision": 0,
+          "bifocal": 0,
+          "progressive": 0
+        },
+        "availability": ["singleVision", "bifocal", "progressive"],
+        "description": "Baseline material, no surcharge"
+      },
+      "polycarbonate": {
+        "category": "safety",
+        "name": "Polycarbonate (Impact Resistant)",
+        "index": "1.50",
+        "pricing": {
+          "singleVision": 35,
+          "bifocal": null,
+          "progressive": 35,
+          "singleVisionCode": "AD",
+          "progressiveCodes": ["FD", "JD", "KD", "ND", "OD"]
+        },
+        "availability": ["singleVision", "progressive"],
+        "description": "Safety material, fixed $35 across all lens types",
+        "note": "Polycarbonate treatments are additive: digital +$10, polarized +$31, NVF +$20"
+      },
+      "highIndex1_60": {
+        "category": "premium",
+        "name": "High Index 1.60 / Trivex",
+        "index": "1.60",
+        "pricing": {
+          "singleVision": 56,
+          "bifocal": null,
+          "progressive": 47,
+          "singleVisionCode": "AB",
+          "progressiveCodes": ["FB", "JB", "KB", "NB", "OB"]
+        },
+        "availability": ["singleVision", "progressive"],
+        "description": "Thinner lens for stronger prescriptions",
+        "note": "Single vision costs $56, progressive surcharge is +$47"
+      },
+      "highIndex1_66": {
+        "category": "premium",
+        "name": "High Index 1.66/1.67",
+        "index": "1.66",
+        "pricing": {
+          "singleVision": 83,
+          "bifocal": null,
+          "progressive": 78,
+          "singleVisionCode": "AH",
+          "progressiveCodes": ["FH", "JH", "KH", "NH", "OH"]
+        },
+        "availability": ["singleVision", "progressive"],
+        "description": "Mid-premium lens thickness",
+        "note": "Single vision costs $83, progressive surcharge is +$78"
+      },
+      "highIndex1_71": {
+        "category": "premium",
+        "name": "High Index 1.71+",
+        "index": "1.71",
+        "pricing": {
+          "singleVision": 111,
+          "bifocal": null,
+          "progressive": 125,
+          "singleVisionCode": "AJ",
+          "progressiveCodes": ["FJ", "JJ", "KJ", "NJ", "OJ"]
+        },
+        "availability": ["singleVision", "progressive"],
+        "description": "Premium lens for very strong prescriptions",
+        "note": "Single vision costs $111, progressive surcharge is +$125"
+      }
+    },
+    "lensTypes": {
+      "singleVision": {
+        "name": "Single Vision",
+        "requiresMaterial": true,
+        "requiresTier": false,
+        "pricingRule": "materialOnly",
+        "description": "Single power lens",
+        "priceRange": {
+          "min": 0,
+          "max": 111
+        },
+        "availableMaterials": ["plastic", "polycarbonate", "highIndex1_60", "highIndex1_66", "highIndex1_71"]
+      },
+      "bifocal": {
+        "name": "Bifocal",
+        "requiresMaterial": false,
+        "requiresTier": false,
+        "basePrice": 30,
+        "pricingRule": "fixedPlasticOnly",
+        "description": "Two-power lens, plastic only",
+        "availableMaterials": ["plastic"],
+        "variants": [
+          {
+            "code": "GA",
+            "name": "Blended Bifocal Plastic",
+            "price": 30
+          }
+        ],
+        "note": "Fixed $30 price, no material options"
+      },
+      "progressive": {
+        "name": "Progressive / Multifocal",
+        "requiresMaterial": true,
+        "requiresTier": true,
+        "pricingRule": "tierBasePlusMaterialSurcharge",
+        "description": "Graduated multifocal lens",
+        "priceRange": {
+          "min": 55,
+          "max": 300
+        },
+        "availableMaterials": ["plastic", "polycarbonate", "highIndex1_60", "highIndex1_66", "highIndex1_71"],
+        "availableTiers": ["K", "J", "F", "N", "O"],
+        "note": "Material surcharges are uniform across all tiers"
+      }
+    },
+    "materials_legacy": {
+      "digitalAspheric": {
+        "code": "BA",
+        "name": "Digital Aspheric Lenses",
+        "singleVisionPrice": 45,
+        "availability": ["singleVision"]
+      },
+      "asphericPlastic": {
+        "code": "AA",
+        "name": "Plastic 1.50 - Aspheric",
+        "singleVisionPrice": 31,
+        "availability": ["singleVision"]
+      }
+    },
+    "treatments": {
+      "polyWithDigitalAspheric": {
+        "code": "BD",
+        "name": "Polycarbonate + Digital Aspheric",
+        "baseOn": "polycarbonate",
+        "pricing": {
+          "singleVision": 10,
+          "progressive": 10
+        },
+        "description": "Polycarbonate combined with digital aspheric design"
+      },
+      "polyWithPolarized": {
+        "code": "DD",
+        "name": "Polycarbonate + Polarized",
+        "baseOn": "polycarbonate",
+        "pricing": {
+          "singleVision": 31,
+          "progressive": 31
+        },
+        "description": "Polycarbonate combined with polarized coating"
+      },
+      "polyWithNearVariableFocus": {
+        "code": "ID",
+        "name": "Polycarbonate + Near Variable Focus",
+        "baseOn": "polycarbonate",
+        "pricing": {
+          "singleVision": 20,
+          "progressive": 20
+        },
+        "description": "Polycarbonate combined with near variable focus (unique to VSP)"
+      },
+      "scratchResistant": [
+        {
+          "code": "QQ",
+          "name": "Scratch Resistant A",
+          "pricing": 17
+        },
+        {
+          "code": "QS",
+          "name": "Scratch Resistant B",
+          "pricing": 17
+        }
+      ],
+      "antiReflective": [
+        {
+          "code": "QM",
+          "name": "Anti-Reflective Standard",
+          "pricing": 10
+        },
+        {
+          "code": "QT",
+          "name": "Anti-Reflective Premium",
+          "pricing": 16
+        },
+        {
+          "code": "QV",
+          "name": "Anti-Reflective Premium Plus",
+          "pricing": 16
+        }
+      ],
+      "polarized": [
+        {
+          "code": "FP",
+          "name": "Polarized (Progressive F add-on)"
+        },
+        {
+          "code": "JP",
+          "name": "Polarized (Progressive J add-on)"
+        },
+        {
+          "code": "KP",
+          "name": "Polarized (Progressive K add-on)"
+        },
+        {
+          "code": "NP",
+          "name": "Polarized (Progressive N add-on)"
+        },
+        {
+          "code": "OP",
+          "name": "Polarized (Progressive O add-on)"
+        }
+      ],
+      "uvProtection": [
+        {
+          "code": "BV",
+          "name": "UV Protection Backside"
+        },
+        {
+          "code": "SV",
+          "name": "UV Protection"
+        }
+      ]
+    },
+    "frameAllowances": {
+      "wfaCodes": [
+        {
+          "code": "WFA84",
+          "amount": 220,
+          "for": "Altair Eyewear/Marchon frames",
+          "overage": "20% savings"
+        },
+        {
+          "code": "WFA76",
+          "amount": 200,
+          "for": "Non-Altair Eyewear/Marchon frames",
+          "overage": "20% savings"
+        },
+        {
+          "code": "WFA88",
+          "amount": 230,
+          "for": "Altair/Marchon frames",
+          "overage": "20% savings"
+        },
+        {
+          "code": "WFA69",
+          "amount": 180,
+          "for": "Non-Altair/Marchon frames"
+        },
+        {
+          "code": "WFA67",
+          "amount": 175,
+          "for": "Altair Eyewear/Marchon frames"
+        },
+        {
+          "code": "WFA60",
+          "amount": 155,
+          "for": "Non-Altair Eyewear/Marchon frames"
+        },
+        {
+          "code": "WFA65",
+          "amount": 170,
+          "for": "Altair Eyewear/Marchon frames"
+        },
+        {
+          "code": "WFA57",
+          "amount": 150,
+          "for": "Non-Altair Eyewear/Marchon frames"
+        }
+      ],
+      "overageDiscount": "20% additional savings on frame overage"
+    },
+    "planTypes": [
+      {
+        "name": "VSP Choice Plan",
+        "networkDesignation": "Choice Lab Use",
+        "status": "Primary",
+        "documentCount": 25
+      },
+      {
+        "name": "VSP Signature Plan",
+        "networkDesignation": "VSP Lab Use",
+        "status": "Secondary",
+        "documentCount": 12
+      },
+      {
+        "name": "VSP Advantage Plan",
+        "networkDesignation": "Advantage Lab Use",
+        "status": "Available in both sets",
+        "documentCount": 8
+      },
+      {
+        "name": "VSP Computer VisionCare Plan Supplemental",
+        "networkDesignation": "VSP Lab Use",
+        "status": "NEW",
+        "documentCount": 2
+      },
+      {
+        "name": "VSP Vision Savings Pass",
+        "networkDesignation": "Choice Lab Use",
+        "status": "Alternative",
+        "documentCount": 1
+      }
+    ],
+    "pricingRules": {
+      "materialSurcharges": {
+        "rule": "Material surcharges are UNIFORM across all progressive tiers",
+        "highIndex1_60": {
+          "surcharge": 47,
+          "appliesTo": ["F", "J", "K", "N", "O"],
+          "note": "Always +$47 regardless of tier"
+        },
+        "highIndex1_66": {
+          "surcharge": 78,
+          "appliesTo": ["F", "J", "K", "N", "O"],
+          "note": "Always +$78 regardless of tier"
+        },
+        "highIndex1_71": {
+          "surcharge": 125,
+          "appliesTo": ["F", "J", "K", "N", "O"],
+          "note": "Always +$125 regardless of tier"
+        },
+        "polycarbonate": {
+          "surcharge": 35,
+          "appliesTo": ["F", "J", "K", "N", "O"],
+          "note": "Fixed $35 for all progressive tiers"
+        },
+        "plastic": {
+          "surcharge": 0,
+          "appliesTo": ["F", "J", "K", "N", "O"],
+          "note": "No surcharge, baseline price"
+        }
+      },
+      "singleVisionPricing": {
+        "rule": "Single vision prices are different from progressive surcharges",
+        "note": "Single vision material prices are fixed costs, not tier-based",
+        "example": "High Index 1.66 is $83 single vision, but +$78 surcharge on progressive"
+      },
+      "bifocalPricing": {
+        "rule": "Fixed $30 regardless of material",
+        "availability": "Plastic only",
+        "status": "Cheapest multifocal option"
+      },
+      "formulaParsing": [
+        {
+          "pattern": "\\$(\\d+) copay; (\\d+)% off (?:retail price )?less \\$(\\d+) allowance",
+          "components": ["baseCopay", "discountPercent", "allowance"],
+          "example": "$20 copay; 20% off retail price less $120 allowance"
+        },
+        {
+          "pattern": "\\$(\\d+) copay; (\\d+)% off balance over \\$(\\d+) allowance",
+          "components": ["copay", "discountPercent", "allowance"],
+          "example": "$0 copay; 20% off balance over $200 allowance"
+        }
+      ]
+    },
+    "frequencyPatterns": {
+      "exam": [
+        "Once every 12 months from the date of service",
+        "Once every calendar year",
+        "Once every plan year",
+        "Every year beginning in [month]"
+      ],
+      "lens": [
+        "Once every 12 months",
+        "Every year",
+        "Every 24 months"
+      ],
+      "frame": [
+        "Once every 12 months",
+        "Every other year"
+      ]
+    },
+    "serviceCoverageTerms": [
+      {
+        "term": "Criteria Applies",
+        "usage": "Criteria applies; see VSP Manual",
+        "meaning": "Benefit requires meeting specific clinical criteria defined in VSP Manual"
+      },
+      {
+        "term": "Covered with Additional Copay",
+        "meaning": "Premium options require extra patient cost beyond base plan"
+      },
+      {
+        "term": "Must use plan designated contract laboratory",
+        "variations": ["Lab Use", "Choice Lab Use", "VSP Lab Use", "Advantage Lab Use"]
+      }
+    ]
+  },
+  "eyemed": {
+    "metadata": {
+      "carrier": "EyeMed",
+      "totalDocuments": 48,
+      "originalDocuments": 26,
+      "autheopsDocuments": 22,
+      "categories": 11,
+      "totalVariations": 100,
+      "analysisDate": "February 2026",
+      "note": "EyeMed uses copay RANGES across different plans; VSP uses FIXED prices. Both extracted from documents."
+    },
+    "carrierMarkers": [
+      "First American Administrators, Inc.",
+      "inFocus",
+      "EyeMed",
+      "EyeMed branding"
+    ],
+    "lensTypes": {
+      "singleVision": {
+        "name": "Single Vision",
+        "copayRange": "$10-$55",
+        "note": "Some plans: 20% off retail price or $0 copay",
+        "description": "Single power lens"
+      },
+      "bifocal": {
+        "name": "Bifocal",
+        "copayRange": "$10-$75",
+        "note": "Some plans: 20% off retail price",
+        "description": "Two-power lens"
+      },
+      "bifocalBlended": {
+        "name": "Bifocal - Blended",
+        "copayRange": "20% off retail price",
+        "description": "Premium bifocal variant"
+      },
+      "trifocal": {
+        "name": "Trifocal",
+        "copayRange": "$10-$105",
+        "note": "Some plans: 20% off retail price",
+        "description": "Three-power lens"
+      },
+      "lenticular": {
+        "name": "Lenticular",
+        "copayRange": "$10, 20% off retail price, or 30% off",
+        "description": "Specialty lens for very high prescriptions"
+      },
+      "progressive": {
+        "name": "Progressive",
+        "tiers": 5,
+        "description": "Graduated multifocal lens"
+      }
+    },
+    "progressiveTiers": {
+      "standard": {
+        "name": "Progressive - Standard",
+        "tier": "standard",
+        "copayRange": "$0-$135",
+        "commonValues": [0, 10, 15, 65, 70, 75, 85, 90, 135],
+        "minPrice": 0,
+        "maxPrice": 135,
+        "note": "Appears in nearly all documents"
+      },
+      "tier1": {
+        "name": "Progressive - Premium Tier 1",
+        "tier": 1,
+        "copayRange": "$30-$110",
+        "commonValues": [30, 35, 80, 95, 100, 110],
+        "minPrice": 30,
+        "maxPrice": 110,
+        "note": "Tier 1 usually lowest-cost premium"
+      },
+      "tier2": {
+        "name": "Progressive - Premium Tier 2",
+        "tier": 2,
+        "copayRange": "$40-$115",
+        "commonValues": [40, 45, 95, 104, 105, 110, 115],
+        "minPrice": 40,
+        "maxPrice": 115,
+        "note": "Mid-tier premium option"
+      },
+      "tier3": {
+        "name": "Progressive - Premium Tier 3",
+        "tier": 3,
+        "copayRange": "$55-$145",
+        "commonValues": [55, 60, 110, 120, 125, 130, 135, 145],
+        "minPrice": 55,
+        "maxPrice": 145,
+        "note": "Highest standard tier"
+      },
+      "tier4": {
+        "name": "Progressive - Premium Tier 4",
+        "tier": 4,
+        "copayRange": "$15-$185",
+        "commonValues": [15, 20, 75, 85, 90, 185],
+        "minPrice": 15,
+        "maxPrice": 185,
+        "note": "Often includes discount: 20% off retail price less $120 allowance",
+        "formula": "20% off retail price less $120 allowance",
+        "ageVariant": "One document has separate age listings (19+ vs under 19)"
+      }
+    },
+    "antiReflectiveCoatings": {
+      "standard": {
+        "name": "Anti Reflective Coating - Standard",
+        "copayRange": "$0-$45",
+        "minPrice": 0,
+        "maxPrice": 45,
+        "note": "Space without hyphen in 'Anti Reflective' (not 'Anti-Reflective')"
+      },
+      "premiumTier1": {
+        "name": "Anti Reflective Coating - Premium Tier 1",
+        "copayRange": "$0-$57",
+        "minPrice": 0,
+        "maxPrice": 57,
+        "note": "Tier 1 usually lowest-cost premium"
+      },
+      "premiumTier2": {
+        "name": "Anti Reflective Coating - Premium Tier 2",
+        "copayRange": "$23-$85",
+        "minPrice": 23,
+        "maxPrice": 85,
+        "note": "Mid-tier premium option"
+      },
+      "premiumTier3": {
+        "name": "Anti Reflective Coating - Premium Tier 3",
+        "copayRange": "$85-$105",
+        "minPrice": 85,
+        "maxPrice": 105,
+        "note": "Highest standard tier; sometimes: 20% off retail price"
+      },
+      "premiumSimple": {
+        "name": "Anti Reflective Coating - Premium",
+        "copayRange": "20% or 30% off retail price",
+        "note": "Simplified two-tier structure in some plans"
+      }
+    },
+    "materials": {
+      "polycarbonate": {
+        "category": "safety",
+        "name": "Polycarbonate - Standard",
+        "pricing": {
+          "under19": {
+            "price": 0,
+            "copay": "$0 copay"
+          },
+          "age19Plus": {
+            "range": "$20-$40",
+            "minPrice": 20,
+            "maxPrice": 40
+          }
+        },
+        "ageDependentRule": true,
+        "note": "Free under 19, charged for 19+"
+      },
+      "highIndex": {
+        "category": "premium",
+        "name": "High Index",
+        "copayRange": "$55-$95",
+        "minPrice": 55,
+        "maxPrice": 95,
+        "note": "Premium material option"
+      },
+      "midIndex": {
+        "category": "intermediate",
+        "name": "Mid Index",
+        "copay": 55,
+        "note": "Intermediate material option"
+      }
+    },
+    "photochromic": {
+      "name": "Photochromic (Light-Reactive Lenses)",
+      "baseVersion": {
+        "name": "Photochromic - Non-Glass",
+        "copayRange": "$0-$88",
+        "minPrice": 0,
+        "maxPrice": 88
+      },
+      "ageDependentRule": true,
+      "under19": {
+        "price": 0,
+        "copay": "$0 copay"
+      },
+      "age19Plus": {
+        "amount": 75,
+        "copay": "$75 copay"
+      },
+      "note": "Free under 19, $75 for 19+"
+    },
+    "contactLensServices": {
+      "examEligibility": {
+        "name": "Contact Lens Exam",
+        "variations": ["Contact Lens Exam", "CL Exam Services"],
+        "description": "Required for contact lens fitting eligibility"
+      },
+      "fitAndFollowupStandard": {
+        "name": "Fit and Follow-up - Standard",
+        "variations": [
+          "Contact Lens Fit and Follow-up",
+          "Contact Lenses and Contacts Fit and Follow Up",
+          "Contact Lens Fit and Follow",
+          "Contact Lens Fit and Follow-Up"
+        ],
+        "copayOptions": ["Up to $40", "Up to $55", "$40 copay", "$0 copay"],
+        "formula": "85% of amount over remaining balance",
+        "allowanceRange": "$40-$55"
+      },
+      "fitAndFollowupPremium": {
+        "name": "Fit and Follow-up - Premium",
+        "copayOptions": [
+          "10% off retail price",
+          "$0 copay; 10% off retail price less $40 allowance",
+          "$40 copay; 10% off retail price less $55 allowance"
+        ]
+      },
+      "contactLensAllowance": {
+        "name": "Contact Lenses",
+        "allowanceRange": "$100-$450",
+        "note": "Plan allowances vary significantly",
+        "pricing": [
+          "100% of amount over remaining balance",
+          "100% of retail price applied to remaining balance",
+          "$0 copay; 15% off balance over allowance",
+          "85% of retail price applied to remaining balance"
+        ]
+      },
+      "therapeuticMedicallyNecessary": {
+        "name": "Contacts - Therapeutic (Medically Necessary)",
+        "copay": "$0 copay",
+        "note": "Criteria applies; see VSP Manual",
+        "mergedTerminology": "NEW in Auths_EOPs: combines 'Therapeutic' and 'Medically Necessary'"
+      },
+      "contactsOnly": {
+        "name": "Contacts only",
+        "note": "NEW in Auths_EOPs: restriction to contact lenses only (no frame alternative)"
+      }
+    },
+    "frameAllowances": {
+      "baseAllowance": {
+        "range": "$100-$450",
+        "note": "Plan allowances vary significantly by plan"
+      },
+      "frameBenefit": {
+        "name": "Frame",
+        "copay": "$0 copay",
+        "allowance": "variable",
+        "formula": "20% off balance over allowance"
+      },
+      "frameRetail": {
+        "name": "Frame - Retail",
+        "note": "NEW in Auths_EOPs: explicit retail designation",
+        "copay": "$0 copay",
+        "structure": "allowance over model"
+      },
+      "brandedPartners": [
+        {
+          "brand": "Altair Eyewear/Marchon",
+          "amount": 140,
+          "promotion": "Extra $20"
+        },
+        {
+          "brand": "bebe, Converse, Dragon, Nike",
+          "amount": 160
+        },
+        {
+          "brand": "Non-Altair",
+          "amount": 120
+        }
+      ],
+      "overage": "20% savings on frame overage",
+      "additionalGlasses": {
+        "name": "Additional Glasses Allowance",
+        "description": "Secondary pair pricing based on declining balance"
+      }
+    },
+    "examServices": {
+      "routine": {
+        "name": "Exam",
+        "variations": ["Exam", "Eye Exam"],
+        "copayRange": "$0-$20",
+        "minPrice": 0,
+        "maxPrice": 20,
+        "frequency": [
+          "Once every 12 months from the date of service",
+          "Once every calendar year",
+          "Once every plan year",
+          "Once every 24 months from the date of service"
+        ]
+      },
+      "retinalImaging": {
+        "name": "Retinal Imaging",
+        "copay": "Up to $39",
+        "note": "Not consistently offered"
+      },
+      "examServices": {
+        "name": "Exam Services (Section Header)",
+        "note": "NEW in Auths_EOPs: found in 18 newer documents as section header"
+      }
+    },
+    "additionalCoatingsAndOptions": [
+      {
+        "name": "Scratch Coating - Standard Plastic",
+        "copayRange": "$0-$15",
+        "note": "Usually minimal or no cost"
+      },
+      {
+        "name": "Scratch Coating - Premium",
+        "copay": "$0 copay"
+      },
+      {
+        "name": "Tint - Solid and Gradient",
+        "copayRange": "$0-$15"
+      },
+      {
+        "name": "UV Treatment",
+        "copayRange": "$0-$15",
+        "note": "Often bundled with tints"
+      },
+      {
+        "name": "Polarized",
+        "copayRange": "$66-$75",
+        "note": "Premium add-on"
+      },
+      {
+        "name": "Edge Polish",
+        "copay": 14,
+        "note": "Minor finishing option"
+      },
+      {
+        "name": "Oversize Lens",
+        "copayRange": "$0-$14",
+        "note": "Sometimes free depending on plan"
+      }
+    ],
+    "serviceRestrictions": [
+      {
+        "type": "either_or_most_common",
+        "description": "Plan allows the member to receive either contacts or frame and lens services",
+        "coverage": "Most common restriction",
+        "frequency": "Majority of plans"
+      },
+      {
+        "type": "either_alternative",
+        "description": "Plan allows the member to receive either contacts and frame, or frame and lens services",
+        "coverage": "Modified restriction allowing contacts + frame"
+      },
+      {
+        "type": "all_three",
+        "description": "Plan allows the member to receive contacts, frame and lens services",
+        "coverage": "All three benefits available",
+        "frequency": "Rare"
+      },
+      {
+        "type": "contacts_only",
+        "description": "Contacts only",
+        "coverage": "Plans that restrict to contact lenses only",
+        "note": "NEW in Auths_EOPs"
+      }
+    ],
+    "pricingModels": [
+      {
+        "model": "Balance-Based Pricing",
+        "example": "100% of amount over remaining balance",
+        "note": "After plan allowance exhausted"
+      },
+      {
+        "model": "Partial Coverage",
+        "example": "85% of retail price applied to remaining balance",
+        "note": "Partial coverage after allowance"
+      },
+      {
+        "model": "Discount Model",
+        "example": "20% off balance over $X allowance",
+        "note": "Common discount structure above allowance limit"
+      },
+      {
+        "model": "Percentage Discount",
+        "example": "% off retail price",
+        "note": "Percentage-based discounts instead of copay"
+      },
+      {
+        "model": "U&C Pricing",
+        "example": "85% U&C",
+        "note": "Usual and Customary pricing"
+      }
+    ],
+    "frequencyPatterns": {
+      "exam": [
+        "Once every 12 months from the date of service",
+        "Once every calendar year",
+        "Once every plan year",
+        "Every year beginning in [month]",
+        "Once every 24 months from the date of service"
+      ],
+      "lens": [
+        "Once every 12 months",
+        "Every year",
+        "Every 24 months"
+      ],
+      "frame": [
+        "Once every 12 months",
+        "Every other year"
+      ],
+      "contactLensExam": [
+        "Every year"
+      ]
+    },
+    "benefitCategories": [
+      "Exam Services",
+      "Contact Lens Fitting & Follow-up",
+      "Frame Allowance",
+      "Contact Lens Allowance",
+      "Lens Types (SV, Bifocal, Trifocal, Progressive)",
+      "Progressive Lenses",
+      "AR/Anti-Reflective Coatings",
+      "Photochromic Lenses",
+      "Lens Materials (Polycarbonate, High Index)",
+      "Additional Lens Options & Coatings",
+      "Diabetic Eyecare & Medical Programs"
+    ],
+    "validationRules": {
+      "copayRanges": {
+        "progressiveStandard": { "min": 0, "max": 135 },
+        "progressiveTier1": { "min": 30, "max": 110 },
+        "progressiveTier2": { "min": 40, "max": 115 },
+        "progressiveTier3": { "min": 55, "max": 145 },
+        "progressiveTier4": { "min": 15, "max": 185 },
+        "antiReflectiveStandard": { "min": 0, "max": 45 },
+        "antiReflectivePremium1": { "min": 0, "max": 57 },
+        "antiReflectivePremium2": { "min": 23, "max": 85 },
+        "antiReflectivePremium3": { "min": 85, "max": 105 },
+        "note": "Use these ranges to validate extracted copay values; if outside range, flag as potential extraction error"
+      }
+    }
+  },
+  "universalRules": {
+    "pricingFormula": {
+      "singleVision": "PRICE = MATERIAL_PRICE",
+      "bifocal": "PRICE = $30 (fixed, plastic only)",
+      "progressive": "PRICE = TIER_BASE_PRICE + MATERIAL_SURCHARGE + TREATMENT_PRICE"
+    },
+    "materialSelection": {
+      "rule": "Once a material is selected, pricing is automatic and correct across all lens types",
+      "note": "Material defines the surcharge, which applies universally"
+    },
+    "tierSelection": {
+      "rule": "Progressive tier selection is independent of material selection",
+      "note": "Same material surcharge applies regardless of tier (K through O)"
+    },
+    "availabilityMatrix": {
+      "plastic": ["singleVision", "bifocal", "progressive"],
+      "polycarbonate": ["singleVision", "progressive"],
+      "highIndex1_60": ["singleVision", "progressive"],
+      "highIndex1_66": ["singleVision", "progressive"],
+      "highIndex1_71": ["singleVision", "progressive"]
+    },
+    "errorHandling": {
+      "bifocalWithoutPlastic": "Error: Bifocals only available in plastic",
+      "progressiveWithoutTier": "Error: Progressive requires tier selection",
+      "unknownMaterial": "Error: Material not available for selected lens type"
+    }
+  },
+  "documentation": {
+    "purpose": "This file serves as the comprehensive guide for pricing engine implementation",
+    "howToUse": [
+      "Use VSP section for progressive tier pricing",
+      "Use materials section for surcharge lookup",
+      "Use lensTypes section for validation rules",
+      "Use pricingRules section for formula application",
+      "Use EyeMed section for benefit categorization",
+      "Use universalRules section for pricing logic"
+    ],
+    "relatedFiles": {
+      "rosettaStones": [
+        "src/lib/data/rosetta-eyemed.json",
+        "src/lib/data/rosetta-vsp.json"
+      ],
+      "documentation": [
+        "docs/insurance-analysis/vsp/01-material-pricing.md",
+        "docs/insurance-analysis/vsp/02-lens-types-pricing.md",
+        "docs/insurance-analysis/patterns/01-unified-pricing-pattern.md"
+      ]
+    },
+    "extractionDate": "February 2026",
+    "documentationDate": "February 2026",
+    "nextSteps": [
+      "Implement pricing engine using universalRules.pricingFormula",
+      "Create calculateLensPrice() function in pricing service",
+      "Test with examples from pricingRules.formulaParsing",
+      "Implement Prompt 2 normalization using rosetta stones"
+    ]
+  }
+}

@@ -18,6 +18,7 @@ import {
   Shield,
   CheckCircle,
   AlertCircle,
+  AlertTriangle,
   Loader2,
   DollarSign,
   Eye,
@@ -25,11 +26,23 @@ import {
   X,
   FileText,
   RefreshCw,
-  ExternalLink
+  ExternalLink,
+  Clock
 } from 'lucide-react'
-import { useQuotePricingContext } from '@/contexts/quote-pricing-context'
+import { useQuotePricingContext, SavedPriceListVersion } from '@/contexts/quote-pricing-context'
 import { AuthorizationEditor } from '@/components/quote-builder/authorization-editor'
 import { InsuranceSummary } from '@/components/quote-builder/insurance-summary'
+
+interface PriceListVersionSummary {
+  id: string
+  version: number
+  versionLabel: string
+  insuranceCarrier: string
+  planName: string | null
+  active: boolean
+  createdAt: string
+  itemCount: number
+}
 
 interface InsuranceVerificationLayerProps {
   customerId: string
@@ -39,6 +52,45 @@ interface InsuranceVerificationLayerProps {
 }
 
 type CarrierType = 'vsp' | 'eyemed' | 'spectera' | 'self-pay'
+
+// 48-hour staleness threshold in milliseconds
+const STALE_THRESHOLD_HOURS = 48
+const STALE_THRESHOLD_MS = STALE_THRESHOLD_HOURS * 60 * 60 * 1000
+
+/**
+ * Check if authorization is stale (older than 48 hours)
+ */
+function isAuthorizationStale(lastVerified: string | null | undefined): boolean {
+  if (!lastVerified) return true
+  const lastVerifiedDate = new Date(lastVerified)
+  const hoursSinceVerified = (Date.now() - lastVerifiedDate.getTime()) / (1000 * 60 * 60)
+  return hoursSinceVerified > STALE_THRESHOLD_HOURS
+}
+
+/**
+ * Format the "last verified" time for display
+ */
+function formatLastVerified(lastVerified: string | null | undefined): string {
+  if (!lastVerified) return 'Unknown'
+  const date = new Date(lastVerified)
+  const now = new Date()
+  const diffMs = now.getTime() - date.getTime()
+  const diffHours = Math.floor(diffMs / (1000 * 60 * 60))
+  const diffDays = Math.floor(diffHours / 24)
+
+  if (diffHours < 1) return 'Just now'
+  if (diffHours === 1) return '1 hour ago'
+  if (diffHours < 24) return `${diffHours} hours ago`
+  if (diffDays === 1) return 'Yesterday'
+  if (diffDays < 7) return `${diffDays} days ago`
+
+  // Format as date for older verifications
+  return date.toLocaleDateString('en-US', {
+    month: 'short',
+    day: 'numeric',
+    year: date.getFullYear() !== now.getFullYear() ? 'numeric' : undefined,
+  })
+}
 
 interface VerificationResult {
   success: boolean
@@ -65,7 +117,11 @@ export function InsuranceVerificationLayer({
     authorization,
     authorizationLoading,
     setCustomer,
-    refreshAuthorization
+    refreshAuthorization,
+    useSavedPriceList,
+    activePriceListVersion,
+    enableSavedPriceListMode,
+    disableSavedPriceListMode
   } = useQuotePricingContext()
 
   // Local state
@@ -80,6 +136,10 @@ export function InsuranceVerificationLayer({
 
   // Track the authorization ID to detect when a NEW authorization comes in
   const [lastAuthId, setLastAuthId] = useState<string | null>(null)
+
+  // Saved price list versions
+  const [priceListVersions, setPriceListVersions] = useState<PriceListVersionSummary[]>([])
+  const [versionsLoading, setVersionsLoading] = useState(false)
 
   // Initialize from existing authorization
   useEffect(() => {
@@ -113,6 +173,37 @@ export function InsuranceVerificationLayer({
       setCustomer(customerId, customerName)
     }
   }, [customerId, customerName, setCustomer])
+
+  // Fetch saved price list versions for this customer
+  useEffect(() => {
+    if (!customerId) return
+
+    const fetchVersions = async () => {
+      setVersionsLoading(true)
+      try {
+        const response = await fetch(`/api/customers/${customerId}/price-list/versions`)
+        const data = await response.json()
+        if (data.success && data.versions) {
+          setPriceListVersions(data.versions)
+        }
+      } catch (error) {
+        console.error('Failed to fetch price list versions:', error)
+      } finally {
+        setVersionsLoading(false)
+      }
+    }
+
+    fetchVersions()
+  }, [customerId])
+
+  // Handle selecting a saved price list version
+  const handleSelectPriceListVersion = async (versionId: string) => {
+    if (versionId === 'none') {
+      disableSavedPriceListMode()
+    } else {
+      await enableSavedPriceListMode(customerId, versionId)
+    }
+  }
 
   const handleVerifyInsurance = async () => {
     if (!selectedCarrier || selectedCarrier === 'self-pay') {
@@ -181,7 +272,6 @@ export function InsuranceVerificationLayer({
   const handleSelfPay = () => {
     setSelectedCarrier('self-pay')
     setIsSelfPay(true)
-    setShowScanner(false)
     setShowManualEntry(false)
     setVerificationResult({
       success: true,
@@ -240,7 +330,7 @@ export function InsuranceVerificationLayer({
           </CardContent>
         </Card>
       ) : authorization && !isChangingInsurance ? (
-        <Card className="glass-card border-emerald-400/30">
+        <Card className={`glass-card ${isAuthorizationStale(authorization.lastVerified) ? 'border-yellow-400/30' : 'border-emerald-400/30'}`}>
           <CardHeader>
             <div className="flex items-center justify-between">
               <CardTitle className="text-lg text-white flex items-center gap-2">
@@ -248,6 +338,11 @@ export function InsuranceVerificationLayer({
                 Active Authorization Found
               </CardTitle>
               <div className="flex items-center gap-2">
+                {/* Last Verified Badge */}
+                <Badge variant="outline" className="border-white/30 text-white/70">
+                  <Clock className="h-3 w-3 mr-1" />
+                  Verified {formatLastVerified(authorization.lastVerified)}
+                </Badge>
                 <Badge className="bg-emerald-500/30 text-emerald-300">
                   {authorization.carrier.toUpperCase()}
                 </Badge>
@@ -272,6 +367,30 @@ export function InsuranceVerificationLayer({
             </div>
           </CardHeader>
           <CardContent className="space-y-4">
+            {/* Staleness Warning Banner */}
+            {isAuthorizationStale(authorization.lastVerified) && (
+              <div className="bg-yellow-500/20 border border-yellow-400/50 rounded-lg p-3 flex items-center gap-3">
+                <AlertTriangle className="h-5 w-5 text-yellow-400 flex-shrink-0" />
+                <div className="flex-1">
+                  <p className="text-yellow-300 text-sm font-medium">
+                    Insurance benefits may be outdated
+                  </p>
+                  <p className="text-yellow-200/70 text-xs">
+                    Last verified {formatLastVerified(authorization.lastVerified)}. Consider re-scanning for the latest benefits.
+                  </p>
+                </div>
+                <Button
+                  size="sm"
+                  variant="outline"
+                  onClick={handleOpenScanner}
+                  className="border-yellow-400/50 text-yellow-300 hover:bg-yellow-500/20"
+                >
+                  <RefreshCw className="h-4 w-4 mr-1" />
+                  Re-scan
+                </Button>
+              </div>
+            )}
+
             <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
               <div className="bg-white/10 rounded-lg p-3">
                 <div className="text-xs text-white/60 mb-1">Plan Name</div>
@@ -325,6 +444,51 @@ export function InsuranceVerificationLayer({
 
             {/* Tier Details - Expandable Insurance Summary */}
             <InsuranceSummary customerId={customerId} className="mt-4" />
+
+            {/* Saved Price List Version Selector */}
+            {priceListVersions.length > 0 && (
+              <div className="mt-4 p-4 rounded-lg bg-blue-500/10 border border-blue-400/30">
+                <div className="flex items-center justify-between gap-4">
+                  <div className="flex-1">
+                    <div className="flex items-center gap-2 mb-1">
+                      <FileText className="h-4 w-4 text-blue-400" />
+                      <span className="font-medium text-white">Use Saved Price List</span>
+                    </div>
+                    <p className="text-sm text-white/60">
+                      Apply pre-calculated prices from a previously saved version
+                    </p>
+                  </div>
+                  <Select
+                    value={activePriceListVersion?.id || 'none'}
+                    onValueChange={handleSelectPriceListVersion}
+                  >
+                    <SelectTrigger className="w-56 bg-white/10 border-blue-400/50 text-white">
+                      <SelectValue placeholder="Select version..." />
+                    </SelectTrigger>
+                    <SelectContent>
+                      <SelectItem value="none">Dynamic Pricing</SelectItem>
+                      {priceListVersions.map((version) => (
+                        <SelectItem key={version.id} value={version.id}>
+                          {version.versionLabel} - {version.insuranceCarrier}
+                          {version.active && ' (Active)'}
+                        </SelectItem>
+                      ))}
+                    </SelectContent>
+                  </Select>
+                </div>
+                {useSavedPriceList && activePriceListVersion && (
+                  <div className="mt-3 flex items-center gap-2 text-sm">
+                    <CheckCircle className="h-4 w-4 text-blue-400" />
+                    <span className="text-blue-300">
+                      Using {activePriceListVersion.versionLabel} prices
+                    </span>
+                    <Badge variant="outline" className="ml-2 text-blue-300 border-blue-400/50">
+                      {activePriceListVersion.carrier}
+                    </Badge>
+                  </div>
+                )}
+              </div>
+            )}
 
             <div className="flex gap-3 pt-4">
               <Button onClick={onBack} variant="outline" className="border-white/30 text-white">

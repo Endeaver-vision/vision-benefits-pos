@@ -1,0 +1,103 @@
+Product,Category,Retail Price,EyeMed Mapping,VSP Mapping
+LENSES & LENS OPTIONS
+Single Vision,Lens,80.40,standard_sv,standard
+Polycarbonate (Single Vision),Material,65.00,polycarbonate,AD_SV
+Polycarbonate (Multifocal),Material,65.00,polycarbonate,AD
+Trivex (Single Vision),Material,85.00,trivex,AB_SV
+Trivex (Multifocal),Material,85.00,trivex,AB
+Hi-Index 1.67 (Single Vision),Material,125.00,high_index_167,AH_SV
+Hi-Index 1.67 (Multifocal),Material,125.00,high_index_167,AH
+Hi-Index 1.74 (Single Vision),Material,175.00,high_index_174,AJ_SV
+Hi-Index 1.74 (Multifocal),Material,175.00,high_index_174,AJ
+Hi-Index 1.72,Material,150.00,all_other_lens_options,—
+CR-39 (Standard Plastic),Material,0.00,standard,standard
+Flat Top 7x28,Bifocal,132.48,standard_bf,GA
+Flat Top 28,Bifocal,126.00,standard_bf,GA
+Varilux Comfort DRx,Progressive,254.10,tier_3,JA
+Varilux Comfort Max,Progressive,393.30,tier_4,FA
+Varilux X Design,Progressive,600.00,tier_4,NA
+Neurolens Progressive,Progressive,700.00,—,—
+Sequel PAL,Progressive,535.00,—,—
+Varilux I design,Progressive,480.00,—,—
+Essilor Eyezen+ / Eyezen Start,Single Vision,128.82,all_other_lens_options,BA
+Neurolens SV,Single Vision,400.00,—,—
+Stellest,Single Vision,438.00,—,—
+Sequel Single Vision,Single Vision,309.00,—,—
+COATINGS & TREATMENTS
+Crizal Easy Pro,AR Coating,147.50,ar_tier_2,QT
+Crizal Sapphire HR,AR Coating,180.00,ar_tier_3,QV
+Crizal Rock,AR Coating,145.00,ar_tier_3,QV
+Crizal Sunshield UV,AR Coating,177.50,ar_tier_3,QV
+Crizal Sunshield Mirrors UV,AR Coating,177.50,ar_tier_3,QV+QP
+Neurolens Premium AR,AR Coating,180.00,—,—
+Neurolens Blue AR,AR Coating,180.00,—,—
+Transitions XTRActive,Photochromic,145.00,photochromic,PR
+Transitions GEN S,Photochromic,175.00,photochromic,PR
+Polarized,Treatment,155.70,polarized,DA
+Solid Tint - CR39/Poly CLR Lens,Treatment,17.80,tint,MN
+LENS FEATURES & ADD-ONS
+UV Protection,Add-on,15.00,uv_treatment,SV
+Light Filter (VSP LF),Add-on,15.00,all_other_lens_options,LF
+Essential Blue Series,Add-on,30.00,blue_light,LF
+Oversize Lenses,Add-on,30.00,all_other_lens_options,all_other
+Roll & Polish,Add-on,14.40,edging,SP
+Prism over Base Range (Per D Per Lens),Add-on,8.20,all_other_lens_options,all_other
+Mirror - Solid Color,Add-on,54.00,mirror,QP
+Technical Add-On (Single Vision),Add-on,10.00,—,TA_SV
+Technical Add-On (Multifocal/Progressive),Add-on,40.00,—,TA
+MOUNTING
+Full Rim,Mount Fee,0.00,standard,standard
+Semi Rimless (grooved),Mount Fee,35.00,all_other_lens_options,SW
+Rimless (drill mount),Mount Fee,47.00,all_other_lens_options,SW
+EXAMS & SERVICES
+Routine Vision Exam (New),Exam,100.00,exam_copay,exam_copay
+Routine Vision Exam (Est),Exam,100.00,exam_copay,exam_copay
+Medical Exam,Exam,100.00,exam_copay,exam_copay
+Refraction,Exam,50.00,exam_copay,exam_copay
+Comp Ophth Service (New),Exam,200.00,exam_copay,exam_copay
+Comp Ophth Service (Est),Exam,165.00,exam_copay,exam_copay
+Interm Ophth Service (New),Exam,150.00,exam_copay,exam_copay
+Interm Ophth Service (Est),Exam,120.00,exam_copay,exam_copay
+CONTACT LENS FITTING
+CL Fitting - Sphere,Contact Fitting,75.00,cash_pay,cl_fitting_copay
+CL Fitting - Toric,Contact Fitting,100.00,cash_pay,cl_fitting_copay
+CL Fitting - Monovision,Contact Fitting,115.00,cash_pay,cl_fitting_copay
+CL Fitting - Multifocal Soft Lens,Contact Fitting,145.00,cash_pay,cl_fitting_copay
+CL Fitting - RGP,Contact Fitting,350.00,cash_pay,cash_pay
+CL Fitting - Specialty CL,Contact Fitting,750.00,cash_pay,cash_pay
+CL Fitting - Ortho-K,Contact Fitting,2200.00,cash_pay,cash_pay
+CL Fitting - MiSight,Contact Fitting,1600.00,cash_pay,cash_pay
+DIAGNOSTIC TESTS
+Optomap,Diagnostic,39.00,cash_pay,cash_pay
+iWellness Screening,Diagnostic,19.00,cash_pay,cash_pay
+OCT Retina,Diagnostic,65.00,cash_pay,cash_pay
+OCT ONH (Optic Nerve),Diagnostic,65.00,cash_pay,cash_pay
+Visual Field,Diagnostic,95.00,cash_pay,cash_pay
+Visual Field (Intermediate),Diagnostic,85.00,cash_pay,cash_pay
+Visual Field (Limited),Diagnostic,75.00,cash_pay,cash_pay
+External Photos,Diagnostic,29.00,cash_pay,cash_pay
+Neuro HA Screen,Diagnostic,89.00,cash_pay,cash_pay
+Myopia Atropine Exam/Consult/F/U,Diagnostic,350.00,cash_pay,cash_pay
+Fundus Photography,Diagnostic,80.00,cash_pay,cash_pay
+Corneal Thickness (Pachymetry),Diagnostic,40.00,cash_pay,cash_pay
+Corneal Topography,Diagnostic,49.00,cash_pay,cash_pay
+Gonioscopy,Diagnostic,40.00,cash_pay,cash_pay
+Fluorescein Angiography,Diagnostic,105.00,cash_pay,cash_pay
+Ophthalmic Biometry W/IOL Calc,Diagnostic,95.00,cash_pay,cash_pay
+Endothelial Cell Count,Diagnostic,85.00,cash_pay,cash_pay
+Serial Tonometry,Diagnostic,80.00,cash_pay,cash_pay
+PROCEDURES & OTHER SERVICES
+Color Vision Exam,Procedure,75.00,cash_pay,cash_pay
+Sensorimotor Exam,Procedure,125.00,cash_pay,cash_pay
+Foreign Body Removal (Corneal),Procedure,85.00,cash_pay,cash_pay
+Foreign Body Removal (Conj),Procedure,85.00,cash_pay,cash_pay
+Epilation,Procedure,95.00,cash_pay,cash_pay
+Punctum Closure (Punctal Plug),Procedure,39.00,cash_pay,cash_pay
+Dilation of Punctum,Procedure,165.00,cash_pay,cash_pay
+Chalazion Excision (Single),Procedure,125.00,cash_pay,cash_pay
+Removal Corneal Epithelium,Procedure,110.00,cash_pay,cash_pay
+Subconjunctival Injection,Procedure,85.00,cash_pay,cash_pay
+Orthoptic Training,Procedure,39.00,cash_pay,cash_pay
+Telescopic Low Vision Aid Fitting,Other,75.00,cash_pay,cash_pay
+Spectacle Repair & Refitting,Other,35.00,cash_pay,cash_pay
+Unlisted Ophth Service,Other,95.00,cash_pay,cash_pay

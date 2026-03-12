@@ -1,9 +1,10 @@
 'use client'
 
-import { useRouter } from 'next/navigation'
+import { useRouter, usePathname } from 'next/navigation'
 import { Button } from '@/components/ui/button'
 import { ArrowLeft, Home } from 'lucide-react'
 import AppNavigation from './app-navigation'
+import { CurrentPatientBanner } from './CurrentPatientBanner'
 
 interface PageLayoutProps {
   children: React.ReactNode
@@ -12,6 +13,7 @@ interface PageLayoutProps {
   showNavigation?: boolean
   actions?: React.ReactNode
   showFooterNav?: boolean
+  showPatientBanner?: boolean
   className?: string
 }
 
@@ -22,9 +24,16 @@ export default function PageLayout({
   showNavigation = true,
   actions,
   showFooterNav = true,
+  showPatientBanner = true,
   className = '',
 }: PageLayoutProps) {
   const router = useRouter()
+  const pathname = usePathname()
+
+  // Don't show patient banner on POS or customer profile pages (they have their own)
+  const shouldShowPatientBanner = showPatientBanner &&
+    !pathname?.startsWith('/pos') &&
+    !pathname?.startsWith('/customers/')
 
   return (
     <div className="min-h-screen flex flex-col">
@@ -35,6 +44,9 @@ export default function PageLayout({
         showNavigation={showNavigation}
         actions={actions}
       />
+
+      {/* Current Patient Quick Access */}
+      {shouldShowPatientBanner && <CurrentPatientBanner />}
 
       {/* Main Content */}
       <main className={`flex-1 ${className}`}>

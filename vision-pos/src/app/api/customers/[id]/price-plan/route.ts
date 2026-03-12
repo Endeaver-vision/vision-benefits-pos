@@ -1,7 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { prisma } from '@/lib/prisma'
-import { getActiveAuthorizationForCustomer } from '@/lib/services/authorization-service'
-import { generatePriceMapping } from '@/lib/services/price-mapping-service'
+import { precomputeCustomerPrices } from '@/lib/services/price-list-precompute'
 
 // GET - Fetch customer price plan
 export async function GET(
@@ -24,7 +23,7 @@ export async function GET(
 
     // Quick stats-only response for the UI component
     if (statsOnly) {
-      const pricePlans = await prisma.customerPriceList.findMany({
+      const pricePlans = await prisma.patientPriceList.findMany({
         where: {
           customerId: id,
           active: true
@@ -41,7 +40,7 @@ export async function GET(
       // Count stats
       const totalProducts = pricePlans.length
       const needsPricingCount = pricePlans.filter(p => p.finalPrice === null).length
-      const coveredProducts = pricePlans.filter(p => p.finalPrice === 0).length
+      const coveredProducts = pricePlans.filter(p => Number(p.finalPrice) === 0).length
       const pricedProducts = totalProducts - needsPricingCount
 
       return NextResponse.json({
@@ -56,96 +55,70 @@ export async function GET(
       })
     }
 
-    // Get active authorization (VSP/EyeMed/Spectera)
-    const authResult = await getActiveAuthorizationForCustomer(id)
-
-    // Get all products - ordered by displayGroup (everyday first), category displayOrder, then product displayOrder
-    const products = await prisma.product.findMany({
-      where: { active: true },
-      include: {
-        category: true
+    // Get active authorization
+    const authorization = await prisma.insuranceAuthorization.findFirst({
+      where: {
+        customerId: id,
+        isActive: true
       },
+      orderBy: { createdAt: 'desc' }
+    })
+
+    // Get all lens products - ordered by displayGroup (everyday first), then displayOrder
+    const products = await prisma.lensProduct.findMany({
+      where: { active: true },
       orderBy: [
         { displayGroup: 'asc' },  // 'everyday' sorts before 'reserve'
-        { category: { displayOrder: 'asc' } },
         { displayOrder: 'asc' },
         { name: 'asc' }
       ]
     })
 
     // Get customer's existing price plans
-    const pricePlans = await prisma.customerPriceList.findMany({
-      where: { 
+    const pricePlans = await prisma.patientPriceList.findMany({
+      where: {
         customerId: id,
         active: true
       }
     })
 
-    // Build insurance info from authorization - use type-safe access
-    const insuranceInfo = authResult ? (() => {
-      const carrier = authResult.carrier.toUpperCase()
-      const copays = authResult.authorization.copays as Record<string, unknown>
-
-      // Different carriers have different property names
-      let examCopay: number | null = null
-      let materialsCopay: number | null = null
-      let frameAllowance: number | null = null
-      let contactAllowance: number | null = null
-
-      if (authResult.carrier === 'vsp') {
-        examCopay = (copays?.examWellvision as number) ?? null
-        materialsCopay = (copays?.materials as number) ?? null
-        frameAllowance = (copays?.frameAllowanceNonFeatured as number) ?? null
-        contactAllowance = (copays?.contactAllowance as number) ?? null
-      } else if (authResult.carrier === 'eyemed') {
-        examCopay = (copays?.exam as number) ?? null
-        materialsCopay = (copays?.materials as number) ?? null
-        frameAllowance = (copays?.frameAllowance as number) ?? null
-        contactAllowance = (copays?.contactAllowance as number) ?? null
-      } else if (authResult.carrier === 'spectera') {
-        examCopay = (copays?.examAdult as number) ?? null
-        materialsCopay = (copays?.materials as number) ?? null
-        frameAllowance = (copays?.frameAllowance as number) ?? null
-        contactAllowance = (copays?.contactAllowance as number) ?? null
-      }
-
-      return {
-        carrier,
-        planName: authResult.authorization.plan.planName,
-        examCopay,
-        materialsCopay,
-        frameAllowance,
-        contactAllowance
-      }
-    })() : null
+    // Build insurance info from authorization
+    const insuranceInfo = authorization ? {
+      carrier: authorization.carrier,
+      planName: authorization.planName,
+      examCopay: authorization.examCopay,
+      materialsCopay: authorization.materialsCopay,
+      frameAllowance: authorization.frameAllowance,
+      contactAllowance: authorization.contactAllowance
+    } : null
 
     // Map products with customer pricing
     const productsWithPricing = products.map(product => {
       const plan = pricePlans.find(p => p.productId === product.id)
 
-      // Calculate effective price (custom price takes precedence)
-      const effectivePrice = plan?.customPrice ?? plan?.finalPrice ?? null
+      // Get effective price
+      const effectivePrice = plan?.finalPrice ? Number(plan.finalPrice) : null
 
       return {
         id: product.id,
         name: product.name,
         sku: product.sku,
-        category: product.category.name,
-        categoryCode: product.category.code,
-        categoryDisplayOrder: product.category.displayOrder,
-        displayGroup: product.displayGroup,  // 'everyday' or 'reserve'
+        category: formatCategory(product.category),
+        categoryCode: product.category,
+        categoryDisplayOrder: getCategoryOrder(product.category),
+        displayGroup: product.displayGroup,
         displayOrder: product.displayOrder,
         retailPrice: product.basePrice,
         customerPrice: effectivePrice,
-        customPrice: plan?.customPrice ?? null,
+        customPrice: null, // Not supported in current schema
         savings: effectivePrice !== null ? Math.max(0, product.basePrice - effectivePrice) : 0,
         insuranceTier: plan?.tier || null,
         insuranceCarrier: plan?.insuranceCarrier || null,
         hasPricePlan: !!plan,
-        needsTierAssignment: plan?.needsTierAssignment || false,  // True if using 80% retail fallback
-        priceOverrideReason: plan?.priceOverrideReason || null,
-        priceOverrideBy: plan?.priceOverrideBy || null,
-        priceOverrideDate: plan?.priceOverrideDate || null
+        needsTierAssignment: plan?.needsTierAssignment || false,
+        priceOverrideReason: null,
+        priceOverrideBy: null,
+        priceOverrideDate: null
       }
     })
 
@@ -159,18 +132,18 @@ export async function GET(
       summary: {
         totalProducts: products.length,
         productsWithPricing: pricePlans.length,
-        productsWithOverrides: pricePlans.filter(p => p.customPrice !== null).length
+        productsWithOverrides: 0
       },
-      authorization: authResult ? {
-        carrier: authResult.carrier,
-        authorizationId: authResult.authorizationId
+      authorization: authorization ? {
+        carrier: authorization.carrier,
+        authorizationId: authorization.id
       } : null
     })
 
   } catch (error) {
     console.error('Error fetching customer price plan:', error)
     return NextResponse.json(
-      { error: 'Failed to fetch price plan' },
+      { error: 'Failed to fetch price plan', details: error instanceof Error ? error.message : 'Unknown error' },
       { status: 500 }
     )
   }
@@ -185,26 +158,84 @@ export async function POST(
     const { id } = await params
     const body = await request.json()
 
-    // Check if this is a bulk generation or regeneration request
+    // Check if this is a bulk generation request
     if (body.action === 'generate-bulk' || body.action === 'regenerate') {
-      // Use the centralized price mapping service
-      const result = await generatePriceMapping(id)
+      // Get customer
+      const customer = await prisma.customer.findUnique({
+        where: { id }
+      })
 
-      if (!result.success) {
+      if (!customer) {
+        return NextResponse.json({ error: 'Customer not found' }, { status: 404 })
+      }
+
+      // Get active authorization
+      const authorization = await prisma.insuranceAuthorization.findFirst({
+        where: {
+          customerId: id,
+          isActive: true
+        },
+        orderBy: { createdAt: 'desc' }
+      })
+
+      if (!authorization) {
         return NextResponse.json(
-          { error: result.error || 'Failed to generate price mappings' },
-          { status: 500 }
+          { error: 'No active insurance authorization found. Please scan an insurance document first.' },
+          { status: 400 }
         )
       }
 
+      // Build copays from authorization
+      const copays = (authorization.copays as Record<string, unknown>) || {}
+      const carrierLower = authorization.carrier.toLowerCase()
+
+      // Build BenefitAuthorization object
+      const benefitAuth = {
+        carrier: carrierLower,
+        plan: {
+          carrier: carrierLower,
+          planName: authorization.planName || `${authorization.carrier} Plan`,
+        },
+        patient: { age: null },
+        copays: {
+          exam: Number(authorization.examCopay) || 0,
+          materials: Number(authorization.materialsCopay) || 0,
+          frameAllowance: Number(authorization.frameAllowance) || 0,
+          frameAllowanceFeatured: Number(authorization.frameAllowance) || 0,
+          frameAllowanceNonFeatured: Number(authorization.frameAllowance) || 0,
+          contactAllowance: Number(authorization.contactAllowance) || 0,
+          clExamCopay: Number(authorization.clExamCopay) || 0,
+          ...copays,
+        },
+      }
+
+      const result = await precomputeCustomerPrices(
+        benefitAuth,
+        {
+          customerId: id,
+          authorizationId: authorization.id,
+          carrier: authorization.carrier.toUpperCase() as 'VSP' | 'EyeMed' | 'Spectera',
+          planName: authorization.planName || `${authorization.carrier} Plan`,
+        }
+      )
+
+      if (!result.success) {
+        return NextResponse.json({
+          success: false,
+          error: result.errors?.[0] || 'Failed to generate price plan. Please try again or scan your insurance document again.'
+        }, { status: 400 })
+      }
+
       return NextResponse.json({
-        success: true,
-        message: `Generated ${result.totalProducts} prices for ${result.carrier || 'no insurance'} (${result.mappedProducts} tier-based, ${result.fallbackProducts} fallback)`,
+        success: result.success,
+        message: `Generated prices for ${authorization.carrier}`,
         stats: {
-          totalProducts: result.totalProducts,
-          tierBasedProducts: result.mappedProducts,
-          fallbackProducts: result.fallbackProducts,
-          missingKeyProducts: result.missingKeyProducts
+          totalProducts: result.productsProcessed,
+          productsCreated: result.productsCreated,
+          productsUpdated: result.productsUpdated,
+          productsFailed: result.productsFailed,
+          errors: result.errors.length > 0 ? result.errors.slice(0, 5) : [],
+          mappedProducts: result.productsCreated
         }
       })
     }
@@ -220,7 +251,7 @@ export async function POST(
     }
 
     // Get product
-    const product = await prisma.product.findUnique({
+    const product = await prisma.lensProduct.findUnique({
       where: { id: productId }
     })
 
@@ -238,41 +269,27 @@ export async function POST(
     }
 
     // Get active authorization
-    const authResult = await getActiveAuthorizationForCustomer(id)
+    const authorization = await prisma.insuranceAuthorization.findFirst({
+      where: {
+        customerId: id,
+        isActive: true
+      }
+    })
 
-    // Calculate insurance tier for this product from carrier_tiers table
-    let tier: string | null = null
-    let insuranceCarrier: string | null = null
+    const insuranceCarrier = authorization?.carrier || null
 
-    if (authResult) {
-      insuranceCarrier = authResult.carrier.toUpperCase()
-
-      // Look up tier from carrier_tiers table
-      const tierMapping = await prisma.carrierTier.findFirst({
-        where: {
-          productId: productId,
-          carrier: insuranceCarrier
-        }
-      })
-      tier = tierMapping?.tierCode || null
-    }
-
-    // Upsert price plan - use new unique constraint that includes insuranceCarrier
-    const pricePlan = await prisma.customerPriceList.upsert({
+    // Upsert price plan
+    const pricePlan = await prisma.patientPriceList.upsert({
       where: {
         customerId_productId_insuranceCarrier: {
           customerId: id,
           productId: productId,
-          insuranceCarrier: insuranceCarrier ?? ''  // Empty string for cash pay
+          insuranceCarrier: insuranceCarrier ?? ''
         }
       },
       update: {
-        customPrice: customPrice,
         finalPrice: customPrice,
         savings: product.basePrice - customPrice,
-        priceOverrideReason: reason || null,
-        priceOverrideBy: 'admin',
-        priceOverrideDate: new Date(),
         updatedAt: new Date()
       },
       create: {
@@ -282,11 +299,7 @@ export async function POST(
         retailPrice: product.basePrice,
         savings: product.basePrice - customPrice,
         insuranceCarrier: insuranceCarrier,
-        tier: tier,
-        customPrice: customPrice,
-        priceOverrideReason: reason || null,
-        priceOverrideBy: 'admin',
-        priceOverrideDate: new Date(),
+        authorizationId: authorization?.id,
         active: true
       }
     })
@@ -299,7 +312,7 @@ export async function POST(
   } catch (error) {
     console.error('Error updating price plan:', error)
     return NextResponse.json(
-      { error: 'Failed to update price plan' },
+      { error: 'Failed to update price plan', details: error instanceof Error ? error.message : 'Unknown error' },
       { status: 500 }
     )
   }
@@ -314,7 +327,7 @@ export async function DELETE(
     const { id } = await params
     const { searchParams } = new URL(request.url)
     const productId = searchParams.get('productId')
-    const carrier = searchParams.get('carrier')  // Optional carrier filter
+    const carrier = searchParams.get('carrier')
 
     if (!productId) {
       return NextResponse.json(
@@ -324,8 +337,7 @@ export async function DELETE(
     }
 
     if (carrier) {
-      // Delete specific carrier's price
-      await prisma.customerPriceList.delete({
+      await prisma.patientPriceList.delete({
         where: {
           customerId_productId_insuranceCarrier: {
             customerId: id,
@@ -335,8 +347,7 @@ export async function DELETE(
         }
       })
     } else {
-      // Delete all prices for this product (all carriers)
-      await prisma.customerPriceList.deleteMany({
+      await prisma.patientPriceList.deleteMany({
         where: {
           customerId: id,
           productId: productId
@@ -353,4 +364,45 @@ export async function DELETE(
       { status: 500 }
     )
   }
+}
+
+// Helper functions
+function formatCategory(category: string): string {
+  const map: Record<string, string> = {
+    'single_vision': 'Single Vision',
+    'progressive': 'Progressive Lenses',
+    'bifocal': 'Bifocal',
+    'trifocal': 'Trifocal',
+    'ar_coating': 'AR Coatings',
+    'photochromic': 'Photochromic',
+    'material': 'Lens Materials',
+    'mount_fee': 'Mount Fees',
+    'addon': 'Add-ons',
+    'tint': 'Tint',
+    'polarized': 'Polarized'
+  }
+  return map[category] || category
+}
+
+function getCategoryOrder(category: string): number {
+  // Order: Lens types → AR → Transitions → Materials → Add-ons
+  const order: Record<string, number> = {
+    // Lens types first
+    'single_vision': 1,
+    'progressive': 2,
+    'bifocal': 3,
+    'trifocal': 4,
+    // AR coatings
+    'ar_coating': 5,
+    // Transitions/photochromic
+    'photochromic': 6,
+    // Materials
+    'material': 7,
+    // Add-ons last
+    'addon': 8,
+    'mount_fee': 9,
+    'tint': 10,
+    'polarized': 11
+  }
+  return order[category] || 99
 }

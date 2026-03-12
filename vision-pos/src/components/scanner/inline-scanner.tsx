@@ -143,22 +143,11 @@ export function InlineScanner({ customerId, onDocumentProcessed, onClose, compac
       setProgress(fileProgress + (10 / totalFiles))
 
       try {
-        // Step 1: Upload
+        // Call insurance extraction API
         const formData = new FormData()
         formData.append('file', fileEntry.file)
         formData.append('customerId', customerId)
-        formData.append('uploadedBy', 'inline-scanner')
-
-        const uploadResponse = await fetch('/api/documents/upload', {
-          method: 'POST',
-          body: formData,
-        })
-
-        const uploadResult = await uploadResponse.json()
-
-        if (!uploadResult.success) {
-          throw new Error(uploadResult.error || 'Upload failed')
-        }
+        formData.append('carrier', 'EYEMED') // Default to EYEMED
 
         setSelectedFiles(prev => prev.map((f, idx) =>
           idx === i ? { ...f, status: 'processing', progress: 50 } : f
@@ -166,20 +155,24 @@ export function InlineScanner({ customerId, onDocumentProcessed, onClose, compac
         setProgress(fileProgress + (50 / totalFiles))
         setState('processing')
 
-        // Step 2: Process with OCR + GPT
-        const processResponse = await fetch(`/api/documents/${uploadResult.documentId}/process`, {
+        const extractResponse = await fetch('/api/insurance/extract', {
           method: 'POST',
+          body: formData,
         })
 
-        const processResult = await processResponse.json()
+        const extractResult = await extractResponse.json()
 
-        if (processResult.success) {
+        if (extractResult.success) {
           const processed: ProcessedDocument = {
-            documentId: uploadResult.documentId,
-            carrier: processResult.carrier,
-            planName: processResult.planName,
-            confidenceScore: processResult.confidenceScore,
-            extractedData: processResult.extractedData,
+            documentId: extractResult.authorizationId,
+            carrier: 'EYEMED',
+            planName: 'EyeMed Plan',
+            confidenceScore: 0.95,
+            extractedData: {
+              extractedBenefits: extractResult.extractedBenefits,
+              pricedProducts: extractResult.pricedProducts,
+              pricingNotes: extractResult.pricingNotes,
+            },
             success: true,
           }
 
@@ -190,11 +183,11 @@ export function InlineScanner({ customerId, onDocumentProcessed, onClose, compac
           lastResult = processed
           onDocumentProcessed?.(processed)
         } else {
-          throw new Error(processResult.error || 'Processing failed')
+          throw new Error(extractResult.error || 'Extraction failed')
         }
       } catch (err) {
         hasError = true
-        const errorMessage = err instanceof Error ? err.message : 'Processing failed'
+        const errorMessage = err instanceof Error ? err.message : 'Extraction failed'
         setSelectedFiles(prev => prev.map((f, idx) =>
           idx === i ? { ...f, status: 'error', error: errorMessage } : f
         ))

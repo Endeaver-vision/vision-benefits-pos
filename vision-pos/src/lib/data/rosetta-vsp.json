@@ -1,0 +1,462 @@
+{
+  "metadata": {
+    "carrier": "VSP",
+    "totalDocuments": 93,
+    "insuranceAuthsDocuments": 53,
+    "authsEopsDocuments": 40,
+    "analysisDate": "February 2026",
+    "planTypes": 5,
+    "medicalPrograms": 7,
+    "lensProductCodes": 80,
+    "totalVariations": 200
+  },
+  "carrierMarkers": [
+    "Vision Service Plan",
+    "VSP",
+    "WFA",
+    "Material Code",
+    "Separate Auth and Lens Enhancement PDFs"
+  ],
+  "planTypes": [
+    {
+      "name": "VSP Choice Plan",
+      "coverageCount": 25,
+      "insuranceAuths": 14,
+      "authsEops": 11,
+      "networkDesignation": "Choice Lab Use",
+      "features": [
+        "Routine exam",
+        "Frame benefit",
+        "Lens coverage",
+        "Contact lens options"
+      ],
+      "status": "Primary plan type"
+    },
+    {
+      "name": "VSP Signature Plan",
+      "coverageCount": 12,
+      "insuranceAuths": 7,
+      "authsEops": 5,
+      "networkDesignation": "VSP Lab Use",
+      "features": [
+        "Comprehensive eye care",
+        "Enhanced frame/lens benefits",
+        "Medical eye care programs"
+      ],
+      "status": "Secondary plan type"
+    },
+    {
+      "name": "VSP Advantage Plan",
+      "coverageCount": 8,
+      "insuranceAuths": 5,
+      "authsEops": 3,
+      "networkDesignation": "Advantage Lab Use",
+      "features": [
+        "Basic exam and frame benefit",
+        "Limited medical eye care"
+      ],
+      "status": "Available in both sets"
+    },
+    {
+      "name": "VSP Computer VisionCare Plan Supplemental",
+      "coverageCount": 2,
+      "insuranceAuths": 2,
+      "authsEops": 0,
+      "networkDesignation": "VSP Lab Use",
+      "features": [
+        "Computer vision care benefits",
+        "Digital lens options"
+      ],
+      "status": "NEW in Insurance Auths only"
+    },
+    {
+      "name": "VSP Vision Savings Pass",
+      "coverageCount": 1,
+      "insuranceAuths": 0,
+      "authsEops": 1,
+      "networkDesignation": "Choice Lab Use",
+      "features": [
+        "Direct fee schedule",
+        "Specified copay amounts"
+      ],
+      "status": "Alternative plan structure"
+    }
+  ],
+  "networkTypes": [
+    {
+      "type": "Choice Lab",
+      "insuranceAuths": 28,
+      "authsEops": 25,
+      "total": 53
+    },
+    {
+      "type": "VSP Lab",
+      "insuranceAuths": 14,
+      "authsEops": 14,
+      "total": 28
+    },
+    {
+      "type": "Advantage Lab",
+      "insuranceAuths": 10,
+      "authsEops": 6,
+      "total": 16
+    }
+  ],
+  "medicalPrograms": [
+    {
+      "name": "Diabetic Retinopathy Coverage",
+      "coverageCount": 47,
+      "description": "Coverage for eye conditions related to diabetes"
+    },
+    {
+      "name": "Essential Medical Eye Care",
+      "coverageCount": 32,
+      "description": "Optional coverage for non-routine medical eye care conditions"
+    },
+    {
+      "name": "Low Vision Care",
+      "coverageCount": 38,
+      "description": "Vision rehabilitation services for low vision patients"
+    },
+    {
+      "name": "Post-Laser VisionCare",
+      "coverageCount": 12,
+      "description": "Coverage for patients who have had laser vision correction surgery"
+    },
+    {
+      "name": "Diabetic Eyecare Plus Program",
+      "coverageCount": 8,
+      "description": "Enhanced care program specifically for diabetic patients"
+    },
+    {
+      "name": "Computer VisionCare",
+      "coverageCount": 2,
+      "description": "Coverage for computer vision-related eye conditions",
+      "new": true
+    },
+    {
+      "name": "EasyOptions Program",
+      "coverageCount": 34,
+      "description": "Patient choice program allowing selection of specific coverage options"
+    }
+  ],
+  "frameAllowances": [
+    {
+      "canonicalName": "Frame Allowance",
+      "coverageCount": 47,
+      "terminology": "Frame Allowance",
+      "note": "Dollar amount allowance for frame purchase"
+    },
+    {
+      "canonicalName": "Frame YES",
+      "coverageCount": 43,
+      "terminology": "Frame YES",
+      "frequency": "Every year"
+    },
+    {
+      "canonicalName": "Altair/Marchon Promotion",
+      "coverageCount": 306,
+      "note": "NEW in Insurance Auths",
+      "details": {
+        "WFA84": {
+          "amount": 220,
+          "for": "Altair Eyewear/Marchon frames",
+          "overage": "20% savings"
+        },
+        "WFA76": {
+          "amount": 200,
+          "for": "Non-Altair Eyewear/Marchon frames",
+          "overage": "20% savings"
+        }
+      }
+    }
+  ],
+  "lensCategories": {
+    "progressive": [
+      {
+        "name": "Standard Progressives",
+        "coverageCount": 87,
+        "codes": ["KA", "KE"],
+        "description": "Standard progressive lenses"
+      },
+      {
+        "name": "Premium Progressives",
+        "coverageCount": 87,
+        "codes": ["FA", "FE", "JA", "JE", "NA", "OA"],
+        "description": "High-quality progressive lenses with advanced technology"
+      },
+      {
+        "name": "Custom Progressives",
+        "coverageCount": 87,
+        "description": "Custom-designed progressive lenses"
+      }
+    ],
+    "polycarbonate": {
+      "coverageCount": 537,
+      "description": "Impact-resistant plastic lens material",
+      "codes": ["AD", "BD", "DD", "FD", "ID", "JD", "KD", "ND", "OD"]
+    },
+    "highIndex": {
+      "coverageCount": 660,
+      "description": "Thinner, lighter lens material for stronger prescriptions",
+      "variants": [
+        {
+          "index": "1.60 & Below/Trivex",
+          "codes": ["BB", "FB", "JB", "KB", "NB", "OB"]
+        },
+        {
+          "index": "1.66/1.67",
+          "codes": ["BH", "FH", "JH", "KH", "NH", "OH"]
+        },
+        {
+          "index": "1.70 & Above",
+          "codes": ["BJ", "FJ", "JJ", "KJ", "NJ", "OJ"]
+        }
+      ]
+    },
+    "bifocal": [
+      {
+        "name": "Blended Bifocal",
+        "coverageCount": 135,
+        "code": "GA",
+        "description": "Bifocal lenses with blended segment transition"
+      },
+      {
+        "name": "Standard Bifocal",
+        "coverageCount": 146,
+        "description": "Traditional bifocal lens design"
+      }
+    ],
+    "specialLenses": [
+      {
+        "name": "Trifocal",
+        "coverageCount": 1,
+        "description": "Three-power lens design"
+      },
+      {
+        "name": "Lenticular",
+        "coverageCount": 1,
+        "description": "Specialty lens for very high prescriptions"
+      },
+      {
+        "name": "Oversize Lenses",
+        "coverageCount": 91,
+        "description": "Lenses larger than standard size"
+      },
+      {
+        "name": "Single Vision",
+        "coverageCount": 1,
+        "description": "Single power lens for distance, intermediate, or near vision"
+      }
+    ]
+  },
+  "coatingsAndFeatures": [
+    {
+      "name": "Anti-Reflective Coatings",
+      "coverageCount": 257,
+      "codes": ["QM", "QT", "QV"],
+      "description": "Reduces glare and reflections from lens surfaces"
+    },
+    {
+      "name": "Digital Aspheric/Digital Lenses",
+      "coverageCount": 224,
+      "codes": ["BA", "BD", "BB", "BH", "BJ"],
+      "description": "Advanced lens designs optimized for digital device use"
+    },
+    {
+      "name": "Photochromic (Light-Reactive) Lenses",
+      "coverageCount": 106,
+      "description": "Lenses that darken in sunlight and clear indoors"
+    },
+    {
+      "name": "Polarized Lenses",
+      "coverageCount": 593,
+      "codes": ["FP", "JP", "KP", "NP", "OP", "DB"],
+      "description": "Lenses that reduce glare from reflective surfaces"
+    },
+    {
+      "name": "Scratch Resistant Coatings",
+      "coverageCount": 179,
+      "codes": ["QQ", "QS"],
+      "description": "Protective coating to reduce lens scratching"
+    },
+    {
+      "name": "UV Protection",
+      "coverageCount": 192,
+      "codes": ["BV", "SV"],
+      "description": "Protection from ultraviolet radiation"
+    },
+    {
+      "name": "Facetted Lenses",
+      "coverageCount": 44,
+      "code": "SR",
+      "description": "Specialty lens design with faceted edges"
+    }
+  ],
+  "contactLenses": [
+    {
+      "name": "Contact Lens Exam",
+      "coverageCount": 40,
+      "terminology": "Contact Lens Exam YES",
+      "frequency": "Every year"
+    },
+    {
+      "name": "CL Exam Services",
+      "coverageCount": 40,
+      "copay": "Lesser of $10 copay or 85% U&C",
+      "note": "Professional services related to contact lens examinations"
+    },
+    {
+      "name": "Necessary Contact Lenses",
+      "coverageCount": 43,
+      "copay": "$10.00",
+      "description": "Medically necessary contact lenses",
+      "note": "Criteria applies; see VSP Manual"
+    },
+    {
+      "name": "Contact Lens Upgrade",
+      "coverageCount": 9,
+      "amounts": [200, 230, 300],
+      "description": "Dollar allowance for upgrading to premium contact lenses"
+    }
+  ],
+  "examsAndServices": [
+    {
+      "name": "WellVision Exam",
+      "coverageCount": 46,
+      "terminology": "Last WellVision Exam",
+      "description": "VSP's branded comprehensive vision and health exam",
+      "features": [
+        "Retinal imaging",
+        "Tonometry",
+        "Advanced diagnostics"
+      ]
+    },
+    {
+      "name": "Routine Exam",
+      "terminology": "Exam Every year",
+      "description": "Standard periodic eye examination"
+    },
+    {
+      "name": "Exam and Professional Services",
+      "terminology": "Exam/ProfSvcs YES",
+      "description": "Exam and professional services included"
+    },
+    {
+      "name": "Eye Care Services",
+      "coverageCount": 40,
+      "terminology": ["Eye Care", "Eyecare"],
+      "description": "General eye care services beyond routine exams"
+    }
+  ],
+  "copyPatterns": {
+    "typical": [5, 10, 15, 20, 25],
+    "special": [30, 37, 46, 61, 76]
+  },
+  "coverageTerms": [
+    {
+      "term": "Criteria Applies",
+      "usage": "Criteria applies; see VSP Manual",
+      "coverageCount": 83,
+      "meaning": "Benefit requires meeting specific clinical criteria defined in VSP Manual"
+    },
+    {
+      "term": "Covered with Additional Copay",
+      "coverageCount": 137,
+      "description": "Indicates premium options require extra patient cost beyond base plan"
+    },
+    {
+      "term": "Must use plan designated contract laboratory",
+      "description": "Network requirement language",
+      "variations": [
+        "Lab Use",
+        "Choice Lab Use",
+        "VSP Lab Use",
+        "Advantage Lab Use"
+      ]
+    },
+    {
+      "term": "Frequency",
+      "examples": [
+        "Every year beginning in [month]",
+        "Every year",
+        "Every 24 months"
+      ]
+    }
+  ],
+  "specialPrograms": [
+    {
+      "name": "VSP EasyOptions Program",
+      "coverageCount": 34,
+      "description": "Flexible benefit program allowing patient to select specific coverage options",
+      "notation": [
+        "Patient has VSP EasyOptions coverage and may select one of the following",
+        "EasyOptions*(Covered if selected as VSP EasyOptions)"
+      ]
+    },
+    {
+      "name": "Brand Partnerships",
+      "altairReferences": 150,
+      "marchonReferences": 156,
+      "promotion": "Extra $20 promotion on Altair Eyewear/Marchon frames",
+      "specialFrameCodes": {
+        "WFA84": "$220.00 for Altair/Marchon frames",
+        "WFA76": "$200.00 for non-Altair/Marchon frames"
+      },
+      "additionalBenefit": "20% additional savings on frame overage"
+    },
+    {
+      "name": "Lens Enhancement Chart",
+      "description": "Reference guide for understanding additional copay costs for lens upgrades"
+    },
+    {
+      "name": "Post-Laser Vision Correction Support",
+      "specialBenefit": "Frame benefit can be used for non-prescription, readymade sunglasses"
+    }
+  ],
+  "businessRules": {
+    "networkRequirements": [
+      {
+        "type": "Choice",
+        "designation": "Choice Lab Use"
+      },
+      {
+        "type": "VSP",
+        "designation": "VSP Lab Use"
+      },
+      {
+        "type": "Advantage",
+        "designation": "Advantage Lab Use"
+      }
+    ],
+    "tierRanges": {
+      "progressiveF": { "min": 30, "max": 75 },
+      "progressiveJ": { "min": 30, "max": 75 },
+      "progressiveK": { "min": 25, "max": 70 },
+      "progressiveN": { "min": 35, "max": 80 },
+      "progressiveO": { "min": 40, "max": 85 }
+    },
+    "materialCodeSystem": {
+      "description": "Two-letter systematic codes for progressive + material combinations",
+      "examples": {
+        "FA": "Progressive F Plastic",
+        "FE": "Progressive F Glass",
+        "JA": "Progressive J Plastic",
+        "JE": "Progressive J Glass"
+      }
+    },
+    "coatingCodes": {
+      "ar": ["QM", "QT", "QV"],
+      "scratchResistant": ["QQ", "QS"],
+      "uv": ["BV", "SV"]
+    }
+  },
+  "analysisMetrics": {
+    "consistency": "95-98%",
+    "newTerminologyInInsuranceAuths": 3,
+    "totalCopayValues": 14,
+    "supportedLensMaterials": "5+",
+    "supportedCoatings": "15+",
+    "uniqueLensProductCodes": "80+"
+  }
+}

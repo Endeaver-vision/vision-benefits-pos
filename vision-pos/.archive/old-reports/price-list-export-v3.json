@@ -1,0 +1,194 @@
+{
+  "export_date": "2026-01-15T21:00:00Z",
+  "version": 3,
+  "summary": {
+    "total_patients": 6,
+    "carriers": ["EYEMED"],
+    "fixes_applied": [
+      "1. Fixed DISCOUNT_XX string handling - correctly calculates patient pays percentage",
+      "2. Fixed AR coating tier codes (ar_tier_2/ar_tier_3 instead of tier_2/tier_3)",
+      "3. Added allOtherLensOptions fallback for products without specific copays",
+      "4. VSP-only products now correctly show as cash_only for EyeMed quotes"
+    ],
+    "pricing_methods_explained": {
+      "by_tier": "Explicit copay from authorization (e.g., copay: 35 -> patient pays $35)",
+      "ins_discount": "Insurance-defined discount (e.g., DISCOUNT_30 -> patient pays 70% of retail)",
+      "cash_only": "Not covered by insurance - full retail price (tier_code is null)",
+      "uc_discount": "Fallback 20% discount when no copay data available (needs_review: true)"
+    }
+  },
+  "vsp_only_products_fixed": {
+    "note": "These products are VSP-specific and should NOT appear in EyeMed quotes with discounts",
+    "products": [
+      "Technical Add-On (Single Vision)",
+      "Technical Add-On (Multifocal/Progressive)",
+      "Light Filter (VSP LF)",
+      "Semi Rimless (grooved)",
+      "Rimless (drill mount)"
+    ],
+    "expected_behavior": "pricing_method: cash_only, tier_code: null, patient_pays = retail_price"
+  },
+  "patients": [
+    {
+      "customer_name": "Juan Abadia",
+      "plan_name": "EYEMED HEALTHY INDIVID-MAY-MO",
+      "all_other_fallback": "DISCOUNT_30",
+      "products": [
+        {"product": "Single Vision", "retail": 80.40, "patient_pays": 55.00, "method": "by_tier"},
+        {"product": "Polycarbonate", "retail": 65.00, "patient_pays": 35.00, "method": "by_tier"},
+        {"product": "Hi-Index 1.67", "retail": 125.00, "patient_pays": 87.50, "method": "ins_discount", "note": "30% off via allOther"},
+        {"product": "Trivex", "retail": 85.00, "patient_pays": 59.50, "method": "ins_discount", "note": "30% off via allOther"},
+        {"product": "Transitions GEN S", "retail": 175.00, "patient_pays": 122.50, "method": "ins_discount", "note": "DISCOUNT_30"},
+        {"product": "Polarized", "retail": 155.70, "patient_pays": 108.99, "method": "ins_discount", "note": "30% off via allOther"},
+        {"product": "Essential Blue Series", "retail": 30.00, "patient_pays": 21.00, "method": "ins_discount", "note": "30% off via allOther"},
+        {"product": "Crizal Easy Pro", "retail": 147.50, "patient_pays": 103.25, "method": "ins_discount", "note": "30% off via allOther (ar_tier_2)"},
+        {"product": "Crizal Rock", "retail": 145.00, "patient_pays": 116.00, "method": "ins_discount", "note": "20% off (ar_tier_3)"},
+        {"product": "Crizal Sapphire HR", "retail": 180.00, "patient_pays": 144.00, "method": "ins_discount", "note": "20% off (ar_tier_3)"},
+        {"product": "Varilux Comfort DRx", "retail": 254.10, "patient_pays": 177.87, "method": "ins_discount", "note": "30% off via allOther"},
+        {"product": "Varilux Comfort Max", "retail": 393.30, "patient_pays": 275.31, "method": "ins_discount", "note": "30% off via allOther"},
+        {"product": "Light Filter (VSP LF)", "retail": 15.00, "patient_pays": 15.00, "method": "cash_only", "note": "VSP-only product"},
+        {"product": "Technical Add-On (Single Vision)", "retail": 10.00, "patient_pays": 10.00, "method": "cash_only", "note": "VSP-only product"},
+        {"product": "Technical Add-On (Multifocal/Progressive)", "retail": 40.00, "patient_pays": 40.00, "method": "cash_only", "note": "VSP-only product"},
+        {"product": "Semi Rimless (grooved)", "retail": 35.00, "patient_pays": 35.00, "method": "cash_only", "note": "Not an EyeMed benefit"},
+        {"product": "Rimless (drill mount)", "retail": 47.00, "patient_pays": 47.00, "method": "cash_only", "note": "Not an EyeMed benefit"}
+      ]
+    },
+    {
+      "customer_name": "Marcell Bailey Ebdrup",
+      "plan_name": "Orlando Health, Inc",
+      "all_other_fallback": null,
+      "note": "EXCELLENT plan - most products have explicit $0 or low copays, but no allOther fallback",
+      "products": [
+        {"product": "Single Vision", "retail": 80.40, "patient_pays": 10.00, "method": "by_tier"},
+        {"product": "Polycarbonate", "retail": 65.00, "patient_pays": 0.00, "method": "by_tier"},
+        {"product": "Hi-Index 1.67", "retail": 125.00, "patient_pays": 100.00, "method": "uc_discount", "needs_review": true},
+        {"product": "Trivex", "retail": 85.00, "patient_pays": 68.00, "method": "uc_discount", "needs_review": true},
+        {"product": "Transitions GEN S", "retail": 175.00, "patient_pays": 0.00, "method": "by_tier"},
+        {"product": "Polarized", "retail": 155.70, "patient_pays": 124.56, "method": "uc_discount", "needs_review": true},
+        {"product": "Essential Blue Series", "retail": 30.00, "patient_pays": 24.00, "method": "uc_discount", "needs_review": true},
+        {"product": "Crizal Easy Pro", "retail": 147.50, "patient_pays": 68.00, "method": "by_tier"},
+        {"product": "Crizal Rock", "retail": 145.00, "patient_pays": 116.00, "method": "ins_discount", "note": "20% off (ar_tier_3)"},
+        {"product": "Crizal Sapphire HR", "retail": 180.00, "patient_pays": 144.00, "method": "ins_discount", "note": "20% off (ar_tier_3)"},
+        {"product": "Varilux Comfort DRx", "retail": 254.10, "patient_pays": 55.00, "method": "by_tier"},
+        {"product": "Varilux Comfort Max", "retail": 393.30, "patient_pays": 185.00, "method": "by_tier"},
+        {"product": "Light Filter (VSP LF)", "retail": 15.00, "patient_pays": 15.00, "method": "cash_only"},
+        {"product": "Technical Add-On (Single Vision)", "retail": 10.00, "patient_pays": 10.00, "method": "cash_only"},
+        {"product": "Technical Add-On (Multifocal/Progressive)", "retail": 40.00, "patient_pays": 40.00, "method": "cash_only"},
+        {"product": "Semi Rimless (grooved)", "retail": 35.00, "patient_pays": 35.00, "method": "cash_only"},
+        {"product": "Rimless (drill mount)", "retail": 47.00, "patient_pays": 47.00, "method": "cash_only"}
+      ]
+    },
+    {
+      "customer_name": "Jacquelyn Burke",
+      "plan_name": "Humana VCP",
+      "all_other_fallback": null,
+      "note": "Good extraction - has specific copays for most products",
+      "products": [
+        {"product": "Single Vision", "retail": 80.40, "patient_pays": 10.00, "method": "by_tier"},
+        {"product": "Polycarbonate", "retail": 65.00, "patient_pays": 25.00, "method": "by_tier"},
+        {"product": "Hi-Index 1.67", "retail": 125.00, "patient_pays": 95.00, "method": "by_tier"},
+        {"product": "Trivex", "retail": 85.00, "patient_pays": 68.00, "method": "uc_discount", "needs_review": true},
+        {"product": "Transitions GEN S", "retail": 175.00, "patient_pays": 88.00, "method": "by_tier"},
+        {"product": "Polarized", "retail": 155.70, "patient_pays": 66.00, "method": "by_tier"},
+        {"product": "Essential Blue Series", "retail": 30.00, "patient_pays": 24.00, "method": "uc_discount", "needs_review": true},
+        {"product": "Crizal Easy Pro", "retail": 147.50, "patient_pays": 85.00, "method": "by_tier"},
+        {"product": "Crizal Rock", "retail": 145.00, "patient_pays": 116.00, "method": "ins_discount"},
+        {"product": "Crizal Sapphire HR", "retail": 180.00, "patient_pays": 144.00, "method": "ins_discount"},
+        {"product": "Varilux Comfort DRx", "retail": 254.10, "patient_pays": 145.00, "method": "by_tier"},
+        {"product": "Varilux Comfort Max", "retail": 393.30, "patient_pays": 185.00, "method": "by_tier"},
+        {"product": "Light Filter (VSP LF)", "retail": 15.00, "patient_pays": 15.00, "method": "cash_only"},
+        {"product": "Technical Add-On (Single Vision)", "retail": 10.00, "patient_pays": 10.00, "method": "cash_only"},
+        {"product": "Technical Add-On (Multifocal/Progressive)", "retail": 40.00, "patient_pays": 40.00, "method": "cash_only"},
+        {"product": "Semi Rimless (grooved)", "retail": 35.00, "patient_pays": 35.00, "method": "cash_only"},
+        {"product": "Rimless (drill mount)", "retail": 47.00, "patient_pays": 47.00, "method": "cash_only"}
+      ]
+    },
+    {
+      "customer_name": "Daniel Dasilveira",
+      "plan_name": "Blue View LG GA FI VOL",
+      "all_other_fallback": null,
+      "products": [
+        {"product": "Single Vision", "retail": 80.40, "patient_pays": 20.00, "method": "by_tier"},
+        {"product": "Polycarbonate", "retail": 65.00, "patient_pays": 40.00, "method": "by_tier"},
+        {"product": "Hi-Index 1.67", "retail": 125.00, "patient_pays": 100.00, "method": "uc_discount", "needs_review": true},
+        {"product": "Trivex", "retail": 85.00, "patient_pays": 68.00, "method": "uc_discount", "needs_review": true},
+        {"product": "Transitions GEN S", "retail": 175.00, "patient_pays": 75.00, "method": "by_tier"},
+        {"product": "Polarized", "retail": 155.70, "patient_pays": 124.56, "method": "uc_discount", "needs_review": true},
+        {"product": "Essential Blue Series", "retail": 30.00, "patient_pays": 24.00, "method": "uc_discount", "needs_review": true},
+        {"product": "Crizal Easy Pro", "retail": 147.50, "patient_pays": 68.00, "method": "by_tier"},
+        {"product": "Crizal Rock", "retail": 145.00, "patient_pays": 116.00, "method": "ins_discount"},
+        {"product": "Crizal Sapphire HR", "retail": 180.00, "patient_pays": 144.00, "method": "ins_discount"},
+        {"product": "Varilux Comfort DRx", "retail": 254.10, "patient_pays": 130.00, "method": "by_tier"},
+        {"product": "Varilux Comfort Max", "retail": 393.30, "patient_pays": 85.00, "method": "by_tier"},
+        {"product": "Light Filter (VSP LF)", "retail": 15.00, "patient_pays": 15.00, "method": "cash_only"},
+        {"product": "Technical Add-On (Single Vision)", "retail": 10.00, "patient_pays": 10.00, "method": "cash_only"},
+        {"product": "Technical Add-On (Multifocal/Progressive)", "retail": 40.00, "patient_pays": 40.00, "method": "cash_only"},
+        {"product": "Semi Rimless (grooved)", "retail": 35.00, "patient_pays": 35.00, "method": "cash_only"},
+        {"product": "Rimless (drill mount)", "retail": 47.00, "patient_pays": 47.00, "method": "cash_only"}
+      ]
+    },
+    {
+      "customer_name": "Christopher Irvine",
+      "plan_name": "BVV CA ACA SG Off Exch WGS",
+      "all_other_fallback": "DISCOUNT_20",
+      "products": [
+        {"product": "Single Vision", "retail": 80.40, "patient_pays": 50.00, "method": "by_tier"},
+        {"product": "Polycarbonate", "retail": 65.00, "patient_pays": 40.00, "method": "by_tier"},
+        {"product": "Hi-Index 1.67", "retail": 125.00, "patient_pays": 100.00, "method": "ins_discount", "note": "20% off via allOther"},
+        {"product": "Trivex", "retail": 85.00, "patient_pays": 68.00, "method": "ins_discount", "note": "20% off via allOther"},
+        {"product": "Transitions GEN S", "retail": 175.00, "patient_pays": 140.00, "method": "ins_discount", "note": "DISCOUNT_20"},
+        {"product": "Polarized", "retail": 155.70, "patient_pays": 124.56, "method": "ins_discount", "note": "DISCOUNT_20"},
+        {"product": "Essential Blue Series", "retail": 30.00, "patient_pays": 24.00, "method": "ins_discount", "note": "20% off via allOther"},
+        {"product": "Crizal Easy Pro", "retail": 147.50, "patient_pays": 118.00, "method": "ins_discount", "note": "20% off via allOther"},
+        {"product": "Crizal Rock", "retail": 145.00, "patient_pays": 116.00, "method": "ins_discount"},
+        {"product": "Crizal Sapphire HR", "retail": 180.00, "patient_pays": 144.00, "method": "ins_discount"},
+        {"product": "Varilux Comfort DRx", "retail": 254.10, "patient_pays": 203.28, "method": "ins_discount", "note": "20% off via allOther"},
+        {"product": "Varilux Comfort Max", "retail": 393.30, "patient_pays": 314.64, "method": "ins_discount", "note": "20% off via allOther"},
+        {"product": "Light Filter (VSP LF)", "retail": 15.00, "patient_pays": 15.00, "method": "cash_only"},
+        {"product": "Technical Add-On (Single Vision)", "retail": 10.00, "patient_pays": 10.00, "method": "cash_only"},
+        {"product": "Technical Add-On (Multifocal/Progressive)", "retail": 40.00, "patient_pays": 40.00, "method": "cash_only"},
+        {"product": "Semi Rimless (grooved)", "retail": 35.00, "patient_pays": 35.00, "method": "cash_only"},
+        {"product": "Rimless (drill mount)", "retail": 47.00, "patient_pays": 47.00, "method": "cash_only"}
+      ]
+    },
+    {
+      "customer_name": "Priscila Pinto",
+      "plan_name": "HCA Healthcare Affiliated Facilities",
+      "all_other_fallback": "DISCOUNT_20",
+      "products": [
+        {"product": "Single Vision", "retail": 80.40, "patient_pays": 20.00, "method": "by_tier"},
+        {"product": "Polycarbonate", "retail": 65.00, "patient_pays": 40.00, "method": "by_tier"},
+        {"product": "Hi-Index 1.67", "retail": 125.00, "patient_pays": 100.00, "method": "ins_discount", "note": "20% off via allOther"},
+        {"product": "Trivex", "retail": 85.00, "patient_pays": 68.00, "method": "ins_discount", "note": "20% off via allOther"},
+        {"product": "Transitions GEN S", "retail": 175.00, "patient_pays": 75.00, "method": "by_tier"},
+        {"product": "Polarized", "retail": 155.70, "patient_pays": 124.56, "method": "ins_discount", "note": "20% off via allOther"},
+        {"product": "Essential Blue Series", "retail": 30.00, "patient_pays": 24.00, "method": "ins_discount", "note": "20% off via allOther"},
+        {"product": "Crizal Easy Pro", "retail": 147.50, "patient_pays": 68.00, "method": "by_tier"},
+        {"product": "Crizal Rock", "retail": 145.00, "patient_pays": 116.00, "method": "ins_discount"},
+        {"product": "Crizal Sapphire HR", "retail": 180.00, "patient_pays": 144.00, "method": "ins_discount"},
+        {"product": "Varilux Comfort DRx", "retail": 254.10, "patient_pays": 130.00, "method": "by_tier"},
+        {"product": "Varilux Comfort Max", "retail": 393.30, "patient_pays": 85.00, "method": "by_tier"},
+        {"product": "Light Filter (VSP LF)", "retail": 15.00, "patient_pays": 15.00, "method": "cash_only"},
+        {"product": "Technical Add-On (Single Vision)", "retail": 10.00, "patient_pays": 10.00, "method": "cash_only"},
+        {"product": "Technical Add-On (Multifocal/Progressive)", "retail": 40.00, "patient_pays": 40.00, "method": "cash_only"},
+        {"product": "Semi Rimless (grooved)", "retail": 35.00, "patient_pays": 35.00, "method": "cash_only"},
+        {"product": "Rimless (drill mount)", "retail": 47.00, "patient_pays": 47.00, "method": "cash_only"}
+      ]
+    }
+  ],
+  "remaining_issues": {
+    "uc_discount_cases": {
+      "explanation": "These products still use 20% fallback because authorization has NULL copay AND NULL allOtherLensOptions",
+      "affected_products": ["Essential Blue Series", "Polarized", "Hi-Index 1.67", "Trivex"],
+      "affected_patients": ["Marcell Bailey Ebdrup", "Jacquelyn Burke (partial)", "Daniel Dasilveira"],
+      "root_cause": "GPT extraction not capturing these specific copay fields from insurance documents"
+    }
+  },
+  "verification_checklist": [
+    "✅ VSP-only products (Technical Add-On, Light Filter VSP LF, mount fees) now show cash_only",
+    "✅ DISCOUNT_XX string handling works correctly",
+    "✅ AR coatings use ar_tier_2/ar_tier_3 codes",
+    "✅ allOtherLensOptions fallback works for patients with DISCOUNT_XX",
+    "⚠️ Products without copay AND without allOther fallback use uc_discount (needs manual review)"
+  ]
+}

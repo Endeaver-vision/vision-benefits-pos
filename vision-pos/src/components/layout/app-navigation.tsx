@@ -1,5 +1,6 @@
 'use client'
 
+import { useState, useEffect } from 'react'
 // import { useSession, signOut } from 'next-auth/react'
 import { useRouter } from 'next/navigation'
 import { Button } from '@/components/ui/button'
@@ -31,12 +32,68 @@ interface AppNavigationProps {
   actions?: React.ReactNode
 }
 
+function UserMenuContent({ user, userRole, canAccessAdmin }: { user: any; userRole: string | undefined; canAccessAdmin: boolean }) {
+  const router = useRouter()
+
+  return (
+    <DropdownMenu>
+      <DropdownMenuTrigger asChild>
+        <Button variant="ghost" size="sm" className="flex items-center gap-2" suppressHydrationWarning>
+          <User className="h-4 w-4" />
+          <span className="hidden sm:inline">{user.name}</span>
+          <ChevronDown className="h-3 w-3" />
+        </Button>
+      </DropdownMenuTrigger>
+      <DropdownMenuContent align="end" className="w-56">
+        <DropdownMenuLabel>
+          <div className="flex flex-col">
+            <span>{user.name}</span>
+            <span className="text-xs font-normal text-white/70">{user.email}</span>
+            <Badge variant="secondary" className="mt-1 w-fit text-xs">
+              {userRole}
+            </Badge>
+          </div>
+        </DropdownMenuLabel>
+        <DropdownMenuSeparator />
+
+        {canAccessAdmin && (
+          <>
+            <DropdownMenuItem onClick={() => router.push('/customers')}>
+              <Users className="h-4 w-4 mr-2" />
+              Customers
+            </DropdownMenuItem>
+            <DropdownMenuItem onClick={() => router.push('/settings')}>
+              <Settings className="h-4 w-4 mr-2" />
+              Settings
+            </DropdownMenuItem>
+            <DropdownMenuSeparator />
+          </>
+        )}
+
+        <DropdownMenuItem onClick={() => {
+          // signOut()
+          router.push('/')
+        }}>
+          <LogOut className="h-4 w-4 mr-2" />
+          Sign out
+        </DropdownMenuItem>
+      </DropdownMenuContent>
+    </DropdownMenu>
+  )
+}
+
 export default function AppNavigation({
   title,
   subtitle,
   showNavigation = true,
   actions,
 }: AppNavigationProps) {
+  const [isMounted, setIsMounted] = useState(false)
+
+  useEffect(() => {
+    setIsMounted(true)
+  }, [])
+
   // const { data: session } = useSession()
   const router = useRouter()
 
@@ -94,63 +151,14 @@ export default function AppNavigation({
             {/* Location switcher */}
             <LocationSwitcher />
 
-            {/* User menu */}
-            {user ? (
-              <DropdownMenu>
-                <DropdownMenuTrigger asChild>
-                  <Button variant="ghost" size="sm" className="flex items-center gap-2">
-                    <User className="h-4 w-4" />
-                    <span className="hidden sm:inline">{user.name}</span>
-                    <ChevronDown className="h-3 w-3" />
-                  </Button>
-                </DropdownMenuTrigger>
-                <DropdownMenuContent align="end" className="w-56">
-                  <DropdownMenuLabel>
-                    <div className="flex flex-col">
-                      <span>{user.name}</span>
-                      <span className="text-xs font-normal text-white/70">{user.email}</span>
-                      <Badge variant="secondary" className="mt-1 w-fit text-xs">
-                        {userRole}
-                      </Badge>
-                    </div>
-                  </DropdownMenuLabel>
-                  <DropdownMenuSeparator />
-
-                  {canAccessAdmin && (
-                    <>
-                      <DropdownMenuItem onClick={() => router.push('/admin/users')}>
-                        <Users className="h-4 w-4 mr-2" />
-                        Manage Users
-                      </DropdownMenuItem>
-                      <DropdownMenuItem onClick={() => router.push('/admin/locations')}>
-                        <MapPin className="h-4 w-4 mr-2" />
-                        Manage Locations
-                      </DropdownMenuItem>
-                      <DropdownMenuItem onClick={() => router.push('/pos/admin')}>
-                        <Settings className="h-4 w-4 mr-2" />
-                        POS Settings
-                      </DropdownMenuItem>
-                      <DropdownMenuSeparator />
-                    </>
-                  )}
-
-                  <DropdownMenuItem
-                    onClick={() => console.log('Sign out disabled in dev mode')}
-                    className="text-red-400"
-                  >
-                    <LogOut className="h-4 w-4 mr-2" />
-                    Sign Out
-                  </DropdownMenuItem>
-                </DropdownMenuContent>
-              </DropdownMenu>
-            ) : (
-              <Button
-                variant="outline"
-                size="sm"
-                onClick={() => router.push('/login')}
-              >
-                Sign In
+            {/* User menu - only render after hydration to avoid ID mismatches */}
+            {!isMounted ? (
+              <Button variant="ghost" size="sm" className="flex items-center gap-2" disabled>
+                <User className="h-4 w-4" />
+                <span className="hidden sm:inline">Loading...</span>
               </Button>
+            ) : (
+              <UserMenuContent user={user} userRole={userRole} canAccessAdmin={canAccessAdmin} />
             )}
           </div>
         </div>

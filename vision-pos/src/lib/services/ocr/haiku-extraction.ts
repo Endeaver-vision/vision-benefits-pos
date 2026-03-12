@@ -73,59 +73,259 @@ export async function readDocumentWithHaiku(
     throw new Error(`Unsupported file type: ${ext}`)
   }
 
-  const prompt = `You are reading an insurance benefits document. Extract ALL visible information about vision benefits.
+  const prompt = `You are extracting vision insurance benefits from an EyeMed insurance document.
 
-Look for and extract:
-- Insurance carrier name (VSP, EyeMed, Spectera, etc.)
-- Member name and ID
-- Group number
-- Effective/authorization date
-- ALL copay amounts (exam, materials, contact lens fitting, etc.)
-- ALL allowance amounts (frame allowance, contact lens allowance, etc.)
-- ALL coverage details (progressive lens tiers, AR coating tiers, etc.)
-- Any percentages or discounts mentioned
-- Any tier classifications (Tier 1, Tier 2, etc.)
+Your job: Read the document and extract ALL benefit information, translating EyeMed's terminology into our standard product names.
 
-For each value you find, report:
-- The exact label/description from the document
-- The numeric value or text
-- Any qualifying notes (e.g., "up to", "after allowance", etc.)
+CRITICAL: EyeMed uses "tier" language (Tier 1, Tier 2, etc.). You must translate these to OUR product names.
 
-IMPORTANT: Do not assume or infer values. Only report what is explicitly visible in the document.
+Return structured data with clear labels. Extract ALL fields from the benefits table, including:
+- All copay amounts (even if $0 or "Covered")
+- All percentage discounts
+- All enhancement options
+- All diagnostic services
+Do not skip fields based on importance or value. If it appears in the document's benefits, extract it.
 
-Format your response as structured data with clear labels. Use this format:
+Use this format:
 
-CARRIER: [carrier name]
+CARRIER: EyeMed
 MEMBER_NAME: [name]
 MEMBER_ID: [id]
-GROUP_NUMBER: [group]
-EFFECTIVE_DATE: [date]
+GROUP_NUMBER: [skip if not mentioned]
+PLAN_NAME: [skip if not mentioned]
+
+COPAYS (extract all fields mentioned in document, including $0 values):
+- examCopay: [amount]
+- materialsCopay: [amount]
+- singleVision: [amount]
+- bifocal: [amount]
+- trifocal: [amount]
+- progressiveStandard: [amount]
+- Varilux Comfort: [amount]
+- Varilux Physio: [amount]
+- Varilux X Series: [amount]
+- Varilux XR Series: [amount or formula]
+- Varilux Panorama: [amount]
+- arStandard: [amount]
+- Crizal Easy: [amount]
+- Crizal Sapphire: [amount]
+- Crizal Prevencia: [amount or formula]
+- Sunshield: [amount]
+- polycarbonate: [amount]
+- polycarbonateChild: [amount - if different from adult]
+- trivex: [amount]
+- highIndex167: [amount]
+- highIndex174: [amount]
+- Transitions: [amount]
+- photochromic: [amount]
+- polarized: [amount]
+- tint: [amount]
+- blueLight: [amount]
+- scratchCoating: [amount]
+- uvTreatment: [amount]
+- allOtherLensOptions: [amount or "20% off retail"]
+- clExamCopay: [amount]
+- clExamStandard: [amount or formula]
+- clExamPremium: [amount or formula]
+- retinalImaging: [amount or formula]
+- fitAndFollowupStandard: [amount or formula]
+- fitAndFollowupPremium: [amount or formula]
+
+ALLOWANCES (if mentioned):
+- frameAllowance: [amount]
+- frameOverageDiscount: [percentage]
+- contactAllowance: [amount]
+
+---
+
+## PRODUCT NAME TRANSLATION GUIDE
+
+### EyeMed Tiers → Our Product Names
+
+**PROGRESSIVE LENSES:**
+When you see these in the document:
+- "Standard Progressive" or "Basic Progressive" → use field: "progressiveStandard"
+- "Premium Tier 1" / "Tier 1" / "Premium 1" → use field: "Varilux Comfort"
+- "Premium Tier 2" / "Tier 2" / "Premium 2" → use field: "Varilux Physio"
+- "Premium Tier 3" / "Tier 3" / "Premium 3" → use field: "Varilux X Series"
+- "Premium Tier 4" / "Tier 4" / "Premium 4" → use field: "Varilux XR Series"
+- "Premium Tier 5" / "Tier 5" / "Premium 5" → use field: "Varilux Panorama"
+
+**AR COATINGS (Anti-Reflective):**
+- "AR Standard" / "No AR" / "Standard AR" → use field: "arStandard"
+- "AR Coating Tier 1" / "Anti-Reflective Tier 1" / "AR Tier 1" → use field: "Crizal Easy"
+- "AR Coating Tier 2" / "Anti-Reflective Tier 2" / "AR Tier 2" → use field: "Crizal Sapphire"
+- "AR Coating Tier 3" / "Anti-Reflective Tier 3" / "AR Tier 3" → use field: "Crizal Prevencia"
+- "Sunshield" (alternative for Tier 3) → use field: "Sunshield"
+
+**LENS MATERIALS:**
+- Single Vision, Standard SV → "singleVision"
+- Bifocal, Standard Bifocal → "bifocal"
+- Trifocal → "trifocal"
+- Polycarbonate / Poly → "polycarbonate" (use "polycarbonateChild" for child price)
+- Trivex → "trivex"
+- Hi-Index 1.67 / 1.67 Hi-Index → "highIndex167"
+- Hi-Index 1.74 / 1.74 Hi-Index → "highIndex174"
+
+**LENS ENHANCEMENTS:**
+- Transitions / Photochromic → "Transitions"
+- Photochromic / Photochromic - Non-Glass → "photochromic" (alternative field, sometimes used instead of Transitions)
+- Polarized → "polarized"
+- Tint / Tint - Solid and Gradient / Tinting → "tint"
+- Blue Light / Blue Light Filter → "blueLight"
+- Scratch Coating / Scratch Coating - Standard Plastic / Scratch Resistance → "scratchCoating"
+- UV Treatment / UV Coating / UV Protection → "uvTreatment"
+
+**CATCH-ALL FOR UNMAPPED:**
+- "All Other Lens Options" / "20% off retail price" for unmapped items → "allOtherLensOptions"
+
+**DIAGNOSTIC SERVICES:**
+- Retinal Imaging / Fundus Photography / Retinal Photography → "retinalImaging"
+- OCT / Optical Coherence Tomography → "oct" (if present)
+
+**CONTACT LENS SERVICES:**
+- Contact Lens Exam / CL Exam / Contact Fitting → "clExamCopay"
+- Contact Lens Fit and Follow-up - Standard / CL Fitting - Standard → "fitAndFollowupStandard"
+- Contact Lens Fit and Follow-up - Premium / CL Fitting - Premium → "fitAndFollowupPremium"
+- Fit and Follow-up - Standard / Standard CL Fit → "fitAndFollowupStandard"
+- Fit and Follow-up - Premium / Premium CL Fit → "fitAndFollowupPremium"
+- Contact Allowance / Annual Contact Allowance → "contactAllowance"
+
+---
+
+## BASIC PLAN INFORMATION
+- carrier: Always "EyeMed"
+- patientName: Member's full name
+- memberId: Member ID number
+- groupNumber: Group number if shown
+- planName: Plan name if shown
+
+## CORE COPAYS & ALLOWANCES
+- examCopay: Eye exam copay
+- materialsCopay: Lens materials copay
+- frameAllowance: Frame benefit amount
+- frameOverageDiscount: Discount on overage (as number)
+- contactAllowance: Annual contact lens allowance
+
+---
+
+## VALUE EXTRACTION RULES
+
+1. "$XX copay" → extract number XX only (no dollar sign)
+1b. "$XX" (bare dollar amount in table, no copay label) → extract XX
+    Examples: "Scratch Coating $15", "Tint $15", "UV Treatment $15", "Retinal Imaging Up to $39"
+2. "$XX.00 copay" → extract as integer XX
+3. "Covered" / "No copay" / "Included" → 0
+4. Plain number "XX" → extract as-is
+5. "$XX/eye" or "$XX per eye" → extract XX (per-eye amount)
+6. "$XX-YY" range → extract LOWER value XX
+7. "XX% off retail" → keep as string "XX% off retail"
+8. "$XX copay; YY% off less $ZZ allowance" → keep FULL string
+9. "N/A" / "Not covered" → skip this field entirely
+10. "Covered if under 19" → 0
+11. "Medically necessary only" → 0
+12. "Applied to $XX allowance" → extract XX
+13. "Member pays XX%" → keep as string
+14. "Over $XX allowance" → extract XX
+15. Plain numbers in tables → extract directly
+
+---
+
+## SPECIAL CASES
+
+**Age-Dependent Benefits:**
+If "Polycarbonate: Free if under 18, \$40 if adult" extract separately:
+- "polycarbonateChild": 0
+- "polycarbonate": 40
+
+**Tier 4 & AR Tier 3 Complexity:**
+- Can be simple copay: "$XX copay" → extract XX
+- Can be formula: "$XX copay; YY% off less $ZZ allowance" → keep FULL string
+Always preserve the complete formula if present.
+
+**Multiple Family Members:**
+If different copays for different members, return an array of member objects.
+
+**"Applies to Allowance":**
+Extract both copay amount AND allowance separately - it's not an additional charge.
+
+---
+
+## COMPLETE EXAMPLE
+
+**Example output format (use actual values from document, not these placeholders):**
+
+CARRIER: EyeMed
+MEMBER_NAME: [name from document]
+MEMBER_ID: [id from document]
 
 COPAYS:
-- [label]: [amount] [notes]
-- [label]: [amount] [notes]
+- examCopay: [read actual amount from document]
+- Varilux Comfort: [read actual amount for Tier 1 from document]
+- Varilux Physio: [read actual amount for Tier 2 from document]
+- Varilux X Series: [read actual amount for Tier 3 from document]
+- Varilux XR Series: [amount or full formula string from document]
+- Crizal Easy: [read actual amount for AR Tier 1 from document]
+- Crizal Prevencia: [amount or discount string from document]
+- polycarbonate: [adult amount from document]
+- polycarbonateChild: [child amount if different from document]
+- Transitions: [read actual amount from document]
 
 ALLOWANCES:
-- [label]: [amount] [notes]
+- frameAllowance: [read actual amount from document]
+- frameOverageDiscount: [read actual percentage from document]
 
-COVERAGE_DETAILS:
-- [label]: [value/amount] [notes]
+---
 
-DISCOUNTS:
-- [label]: [percentage] [notes]
+## CRITICAL REMINDERS
 
-TIERS:
-- [category]: [tier name/level] - [copay/value]
+1. Use OUR product names (Varilux Comfort), NEVER tier codes (progressiveTier1)
+2. Return ONLY valid JSON, no explanation text
+3. Use actual JSON null, NOT string "null"
+4. Keep FORMULA copays as COMPLETE strings
+5. Handle age-dependent benefits separately
+6. For ranges, use LOWER value
+7. Keep percentage discounts as strings
+8. Map ALL tier variations correctly
+9. If multiple family members, return array
+10. Look for alternate names: "Anti-Reflective" = "AR Coating", "Photochromic" = "Transitions"
 
-OTHER:
-- [any other relevant information]
+---
 
-Be thorough - extract everything visible.`
+## REFERENCE RANGES (Always Read The Actual Document - Do NOT Copy These)
+
+These are TYPICAL ranges from past documents. Your job is to READ THE ACTUAL DOCUMENT.
+Every document is different. Do NOT default to these values.
+
+- examCopay: Usually $0-$20
+- frameAllowance: Usually $100-$230
+- Varilux Comfort (Tier 1): Usually $55-$95
+- Varilux Physio (Tier 2): Usually $80-$135
+- Varilux X Series (Tier 3): Usually $105-$175
+- Crizal Easy (AR Tier 1): Usually $35-$55
+- Crizal Sapphire (AR Tier 2): Usually $55-$75
+
+If you see values wildly outside these ranges (like Tier 1 = $500), double-check you're reading the correct field from the document.
+
+---
+
+## RETURN FORMAT
+
+Single member:
+\`\`\`json
+{ "carrier": "EyeMed", "patientName": "...", ... }
+\`\`\`
+
+Multiple members:
+\`\`\`json
+[ { "carrier": "EyeMed", "patientName": "Member 1", ... }, { "carrier": "EyeMed", "patientName": "Member 2", ... } ]
+\`\`\`
+`
 
   const startTime = Date.now()
 
   const response = await getAnthropicClient().messages.create({
-    model: 'claude-3-5-haiku-20241022',
+    model: 'claude-haiku-4-5-20251001',
     max_tokens: 4096,
     messages: [
       {
@@ -160,10 +360,15 @@ Be thorough - extract everything visible.`
   // Parse the structured response
   const extractedValues = parseHaikuResponse(rawText)
 
+  // Extract top-level fields, handling both memberName and patientName variants
+  const memberName = (extractedValues['MEMBER_NAME'] || extractedValues['PATIENT_NAME'] || '') as string
+  const memberId = (extractedValues['MEMBER_ID'] || '') as string
+  const carrier = (extractedValues['CARRIER'] || 'Unknown') as string
+
   return {
-    carrier: extractedValues['CARRIER'] as string || 'Unknown',
-    memberName: extractedValues['MEMBER_NAME'] as string || '',
-    memberId: extractedValues['MEMBER_ID'] as string || '',
+    carrier,
+    memberName,
+    memberId,
     groupNumber: extractedValues['GROUP_NUMBER'] as string || '',
     effectiveDate: extractedValues['EFFECTIVE_DATE'] as string || '',
     extractedValues,
@@ -174,17 +379,85 @@ Be thorough - extract everything visible.`
 }
 
 /**
- * Parse Haiku's structured text response into key-value pairs
+ * Parse Haiku's structured response into key-value pairs
+ * Handles both JSON code blocks and text format
  */
 function parseHaikuResponse(text: string): Record<string, string | number | null> {
   const result: Record<string, string | number | null> = {}
 
+  // First, try to extract JSON from code blocks (markdown format)
+  let jsonMatch = text.match(/```(?:json)?\s*(\{[\s\S]*?\})\s*```/)
+
+  // If no code block, try to find raw JSON object (starts with { and ends with })
+  if (!jsonMatch) {
+    // Find the first { and try to parse from there
+    const openBrace = text.indexOf('{')
+    if (openBrace !== -1) {
+      // Try to find the matching closing brace
+      let braceCount = 0
+      let closePos = -1
+      for (let i = openBrace; i < text.length; i++) {
+        if (text[i] === '{') braceCount++
+        else if (text[i] === '}') {
+          braceCount--
+          if (braceCount === 0) {
+            closePos = i
+            break
+          }
+        }
+      }
+      if (closePos !== -1) {
+        const jsonStr = text.substring(openBrace, closePos + 1)
+        jsonMatch = [jsonStr, jsonStr] as any
+      }
+    }
+  }
+
+  if (jsonMatch) {
+    try {
+      const jsonData = JSON.parse(jsonMatch[1])
+
+      // Flatten the JSON into our expected key structure
+      // Convert from: { carrier: "EyeMed", patientName: "John", COPAYS: { singleVision: 10 } }
+      // To: { CARRIER: "EyeMed", PATIENT_NAME: "John", COPAYS_SINGLE_VISION: 10 }
+
+      const flattenJson = (obj: any, prefix = ''): void => {
+        for (const [key, value] of Object.entries(obj)) {
+          // Convert camelCase to UPPER_SNAKE_CASE (or keep already uppercase)
+          const upperKey = key
+            .replace(/([a-z])([A-Z])/g, '$1_$2') // camelCase to snake_case
+            .toUpperCase()
+          const fullKey = prefix ? `${prefix}_${upperKey}` : upperKey
+
+          if (value === null || value === undefined) {
+            result[fullKey] = null
+          } else if (typeof value === 'object' && !Array.isArray(value)) {
+            flattenJson(value, fullKey)
+          } else if (Array.isArray(value)) {
+            result[fullKey] = JSON.stringify(value)
+          } else {
+            result[fullKey] = value
+          }
+        }
+      }
+
+      flattenJson(jsonData)
+      return result
+    } catch (e) {
+      // Fall through to text parsing
+    }
+  }
+
+  // Fall back to text format parsing
   const lines = text.split('\n')
   let currentSection = ''
 
   for (const line of lines) {
     const trimmed = line.trim()
     if (!trimmed) continue
+
+    // Skip markdown code fence markers and JSON headers
+    if (trimmed.startsWith('```') || trimmed === '{' || trimmed === '}') continue
 
     // Check for top-level fields (CARRIER:, MEMBER_NAME:, etc.)
     const topLevelMatch = trimmed.match(/^([A-Z_]+):\s*(.+)$/i)
@@ -325,12 +598,139 @@ export function assignToCatalog(
 }
 
 /**
+ * Extract formula components from discount notes
+ * Looks for patterns like "20% off retail price less $120 allowance"
+ * Returns structured data about which tiers have formula-based pricing
+ */
+interface FormulaComponents {
+  discountPercent: number | null
+  allowance: number | null
+  appliesToTiers: string[]  // e.g., ['tier_4', 'tier_5', 'premium']
+  rawNote: string
+}
+
+function extractFormulaComponents(values: Record<string, string | number | null>): FormulaComponents[] {
+  const formulas: FormulaComponents[] = []
+
+
+  for (const [key, value] of Object.entries(values)) {
+    const keyLower = key.toLowerCase()
+
+    // Look for DISCOUNTS_ or COVERAGE_DETAILS_ entries with _NOTES suffix that indicate formula pricing
+    // Haiku sometimes puts discount info in COVERAGE_DETAILS_ instead of DISCOUNTS_
+    const isDiscountOrCoverage = keyLower.startsWith('discounts_') || keyLower.startsWith('coverage_details_')
+    if (isDiscountOrCoverage && keyLower.endsWith('_notes') && typeof value === 'string') {
+      const note = value.toLowerCase()
+
+      // Check if this note contains formula components
+      // Pattern: "X% off retail" and/or "less $Y allowance"
+      // The discount percent might be in the note OR in the corresponding value key
+      let discountMatch = note.match(/(\d+)%\s*off/i)
+      let allowanceMatch = note.match(/(?:less|minus)\s*\$?(\d+)\s*allowance/i)
+
+      // If note mentions "allowance" but no dollar amount, try to find allowance from ALLOWANCES_ section
+      if (!allowanceMatch && (note.includes('less') || note.includes('minus')) && note.includes('allowance')) {
+        // Look for progressive allowance in ALLOWANCES_ section
+        for (const [k, v] of Object.entries(values)) {
+          const kLower = k.toLowerCase()
+          if (kLower.includes('allowances_') && kLower.includes('progressive') && typeof v === 'number') {
+            allowanceMatch = [`less $${v} allowance`, String(v)] as unknown as RegExpMatchArray
+            break
+          }
+        }
+        // If still not found, use a common default for EyeMed premium progressive allowance
+        if (!allowanceMatch && keyLower.includes('progressive') && keyLower.includes('premium')) {
+          // EyeMed typically uses $120 allowance for premium progressives
+          allowanceMatch = ['less $120 allowance', '120'] as unknown as RegExpMatchArray
+        }
+      }
+
+      // If note says "% off" without a number, look for the discount in the corresponding value key
+      if (!discountMatch && note.includes('% off')) {
+        // Get the base key (remove _NOTES suffix) - try original case first, then uppercase
+        const baseKeyOriginal = key.replace(/_NOTES$/i, '')
+        const baseKeyUpper = key.toUpperCase().replace(/_NOTES$/, '')
+
+        let discountValue = values[baseKeyOriginal] ?? values[baseKeyUpper]
+
+        // Also try to find a matching key (case-insensitive)
+        if (discountValue === undefined) {
+          const baseKeyLower = baseKeyOriginal.toLowerCase()
+          for (const [k, v] of Object.entries(values)) {
+            if (k.toLowerCase() === baseKeyLower && typeof v === 'number') {
+              discountValue = v
+              break
+            }
+          }
+        }
+
+        if (typeof discountValue === 'number') {
+          discountMatch = [`${discountValue}% off`, String(discountValue)] as unknown as RegExpMatchArray
+        }
+      }
+
+
+      if (discountMatch || allowanceMatch) {
+        // Determine which tiers this applies to
+        const appliesToTiers: string[] = []
+
+        // Check note text for tier references
+        if (note.includes('tier 4') || note.includes('tier_4') || note.includes('premium tier 4')) {
+          appliesToTiers.push('tier_4')
+        }
+        if (note.includes('tier 5') || note.includes('tier_5')) {
+          appliesToTiers.push('tier_5')
+        }
+
+        // Check key for tier references
+        if (keyLower.includes('tier_4') || keyLower.includes('tier4')) {
+          if (!appliesToTiers.includes('tier_4')) appliesToTiers.push('tier_4')
+        }
+        if (keyLower.includes('tier_5') || keyLower.includes('tier5')) {
+          if (!appliesToTiers.includes('tier_5')) appliesToTiers.push('tier_5')
+        }
+
+        // IMPORTANT: "Progressive Lenses (Premium)" in EyeMed typically means Tier 4 and above
+        // The key pattern is: DISCOUNTS_PROGRESSIVE_LENSES_(PREMIUM)_NOTES
+        if (keyLower.includes('progressive') && keyLower.includes('premium') && !keyLower.includes('tier')) {
+          // This is a premium progressive discount - applies to tier_4 and tier_5
+          if (!appliesToTiers.includes('tier_4')) appliesToTiers.push('tier_4')
+          if (!appliesToTiers.includes('tier_5')) appliesToTiers.push('tier_5')
+        }
+
+        // Also check if note mentions "premium" without tier (legacy format)
+        if (note.includes('premium') && !note.includes('tier') && appliesToTiers.length === 0) {
+          appliesToTiers.push('tier_4')
+          appliesToTiers.push('tier_5')
+        }
+
+
+        formulas.push({
+          discountPercent: discountMatch ? parseInt(discountMatch[1], 10) : null,
+          allowance: allowanceMatch ? parseInt(allowanceMatch[1], 10) : null,
+          appliesToTiers,
+          rawNote: value
+        })
+      }
+    }
+  }
+
+  return formulas
+}
+
+/**
  * Build normalized EyeMed copay fields that the precompute expects
  * Maps raw extracted keys like COPAYS_SINGLE_VISION_LENSES to normalized names like singleVision
  * Also searches COVERAGE_DETAILS_ since EyeMed often puts values there
+ *
+ * NEW: Also extracts formula components when present (discount %, allowance)
+ * For tiers with formulas, stores structured pricing info
  */
 function buildEyemedNormalizedCopays(values: Record<string, string | number | null>): Record<string, number | string | null> {
   const result: Record<string, number | string | null> = {}
+
+  // First, extract any formula components from DISCOUNTS_ notes
+  const formulaData = extractFormulaComponents(values)
 
   // Helper to find numeric value across COPAYS_, COVERAGE_DETAILS_, and other sections
   const findValue = (terms: string[]): number | null => {
@@ -414,6 +814,41 @@ function buildEyemedNormalizedCopays(values: Record<string, string | number | nu
   // AR Coating - can be in COPAYS_ or COVERAGE_DETAILS_
   const arStandard = findValue(['anti_reflective_coating_(standard)', 'anti_reflective_coating_standard', 'ar_standard'])
   if (arStandard !== null) result['arStandard'] = arStandard
+
+  // Progressive Standard copay (base copay for formulas)
+  const progressiveStandard = findValue(['progressive_-_standard', 'progressive_standard', 'progressive_(standard)'])
+  if (progressiveStandard !== null) result['progressiveStandard'] = progressiveStandard
+
+  // Store formula components for tiers that have formula-based pricing
+  // This allows precompute to apply the correct formula per plan
+  for (const formula of formulaData) {
+    if (formula.appliesToTiers.length > 0) {
+      // Store discount percent if found
+      if (formula.discountPercent !== null) {
+        for (const tier of formula.appliesToTiers) {
+          const key = `${tier}DiscountPercent`
+          result[key] = formula.discountPercent
+        }
+      }
+
+      // Store allowance if found
+      if (formula.allowance !== null) {
+        for (const tier of formula.appliesToTiers) {
+          const key = `${tier}Allowance`
+          result[key] = formula.allowance
+        }
+        // Also store as progressiveAllowance for general use
+        if (!result['progressiveAllowance']) {
+          result['progressiveAllowance'] = formula.allowance
+        }
+      }
+
+      // Mark these tiers as having formula-based pricing
+      for (const tier of formula.appliesToTiers) {
+        result[`${tier}HasFormula`] = 1  // Flag indicating formula pricing
+      }
+    }
+  }
 
   return result
 }
@@ -678,7 +1113,42 @@ function buildEyemedTiers(values: Record<string, string | number | null>): Insur
 
     if (numValue === null) continue
 
-    // Progressive tiers - check for COPAYS_PROGRESSIVE patterns
+    // VARILUX PRODUCT NAME MAPPING (from Haiku extraction prompt)
+    // Maps product names directly to tier fields
+    if (keyLower.includes('varilux')) {
+      if (keyLower.includes('comfort')) {
+        tiers.progressiveTier1 = numValue
+      } else if (keyLower.includes('physio')) {
+        tiers.progressiveTier2 = numValue
+      } else if (keyLower.includes('x series') || keyLower.includes('x_series') || keyLower.includes('x-series') || keyLower.includes('xseries')) {
+        // X Series matches "x series", "x_series", "x-series", or "xseries"
+        tiers.progressiveTier3 = numValue
+      } else if (keyLower.includes('xr series') || keyLower.includes('xr_series') || keyLower.includes('xr-series') || keyLower.includes('xrseries')) {
+        // XR Series matches "xr series", "xr_series", "xr-series", or "xrseries"
+        tiers.progressiveTier4 = numValue
+      } else if (keyLower.includes('panorama')) {
+        tiers.progressiveTier4 = numValue  // Panorama is sometimes Tier 4
+      }
+    }
+
+    // CRIZAL PRODUCT NAME MAPPING (from Haiku extraction prompt)
+    // Maps AR coating product names directly to AR tier fields
+    if (keyLower.includes('crizal')) {
+      if (keyLower.includes('easy')) {
+        tiers.arTier1 = numValue
+      } else if (keyLower.includes('sapphire')) {
+        tiers.arTier2 = numValue
+      } else if (keyLower.includes('prevencia')) {
+        tiers.arTier3 = numValue
+      }
+    }
+
+    // SUNSHIELD (alternative AR Tier 3)
+    if (keyLower.includes('sunshield')) {
+      tiers.arTier3 = numValue
+    }
+
+    // Progressive tiers - check for COPAYS_PROGRESSIVE patterns (legacy support)
     if (keyLower.includes('progressive')) {
       if (keyLower.includes('standard') && !keyLower.includes('tier')) {
         tiers.progressiveStandard = numValue
@@ -693,8 +1163,8 @@ function buildEyemedTiers(values: Record<string, string | number | null>): Insur
       }
     }
 
-    // AR coating tiers - check for COPAYS_ANTI_REFLECTIVE patterns
-    if (keyLower.includes('anti_reflective') || keyLower.includes('anti-reflective') || keyLower.includes('ar_coating')) {
+    // AR coating tiers - check for COPAYS_ANTI_REFLECTIVE patterns (legacy support)
+    if (keyLower.includes('anti_reflective') || keyLower.includes('anti-reflective') || keyLower.includes('ar_coating') || keyLower.includes('ar')) {
       if (keyLower.includes('standard') && !keyLower.includes('tier')) {
         tiers.arStandard = numValue
       } else if (keyLower.includes('tier_1') || keyLower.includes('tier1') || keyLower.match(/tier.?1/)) {

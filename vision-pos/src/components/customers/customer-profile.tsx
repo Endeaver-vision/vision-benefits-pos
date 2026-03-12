@@ -3,14 +3,16 @@
 import React, { useState, useEffect } from 'react'
 import { useParams, useRouter, useSearchParams } from 'next/navigation'
 import Link from 'next/link'
-import { ArrowLeft, Edit, Phone, Mail, MapPin, Calendar, DollarSign, CreditCard, User, FileText, Plus, Eye } from 'lucide-react'
+import { ArrowLeft, Edit, Phone, Mail, MapPin, Calendar, DollarSign, CreditCard, User, FileText, Plus, Eye, ShoppingCart } from 'lucide-react'
 import { Button } from '@/components/ui/button'
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
 import { Badge } from '@/components/ui/badge'
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs'
 import { Customer } from '@/types/customer'
 
-import CustomerInsurancePricing from './customer-insurance-pricing'
+import CustomerPricelist from './customer-pricelist'
+import { useCurrentPatient } from '@/hooks/useCurrentPatient'
+
 export default function CustomerProfile() {
   const params = useParams()
   const router = useRouter()
@@ -24,9 +26,13 @@ export default function CustomerProfile() {
     ? tabFromUrl
     : 'price-plan'
 
+  // Check if user navigated from POS (to show "Return to Quote" button)
+  const cameFromPOS = searchParams.get('from') === 'pos'
+
   const [customer, setCustomer] = useState<Customer | null>(null)
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState<string | null>(null)
+  const { setCurrentPatient } = useCurrentPatient()
 
   const fetchCustomer = async () => {
     try {
@@ -51,6 +57,17 @@ export default function CustomerProfile() {
       fetchCustomer()
     }
   }, [customerId])
+
+  // Persist current patient for cross-page navigation
+  useEffect(() => {
+    if (customer) {
+      setCurrentPatient({
+        id: customer.id,
+        firstName: customer.firstName,
+        lastName: customer.lastName,
+      })
+    }
+  }, [customer, setCurrentPatient])
 
   const formatCurrency = (amount: number) => {
     return new Intl.NumberFormat('en-US', {
@@ -172,24 +189,29 @@ export default function CustomerProfile() {
           </div>
         </div>
         <div className="flex gap-2">
-          <Button 
+          <Button
             variant="outline"
             onClick={() => router.push(`/customers/${customerId}/edit`)}
           >
             <Edit className="h-4 w-4 mr-2" />
             Edit Profile
           </Button>
-          <Button
-            onClick={() => {
-              const customerJson = JSON.stringify(customer)
-              sessionStorage.setItem('selectedCustomer', customerJson)
-              localStorage.setItem('quoteBuilderCustomer', customerJson)
-              router.push('/quote-builder')
-            }}
-          >
-            <Plus className="h-4 w-4 mr-2" />
-            New Quote
-          </Button>
+          {cameFromPOS ? (
+            <Button
+              onClick={() => router.push(`/pos?customerId=${customer.id}`)}
+              className="bg-emerald-600 hover:bg-emerald-700"
+            >
+              <ShoppingCart className="h-4 w-4 mr-2" />
+              Return to Quote
+            </Button>
+          ) : (
+            <Button
+              onClick={() => router.push(`/pos?customerId=${customer.id}`)}
+            >
+              <Plus className="h-4 w-4 mr-2" />
+              New Quote
+            </Button>
+          )}
         </div>
       </div>
 
@@ -429,8 +451,8 @@ export default function CustomerProfile() {
         </TabsContent>
       
         <TabsContent value="price-plan" className="space-y-6">
-          <CustomerInsurancePricing 
-            customerId={customerId} 
+          <CustomerPricelist
+            customerId={customerId}
             customer={customer}
             onUpdate={() => {
               // Refresh customer data

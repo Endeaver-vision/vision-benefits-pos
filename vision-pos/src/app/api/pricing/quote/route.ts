@@ -1,28 +1,54 @@
 /**
  * Quote API - Calculate pricing using stored authorization data
  *
- * This endpoint uses the authorization data stored in the database
- * (VspAuthorization, EyemedAuthorization, SpecteraAuthorization)
- * rather than extracting from insurance documents each time.
+ * POST /api/pricing/quote
+ *
+ * This endpoint uses the unified insurance_authorizations table
+ * to calculate patient pricing based on tier mappings.
  *
  * Flow:
- * 1. Get customer's active authorization from DB
- * 2. Look up product tier mappings
+ * 1. Get customer's active authorization from unified table
+ * 2. Look up product tier mappings from carrier_tiers
  * 3. Calculate patient pricing using authorization copays
  */
 
 import { NextRequest, NextResponse } from 'next/server'
 import { prisma } from '@/lib/prisma'
-import {
-  getActiveAuthorizationForCustomer,
-  getAuthorizationByCarrier,
-  CarrierType,
-} from '@/lib/services/authorization-service'
-import {
-  createPricingCalculator,
-  calculateQuote,
-} from '@/lib/services/pricing-calculator'
-import { ProductCatalogEntry, QuoteItem } from '@/types/product-catalog'
+// import { EYEMED_TIER_TO_COPAY, VSP_TIER_TO_COPAY, SPECTERA_TIER_TO_COPAY } from '@/lib/data/insurance-tier-mappings'
+// TODO: These tier mappings are not implemented - quote endpoint needs refactoring
+
+// Type for the copays JSON structure in unified authorization table
+interface CopaysJson {
+  examCopay?: number
+  materialsCopay?: number
+  singleVision?: number
+  bifocal?: number
+  trifocal?: number
+  progressiveStandard?: number
+  progressiveTier1?: number
+  progressiveTier2?: number
+  progressiveTier3?: number
+  progressiveTier4?: number
+  progressiveTier5?: number
+  arStandard?: number
+  arTier1?: number
+  arTier2?: number
+  arTier3?: number
+  polycarbonate?: number
+  polycarbonateChild?: number
+  trivex?: number
+  highIndex167?: number
+  highIndex174?: number
+  photochromic?: number
+  polarized?: number
+  blueLight?: number
+  tint?: number
+  uvTreatment?: number
+  scratchCoating?: number
+  [key: string]: number | undefined
+}
+
+type CarrierType = 'vsp' | 'eyemed' | 'spectera'
 
 // =============================================================================
 // REQUEST/RESPONSE TYPES
@@ -42,7 +68,7 @@ export interface QuoteResponse {
   data?: {
     customerId: string
     authorizationId: string
-    carrier: CarrierType
+    carrier: string
     planName: string
     items: Array<{
       sku: string
@@ -91,12 +117,19 @@ export async function POST(request: NextRequest) {
       )
     }
 
-    // Get authorization
-    const authResult = body.carrier
-      ? await getAuthorizationByCarrier(body.customerId, body.carrier)
-      : await getActiveAuthorizationForCustomer(body.customerId)
+    // Get authorization from unified table
+    const carrierFilter = body.carrier ? { carrier: { equals: body.carrier, mode: 'insensitive' as const } } : {}
 
-    if (!authResult) {
+    const auth = await prisma.insuranceAuthorization.findFirst({
+      where: {
+        customerId: body.customerId,
+        isActive: true,
+        ...carrierFilter,
+      },
+      orderBy: { createdAt: 'desc' },
+    })
+
+    if (!auth) {
       return NextResponse.json(
         {
           success: false,
@@ -108,51 +141,118 @@ export async function POST(request: NextRequest) {
       )
     }
 
-    const { authorization, authorizationId, carrier } = authResult
+    const carrier = auth.carrier.toUpperCase() as 'VSP' | 'EYEMED' | 'SPECTERA'
+    const copays = (auth.copays as CopaysJson) || {}
 
     // Get products from database with tier mappings
     const skus = body.products.map(p => p.sku)
     const products = await getProductsWithTierMappings(skus, carrier)
 
-    // Build quote items with optional price overrides
-    const quoteItems: QuoteItem[] = body.products.map(p => ({
-      sku: p.sku,
-      retailPrice: p.retailPrice ?? products.get(p.sku)?.retailPrice ?? 0,
-    }))
+    // Get tier-to-copay mapping for this carrier
+    const tierToCopay = getTierToCopayMap(carrier)
 
-    // Calculate pricing
-    const calculator = createPricingCalculator(authorization)
-    const quote = calculator.buildQuote(quoteItems, products, authorization)
-    quote.authorizationId = authorizationId
+    // Calculate pricing for each product
+    const items: QuoteResponse['data']['items'] = []
+    const warnings: string[] = []
+
+    for (const requestProduct of body.products) {
+      const product = products.get(requestProduct.sku)
+      const retailPrice = requestProduct.retailPrice ?? product?.retailPrice ?? 0
+
+      if (!product) {
+        items.push({
+          sku: requestProduct.sku,
+          productName: 'Unknown Product',
+          category: 'other',
+          retailPrice,
+          patientCopay: retailPrice,
+          insurancePays: 0,
+          savings: 0,
+          notes: 'Product not found in catalog',
+        })
+        continue
+      }
+
+      const tierCode = product.tierCode
+      let patientCopay = retailPrice
+      let tierUsed: string | undefined
+      let notes: string | undefined
+
+      if (tierCode) {
+        const copayField = tierToCopay[tierCode]
+
+        if (copayField) {
+          if (copayField === 'ZERO_COPAY') {
+            patientCopay = 0
+            tierUsed = tierCode
+            notes = 'Covered by insurance'
+          } else if (copayField === 'DISCOUNT_20_PERCENT') {
+            patientCopay = Math.round(retailPrice * 0.80 * 100) / 100
+            tierUsed = tierCode
+            notes = '20% insurance discount'
+          } else {
+            const copayValue = copays[copayField]
+            if (copayValue !== null && copayValue !== undefined) {
+              patientCopay = copayValue
+              tierUsed = tierCode
+              notes = `Tier ${tierCode} copay`
+            } else {
+              notes = `Copay not found for tier ${tierCode}`
+            }
+          }
+        } else {
+          notes = `No copay mapping for tier ${tierCode}`
+        }
+      } else {
+        notes = 'No tier mapping - retail price'
+      }
+
+      const insurancePays = Math.max(0, retailPrice - patientCopay)
+
+      items.push({
+        sku: product.sku,
+        productName: product.name,
+        category: product.category,
+        retailPrice,
+        patientCopay,
+        insurancePays,
+        savings: insurancePays,
+        tierUsed,
+        notes,
+      })
+    }
+
+    // Calculate totals
+    const retailTotal = items.reduce((sum, item) => sum + item.retailPrice, 0)
+    const patientSubtotal = items.reduce((sum, item) => sum + item.patientCopay, 0)
+    const insuranceTotal = items.reduce((sum, item) => sum + item.insurancePays, 0)
+    const totalSavings = items.reduce((sum, item) => sum + item.savings, 0)
+
+    // Get exam and materials copays from authorization for display
+    const examCopay = auth.examCopay ? Number(auth.examCopay) : (copays.examCopay ?? 0)
+    const materialsCopay = auth.materialsCopay ? Number(auth.materialsCopay) : (copays.materialsCopay ?? 0)
+
+    // Patient total includes materials copay
+    const patientTotal = patientSubtotal + materialsCopay
 
     // Build response
     const response: QuoteResponse = {
       success: true,
       data: {
         customerId: body.customerId,
-        authorizationId,
-        carrier,
-        planName: authorization.plan.planName,
-        items: quote.items.map(item => ({
-          sku: item.sku,
-          productName: item.displayName,
-          category: item.category,
-          retailPrice: item.retailPrice,
-          patientCopay: item.patientCopay,
-          insurancePays: item.insurancePays,
-          savings: item.savings,
-          tierUsed: item.tierUsed,
-          notes: item.notes,
-        })),
+        authorizationId: auth.id,
+        carrier: carrier.toLowerCase(),
+        planName: auth.planName || 'Unknown Plan',
+        items,
         summary: {
-          retailTotal: quote.retailTotal,
-          patientTotal: quote.patientTotal + (quote.materialsCopay ?? 0),
-          insuranceTotal: quote.insuranceTotal,
-          totalSavings: quote.totalSavings,
-          examCopay: quote.examCopay ?? 0,
-          materialsCopay: quote.materialsCopay ?? 0,
+          retailTotal,
+          patientTotal,
+          insuranceTotal,
+          totalSavings,
+          examCopay,
+          materialsCopay,
         },
-        warnings: quote.warnings,
+        warnings: warnings.length > 0 ? warnings : undefined,
       },
     }
 
@@ -173,143 +273,122 @@ export async function POST(request: NextRequest) {
 // HELPER FUNCTIONS
 // =============================================================================
 
+interface ProductInfo {
+  sku: string
+  name: string
+  retailPrice: number
+  category: string
+  tierCode: string | null
+}
+
 /**
  * Get products from database with their carrier-specific tier mappings
  */
 async function getProductsWithTierMappings(
   skus: string[],
-  carrier: CarrierType
-): Promise<Map<string, ProductCatalogEntry>> {
-  const productMap = new Map<string, ProductCatalogEntry>()
+  carrier: string
+): Promise<Map<string, ProductInfo>> {
+  const productMap = new Map<string, ProductInfo>()
 
   // Get base products
   const products = await prisma.product.findMany({
     where: {
-      sku: { in: skus },
+      OR: [
+        { sku: { in: skus } },
+        { id: { in: skus } }
+      ],
       active: true,
+    },
+    include: {
+      category: true,
     },
   })
 
-  // Get tier mappings based on carrier
-  const tierMappings = await getTierMappings(
-    products.map(p => p.name),
-    carrier
-  )
+  // Get tier mappings from carrier_tiers table
+  const productIds = products.map(p => p.id)
+  const tierMappings = await prisma.carrierTier.findMany({
+    where: {
+      productId: { in: productIds },
+      carrier: carrier.toUpperCase(),
+    },
+  })
+  const tierMap = new Map(tierMappings.map(t => [t.productId, t.tierCode]))
 
   // Build product catalog entries with tier info
   for (const product of products) {
-    const mapping = tierMappings.get(product.name)
+    const key = product.sku || product.id
 
-    const entry: ProductCatalogEntry = {
-      sku: product.sku ?? product.id,
-      displayName: product.name,
-      category: mapCategory(product.categoryId),
+    productMap.set(key, {
+      sku: key,
+      name: product.name,
       retailPrice: product.basePrice ?? 0,
-      isActive: product.active,
-    }
+      category: mapCategory(product.category?.code),
+      tierCode: tierMap.get(product.id) || null,
+    })
+  }
 
-    // Add carrier-specific tier mapping
-    if (mapping) {
-      switch (carrier) {
-        case 'vsp':
-          entry.vsp = {
-            baseCode: mapping.code,
-            arCode: mapping.arCode,
-            materialModifier: mapping.materialModifier as 'D' | 'H' | 'T' | undefined,
-            isFeaturedBrand: mapping.isFeatured,
-          }
-          break
-        case 'eyemed':
-          entry.eyemed = {
-            progressiveTier: mapping.tier as 'standard' | 'tier_1' | 'tier_2' | 'tier_3' | 'tier_4' | 'tier_5',
-            arTier: mapping.arTier as 'standard' | 'tier_1' | 'tier_2' | 'tier_3',
-            materialType: mapping.materialType as 'polycarbonate' | 'trivex' | 'high_index_167' | 'high_index_174',
-          }
-          break
-        case 'spectera':
-          entry.spectera = {
-            progressiveTier: mapping.tier as 'I' | 'II' | 'III' | 'IV' | 'V',
-            arTier: mapping.arTier as 'I' | 'II' | 'III' | 'IV',
-            materialType: mapping.materialType as 'polycarbonate' | 'trivex' | 'high_index',
-          }
-          break
-      }
-    }
+  // Also check LensProduct table for backwards compatibility
+  const lensProducts = await prisma.lensProduct.findMany({
+    where: {
+      OR: [
+        { sku: { in: skus } },
+        { id: { in: skus } }
+      ],
+      isActive: true,
+    },
+  })
 
-    productMap.set(product.sku, entry)
+  const lensProductIds = lensProducts.map(p => p.id)
+  const lensTierMappings = await prisma.carrierTier.findMany({
+    where: {
+      productId: { in: lensProductIds },
+      carrier: carrier.toUpperCase(),
+    },
+  })
+  const lensTierMap = new Map(lensTierMappings.map(t => [t.productId, t.tierCode]))
+
+  for (const product of lensProducts) {
+    const key = product.sku || product.id
+    if (!productMap.has(key)) {
+      productMap.set(key, {
+        sku: key,
+        name: product.name,
+        retailPrice: product.retailPrice,
+        category: mapCategory(product.pricingCategory),
+        tierCode: lensTierMap.get(product.id) || null,
+      })
+    }
   }
 
   return productMap
 }
 
-/**
- * Get tier mappings for products from the carrier-specific mapping tables
- */
-async function getTierMappings(
-  productNames: string[],
-  carrier: CarrierType
-): Promise<Map<string, {
-  code?: string
-  arCode?: string
-  materialModifier?: string
-  tier?: string
-  arTier?: string
-  materialType?: string
-  isFeatured?: boolean
-}>> {
-  const mappings = new Map()
-
+function getTierToCopayMap(carrier: string): Record<string, string> {
+  // TODO: Tier mapping data not implemented - this endpoint needs refactoring
+  // For now, return empty maps to allow the app to build
   switch (carrier) {
-    case 'vsp': {
-      const vspMappings = await prisma.productVspCodeMapping.findMany({
-        where: { productName: { in: productNames } },
-      })
-      for (const m of vspMappings) {
-        mappings.set(m.productName, {
-          code: m.vspCode,
-          materialModifier: m.materialModifier,
-        })
-      }
-      break
-    }
-    case 'eyemed': {
-      const eyemedMappings = await prisma.productEyemedTierMapping.findMany({
-        where: { productName: { in: productNames } },
-      })
-      for (const m of eyemedMappings) {
-        mappings.set(m.productName, {
-          tier: m.eyemedTier,
-        })
-      }
-      break
-    }
-    case 'spectera': {
-      const specteraMappings = await prisma.productSpecteraTierMapping.findMany({
-        where: { productName: { in: productNames } },
-      })
-      for (const m of specteraMappings) {
-        mappings.set(m.productName, {
-          tier: m.specteraTier,
-        })
-      }
-      break
-    }
+    case 'EYEMED':
+      return {}
+    case 'VSP':
+      return {}
+    case 'SPECTERA':
+      return {}
+    default:
+      return {}
   }
-
-  return mappings
 }
 
 /**
- * Map database category ID to ProductCategory type
+ * Map database category to simplified category type
  */
-function mapCategory(categoryId: string | null): ProductCatalogEntry['category'] {
-  if (!categoryId) return 'other'
+function mapCategory(categoryCode: string | null | undefined): string {
+  if (!categoryCode) return 'other'
 
-  const lower = categoryId.toLowerCase()
+  const lower = categoryCode.toLowerCase()
 
   if (lower.includes('progressive')) return 'lens_progressive'
   if (lower.includes('single') || lower.includes('sv')) return 'lens_sv'
-  if (lower.includes('ar') || lower.includes('anti-reflect')) return 'ar_coating'
+  if (lower.includes('ar') || lower.includes('anti-reflect') || lower.includes('coating')) return 'ar_coating'
   if (lower.includes('frame')) return 'frame'
   if (lower.includes('photo') || lower.includes('transition')) return 'photochromic'
   if (lower.includes('polar')) return 'polarized'

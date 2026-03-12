@@ -50,6 +50,12 @@ export interface ExtractedInsuranceData {
   // Schema version for backwards compatibility
   schemaVersion?: string
 
+  // VSP two-document pairing metadata
+  // vsp-auth: Patient Record Report (contains patient info, copays, frame allowances)
+  // vsp-lens: Lens Enhancement Charges (contains two-letter code table with copays)
+  // vsp-combined: Both documents merged into one (rare)
+  vspDocumentType?: 'vsp-auth' | 'vsp-lens' | 'vsp-combined' | null
+
   patient: {
     patientName: FieldWithConfidence<string>
     memberName: FieldWithConfidence<string>
@@ -465,9 +471,19 @@ export interface OCRResult {
 // Carrier detection result
 export type CarrierType = 'VSP' | 'EyeMed' | 'Spectera' | null
 export type DocumentType = 'auth' | 'lens' | 'benefits' | 'unknown'
+// VSP-specific document types for two-document pairing
+export type VSPDocumentType = 'vsp-auth' | 'vsp-lens' | 'vsp-combined' | null
 
 export interface CarrierDetectionResult {
   carrier: CarrierType
   confidence: number
   documentType: DocumentType
+}
+
+// VSP Document Pairing - used for tracking paired documents
+export interface VSPDocumentPairing {
+  authNumber: string          // The Auth# that links both documents
+  vspDocumentType: VSPDocumentType
+  isPendingPair: boolean      // Waiting for second document
+  pairedDocumentId?: string   // ID of the paired document (once merged)
 }

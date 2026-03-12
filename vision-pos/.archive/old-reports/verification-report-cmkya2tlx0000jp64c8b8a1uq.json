@@ -1,0 +1,15 @@
+{
+  "id": "cmkya2tlx0000jp64c8b8a1uq",
+  "runType": "full-pipeline",
+  "carrier": "EYEMED",
+  "startedAt": "2026-01-28T17:07:14.661Z",
+  "completedAt": "2026-01-28T17:07:15.539Z",
+  "status": "COMPLETED",
+  "totalDocuments": 31,
+  "passed": 0,
+  "failed": 0,
+  "warnings": 0,
+  "runBy": "system",
+  "notes": "Verification run for EYEMED carrier(s)",
+  "results": []
+}

@@ -98,7 +98,7 @@ export function useSelectedLocation() {
   return { selectedLocation, updateSelectedLocation, validLocations }
 }
 
-export default function LocationSwitcher() {
+function LocationSwitcherContent() {
   // const { data: session } = useSession()
   const { selectedLocation, updateSelectedLocation, validLocations } = useSelectedLocation()
 
@@ -108,7 +108,7 @@ export default function LocationSwitcher() {
   return (
     <DropdownMenu>
       <DropdownMenuTrigger asChild>
-        <Button variant="outline" size="sm" className="flex items-center gap-2 min-w-[140px]">
+        <Button variant="outline" size="sm" className="flex items-center gap-2 min-w-[140px]" suppressHydrationWarning>
           <MapPin className="h-4 w-4" />
           <span className="truncate max-w-[120px]">{displayName}</span>
           <ChevronDown className="h-3 w-3 ml-auto" />
@@ -143,4 +143,22 @@ export default function LocationSwitcher() {
       </DropdownMenuContent>
     </DropdownMenu>
   )
+}
+
+export default function LocationSwitcher() {
+  const [isMounted, setIsMounted] = useState(false)
+
+  useEffect(() => {
+    setIsMounted(true)
+  }, [])
+
+  // Render placeholder while hydrating to avoid mismatch
+  if (!isMounted) {
+    return <Button variant="outline" size="sm" className="flex items-center gap-2 min-w-[140px]" disabled>
+      <MapPin className="h-4 w-4" />
+      <span className="truncate max-w-[120px]">Loading...</span>
+    </Button>
+  }
+
+  return <LocationSwitcherContent />
 }

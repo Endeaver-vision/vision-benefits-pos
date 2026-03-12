@@ -20,7 +20,7 @@ import {
  * Customer search component for patient selection
  */
 function CustomerSearch() {
-  const { selectPatient, quote } = usePOSStore()
+  const { selectPatient, setInsurance, quote } = usePOSStore()
   const [search, setSearch] = useState('')
   const [results, setResults] = useState<any[]>([])
   const [loading, setLoading] = useState(false)
@@ -81,7 +81,7 @@ function CustomerSearch() {
           {results.map((customer) => (
             <button
               key={customer.id}
-              onClick={() => {
+              onClick={async () => {
                 selectPatient({
                   id: customer.id,
                   firstName: customer.firstName,
@@ -92,6 +92,29 @@ function CustomerSearch() {
                 })
                 setSearch('')
                 setResults([])
+
+                // Load full customer data including insurance authorization
+                try {
+                  const response = await fetch(`/api/customers/${customer.id}`)
+                  const data = await response.json()
+                  if (data.success && data.data?.authorizations?.[0]) {
+                    const auth = data.data.authorizations[0]
+                    setInsurance({
+                      carrier: auth.carrier,
+                      memberId: auth.memberId,
+                      authNumber: auth.authorizationNumber,
+                      hasActiveAuth: auth.isActive,
+                      effectiveDate: auth.effectiveDate,
+                      expirationDate: auth.expirationDate,
+                      examCopay: Number(auth.examCopay) || 0,
+                      materialCopay: Number(auth.materialsCopay) || 0,
+                      frameAllowance: Number(auth.frameAllowance) || 0,
+                      contactAllowance: Number(auth.contactAllowance) || 0,
+                    })
+                  }
+                } catch (error) {
+                  console.error('Failed to load insurance:', error)
+                }
               }}
               className="w-full text-left p-4 hover:bg-white/10 border-b border-white/10 last:border-b-0 text-white"
             >

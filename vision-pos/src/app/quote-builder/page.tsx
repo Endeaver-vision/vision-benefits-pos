@@ -31,6 +31,9 @@ import { QuotePricingProvider, useQuotePricingContext, usePricingSummary } from 
 // Import carrier banner
 import { CarrierBanner } from '@/components/quote-builder/carrier-banner'
 
+// Import floating price summary
+import { FloatingPriceSummary } from '@/components/quote-builder/floating-price-summary'
+
 interface Customer {
   id: string
   firstName: string
@@ -234,7 +237,7 @@ function QuoteBuilderContent() {
   }
 
   return (
-    <div className="min-h-screen">
+    <div className="min-h-screen pb-20">
       {/* Header */}
       <div className="glass-card border-b border-white/20">
         <div className="container mx-auto px-6 py-4">
@@ -675,6 +678,9 @@ function QuoteBuilderContent() {
           </div>
         </div>
       </div>
+
+      {/* Floating Price Summary */}
+      {selectedCustomer && <FloatingPriceSummary />}
     </div>
   )
 }

@@ -117,20 +117,70 @@ export class EyemedPricingCalculator implements IPricingCalculator {
     const retailPrice = overrideRetailPrice ?? product.retailPrice
     const warnings: string[] = []
     let tierUsed: string | undefined
+    let notes: string | undefined
     let patientCopay = retailPrice // Default to full retail
 
     const eyemedMapping = product.eyemed
 
+    // Access copays with flexible field names (extracted data may use different names)
+    const copays = auth.copays as Record<string, unknown>
+
     switch (product.category) {
-      case 'lens_sv':
-        patientCopay = auth.copays.lensSv
-        tierUsed = 'single_vision'
+      case 'lens_sv': {
+        // Try multiple field names - extraction may use 'singleVision' instead of 'lensSv'
+        const svCopay = copays.lensSv ?? copays.singleVision ?? copays.materialsCopay
+        if (typeof svCopay === 'number') {
+          patientCopay = svCopay
+          tierUsed = 'single_vision'
+        } else {
+          warnings.push('No single vision copay found, using retail')
+        }
         break
+      }
+
+      case 'lens_bifocal': {
+        // Try multiple field names for bifocal
+        const bifocalCopay = copays.lensBifocal ?? copays.bifocal ?? copays.materialsCopay
+        if (typeof bifocalCopay === 'number') {
+          patientCopay = bifocalCopay
+          tierUsed = 'bifocal'
+        } else {
+          warnings.push('No bifocal copay found, using retail')
+        }
+        break
+      }
+
+      case 'lens_trifocal': {
+        // Try multiple field names for trifocal
+        const trifocalCopay = copays.lensTrifocal ?? copays.trifocal ?? copays.materialsCopay
+        if (typeof trifocalCopay === 'number') {
+          patientCopay = trifocalCopay
+          tierUsed = 'trifocal'
+        } else {
+          warnings.push('No trifocal copay found, using retail')
+        }
+        break
+      }
 
       case 'lens_progressive':
         if (eyemedMapping?.progressiveTier) {
-          patientCopay = this.getProgressiveCopay(auth, eyemedMapping.progressiveTier)
-          tierUsed = eyemedMapping.progressiveTier
+          // Check if this tier has formula-based pricing
+          const formulaResult = this.calculateProgressiveWithFormula(
+            auth,
+            eyemedMapping.progressiveTier,
+            retailPrice
+          )
+
+          if (formulaResult !== null) {
+            patientCopay = formulaResult.price
+            tierUsed = eyemedMapping.progressiveTier
+            if (formulaResult.isFormula) {
+              notes = `Formula: copay + (${formulaResult.discountPercent}% off retail) - $${formulaResult.allowance} allowance`
+            }
+          } else {
+            // Tier not covered by plan - patient pays retail
+            warnings.push(`EyeMed tier ${eyemedMapping.progressiveTier} not covered, using retail`)
+          }
         } else {
           warnings.push('No EyeMed progressive tier mapping, using retail')
         }
@@ -138,43 +188,125 @@ export class EyemedPricingCalculator implements IPricingCalculator {
 
       case 'ar_coating':
         if (eyemedMapping?.arTier) {
-          patientCopay = this.getArCopay(auth, eyemedMapping.arTier)
-          tierUsed = eyemedMapping.arTier
+          const arCopay = this.getArCopay(auth, eyemedMapping.arTier, copays)
+          if (arCopay !== null) {
+            patientCopay = arCopay
+            tierUsed = eyemedMapping.arTier
+          } else {
+            // Check for "all other lens options" discount
+            const allOther = copays.allOtherLensOptions
+            if (typeof allOther === 'string' && allOther.includes('DISCOUNT')) {
+              const match = allOther.match(/DISCOUNT_(\d+)/)
+              if (match) {
+                const discountPct = parseInt(match[1], 10)
+                patientCopay = retailPrice * (1 - discountPct / 100)
+                tierUsed = 'all_other_lens_options'
+                notes = `${discountPct}% off retail`
+              }
+            } else {
+              warnings.push(`EyeMed AR tier ${eyemedMapping.arTier} not covered, using retail`)
+            }
+          }
         } else {
-          warnings.push('No EyeMed AR tier mapping, using retail')
+          // No tier mapping - try "all other lens options" discount
+          const allOther = copays.allOtherLensOptions
+          if (typeof allOther === 'string' && allOther.includes('DISCOUNT')) {
+            const match = allOther.match(/DISCOUNT_(\d+)/)
+            if (match) {
+              const discountPct = parseInt(match[1], 10)
+              patientCopay = retailPrice * (1 - discountPct / 100)
+              tierUsed = 'all_other_lens_options'
+              notes = `${discountPct}% off retail`
+            }
+          } else {
+            warnings.push('No EyeMed AR tier mapping, using retail')
+          }
         }
         break
 
       case 'material':
         if (eyemedMapping?.materialType) {
-          const result = this.getMaterialCopay(auth, eyemedMapping.materialType)
+          const result = this.getMaterialCopay(auth, eyemedMapping.materialType, copays)
           patientCopay = result.copay
           tierUsed = eyemedMapping.materialType
-          if (result.notes) warnings.push(result.notes)
+          if (result.notes) notes = result.notes
         } else {
           warnings.push('No EyeMed material mapping, using retail')
         }
         break
 
-      case 'photochromic':
-        patientCopay = auth.copays.photochromic
-        tierUsed = 'photochromic'
+      case 'photochromic': {
+        // Try multiple field names - also check for "all other lens options" discount
+        const photoCopay = copays.photochromic ?? (auth.copays as Record<string, unknown>).photochromic
+        if (typeof photoCopay === 'number') {
+          patientCopay = photoCopay
+          tierUsed = 'photochromic'
+        } else {
+          // Apply "all other lens options" discount
+          const allOther = copays.allOtherLensOptions
+          if (typeof allOther === 'string' && allOther.includes('DISCOUNT')) {
+            const match = allOther.match(/DISCOUNT_(\d+)/)
+            if (match) {
+              const discountPct = parseInt(match[1], 10)
+              patientCopay = retailPrice * (1 - discountPct / 100)
+              tierUsed = 'all_other_lens_options'
+              notes = `${discountPct}% off retail`
+            }
+          }
+        }
         break
+      }
 
-      case 'polarized':
-        patientCopay = auth.copays.polarized
-        tierUsed = 'polarized'
+      case 'polarized': {
+        const polarizedCopay = copays.polarized ?? (auth.copays as Record<string, unknown>).polarized
+        if (typeof polarizedCopay === 'number') {
+          patientCopay = polarizedCopay
+          tierUsed = 'polarized'
+        } else {
+          // Apply "all other lens options" discount
+          const allOther = copays.allOtherLensOptions
+          if (typeof allOther === 'string' && allOther.includes('DISCOUNT')) {
+            const match = allOther.match(/DISCOUNT_(\d+)/)
+            if (match) {
+              const discountPct = parseInt(match[1], 10)
+              patientCopay = retailPrice * (1 - discountPct / 100)
+              tierUsed = 'all_other_lens_options'
+              notes = `${discountPct}% off retail`
+            }
+          }
+        }
         break
+      }
 
-      case 'blue_light':
-        patientCopay = auth.copays.blueLightFilter
-        tierUsed = 'blue_light'
+      case 'blue_light': {
+        const blueLightCopay = copays.blueLightFilter ?? copays.blueLight ?? (auth.copays as Record<string, unknown>).blueLightFilter
+        if (typeof blueLightCopay === 'number') {
+          patientCopay = blueLightCopay
+          tierUsed = 'blue_light'
+        } else {
+          // Apply "all other lens options" discount
+          const allOther = copays.allOtherLensOptions
+          if (typeof allOther === 'string' && allOther.includes('DISCOUNT')) {
+            const match = allOther.match(/DISCOUNT_(\d+)/)
+            if (match) {
+              const discountPct = parseInt(match[1], 10)
+              patientCopay = retailPrice * (1 - discountPct / 100)
+              tierUsed = 'all_other_lens_options'
+              notes = `${discountPct}% off retail`
+            }
+          }
+        }
         break
+      }
 
-      case 'tint':
-        patientCopay = auth.copays.tint
-        tierUsed = 'tint'
+      case 'tint': {
+        const tintCopay = copays.tint ?? (auth.copays as Record<string, unknown>).tint
+        if (typeof tintCopay === 'number') {
+          patientCopay = tintCopay
+          tierUsed = 'tint'
+        }
         break
+      }
 
       case 'mount_fee':
         // Mount fees for EyeMed: standard = $0, rimless/semi_rimless = retail
@@ -205,6 +337,7 @@ export class EyemedPricingCalculator implements IPricingCalculator {
       insurancePays,
       savings,
       tierUsed,
+      notes,
       warnings: warnings.length > 0 ? warnings : undefined,
     }
   }
@@ -326,72 +459,182 @@ export class EyemedPricingCalculator implements IPricingCalculator {
     }
   }
 
+  /**
+   * Calculate progressive price, handling formula-based pricing when present.
+   *
+   * Some EyeMed plans have formula-based pricing for certain tiers:
+   * Formula: baseCopay + (retailPrice × discountPercent) - allowance
+   *
+   * Example (Tier 4 with formula):
+   * - Base copay: $25
+   * - Discount: 20% off retail (patient pays 80%)
+   * - Allowance: $120
+   * - Final: $25 + ($600 × 0.80) - $120 = $385
+   *
+   * If no formula components exist, falls back to flat copay.
+   */
+  private calculateProgressiveWithFormula(
+    auth: EyemedBenefitAuthorization,
+    tier: NonNullable<ProductCatalogEntry['eyemed']>['progressiveTier'],
+    retailPrice: number
+  ): { price: number; isFormula: boolean; discountPercent?: number; allowance?: number } | null {
+    // Access copays with any type to check for formula components
+    const copays = auth.copays as unknown as Record<string, unknown>
+
+    // Check for formula-based pricing for this tier
+    let hasFormula = false
+    let discountPercent: number | undefined
+    let allowance: number | undefined
+    let baseCopay: number | undefined
+
+    if (tier === 'tier_4') {
+      hasFormula = !!copays.tier4HasFormula
+      discountPercent = copays.tier4DiscountPercent as number | undefined
+      allowance = copays.tier4Allowance as number | undefined
+      baseCopay = (copays.progressiveStandard as number) ?? auth.copays.progressiveStandard
+    } else if (tier === 'tier_5') {
+      hasFormula = !!copays.tier5HasFormula
+      discountPercent = copays.tier5DiscountPercent as number | undefined
+      allowance = copays.tier5Allowance as number | undefined
+      baseCopay = (copays.progressiveStandard as number) ?? auth.copays.progressiveStandard
+    }
+
+    // If formula components exist, calculate using formula
+    if (hasFormula && discountPercent !== undefined) {
+      const effectiveAllowance = allowance ?? 0
+      const effectiveCopay = baseCopay ?? 0
+      const patientPaysPercent = (100 - discountPercent) / 100  // 20% off = patient pays 80%
+      const discountedRetail = retailPrice * patientPaysPercent
+
+      let finalPrice = effectiveCopay + discountedRetail - effectiveAllowance
+
+      // Ensure price doesn't go below the base copay
+      if (finalPrice < effectiveCopay) {
+        finalPrice = effectiveCopay
+      }
+
+      return {
+        price: Math.round(finalPrice * 100) / 100,
+        isFormula: true,
+        discountPercent,
+        allowance: effectiveAllowance,
+      }
+    }
+
+    // No formula - use flat copay lookup
+    const flatCopay = this.getProgressiveCopay(auth, tier)
+    if (flatCopay !== null) {
+      return { price: flatCopay, isFormula: false }
+    }
+
+    return null
+  }
+
+  /**
+   * Get progressive copay for EyeMed tier (flat copay lookup).
+   * Returns null if tier not covered (patient pays retail).
+   * Returns 0 if tier is covered at no cost.
+   */
   private getProgressiveCopay(
     auth: EyemedBenefitAuthorization,
     tier: NonNullable<ProductCatalogEntry['eyemed']>['progressiveTier']
-  ): number {
+  ): number | null {
+    // Access raw copays to check for extracted field names
+    const rawCopays = auth.copays as unknown as Record<string, unknown>
+    const eyemedTiers = rawCopays?.eyemedTiers as Record<string, number | null> | undefined
+
+    let copay: number | undefined | null
     switch (tier) {
       case 'standard':
-        return auth.copays.progressiveStandard
+        copay = eyemedTiers?.progressiveStandard ?? (rawCopays?.progressiveStandard as number) ?? auth.copays.progressiveStandard
+        break
       case 'tier_1':
-        return auth.copays.progressivePremiumTier1
+        copay = eyemedTiers?.progressiveTier1 ?? auth.copays.progressivePremiumTier1
+        break
       case 'tier_2':
-        return auth.copays.progressivePremiumTier2
+        copay = eyemedTiers?.progressiveTier2 ?? auth.copays.progressivePremiumTier2
+        break
       case 'tier_3':
-        return auth.copays.progressivePremiumTier3
+        copay = eyemedTiers?.progressiveTier3 ?? auth.copays.progressivePremiumTier3
+        break
       case 'tier_4':
-        return auth.copays.progressivePremiumTier4
-      case 'tier_5':
-        return auth.copays.progressivePremiumTier5
+        copay = eyemedTiers?.progressiveTier4 ?? auth.copays.progressivePremiumTier4
+        break
       default:
-        return 0
+        // Unknown tier - not covered
+        return null
     }
+    // null/undefined copay means not covered → patient pays retail
+    return typeof copay === 'number' ? copay : null
   }
 
+  /**
+   * Get AR coating copay for EyeMed tier.
+   * Returns null if tier not covered (patient pays retail).
+   * Returns 0 if tier is covered at no cost.
+   */
   private getArCopay(
     auth: EyemedBenefitAuthorization,
-    tier: NonNullable<ProductCatalogEntry['eyemed']>['arTier']
-  ): number {
+    tier: NonNullable<ProductCatalogEntry['eyemed']>['arTier'],
+    rawCopays?: Record<string, unknown>
+  ): number | null {
+    // Try to get from eyemedTiers nested structure first (extracted data format)
+    const eyemedTiers = rawCopays?.eyemedTiers as Record<string, number | null> | undefined
+
+    let copay: number | undefined | null
     switch (tier) {
       case 'standard':
-        return auth.copays.arStandard
+        copay = eyemedTiers?.arStandard ?? auth.copays.arStandard
+        break
       case 'tier_1':
-        return auth.copays.arPremiumTier1
+        copay = eyemedTiers?.arTier1 ?? auth.copays.arPremiumTier1
+        break
       case 'tier_2':
-        return auth.copays.arPremiumTier2
+        copay = eyemedTiers?.arTier2 ?? auth.copays.arPremiumTier2
+        break
       case 'tier_3':
-        return auth.copays.arPremiumTier3
+        copay = eyemedTiers?.arTier3 ?? auth.copays.arPremiumTier3
+        break
       default:
-        return 0
+        // Unknown tier - not covered
+        return null
     }
+    // null/undefined copay means not covered → patient pays retail
+    return typeof copay === 'number' ? copay : null
   }
 
   private getMaterialCopay(
     auth: EyemedBenefitAuthorization,
-    materialType: NonNullable<ProductCatalogEntry['eyemed']>['materialType']
+    materialType: NonNullable<ProductCatalogEntry['eyemed']>['materialType'],
+    rawCopays?: Record<string, unknown>
   ): { copay: number; notes?: string } {
     switch (materialType) {
       case 'polycarbonate': {
-        // Check age for free poly for children
-        const patientAge = auth.patient.age
-        const maxChildAge = auth.specialRules.polycarbonateFreeCbildAgeMax
-        if (patientAge !== null && patientAge <= maxChildAge) {
-          const copay = auth.copays.materialPolycarbonateChild
-          if (copay === 'covered') {
-            return { copay: 0, notes: `Polycarbonate covered (age ${patientAge})` }
-          }
-          return { copay: typeof copay === 'number' ? copay : 0 }
+        // Try extracted field name 'polycarbonate' first
+        const polyCopay = rawCopays?.polycarbonate ?? auth.copays.materialPolycarbonate
+        if (typeof polyCopay === 'number') {
+          return { copay: polyCopay }
         }
-        const copay = auth.copays.materialPolycarbonate
-        if (copay === 'covered') return { copay: 0, notes: 'Polycarbonate covered' }
-        return { copay }
+        if (polyCopay === 'covered' || polyCopay === 0) {
+          return { copay: 0, notes: 'Polycarbonate covered' }
+        }
+        return { copay: 0 }
       }
-      case 'trivex':
-        return { copay: auth.copays.materialTrivex }
-      case 'high_index_167':
-        return { copay: auth.copays.materialHighIndex167 ?? auth.copays.materialHighIndex }
-      case 'high_index_174':
-        return { copay: auth.copays.materialHighIndex174 ?? auth.copays.materialHighIndex }
+      case 'trivex': {
+        const trivexCopay = rawCopays?.trivex ?? auth.copays.materialTrivex
+        return { copay: typeof trivexCopay === 'number' ? trivexCopay : 0 }
+      }
+      case 'high_index_167': {
+        const hi167Copay = rawCopays?.highIndex167 ?? rawCopays?.materialHighIndex167 ?? auth.copays.materialHighIndex167 ?? auth.copays.materialHighIndex
+        return { copay: typeof hi167Copay === 'number' ? hi167Copay : 0 }
+      }
+      case 'high_index_174': {
+        const hi174Copay = rawCopays?.highIndex174 ?? rawCopays?.materialHighIndex174 ?? auth.copays.materialHighIndex174 ?? auth.copays.materialHighIndex
+        return { copay: typeof hi174Copay === 'number' ? hi174Copay : 0 }
+      }
+      case 'cr39':
+        // CR-39 is the base material - no additional copay
+        return { copay: 0, notes: 'Standard plastic included' }
       default:
         return { copay: 0 }
     }

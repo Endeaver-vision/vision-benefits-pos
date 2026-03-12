@@ -1,0 +1,57 @@
+Category,Product Name,Wholesale,Retail,Multiplier,VSP Tier,EyeMed Tier,Spectera Tier,Cash Only,Note
+EXAM SERVICES,Routine Vision Exam,116.99,100.0,0.85,N/A - Medical Billing,N/A - Medical Billing,N/A - Medical Billing,NO,COMP OPHTH SERVICE (92004)
+EXAM SERVICES,Medical Exam,134.54,100.0,0.74,N/A - Medical Billing,N/A - Medical Billing,N/A - Medical Billing,NO,E&M Levels 2-5 (99202-99205)
+EXAM ADD-ONS,Optomap,11.57,39.0,3.37,N/A - Medical Billing,N/A - Medical Billing,N/A - Medical Billing,NO,Digital retinal imaging
+EXAM ADD-ONS,iWellness,5.26,19.0,3.61,N/A - Medical Billing,N/A - Medical Billing,N/A - Medical Billing,NO,iWellness OCT
+EXAM ADD-ONS,OCT Retina/ON,5.26,39.0,7.41,N/A - Medical Billing,N/A - Medical Billing,N/A - Medical Billing,NO,Computerized Ophth Imaging (92133)
+EXAM ADD-ONS,Visual Field,63.33,39.0,0.62,N/A - Medical Billing,N/A - Medical Billing,N/A - Medical Billing,NO,Visual Field 92081-92083
+EXAM ADD-ONS,External Photos,37.88,29.0,0.77,N/A - Medical Billing,N/A - Medical Billing,N/A - Medical Billing,NO,External Ocular Photography (92025)
+EXAM ADD-ONS,Neuro HA Screen,77.75,89.0,1.14,N/A - Medical Billing,N/A - Medical Billing,N/A - Medical Billing,NO,Neurolens headache assessment
+EXAM ADD-ONS,Corneal Thickness,5.26,29.0,5.51,N/A - Medical Billing,N/A - Medical Billing,N/A - Medical Billing,NO,Pachymetry (76514)
+EXAM ADD-ONS,Myopia Atropine Exam Consult & Follow Up,366.84,350.0,0.95,N/A - Medical Billing,N/A - Medical Billing,N/A - Medical Billing,NO,Myopia management
+CONTACT LENS FITTING,Sphere,54.69,75.0,1.37,N/A - Medical Billing,N/A - Medical Billing,N/A - Medical Billing,NO,CL Fitting Both Eyes (92310)
+CONTACT LENS FITTING,Toric,62.89,100.0,1.59,N/A - Medical Billing,N/A - Medical Billing,N/A - Medical Billing,NO,CL Fitting Both Eyes (92310)
+CONTACT LENS FITTING,Multifocal Soft Lens,71.09,150.0,2.11,N/A - Medical Billing,N/A - Medical Billing,N/A - Medical Billing,NO,CL Fitting Both Eyes (92310)
+CONTACT LENS FITTING,Monovision,71.09,120.0,1.69,N/A - Medical Billing,N/A - Medical Billing,N/A - Medical Billing,NO,CL Fitting Both Eyes (92310)
+CONTACT LENS FITTING,RGP,617.55,350.0,0.57,N/A - Medical Billing,N/A - Medical Billing,N/A - Medical Billing,NO,CL Fitting Aphakia (92313)
+CONTACT LENS FITTING,Specialty CL,1235.09,850.0,0.69,N/A - Medical Billing,N/A - Medical Billing,N/A - Medical Billing,NO,Corneoscleral/Keratoconus
+CONTACT LENS FITTING,Ortho-K,926.32,2200.0,2.37,N/A - Medical Billing,N/A - Medical Billing,N/A - Medical Billing,NO,Corneoscleral w/Tech (92070)
+CONTACT LENS FITTING,MiSight Fitting,1244.04,1250.0,1.0,N/A - Medical Billing,N/A - Medical Billing,N/A - Medical Billing,NO,CL Fitting Both Eyes (92310)
+LENS TYPE,Neurolens SV,133.33,400.0,3.0,Non-Formulary,Non-Formulary,Non-Formulary,YES,Cash pay only - no vision plans
+LENS TYPE,Neurolens Progressive,233.33,700.0,3.0,Non-Formulary,Non-Formulary,Non-Formulary,YES,Cash pay only - no vision plans
+LENS TYPE,Eyezen,47.94,144.0,3.0,K (Standard),Tier 1,Tier I,NO,Essilor Anti-Fatigue SV
+LENS TYPE,FT Bifocal,47.0,182.0,3.87,Standard,Standard,Standard,NO,Flat Top 28 (D28)
+LENS TYPE,FT Trifocal,51.38,155.0,3.0,Standard,Standard,Standard,NO,Flat Top 35 (D35)
+LENS TYPE,Single Vision,31.8,96.0,3.0,Standard,Standard,Standard,NO,Single Vision base CR-39
+LENS TYPE,Varilux Comfort DRx,89.7,280.0,3.12,J (Premium),Tier 3,Tier II,NO,Mid-tier progressive
+LENS TYPE,Varilux Comfort Max,136.1,409.0,3.0,F (Premium Adv),Tier 4,Tier III,NO,Premium progressive
+LENS TYPE,Varilux i,160.0,480.0,3.0,Non-Formulary,Non-Formulary,Non-Formulary,YES,Cash pay only - no vision plans
+LENS TYPE,Varilux X,205.0,615.0,3.0,O (Custom L1),Tier 5,Tier V,NO,Varilux X Design Technology
+LENS MATERIAL,Polycarbonate,5.0,65.0,13.0,B Modifier,Material,Material,NO,Add to base lens; FREE under 18
+LENS MATERIAL,1.67 High Index,35.0,130.0,3.71,H Modifier,Material,Material,NO,Add to base lens
+LENS MATERIAL,1.72 Ultra High Index,50.0,150.0,3.0,Non-Standard,Material,80% Billed,NO,Premium material
+LENS MATERIAL,Trivex,8.0,75.0,9.38,T Modifier,Material,Material,NO,Add to base lens
+LENS MATERIAL,CR-39,0.0,0.0,0.0,Base,Base Material,Base,NO,Standard base material
+AR COATINGS - NEUROLENS,Neurolens Premium,72.0,180.0,2.5,Non-Formulary,Non-Formulary,Non-Formulary,YES,Cash pay only - no vision plans
+AR COATINGS - NEUROLENS,Neurolens Blue,72.0,180.0,2.5,Non-Formulary,Non-Formulary,Non-Formulary,YES,Cash pay only - no vision plans
+AR COATINGS - CRIZAL,Crizal Sapphire,72.0,187.0,2.6,D (Premium),Tier 3,Tier IV,NO,Crizal Sapphire HR
+AR COATINGS - CRIZAL,Crizal Rock,61.0,158.0,2.59,D (Premium),Tier 3,Tier IV,NO,Premium AR
+AR COATINGS - CRIZAL,Crizal EZ Pro,59.0,148.0,2.5,C (Mid),Tier 2,Tier III,NO,Mid-tier AR
+AR COATINGS - CRIZAL,Crizal SunShield,72.0,180.0,2.5,C (Mid),Tier 2,Tier III,NO,Sun AR coating
+AR COATINGS - CRIZAL,Opt out,0.0,0.0,0.0,N/A,N/A,N/A,NO,No AR coating
+TRANSITIONS,Gen S,67.0,160.0,2.39,PR Code,Photochromic,Photochromic,NO,Transitions GEN S
+TRANSITIONS,Xtra Active,67.0,160.0,2.39,PR Code,Photochromic,Photochromic,NO,XTRActive New Generation
+TRANSITIONS,Opt out,0.0,0.0,0.0,N/A,N/A,N/A,NO,No photochromic selected
+POLARIZED,Polarized,51.9,180.0,3.47,LB/LC Code,Polarized,80% Billed,NO,Polarized lenses
+MOUNT FEE,Full Rim,0.0,0.0,0.0,Included,Included,Included,NO,Standard mount
+MOUNT FEE,Semi-Rimless,9.4,35.0,3.72,SU Code,Mount Fee,Polished Edges,NO,Grooved mount
+MOUNT FEE,Rimless,18.8,45.0,2.39,SW Code,Mount Fee,Polished Edges,NO,Drill mount
+LENS ADD-ONS,UV,0.0,16.0,0.0,Standard,Standard,Standard,NO,Often included with AR
+LENS ADD-ONS,Mirror,23.3,55.0,2.36,Mirror Code,Add-On,80% Billed,NO,Mirror Solid/Gradient
+LENS ADD-ONS,Tint,7.4,30.0,4.05,Tint Code,Add-On,Tint Copay,NO,Solid/Gradient tint
+LENS ADD-ONS,Oversize Lenses,0.0,30.0,0.0,OU Code,Add-On,80% Billed,NO,61mm+ frames
+LENS ADD-ONS,Tech Add-on Single Vision,3.33,10.0,3.0,TA ($10),N/A,N/A,NO,VSP tech add-on SV
+LENS ADD-ONS,Tech Add-on Multifocal,13.33,40.0,3.0,TA ($40),N/A,N/A,NO,VSP tech add-on MF
+LENS ADD-ONS,Prism Per D,4.1,15.0,3.66,Prism Code,Add-On,80% Billed,NO,Rx prism correction
+LENS ADD-ONS,Essential Blue,10.0,40.0,4.0,Blue Light,Included/Add,Add-On,NO,Essential Blue Series
+LENS ADD-ONS,Roll and Polish,6.0,30.0,5.0,Edge Code,Add-On,Edge Coating,NO,Edge polish for rimless

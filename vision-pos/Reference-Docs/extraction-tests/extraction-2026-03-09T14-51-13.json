@@ -1,0 +1,345 @@
+{
+  "authFile": "MN-computer-auth.pdf",
+  "enhancementFile": "MN-computer-lens.pdf",
+  "authData": {
+    "document_type": "auth_form",
+    "patient_name": "MARC L NOYCE",
+    "patient_dob": "02/01/1973",
+    "member_name": "MICHELLE E NOYCE",
+    "relationship": "Spouse",
+    "authorization_number": "82829471",
+    "auth_effective_date": "10/14/2025",
+    "auth_expiration_date": "11/13/2025",
+    "plan_type": "computer_visioncare",
+    "client_name": "DISNEY WORLDWIDE SVCS., INC.",
+    "network": "VSP",
+    "lab_use": "Must use plan designated contract laboratory",
+    "eligibility": {
+      "exam": true,
+      "lens": true,
+      "frame": true,
+      "contact_lens_exam": null,
+      "contacts": null
+    },
+    "exam_copay": 0,
+    "material_copay": 10,
+    "routine_retinal_screening": null,
+    "frame_allowance": {
+      "wfa_code": "WFA35",
+      "altair_amount": 110,
+      "non_altair_amount": 90,
+      "frame_overage_discount": 0.2,
+      "easyoptions_wfa_code": null,
+      "easyoptions_amount": null
+    },
+    "contact_lens_pattern": null,
+    "cl_exam_copay": null,
+    "cl_exam_percentage": null,
+    "cl_materials_allowance": null,
+    "cl_combined_allowance": null,
+    "cl_combined_discount": null,
+    "cl_exam_only_responsibility": null,
+    "cl_easyoptions_allowance": null,
+    "necessary_cl_copay": null,
+    "contacts_instead_of": null,
+    "contacts_frame_next_available": null,
+    "has_easyoptions": false,
+    "easyoptions": null,
+    "flags": {
+      "has_emc": false,
+      "emc_type": null,
+      "emc_exam_copay": null,
+      "is_computer_visioncare": true,
+      "computer_rx_requirement": "Prescription must differ by +/-0.50 diopters from everyday eyewear",
+      "has_post_laser": false,
+      "has_low_vision": false,
+      "has_vision_therapy": true,
+      "has_cob_restriction": false,
+      "cob_rule": null,
+      "value_added_benefits": null
+    },
+    "eye_health_conditions": {
+      "reported_conditions": [],
+      "systemic_checked": [],
+      "ocular_checked": [],
+      "dilation_performed": false,
+      "pcp_communication": false
+    },
+    "lens_enhancement_summary": {
+      "covered": [
+        "Near Variable Focus",
+        "Solid Tints and Plastic Dyes (Pink I & II)",
+        "Plastic Dyes (Gradient) lesser than 20% absorption",
+        "Photochromics",
+        "Anti-Reflective Coatings",
+        "Aspheric (plastic & digital)",
+        "Blended Bifocal",
+        "Edge Treatments",
+        "High Index",
+        "Light Filter"
+      ],
+      "covered_with_copay": [
+        "Oversize Lenses",
+        "Plastic Dyes (Solid color except Pink I & II) lesser than 20% absorption",
+        "Plastic Dyes (Gradient) greater than 20% absorption",
+        "Polycarbonate",
+        "Plastic Dyes (Solid color except Pink I & II) greater than 20% absorption",
+        "Rimless Drill",
+        "Scratch Resistant Coatings",
+        "UV Protection"
+      ],
+      "not_covered": [
+        "Mirror/Ski Type Coating",
+        "Photochromics",
+        "Polarized",
+        "Progressives",
+        "Glass Color Coatings"
+      ]
+    }
+  },
+  "enhancementData": {
+    "document_type": "enhancement_form",
+    "authorization_number": "82829471",
+    "patient_name": "NOYCE, MARC",
+    "progressives": {
+      "K_standard": null,
+      "J_premium": null,
+      "F_premium_adv": null,
+      "O_custom": null,
+      "N_custom": null
+    },
+    "single_vision_base": 0,
+    "materials": {
+      "polycarbonate_sv": 33,
+      "polycarbonate_multi": 33,
+      "trivex_sv": 51,
+      "trivex_multi": 55,
+      "hi_index_167_sv": 76,
+      "hi_index_167_multi": 90,
+      "hi_index_174_sv": 102,
+      "hi_index_174_multi": 110
+    },
+    "lens_matrix": {
+      "SV_plastic": 0,
+      "SV_poly": 33,
+      "SV_trivex": 51,
+      "SV_hi167": 76,
+      "SV_hi174": 102,
+      "KA": null,
+      "KD": 33,
+      "KB": 42,
+      "KH": 72,
+      "KJ": 115,
+      "JA": null,
+      "JD": 33,
+      "JB": 42,
+      "JH": 72,
+      "JJ": 115,
+      "FA": null,
+      "FD": 33,
+      "FB": 42,
+      "FH": 72,
+      "FJ": 115,
+      "OA": null,
+      "OD": 33,
+      "OB": 42,
+      "OH": 72,
+      "OJ": 115,
+      "NA": null,
+      "ND": 33,
+      "NB": 42,
+      "NH": 72,
+      "NJ": 115
+    },
+    "ar_coatings": {
+      "QM_standard": 37,
+      "QT_premium_1": 61,
+      "QV_premium_2": 75
+    },
+    "photochromics": {
+      "PR_plastic": null,
+      "PM_glass": null
+    },
+    "polarized": {
+      "DA_sv": null,
+      "DA_multi": null,
+      "KP": null,
+      "JP": null,
+      "FP": null,
+      "NP": null,
+      "OP": null
+    },
+    "tints": {
+      "MN_plastic_sv": 13,
+      "MN_plastic_multi": 13,
+      "MP_gradient_sv": 15,
+      "MP_gradient_multi": 15
+    },
+    "misc": {
+      "SP_edge_polish": 14,
+      "SQ_edge_coating": 32,
+      "SW_rimless": 30,
+      "LF_light_filter": 15,
+      "TA_tech_addon": 10,
+      "IA_near_variable": 0,
+      "RM_oversize_plastic": 10,
+      "RN_oversize_glass": 12,
+      "AA_aspheric": 23,
+      "BA_digital_aspheric": 40,
+      "CM_custom_measurement": null
+    },
+    "coverage_status": {
+      "progressives_covered": false,
+      "ar_covered": true,
+      "photochromics_covered": false,
+      "photochromics_not_covered": true,
+      "polarized_not_covered": true
+    }
+  },
+  "merged": {
+    "patientInfo": {
+      "name": "MARC L NOYCE",
+      "dob": "02/01/1973",
+      "authNumber": "82829471",
+      "effectiveDate": "10/14/2025",
+      "expirationDate": "11/13/2025",
+      "memberName": "MICHELLE E NOYCE",
+      "relationship": "Spouse"
+    },
+    "planInfo": {
+      "planType": "computer_visioncare",
+      "clientName": "DISNEY WORLDWIDE SVCS., INC.",
+      "network": "VSP",
+      "labUse": "Must use plan designated contract laboratory"
+    },
+    "eligibility": {
+      "exam": true,
+      "lens": true,
+      "frame": true,
+      "contact_lens_exam": null,
+      "contacts": null
+    },
+    "copays": {
+      "exam": 0,
+      "material": 10,
+      "retinalScreening": null
+    },
+    "frameAllowance": {
+      "wfaCode": "WFA35",
+      "amount": 90,
+      "altairAmount": 110,
+      "overageDiscount": 0.2,
+      "easyOptionsAmount": null
+    },
+    "contactLens": {
+      "pattern": "none",
+      "examCopay": null,
+      "examPercentage": null,
+      "materialsAllowance": null,
+      "combinedAllowance": null,
+      "combinedDiscount": null,
+      "examOnlyResponsibility": null,
+      "easyOptionsAllowance": null,
+      "necessaryCopay": null,
+      "insteadOf": null,
+      "frameNextAvailable": null
+    },
+    "easyOptions": null,
+    "flags": {
+      "hasEmc": false,
+      "emcType": null,
+      "emcExamCopay": null,
+      "isComputerVisioncare": true,
+      "computerRxRequirement": "Prescription must differ by +/-0.50 diopters from everyday eyewear",
+      "hasPostLaser": false,
+      "hasLowVision": false,
+      "hasVisionTherapy": true,
+      "hasCobRestriction": false,
+      "cobRule": null,
+      "valueAddedBenefits": null
+    },
+    "eyeHealthConditions": {
+      "reportedConditions": [],
+      "systemicChecked": [],
+      "ocularChecked": [],
+      "dilationPerformed": false,
+      "pcpCommunication": false
+    },
+    "lensMatrix": {
+      "SV_plastic": 0,
+      "SV_poly": 33,
+      "SV_trivex": 51,
+      "SV_hi167": 76,
+      "SV_hi174": 102,
+      "KA": null,
+      "KD": 33,
+      "KB": 42,
+      "KH": 72,
+      "KJ": 115,
+      "JA": null,
+      "JD": 33,
+      "JB": 42,
+      "JH": 72,
+      "JJ": 115,
+      "FA": null,
+      "FD": 33,
+      "FB": 42,
+      "FH": 72,
+      "FJ": 115,
+      "OA": null,
+      "OD": 33,
+      "OB": 42,
+      "OH": 72,
+      "OJ": 115,
+      "NA": null,
+      "ND": 33,
+      "NB": 42,
+      "NH": 72,
+      "NJ": 115
+    },
+    "arCoatings": {
+      "QM": 37,
+      "QT": 61,
+      "QV": 75
+    },
+    "enhancements": {
+      "PR": 0,
+      "DA": 0,
+      "LF": 15,
+      "SP": 14,
+      "SW": 30,
+      "MN": 13,
+      "TA": 10,
+      "IA": 0,
+      "CM": 0
+    },
+    "polarizedProgressives": {
+      "KP": 0,
+      "JP": 0,
+      "FP": 0,
+      "NP": 0,
+      "OP": 0
+    },
+    "coverageStatus": {
+      "progressivesCovered": false,
+      "arCovered": true,
+      "photochromicsCovered": false,
+      "photochromicsNotCovered": true,
+      "polarizedNotCovered": true
+    }
+  },
+  "validation": {
+    "valid": true,
+    "errors": []
+  },
+  "usage": {
+    "authForm": {
+      "input": 3671,
+      "output": 1039
+    },
+    "enhancement": {
+      "input": 4294,
+      "output": 931
+    }
+  }
+}

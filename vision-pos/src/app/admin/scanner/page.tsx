@@ -3,7 +3,7 @@
 import { useState, useEffect } from 'react'
 import { useRouter } from 'next/navigation'
 import PageLayout from '@/components/layout/page-layout'
-import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
+import { Card, CardContent } from '@/components/ui/card'
 import { Button } from '@/components/ui/button'
 import { Badge } from '@/components/ui/badge'
 import { Input } from '@/components/ui/input'
@@ -18,11 +18,8 @@ import {
   User,
   Clock,
   AlertTriangle,
-  Eye,
-  CheckSquare,
   ChevronDown,
   ChevronUp,
-  DollarSign,
   Layers,
 } from 'lucide-react'
 
@@ -46,19 +43,8 @@ interface InsuranceDocument {
   gptStatus: string
   extractedData: Record<string, unknown> | null
   confidenceScore: number | null
-  isVerified: boolean
-  verifiedBy: string | null
-  verifiedAt: string | null
   createdAt: string
   updatedAt: string
-}
-
-interface PriceListStats {
-  totalProducts: number
-  activeProducts: number
-  productsNeedingTierAssignment: number
-  averageSavings: number
-  tierAssignmentPercentage: number
 }
 
 interface DocumentStats {
@@ -66,14 +52,13 @@ interface DocumentStats {
   pending: number
   processing: number
   completed: number
-  verified: number
   failed: number
   lowConfidence: number
 }
 
-type TabType = 'queue' | 'verified' | 'failed' | 'all'
+type TabType = 'completed' | 'processing' | 'failed' | 'all'
 
-const CONFIDENCE_THRESHOLD = 70 // Documents below this need review
+const CONFIDENCE_THRESHOLD = 0.70
 
 export default function AdminScannerPage() {
   const router = useRouter()
@@ -81,11 +66,9 @@ export default function AdminScannerPage() {
   const [stats, setStats] = useState<DocumentStats | null>(null)
   const [isLoading, setIsLoading] = useState(true)
   const [error, setError] = useState<string | null>(null)
-  const [activeTab, setActiveTab] = useState<TabType>('queue')
+  const [activeTab, setActiveTab] = useState<TabType>('completed')
   const [searchTerm, setSearchTerm] = useState('')
   const [expandedDoc, setExpandedDoc] = useState<string | null>(null)
-  const [priceListStats, setPriceListStats] = useState<Record<string, PriceListStats>>({})
-  const [verifyingDoc, setVerifyingDoc] = useState<string | null>(null)
 
   const fetchDocuments = async () => {
     setIsLoading(true)
@@ -99,7 +82,7 @@ export default function AdminScannerPage() {
       } else {
         setError(json.error || 'Failed to fetch documents')
       }
-    } catch (err) {
+    } catch {
       setError('Network error')
     } finally {
       setIsLoading(false)
@@ -112,7 +95,6 @@ export default function AdminScannerPage() {
       pending: docs.filter(d => d.gptStatus === 'pending').length,
       processing: docs.filter(d => d.gptStatus === 'processing').length,
       completed: docs.filter(d => d.gptStatus === 'completed').length,
-      verified: docs.filter(d => d.isVerified).length,
       failed: docs.filter(d => d.gptStatus === 'failed').length,
       lowConfidence: docs.filter(d =>
         d.gptStatus === 'completed' &&
@@ -123,66 +105,21 @@ export default function AdminScannerPage() {
     setStats(stats)
   }
 
-  const fetchPriceListStats = async (customerId: string) => {
-    try {
-      const res = await fetch(`/api/customers/${customerId}/precompute-prices?statsOnly=true`)
-      const json = await res.json()
-      if (json.success && json.stats) {
-        setPriceListStats(prev => ({ ...prev, [customerId]: json.stats }))
-      }
-    } catch {
-      // Silent fail - stats are optional
-    }
-  }
-
   useEffect(() => {
     fetchDocuments()
   }, [])
 
-  const handleVerify = async (docId: string) => {
-    setVerifyingDoc(docId)
-    try {
-      const res = await fetch(`/api/documents/${docId}/verify`, {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ verifiedBy: 'admin' }),
-      })
-      const json = await res.json()
-      if (json.success) {
-        // Refresh documents
-        await fetchDocuments()
-      } else {
-        setError(json.error || 'Failed to verify document')
-      }
-    } catch {
-      setError('Network error during verification')
-    } finally {
-      setVerifyingDoc(null)
-    }
-  }
-
   const toggleExpand = (docId: string) => {
-    if (expandedDoc === docId) {
-      setExpandedDoc(null)
-    } else {
-      setExpandedDoc(docId)
-      // Fetch price list stats for this customer
-      const doc = documents.find(d => d.id === docId)
-      if (doc && doc.isVerified && !priceListStats[doc.customerId]) {
-        fetchPriceListStats(doc.customerId)
-      }
-    }
+    setExpandedDoc(expandedDoc === docId ? null : docId)
   }
 
   // Filter documents based on tab and search
   const filteredDocuments = documents.filter(doc => {
     // Tab filter
-    if (activeTab === 'queue') {
-      // Queue: Unverified documents that are completed or have low confidence
-      if (doc.isVerified) return false
+    if (activeTab === 'completed') {
       if (doc.gptStatus !== 'completed') return false
-    } else if (activeTab === 'verified') {
-      if (!doc.isVerified) return false
+    } else if (activeTab === 'processing') {
+      if (doc.gptStatus !== 'processing' && doc.gptStatus !== 'pending') return false
     } else if (activeTab === 'failed') {
       if (doc.gptStatus !== 'failed') return false
     }
@@ -202,9 +139,6 @@ export default function AdminScannerPage() {
   })
 
   const getStatusBadge = (doc: InsuranceDocument) => {
-    if (doc.isVerified) {
-      return <Badge className="bg-green-600">Verified</Badge>
-    }
     if (doc.gptStatus === 'failed') {
       return <Badge variant="destructive">Failed</Badge>
     }
@@ -217,18 +151,19 @@ export default function AdminScannerPage() {
     if (doc.confidenceScore !== null && doc.confidenceScore < CONFIDENCE_THRESHOLD) {
       return <Badge className="bg-yellow-600">Low Confidence</Badge>
     }
-    return <Badge className="bg-blue-600">Ready for Review</Badge>
+    return <Badge className="bg-green-600">Completed</Badge>
   }
 
   const getConfidenceBadge = (score: number | null) => {
     if (score === null) return null
-    if (score >= 90) {
-      return <Badge className="bg-green-600">{score}%</Badge>
+    const displayScore = Math.round(score * 100)
+    if (score >= 0.90) {
+      return <Badge className="bg-green-600">{displayScore}%</Badge>
     }
     if (score >= CONFIDENCE_THRESHOLD) {
-      return <Badge className="bg-blue-600">{score}%</Badge>
+      return <Badge className="bg-blue-600">{displayScore}%</Badge>
     }
-    return <Badge className="bg-yellow-600">{score}%</Badge>
+    return <Badge className="bg-yellow-600">{displayScore}%</Badge>
   }
 
   const getCarrierColor = (carrier: string | null) => {
@@ -286,15 +221,15 @@ export default function AdminScannerPage() {
 
     // Contact lens
     const contacts = data.contacts as Record<string, { value: unknown }> | undefined
-    const clAllowance = contacts?.clExamAndMaterialsAllowance?.value ?? contacts?.clMaterialsAllowance?.value
+    const clAllowance = contacts?.contactAllowance?.value ?? contacts?.clExamAndMaterialsAllowance?.value
     if (clAllowance !== undefined) {
       fields.push({ label: 'CL Allowance', value: `$${clAllowance}`, important: true })
     }
 
-    // VSP lens codes
-    const vspCodes = data.vspLensEnhancements as { codes?: Array<{ code: string }> } | undefined
-    if (vspCodes?.codes?.length) {
-      fields.push({ label: 'VSP Codes', value: `${vspCodes.codes.length} extracted` })
+    // CL Fit
+    const clFit = data.clFit as Record<string, { value: unknown }> | undefined
+    if (clFit?.standardCost?.value !== undefined) {
+      fields.push({ label: 'CL Fit Copay', value: `$${clFit.standardCost.value}` })
     }
 
     // Progressive copays
@@ -307,7 +242,7 @@ export default function AdminScannerPage() {
     }
 
     if (fields.length === 0) {
-      return <p className="text-muted-foreground">Minimal data extracted - manual review needed</p>
+      return <p className="text-muted-foreground">Minimal data extracted - manual review may be needed</p>
     }
 
     return (
@@ -326,11 +261,11 @@ export default function AdminScannerPage() {
   }
 
   return (
-    <PageLayout title="Insurance Scanner Queue" subtitle="Review and verify scanned insurance documents">
+    <PageLayout title="Insurance Scanner" subtitle="Scanned insurance documents and extraction results">
       {/* Stats Cards */}
       {stats && (
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-4">
-          <div className="grid grid-cols-2 md:grid-cols-6 gap-4 mb-6">
+          <div className="grid grid-cols-2 md:grid-cols-5 gap-4 mb-6">
             <Card>
               <CardContent className="pt-4">
                 <div className="flex items-center gap-2">
@@ -341,13 +276,23 @@ export default function AdminScannerPage() {
               </CardContent>
             </Card>
 
-            <Card className={stats.pending > 0 ? 'border-yellow-500' : ''}>
+            <Card className={stats.processing + stats.pending > 0 ? 'border-yellow-500' : ''}>
               <CardContent className="pt-4">
                 <div className="flex items-center gap-2">
                   <Clock className="h-4 w-4 text-yellow-500" />
-                  <span className="text-sm text-muted-foreground">Pending</span>
+                  <span className="text-sm text-muted-foreground">Processing</span>
                 </div>
-                <div className="text-2xl font-bold">{stats.pending}</div>
+                <div className="text-2xl font-bold">{stats.processing + stats.pending}</div>
+              </CardContent>
+            </Card>
+
+            <Card className="border-green-500">
+              <CardContent className="pt-4">
+                <div className="flex items-center gap-2">
+                  <CheckCircle className="h-4 w-4 text-green-500" />
+                  <span className="text-sm text-muted-foreground">Completed</span>
+                </div>
+                <div className="text-2xl font-bold">{stats.completed}</div>
               </CardContent>
             </Card>
 
@@ -358,26 +303,6 @@ export default function AdminScannerPage() {
                   <span className="text-sm text-muted-foreground">Low Confidence</span>
                 </div>
                 <div className="text-2xl font-bold">{stats.lowConfidence}</div>
-              </CardContent>
-            </Card>
-
-            <Card>
-              <CardContent className="pt-4">
-                <div className="flex items-center gap-2">
-                  <Eye className="h-4 w-4 text-blue-500" />
-                  <span className="text-sm text-muted-foreground">Ready for Review</span>
-                </div>
-                <div className="text-2xl font-bold">{stats.completed - stats.verified}</div>
-              </CardContent>
-            </Card>
-
-            <Card className="border-green-500">
-              <CardContent className="pt-4">
-                <div className="flex items-center gap-2">
-                  <CheckCircle className="h-4 w-4 text-green-500" />
-                  <span className="text-sm text-muted-foreground">Verified</span>
-                </div>
-                <div className="text-2xl font-bold">{stats.verified}</div>
               </CardContent>
             </Card>
 
@@ -398,8 +323,8 @@ export default function AdminScannerPage() {
         {/* Tabs */}
         <div className="flex gap-2 mb-4 border-b pb-2">
           {[
-            { id: 'queue', label: 'Review Queue', count: stats ? stats.completed - stats.verified : 0 },
-            { id: 'verified', label: 'Verified', count: stats?.verified },
+            { id: 'completed', label: 'Completed', count: stats?.completed },
+            { id: 'processing', label: 'Processing', count: stats ? stats.processing + stats.pending : 0 },
             { id: 'failed', label: 'Failed', count: stats?.failed },
             { id: 'all', label: 'All Documents', count: stats?.total },
           ].map(tab => (
@@ -461,19 +386,17 @@ export default function AdminScannerPage() {
             <CardContent className="py-12 text-center">
               <FileText className="h-12 w-12 mx-auto mb-4 text-muted-foreground" />
               <p className="text-muted-foreground">
-                {activeTab === 'queue'
-                  ? 'No documents pending review'
-                  : activeTab === 'verified'
-                  ? 'No verified documents yet'
+                {activeTab === 'completed'
+                  ? 'No completed documents'
+                  : activeTab === 'processing'
+                  ? 'No documents processing'
                   : activeTab === 'failed'
                   ? 'No failed documents'
                   : 'No documents found'}
               </p>
-              {activeTab === 'queue' && (
-                <Button onClick={() => router.push('/scanner')} className="mt-4">
-                  Scan New Document
-                </Button>
-              )}
+              <Button onClick={() => router.push('/scanner')} className="mt-4">
+                Scan New Document
+              </Button>
             </CardContent>
           </Card>
         ) : (
@@ -522,11 +445,6 @@ export default function AdminScannerPage() {
                         <p className="text-sm text-muted-foreground">
                           {formatDate(doc.createdAt)}
                         </p>
-                        {doc.isVerified && doc.verifiedAt && (
-                          <p className="text-xs text-green-600">
-                            Verified {formatDate(doc.verifiedAt)}
-                          </p>
-                        )}
                       </div>
                       {expandedDoc === doc.id ? (
                         <ChevronUp className="h-5 w-5 text-muted-foreground" />
@@ -549,104 +467,8 @@ export default function AdminScannerPage() {
                       {renderExtractionSummary(doc.extractedData)}
                     </div>
 
-                    {/* Validation checkpoints */}
-                    {doc.gptStatus === 'completed' && (
-                      <div className="mb-4">
-                        <h4 className="font-medium mb-2 flex items-center gap-2">
-                          <CheckSquare className="h-4 w-4" />
-                          Validation Checkpoints
-                        </h4>
-                        <div className="grid grid-cols-2 md:grid-cols-4 gap-2">
-                          {/* Carrier detected */}
-                          <div className={`p-2 rounded flex items-center gap-2 ${doc.carrier ? 'bg-green-100 dark:bg-green-900/30' : 'bg-red-100 dark:bg-red-900/30'}`}>
-                            {doc.carrier ? <CheckCircle className="h-4 w-4 text-green-600" /> : <XCircle className="h-4 w-4 text-red-600" />}
-                            <span className="text-sm">Carrier Detected</span>
-                          </div>
-
-                          {/* Patient info */}
-                          {(() => {
-                            const patient = doc.extractedData?.patient as Record<string, unknown> | undefined
-                            const hasPatient = patient?.memberName || patient?.authNumber
-                            return (
-                              <div className={`p-2 rounded flex items-center gap-2 ${hasPatient ? 'bg-green-100 dark:bg-green-900/30' : 'bg-yellow-100 dark:bg-yellow-900/30'}`}>
-                                {hasPatient ? <CheckCircle className="h-4 w-4 text-green-600" /> : <AlertTriangle className="h-4 w-4 text-yellow-600" />}
-                                <span className="text-sm">Patient Info</span>
-                              </div>
-                            )
-                          })()}
-
-                          {/* Copays extracted */}
-                          {(() => {
-                            const copays = doc.extractedData?.copays as Record<string, unknown> | undefined
-                            const hasCopays = copays?.examCopay || copays?.materialsCopay
-                            return (
-                              <div className={`p-2 rounded flex items-center gap-2 ${hasCopays ? 'bg-green-100 dark:bg-green-900/30' : 'bg-yellow-100 dark:bg-yellow-900/30'}`}>
-                                {hasCopays ? <CheckCircle className="h-4 w-4 text-green-600" /> : <AlertTriangle className="h-4 w-4 text-yellow-600" />}
-                                <span className="text-sm">Copays</span>
-                              </div>
-                            )
-                          })()}
-
-                          {/* Confidence score */}
-                          <div className={`p-2 rounded flex items-center gap-2 ${
-                            doc.confidenceScore && doc.confidenceScore >= CONFIDENCE_THRESHOLD
-                              ? 'bg-green-100 dark:bg-green-900/30'
-                              : 'bg-yellow-100 dark:bg-yellow-900/30'
-                          }`}>
-                            {doc.confidenceScore && doc.confidenceScore >= CONFIDENCE_THRESHOLD
-                              ? <CheckCircle className="h-4 w-4 text-green-600" />
-                              : <AlertTriangle className="h-4 w-4 text-yellow-600" />}
-                            <span className="text-sm">High Confidence</span>
-                          </div>
-                        </div>
-                      </div>
-                    )}
-
-                    {/* Price list stats (for verified docs) */}
-                    {doc.isVerified && priceListStats[doc.customerId] && (
-                      <div className="mb-4">
-                        <h4 className="font-medium mb-2 flex items-center gap-2">
-                          <DollarSign className="h-4 w-4" />
-                          Price List Generation
-                        </h4>
-                        <div className="grid grid-cols-2 md:grid-cols-4 gap-2">
-                          <div className="p-2 rounded bg-muted">
-                            <div className="text-xs text-muted-foreground">Products Priced</div>
-                            <div className="font-medium">{priceListStats[doc.customerId].activeProducts}</div>
-                          </div>
-                          <div className="p-2 rounded bg-muted">
-                            <div className="text-xs text-muted-foreground">Avg Savings</div>
-                            <div className="font-medium">${priceListStats[doc.customerId].averageSavings.toFixed(2)}</div>
-                          </div>
-                          <div className="p-2 rounded bg-muted">
-                            <div className="text-xs text-muted-foreground">Tier Coverage</div>
-                            <div className="font-medium">
-                              {(100 - priceListStats[doc.customerId].tierAssignmentPercentage).toFixed(0)}%
-                            </div>
-                          </div>
-                          <div className="p-2 rounded bg-muted">
-                            <div className="text-xs text-muted-foreground">Needs Tier Assignment</div>
-                            <div className="font-medium">{priceListStats[doc.customerId].productsNeedingTierAssignment}</div>
-                          </div>
-                        </div>
-                      </div>
-                    )}
-
                     {/* Actions */}
                     <div className="flex gap-2 mt-4">
-                      {!doc.isVerified && doc.gptStatus === 'completed' && (
-                        <Button
-                          onClick={() => handleVerify(doc.id)}
-                          disabled={verifyingDoc === doc.id}
-                        >
-                          {verifyingDoc === doc.id ? (
-                            <Loader2 className="h-4 w-4 mr-2 animate-spin" />
-                          ) : (
-                            <CheckCircle className="h-4 w-4 mr-2" />
-                          )}
-                          Verify & Generate Prices
-                        </Button>
-                      )}
                       <Button
                         variant="outline"
                         onClick={() => router.push(`/customers/${doc.customerId}`)}

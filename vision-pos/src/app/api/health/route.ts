@@ -4,43 +4,27 @@ import { prisma } from '@/lib/prisma'
 export async function GET() {
   try {
     // Test database connection and get counts
-    const [locationCount, userCount, carrierCount, categoryCount, productCount] = await Promise.all([
+    const [locationCount, customerCount, lensProductCount, frameCount] = await Promise.all([
       prisma.location.count(),
-      prisma.user.count(),
-      prisma.insuranceCarrier.count(),
-      prisma.productCategory.count(),
-      prisma.product.count(),
+      prisma.customer.count(),
+      prisma.lensProduct.count(),
+      prisma.frame.count(),
     ])
 
     // Get sample data
     const locations = await prisma.location.findMany()
-    const carriers = await prisma.insuranceCarrier.findMany()
-    const sampleProducts = await prisma.product.findMany({
-      take: 5,
-      include: {
-        category: true,
-      },
-    })
-    
+
     return NextResponse.json({
       status: 'success',
       message: 'Database connection successful',
       stats: {
         locations: locationCount,
-        users: userCount,
-        carriers: carrierCount,
-        categories: categoryCount,
-        products: productCount
+        customers: customerCount,
+        lensProducts: lensProductCount,
+        frames: frameCount
       },
       data: {
         locations: locations.map(l => ({ name: l.name, address: l.address })),
-        carriers: carriers.map(c => ({ name: c.name, code: c.code })),
-        sampleProducts: sampleProducts.map(p => ({
-          name: p.name,
-          manufacturer: p.manufacturer,
-          category: p.category.name,
-          price: p.basePrice
-        }))
       },
       timestamp: new Date().toISOString()
     })

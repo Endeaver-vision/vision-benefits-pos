@@ -50,13 +50,20 @@ export default function TreatmentsMenu() {
 
   const getPrice = (product: Product): number => {
     if (product.retail === 0) return 0
-    if (!priceList || !quote.insurance.hasActiveAuth) {
+
+    // No insurance = retail price
+    if (!quote.insurance.hasActiveAuth) {
       return product.retail
     }
-    const priceData = priceList.prices[product.id]
-    if (typeof priceData === 'number') {
-      return priceData
+
+    // First check price list (from uploaded PDF or synthesized from authorization)
+    if (priceList) {
+      const priceData = priceList.prices[product.id]
+      if (typeof priceData === 'number') {
+        return priceData
+      }
     }
+
     return product.retail
   }
 

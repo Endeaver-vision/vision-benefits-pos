@@ -5,10 +5,12 @@
  * Returns frames, lenses, contacts with pre-calculated patient copays
  * based on the customer's price list (from scanned documents).
  *
- * Price List Priority:
+ * Uses the unified insurance_authorizations table.
+ *
+ * Price List Only (NO FALLBACKS):
  * - If customer has a price list entry for product, use that price
- * - Products with NULL prices are flagged as "needsPricing" = true
- * - Falls back to real-time calculation if no price list exists
+ * - Products WITHOUT price list entries are flagged as "needsPricing" = true
+ * - PatientPriceList is the ONLY source of truth for pricing
  *
  * Location-Specific Visibility:
  * - When locationId is provided, filters products based on LocationProductSettings
@@ -18,15 +20,18 @@
 
 import { NextRequest, NextResponse } from 'next/server'
 import { prisma } from '@/lib/prisma'
-import { getActiveAuthorizationForCustomer } from '@/lib/services/authorization-service'
 import { getLocationSettings, mergeVisibilitySettings } from '@/lib/services/product-visibility'
-import {
-  calculateFramePricing,
-  calculateLensPricingByCategory,
-  calculateContactLensPricing
-} from '@/lib/services/pricing-by-category'
 
 type ProductCategory = 'frames' | 'lenses' | 'contacts' | 'all'
+
+// Type for the copays JSON structure in unified authorization table
+interface CopaysJson {
+  examCopay?: number
+  materialsCopay?: number
+  frameAllowance?: number
+  contactAllowance?: number
+  [key: string]: number | undefined
+}
 
 export async function GET(request: NextRequest) {
   try {
@@ -40,28 +45,39 @@ export async function GET(request: NextRequest) {
     const page = parseInt(searchParams.get('page') || '1')
     const includeHidden = searchParams.get('includeHidden') === 'true'
 
-    // Get customer's authorization if customerId provided
-    let authorization = null
+    // Get customer's authorization from unified table
+    let authorization: { copays: CopaysJson; frameAllowance: number | null } | null = null
     let carrier: string | null = null
 
     // Get customer's pre-calculated price list
     let priceList = new Map<string, { finalPrice: number | null; customPrice: number | null; tier: string | null }>()
 
     if (customerId) {
-      const authResult = await getActiveAuthorizationForCustomer(customerId)
-      if (authResult) {
-        authorization = authResult.authorization
-        carrier = authResult.carrier
+      const auth = await prisma.insuranceAuthorization.findFirst({
+        where: {
+          customerId,
+          isActive: true,
+        },
+        orderBy: { createdAt: 'desc' },
+      })
+
+      if (auth) {
+        carrier = auth.carrier
+        const copays = (auth.copays as CopaysJson) || {}
+        authorization = {
+          copays,
+          frameAllowance: auth.frameAllowance ? Number(auth.frameAllowance) : null,
+        }
       }
 
       // Load price list for this customer
-      const customerPrices = await prisma.customerPriceList.findMany({
+      const customerPrices = await prisma.patientPriceList.findMany({
         where: { customerId, active: true }
       })
       for (const price of customerPrices) {
         priceList.set(price.productId, {
-          finalPrice: price.customPrice ?? price.finalPrice,  // Custom price takes precedence
-          customPrice: price.customPrice,
+          finalPrice: price.finalPrice ? Number(price.finalPrice) : null,
+          customPrice: null, // Not supported in current schema
           tier: price.tier
         })
       }
@@ -92,7 +108,7 @@ export async function GET(request: NextRequest) {
 
       // Merge with location settings
       const framesWithVisibility = locationId
-        ? mergeVisibilitySettings(frames as any[], frameSettings, 'FRAME')
+        ? mergeVisibilitySettings(frames as unknown[], frameSettings, 'FRAME')
         : frames.map(f => ({ ...f, hasLocationOverride: false }))
 
       // Filter by visibility and sort
@@ -135,11 +151,11 @@ export async function GET(request: NextRequest) {
             pricingNotes = hasCustomPrice ? 'Custom price override' : undefined
           }
         } else {
-          // Fall back to real-time calculation
-          const pricing = calculateFramePricing(frame.retailPrice, authorization)
-          patientPays = pricing.patientPays
-          insurancePays = pricing.insurancePays
-          pricingNotes = pricing.notes
+          // NO FALLBACK - PatientPriceList is the only source of truth
+          patientPays = null
+          insurancePays = 0
+          needsPricing = true
+          pricingNotes = 'No price list entry - must be added to patient price list'
         }
 
         products.push({
@@ -169,7 +185,7 @@ export async function GET(request: NextRequest) {
       const lenses = await fetchLenses(search, limit * 2, page, true)
 
       const lensesWithVisibility = locationId
-        ? mergeVisibilitySettings(lenses as any[], lensSettings, 'LENS')
+        ? mergeVisibilitySettings(lenses as unknown[], lensSettings, 'LENS')
         : lenses.map(l => ({ ...l, hasLocationOverride: false }))
 
       const visibleLenses = includeHidden
@@ -183,17 +199,6 @@ export async function GET(request: NextRequest) {
       })
 
       const paginatedLenses = visibleLenses.slice(0, limit)
-
-      // Pre-fetch tier mappings from carrier_tiers table for fallback calculation
-      const lensIds = paginatedLenses.map(l => l.id)
-      const lensTierMappings = carrier ? await prisma.carrierTier.findMany({
-        where: {
-          productId: { in: lensIds },
-          productType: 'LENS_PRODUCT',
-          carrier: carrier.toUpperCase()
-        }
-      }) : []
-      const lensTierMap = new Map(lensTierMappings.map(t => [t.productId, t.tierCode]))
 
       for (const lens of paginatedLenses) {
         // Check for pre-calculated price from price list
@@ -221,18 +226,11 @@ export async function GET(request: NextRequest) {
             pricingNotes = hasCustomPrice ? 'Custom price override' : undefined
           }
         } else {
-          // Fall back to real-time calculation using carrier_tiers table
-          const tierCode = lensTierMap.get(lens.id)
-          const pricing = calculateLensPricingByCategory(
-            lens.pricingCategory,
-            lens.retailPrice,
-            authorization,
-            tierCode
-          )
-          patientPays = pricing.patientPays
-          insurancePays = pricing.insurancePays
-          tier = pricing.tier || null
-          pricingNotes = pricing.notes
+          // NO FALLBACK - PatientPriceList is the only source of truth
+          patientPays = null
+          insurancePays = 0
+          needsPricing = true
+          pricingNotes = 'No price list entry - must be added to patient price list'
         }
 
         products.push({
@@ -262,7 +260,7 @@ export async function GET(request: NextRequest) {
       const contacts = await fetchContacts(search, brand, limit * 2, page, true)
 
       const contactsWithVisibility = locationId
-        ? mergeVisibilitySettings(contacts as any[], contactSettings, 'CONTACT')
+        ? mergeVisibilitySettings(contacts as unknown[], contactSettings, 'CONTACT')
         : contacts.map(c => ({ ...c, hasLocationOverride: false }))
 
       const visibleContacts = includeHidden
@@ -303,11 +301,11 @@ export async function GET(request: NextRequest) {
             pricingNotes = hasCustomPrice ? 'Custom price override' : undefined
           }
         } else {
-          // Fall back to real-time calculation
-          const pricing = calculateContactLensPricing(contact.retailPrice, authorization)
-          patientPays = pricing.patientPays
-          insurancePays = pricing.insurancePays
-          pricingNotes = pricing.notes
+          // NO FALLBACK - PatientPriceList is the only source of truth
+          patientPays = null
+          insurancePays = 0
+          needsPricing = true
+          pricingNotes = 'No price list entry - must be added to patient price list'
         }
 
         products.push({

@@ -7,19 +7,24 @@
  * - Annual supply discount
  * - Rebates (optional)
  *
- * This replaces the client-side calculation in contact-lens-calculator.tsx
+ * Uses the unified insurance_authorizations table.
  */
 
 import { NextRequest, NextResponse } from 'next/server'
 import { prisma } from '@/lib/prisma'
-import { getActiveAuthorizationForCustomer } from '@/lib/services/authorization-service'
-import {
-  BenefitAuthorization,
-  isVspAuth,
-  isEyemedAuth,
-  isSpecteraAuth,
-} from '@/types/benefit-authorization'
 import { calculateAnnualSupplyThreshold } from '@/lib/contact-lens-utils'
+
+// Type for the copays JSON structure in unified authorization table
+interface CopaysJson {
+  contactLensAllowance?: number
+  contactsDisposable?: number
+  contactsConventional?: number
+  contactsMedicallyNecessary?: number
+  contactsSelectionDailyBiweekly?: { amount?: number }
+  contactsSelectionMonthly?: { amount?: number }
+  contactsNonSelectionAllowance?: number
+  [key: string]: unknown
+}
 
 // Annual supply discount rules (per manufacturer/modality)
 const ANNUAL_SUPPLY_DISCOUNTS: Record<string, number> = {
@@ -158,18 +163,27 @@ export async function POST(request: NextRequest) {
 
     const subtotalAfterDiscount = retailSubtotal - annualSupplyDiscount
 
-    // Get customer authorization for insurance
+    // Get customer authorization for insurance from unified table
     let insuranceAllowance = 0
     let carrier: string | null = null
     let hasInsurance = false
 
     if (useInsurance) {
-      const authResult = await getActiveAuthorizationForCustomer(customerId)
+      const auth = await prisma.insuranceAuthorization.findFirst({
+        where: {
+          customerId,
+          isActive: true,
+        },
+        orderBy: { createdAt: 'desc' },
+      })
 
-      if (authResult?.authorization) {
+      if (auth) {
         hasInsurance = true
-        carrier = authResult.carrier
-        insuranceAllowance = getContactLensAllowance(authResult.authorization)
+        carrier = auth.carrier
+        const copays = (auth.copays as CopaysJson) || {}
+        insuranceAllowance = auth.contactAllowance
+          ? Number(auth.contactAllowance)
+          : getContactLensAllowance(auth.carrier, copays)
       }
     }
 
@@ -188,7 +202,7 @@ export async function POST(request: NextRequest) {
     const costPerBox = totalBoxes > 0 ? patientTotal / totalBoxes : 0
 
     // Build breakdown for display
-    const breakdown: ContactLensPricingResult['pricing']['breakdown'] = [
+    const breakdown: NonNullable<ContactLensPricingResult['pricing']>['breakdown'] = [
       { label: `${totalBoxes} boxes @ $${pricePerBox.toFixed(2)}`, amount: retailSubtotal, type: 'addition' },
     ]
 
@@ -303,50 +317,37 @@ function getModality(lens: {
 }
 
 /**
- * Get contact lens allowance from authorization
+ * Get contact lens allowance from copays JSON based on carrier
  */
-function getContactLensAllowance(auth: BenefitAuthorization): number {
-  if (isVspAuth(auth)) {
-    // VSP: contactLensAllowance in copays
-    return auth.copays.contactLensAllowance ?? 0
+function getContactLensAllowance(carrier: string, copays: CopaysJson): number {
+  const carrierUpper = carrier.toUpperCase()
+
+  if (carrierUpper === 'VSP') {
+    return copays.contactLensAllowance ?? 0
   }
 
-  if (isEyemedAuth(auth)) {
-    // EyeMed: Has multiple contact options
-    // contactsDisposable is the most common
-    const disposable = auth.copays.contactsDisposable ?? 0
-    const conventional = auth.copays.contactsConventional ?? 0
-    const medicallyNecessary = auth.copays.contactsMedicallyNecessary ?? 0
-
-    // Return the highest available allowance
+  if (carrierUpper === 'EYEMED') {
+    // EyeMed: Has multiple contact options - return highest
+    const disposable = copays.contactsDisposable ?? 0
+    const conventional = copays.contactsConventional ?? 0
+    const medicallyNecessary = copays.contactsMedicallyNecessary ?? 0
     return Math.max(disposable, conventional, medicallyNecessary)
   }
 
-  if (isSpecteraAuth(auth)) {
-    // Spectera: Has selection and non-selection plans
-    // Selection plans have specific allowances per modality
-    // Non-selection has a flat allowance
-
-    // Try selection daily/biweekly first
-    if (auth.copays.contactsSelectionDailyBiweekly?.amount) {
-      return auth.copays.contactsSelectionDailyBiweekly.amount
+  if (carrierUpper === 'SPECTERA') {
+    // Spectera: Try selection first, then non-selection
+    if (copays.contactsSelectionDailyBiweekly?.amount) {
+      return copays.contactsSelectionDailyBiweekly.amount
     }
-
-    // Try selection monthly
-    if (auth.copays.contactsSelectionMonthly?.amount) {
-      return auth.copays.contactsSelectionMonthly.amount
+    if (copays.contactsSelectionMonthly?.amount) {
+      return copays.contactsSelectionMonthly.amount
     }
-
-    // Fall back to non-selection allowance
-    if (auth.copays.contactsNonSelectionAllowance) {
-      return auth.copays.contactsNonSelectionAllowance
+    if (copays.contactsNonSelectionAllowance) {
+      return copays.contactsNonSelectionAllowance
     }
-
-    // Medically necessary
-    if (auth.copays.contactsMedicallyNecessary) {
-      return auth.copays.contactsMedicallyNecessary
+    if (copays.contactsMedicallyNecessary) {
+      return copays.contactsMedicallyNecessary
     }
-
     return 0
   }
 

@@ -8,6 +8,9 @@ interface ProductTileProps {
   icon?: LucideIcon            // Fallback icon when no image
   name: string                 // Product name
   description?: string         // Optional subtitle
+  price?: number | null        // Patient pays price (null = show retail)
+  retailPrice?: number         // Retail price for comparison
+  showPrice?: boolean          // Whether to show price display
   isSelected?: boolean         // Selection state
   isGrouped?: boolean          // Red dotted border for grouped items
   disabled?: boolean           // Disabled state
@@ -30,12 +33,25 @@ export default function ProductTile({
   icon: Icon,
   name,
   description,
+  price,
+  retailPrice,
+  showPrice = false,
   isSelected = false,
   isGrouped = false,
   disabled = false,
   className,
   onClick,
 }: ProductTileProps) {
+  // Format price for display
+  const formatPrice = (amount: number): string => {
+    if (amount === 0) return 'Included'
+    return `$${amount.toFixed(0)}`
+  }
+
+  // Determine display price and styling
+  const displayPrice = price ?? retailPrice
+  const isIncluded = displayPrice === 0
+  const hasSavings = retailPrice !== undefined && price !== null && price !== undefined && price < retailPrice
 
   return (
     <button
@@ -77,7 +93,7 @@ export default function ProductTile({
         )}
       </div>
 
-      {/* Name at bottom - compact */}
+      {/* Name and price at bottom - compact */}
       <div className="mt-auto">
         <p className={cn(
           'font-medium text-[10px] leading-tight line-clamp-2 text-center',
@@ -85,6 +101,19 @@ export default function ProductTile({
         )}>
           {name}
         </p>
+        {showPrice && displayPrice !== undefined && (
+          <p className={cn(
+            'text-[9px] text-center mt-0.5',
+            isIncluded ? 'text-emerald-400 font-medium' : 'text-white/60'
+          )}>
+            {hasSavings && (
+              <span className="line-through text-white/30 mr-1">
+                ${retailPrice}
+              </span>
+            )}
+            {formatPrice(displayPrice)}
+          </p>
+        )}
       </div>
 
 

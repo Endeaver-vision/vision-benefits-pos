@@ -24,7 +24,6 @@ export async function POST(request: NextRequest) {
     const file = formData.get('file') as File | null
     const customerId = formData.get('customerId') as string | null
     const uploadedBy = formData.get('uploadedBy') as string | null
-    const caseId = formData.get('caseId') as string | null
 
     // Validate required fields
     if (!file) {
@@ -95,33 +94,10 @@ export async function POST(request: NextRequest) {
     const buffer = Buffer.from(bytes)
     await writeFile(filePath, buffer)
 
-    // Create or get case if caseId provided
-    let actualCaseId: string | null = null
-    if (caseId) {
-      // Check if case exists
-      const existingCase = await prisma.insuranceCase.findUnique({
-        where: { id: caseId },
-      })
-
-      if (existingCase) {
-        actualCaseId = existingCase.id
-      } else {
-        // Create new case
-        const newCase = await prisma.insuranceCase.create({
-          data: {
-            id: caseId,
-            customerId,
-          },
-        })
-        actualCaseId = newCase.id
-      }
-    }
-
     // Create document record
     const document = await prisma.insuranceDocument.create({
       data: {
         customerId,
-        caseId: actualCaseId,
         fileName: file.name,
         fileType: file.type,
         filePath: filePath,

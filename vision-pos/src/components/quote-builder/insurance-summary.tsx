@@ -142,24 +142,18 @@ export function InsuranceSummary({ customerId, className = '' }: InsuranceSummar
         <CardTitle className="flex items-center justify-between text-sm">
           <div className="flex items-center gap-2">
             <Shield className="h-4 w-4 text-blue-400" />
-            <span className="text-white">Insurance Benefits</span>
+            <span className="text-white">{summary.carrier}</span>
+            <span className="text-white/40">•</span>
+            <span className="text-white/60 text-xs font-normal">{summary.planName}</span>
           </div>
-          <Badge
-            className={`text-xs ${
-              summary.carrier === 'VSP'
-                ? 'bg-blue-500/20 text-blue-300 border-blue-400/50'
-                : summary.carrier === 'EyeMed'
-                ? 'bg-emerald-500/20 text-emerald-300 border-emerald-400/50'
-                : 'bg-purple-500/20 text-purple-300 border-purple-400/50'
-            }`}
-          >
-            {summary.carrier}
-          </Badge>
+          {summary.expirationDate && (
+            <span className="text-xs text-white/40">
+              Exp: {new Date(summary.expirationDate).toLocaleDateString()}
+            </span>
+          )}
         </CardTitle>
       </CardHeader>
-      <CardContent className="space-y-3">
-        {/* Plan Name */}
-        <div className="text-xs text-white/60">{summary.planName}</div>
+      <CardContent className="space-y-2 pt-0">
 
         {/* Declining Balance Banner */}
         {summary.benefitStructure === 'DECLINING_BALANCE' && summary.decliningBalance && (
@@ -189,37 +183,131 @@ export function InsuranceSummary({ customerId, className = '' }: InsuranceSummar
           </div>
         )}
 
-        {/* Main Copays - Only for COPAY_ALLOWANCE plans */}
+        {/* Unified Copays Section - All copays flow together */}
         {summary.benefitStructure !== 'DECLINING_BALANCE' && (
-          <div className="grid grid-cols-2 gap-2 text-sm">
-            <div className="flex items-center gap-2 p-2 bg-white/5 rounded">
-              <Eye className="h-3.5 w-3.5 text-blue-400" />
-              <div>
-                <div className="text-white/60 text-xs">Exam</div>
-                <div className="text-white font-medium">{formatCurrency(summary.copays.exam)}</div>
+          <div className="space-y-2">
+            {/* Base Benefits Row - Compact inline display */}
+            <div className="flex flex-wrap gap-x-4 gap-y-1 text-xs py-2 px-2 bg-white/5 rounded">
+              <div className="flex items-center gap-1.5">
+                <Eye className="h-3 w-3 text-blue-400" />
+                <span className="text-white/50">Exam</span>
+                <span className="text-white font-medium">{formatCurrency(summary.copays.exam)}</span>
               </div>
-            </div>
-            <div className="flex items-center gap-2 p-2 bg-white/5 rounded">
-              <DollarSign className="h-3.5 w-3.5 text-emerald-400" />
-              <div>
-                <div className="text-white/60 text-xs">Materials</div>
-                <div className="text-white font-medium">{formatCurrency(summary.copays.materials)}</div>
+              <div className="flex items-center gap-1.5">
+                <DollarSign className="h-3 w-3 text-emerald-400" />
+                <span className="text-white/50">Materials</span>
+                <span className="text-white font-medium">{formatCurrency(summary.copays.materials)}</span>
               </div>
-            </div>
-            <div className="flex items-center gap-2 p-2 bg-white/5 rounded">
-              <Glasses className="h-3.5 w-3.5 text-amber-400" />
-              <div>
-                <div className="text-white/60 text-xs">Frame Allowance</div>
-                <div className="text-white font-medium">{formatCurrency(summary.copays.frameAllowance)}</div>
+              <div className="flex items-center gap-1.5">
+                <Glasses className="h-3 w-3 text-amber-400" />
+                <span className="text-white/50">Frame</span>
+                <span className="text-white font-medium">{formatCurrency(summary.copays.frameAllowance)}</span>
               </div>
-            </div>
-            <div className="flex items-center gap-2 p-2 bg-white/5 rounded">
-              <Contact className="h-3.5 w-3.5 text-purple-400" />
-              <div>
-                <div className="text-white/60 text-xs">Contact Allowance</div>
-                <div className="text-white font-medium">{formatCurrency(summary.copays.contactAllowance)}</div>
+              <div className="flex items-center gap-1.5">
+                <Contact className="h-3 w-3 text-purple-400" />
+                <span className="text-white/50">CL</span>
+                <span className="text-white font-medium">{formatCurrency(summary.copays.contactAllowance)}</span>
               </div>
+              {summary.copays.contactFitting !== null && (
+                <div className="flex items-center gap-1.5">
+                  <span className="text-white/50">CL Fit</span>
+                  <span className="text-white font-medium">{formatCurrency(summary.copays.contactFitting)}</span>
+                </div>
+              )}
             </div>
+
+            {/* Product Copays - Flows directly from base copays */}
+            {summary.tierCopays.length > 0 && (
+              <>
+                {/* Expandable header - subtle, not a separate section */}
+                <button
+                  onClick={() => setExpanded(!expanded)}
+                  className="w-full flex items-center justify-between text-xs text-white/50 hover:text-white/70 px-2"
+                >
+                  <span>Product copays</span>
+                  <div className="flex items-center gap-1">
+                    <span>{summary.tierCopays.length}</span>
+                    {expanded ? <ChevronUp className="h-3 w-3" /> : <ChevronDown className="h-3 w-3" />}
+                  </div>
+                </button>
+
+                {expanded && (
+                  <div className="space-y-1.5">
+                    {/* Progressive Lenses */}
+                    {progressiveTiers.length > 0 && (
+                      <div className="px-2">
+                        <div className="text-[10px] text-white/30 uppercase tracking-wider mb-0.5">Progressives</div>
+                        <div className="grid grid-cols-1 gap-0.5">
+                          {progressiveTiers.map(tier => (
+                            <div
+                              key={tier.code}
+                              className="flex items-center justify-between py-0.5 text-xs"
+                            >
+                              <span className="text-white/60 truncate mr-2">{tier.description}</span>
+                              <span className="text-emerald-400 font-medium whitespace-nowrap">{formatCurrency(tier.copay)}</span>
+                            </div>
+                          ))}
+                        </div>
+                      </div>
+                    )}
+
+                    {/* AR Coatings */}
+                    {arTiers.length > 0 && (
+                      <div className="px-2">
+                        <div className="text-[10px] text-white/30 uppercase tracking-wider mb-0.5">AR Coatings</div>
+                        <div className="grid grid-cols-1 gap-0.5">
+                          {arTiers.map(tier => (
+                            <div
+                              key={tier.code}
+                              className="flex items-center justify-between py-0.5 text-xs"
+                            >
+                              <span className="text-white/60 truncate mr-2">{tier.description}</span>
+                              <span className="text-emerald-400 font-medium whitespace-nowrap">{formatCurrency(tier.copay)}</span>
+                            </div>
+                          ))}
+                        </div>
+                      </div>
+                    )}
+
+                    {/* Material Tiers */}
+                    {materialTiers.length > 0 && (
+                      <div className="px-2">
+                        <div className="text-[10px] text-white/30 uppercase tracking-wider mb-0.5">Materials</div>
+                        <div className="grid grid-cols-2 gap-x-4 gap-y-0.5">
+                          {materialTiers.map(tier => (
+                            <div
+                              key={tier.code}
+                              className="flex items-center justify-between py-0.5 text-xs"
+                            >
+                              <span className="text-white/60">{tier.description}</span>
+                              <span className="text-emerald-400 font-medium">{formatCurrency(tier.copay)}</span>
+                            </div>
+                          ))}
+                        </div>
+                      </div>
+                    )}
+
+                    {/* Enhancements */}
+                    {otherTiers.length > 0 && (
+                      <div className="px-2">
+                        <div className="text-[10px] text-white/30 uppercase tracking-wider mb-0.5">Enhancements</div>
+                        <div className="grid grid-cols-2 gap-x-4 gap-y-0.5">
+                          {otherTiers.map(tier => (
+                            <div
+                              key={tier.code}
+                              className="flex items-center justify-between py-0.5 text-xs"
+                            >
+                              <span className="text-white/60">{tier.description}</span>
+                              <span className="text-emerald-400 font-medium">{formatCurrency(tier.copay)}</span>
+                            </div>
+                          ))}
+                        </div>
+                      </div>
+                    )}
+                  </div>
+                )}
+              </>
+            )}
           </div>
         )}
 
@@ -232,122 +320,6 @@ export function InsuranceSummary({ customerId, className = '' }: InsuranceSummar
               <div className="text-white font-medium">{formatCurrency(summary.copays.exam)}</div>
             </div>
           </div>
-        )}
-
-        {/* CL Fitting */}
-        {summary.copays.contactFitting !== null && (
-          <div className="flex items-center justify-between p-2 bg-white/5 rounded text-sm">
-            <span className="text-white/60">CL Fitting Copay</span>
-            <span className="text-white font-medium">{formatCurrency(summary.copays.contactFitting)}</span>
-          </div>
-        )}
-
-        {/* Expiration */}
-        {summary.expirationDate && (
-          <div className="text-xs text-white/40 text-center">
-            Expires: {new Date(summary.expirationDate).toLocaleDateString()}
-          </div>
-        )}
-
-        {/* Details Button - Only for copay-based plans */}
-        {summary.benefitStructure !== 'DECLINING_BALANCE' && summary.tierCopays.length > 0 && (
-          <>
-            <Button
-              variant="ghost"
-              size="sm"
-              onClick={() => setExpanded(!expanded)}
-              className="w-full text-xs text-white/60 hover:text-white hover:bg-white/10"
-            >
-              {expanded ? (
-                <>
-                  <ChevronUp className="h-3 w-3 mr-1" />
-                  Hide Tier Details
-                </>
-              ) : (
-                <>
-                  <ChevronDown className="h-3 w-3 mr-1" />
-                  Show Tier Details ({summary.tierCopays.length})
-                </>
-              )}
-            </Button>
-
-            {/* Expanded Tier Details */}
-            {expanded && (
-              <div className="space-y-3 pt-2 border-t border-white/10">
-                {/* Progressive Lenses - show product names */}
-                {progressiveTiers.length > 0 && (
-                  <div>
-                    <div className="text-xs text-white/50 mb-1 font-medium">Progressive Lenses</div>
-                    <div className="grid grid-cols-1 gap-1">
-                      {progressiveTiers.map(tier => (
-                        <div
-                          key={tier.code}
-                          className="flex items-center justify-between p-1.5 bg-white/5 rounded text-xs"
-                        >
-                          <span className="text-white/70 truncate mr-2">{tier.description}</span>
-                          <span className="text-white font-medium whitespace-nowrap">{formatCurrency(tier.copay)}</span>
-                        </div>
-                      ))}
-                    </div>
-                  </div>
-                )}
-
-                {/* AR Coatings - show product names */}
-                {arTiers.length > 0 && (
-                  <div>
-                    <div className="text-xs text-white/50 mb-1 font-medium">AR Coatings</div>
-                    <div className="grid grid-cols-1 gap-1">
-                      {arTiers.map(tier => (
-                        <div
-                          key={tier.code}
-                          className="flex items-center justify-between p-1.5 bg-white/5 rounded text-xs"
-                        >
-                          <span className="text-white/70 truncate mr-2">{tier.description}</span>
-                          <span className="text-white font-medium whitespace-nowrap">{formatCurrency(tier.copay)}</span>
-                        </div>
-                      ))}
-                    </div>
-                  </div>
-                )}
-
-                {/* Material Tiers */}
-                {materialTiers.length > 0 && (
-                  <div>
-                    <div className="text-xs text-white/50 mb-1 font-medium">Materials</div>
-                    <div className="grid grid-cols-2 gap-1">
-                      {materialTiers.map(tier => (
-                        <div
-                          key={tier.code}
-                          className="flex items-center justify-between p-1.5 bg-white/5 rounded text-xs"
-                        >
-                          <span className="text-white/70">{tier.description}</span>
-                          <span className="text-white font-medium">{formatCurrency(tier.copay)}</span>
-                        </div>
-                      ))}
-                    </div>
-                  </div>
-                )}
-
-                {/* Other Tiers */}
-                {otherTiers.length > 0 && (
-                  <div>
-                    <div className="text-xs text-white/50 mb-1 font-medium">Enhancements</div>
-                    <div className="grid grid-cols-2 gap-1">
-                      {otherTiers.map(tier => (
-                        <div
-                          key={tier.code}
-                          className="flex items-center justify-between p-1.5 bg-white/5 rounded text-xs"
-                        >
-                          <span className="text-white/70">{tier.description}</span>
-                          <span className="text-white font-medium">{formatCurrency(tier.copay)}</span>
-                        </div>
-                      ))}
-                    </div>
-                  </div>
-                )}
-              </div>
-            )}
-          </>
         )}
       </CardContent>
     </Card>

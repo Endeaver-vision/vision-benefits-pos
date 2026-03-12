@@ -1,0 +1,300 @@
+{
+  "version": "1.0",
+  "total_patterns": 209,
+  "total_categories": 42,
+  "categories": {
+    "ADDITIONAL_GLASSES": [
+      "Glasses Allowance^ 40% off retail price less $100 allowance"
+    ],
+    "ALL_OTHER_LENS_OPTIONS": [
+      "All Other Lens Options 20% off retail price",
+      "All Other Lens Options 30% off retail price",
+      "All other Lens Options 20% off retail price"
+    ],
+    "AR_PREMIUM_NO_TIER": [
+      "Anti Reflective Coating - Premium 20% off retail price",
+      "Anti Reflective Coating - Premium 30% off retail price"
+    ],
+    "AR_STANDARD": [
+      "Anti Reflective Coating $45",
+      "Anti Reflective Coating - Standard $0 copay",
+      "Anti Reflective Coating - Standard $25",
+      "Anti Reflective Coating - Standard $35 copay",
+      "Anti Reflective Coating - Standard $40",
+      "Anti Reflective Coating - Standard $45",
+      "Anti Reflective Coating - Standard $45 copay"
+    ],
+    "AR_TIER_1": [
+      "Anti Reflective Coating - Premium Tier 1 $12 copay",
+      "Anti Reflective Coating - Premium Tier 1 $25",
+      "Anti Reflective Coating - Premium Tier 1 $47 copay",
+      "Anti Reflective Coating - Premium Tier 1 $57",
+      "Anti Reflective Coating - Premium Tier 1 $57 copay"
+    ],
+    "AR_TIER_2": [
+      "Anti Reflective Coating - Premium Tier 2 $23 copay",
+      "Anti Reflective Coating - Premium Tier 2 $58 copay",
+      "Anti Reflective Coating - Premium Tier 2 $68",
+      "Anti Reflective Coating - Premium Tier 2 $68 copay"
+    ],
+    "AR_TIER_3": [
+      "Anti Reflective Coating - Premium Tier 3 $100 copay",
+      "Anti Reflective Coating - Premium Tier 3 $85 copay",
+      "Anti Reflective Coating - Premium Tier 3 20% off retail price"
+    ],
+    "BIFOCAL": [
+      "Bifocal $0 copay",
+      "Bifocal $10 copay",
+      "Bifocal $15 copay",
+      "Bifocal $20 copay",
+      "Bifocal $25 copay",
+      "Bifocal $60",
+      "Bifocal $70",
+      "Bifocal $75",
+      "Bifocal - Blended 20% off retail price"
+    ],
+    "BLUE_LIGHT": [
+      "Blue Light - under age 19 $0 copay"
+    ],
+    "CONTACTS_ANNUAL_SUPPLY": [
+      "Contacts - Annual Supply $0 copay; 100% of balance over $200 allowance"
+    ],
+    "CONTACTS_CONVENTIONAL": [
+      "Contacts - Conventional $0 copay; 15% off balance over $100 allowance",
+      "Contacts - Conventional $0 copay; 15% off balance over $120 allowance",
+      "Contacts - Conventional $0 copay; 15% off balance over $125 allowance",
+      "Contacts - Conventional $0 copay; 15% off balance over $130 allowance",
+      "Contacts - Conventional $0 copay; 15% off balance over $150 allowance",
+      "Contacts - Conventional $0 copay; 15% off balance over $200 allowance",
+      "Contacts - Conventional $0 copay; 15% off balance over $250 allowance",
+      "Contacts - Conventional - age 19 and over $0 copay; 15% off balance over $200 allowance",
+      "Contacts - Conventional - under age 19 $0 copay; 15% off balance over $200 allowance",
+      "Contacts - Conventional 100% of amount over remaining balance",
+      "Contacts - Conventional 15% off retail price",
+      "Contacts - Conventional 85% of retail price applied to remaining balance"
+    ],
+    "CONTACTS_DISPOSABLE": [
+      "Contacts - Disposable $0 copay; 100% of balance over $100 allowance",
+      "Contacts - Disposable $0 copay; 100% of balance over $120 allowance",
+      "Contacts - Disposable $0 copay; 100% of balance over $125 allowance",
+      "Contacts - Disposable $0 copay; 100% of balance over $130 allowance",
+      "Contacts - Disposable $0 copay; 100% of balance over $150 allowance",
+      "Contacts - Disposable $0 copay; 100% of balance over $200 allowance",
+      "Contacts - Disposable $0 copay; 100% of balance over $250 allowance",
+      "Contacts - Disposable - age 19 and over $0 copay; 100% of balance over $200 allowance",
+      "Contacts - Disposable 100% of amount over remaining balance",
+      "Contacts - Disposable 100% of retail price",
+      "Contacts - Disposable 100% of retail price applied to remaining balance"
+    ],
+    "CONTACTS_MEDICALLY_NECESSARY": [
+      "Contacts - Medically Necessary $0 copay",
+      "Contacts - Therapeutic (Medically Necessary) $0 copay"
+    ],
+    "CONTACT_LENS_FIT_PREMIUM": [
+      "Contact Lens Fit and Follow Premium 10% off retail price",
+      "Fit and Follow-up - Premium $0 copay; 10% off retail price less $40 allowance",
+      "Fit and Follow-up - Premium $0 copay; 10% off retail price less $55 allowance",
+      "Fit and Follow-up - Premium $40 copay; 10% off retail price less $55 allowance",
+      "Fit and Follow-up - Premium 10% off retail price",
+      "Fit and Follow-up - Premium 90% of retail price applied to remaining balance"
+    ],
+    "CONTACT_LENS_FIT_STANDARD": [
+      "Contact Lens Fit and Follow Standard $40",
+      "Fit and Follow-up - Standard $0 copay",
+      "Fit and Follow-up - Standard $40 applied to remaining balance",
+      "Fit and Follow-up - Standard $40 copay",
+      "Fit and Follow-up - Standard Up to $40"
+    ],
+    "DECLINING_BALANCE": [
+      "Contact Lenses and Contacts Fit and Follow Up $130",
+      "Contact Lenses and Contacts Fit and Follow Up $150",
+      "Contacts only $150"
+    ],
+    "EDGE_POLISH": [
+      "Edge Polish $14"
+    ],
+    "EXAM": [
+      "Exam $0 copay",
+      "Exam $10 copay",
+      "Exam $5 copay",
+      "Exam - age 19 and over $0 copay",
+      "Exam - under age 19 $0 copay"
+    ],
+    "FRAME": [
+      "Frame $0 copay; 20% off balance over $120 allowance",
+      "Frame $0 copay; 20% off balance over $130 allowance",
+      "Frame $0 copay; 20% off balance over $150 allowance",
+      "Frame $0 copay; 20% off balance over $160 allowance",
+      "Frame $0 copay; 20% off balance over $180 allowance",
+      "Frame $0 copay; 20% off balance over $200 allowance",
+      "Frame $0 copay; 20% off balance over $230 allowance",
+      "Frame $0 copay; 20% off balance over $250 allowance",
+      "Frame - Retail $0 copay; 20% off balance over $130 allowance",
+      "Frame - Retail $0 copay; 20% off balance over $250 allowance",
+      "Frame 35% off retail price",
+      "Frame 40% off retail price"
+    ],
+    "GLASS": [
+      "Glass $0 copay"
+    ],
+    "HIGH_INDEX": [
+      "High Index $95"
+    ],
+    "LENTICULAR": [
+      "Lenticular $0 copay",
+      "Lenticular $10 copay",
+      "Lenticular $15 copay",
+      "Lenticular $20 copay",
+      "Lenticular $25 copay",
+      "Lenticular 20% off retail price",
+      "Lenticular Single Vision 30% off retail price"
+    ],
+    "LOW_VISION": [
+      "Low Vision Aids 25% Copay up to $1,000 Allowance",
+      "Low Vision Supp Testing/Exam $0 copay"
+    ],
+    "MID_INDEX": [
+      "Mid Index $55"
+    ],
+    "OVERSIZE": [
+      "Oversize Lens $0 copay",
+      "Oversize Lens $14"
+    ],
+    "PHOTOCHROMIC": [
+      "Photochromic - Non-Glass $0 copay",
+      "Photochromic - Non-Glass $65 copay",
+      "Photochromic - Non-Glass $75"
+    ],
+    "POLARIZED": [
+      "Polarized $66",
+      "Polarized $75 copay"
+    ],
+    "POLYCARBONATE": [
+      "Polycarbonate $40",
+      "Polycarbonate - Standard $0 copay",
+      "Polycarbonate - Standard $20 copay",
+      "Polycarbonate - Standard $30 copay",
+      "Polycarbonate - Standard $35",
+      "Polycarbonate - Standard $40",
+      "Polycarbonate - Standard - age 19 and over $20",
+      "Polycarbonate - Standard - age 19 and over $40",
+      "Polycarbonate - Standard - under age 19 $0",
+      "Polycarbonate - Standard - under age 19 $0 copay"
+    ],
+    "PRISM": [
+      "Prism $0 copay"
+    ],
+    "PROGRESSIVE_PREMIUM_NO_TIER": [
+      "Progressive - Premium $0 copay",
+      "Progressive - Premium $20 copay",
+      "Progressive - Premium $25 copay; 20% off retail price less $120 allowance",
+      "Progressive - Premium 20% off retail price",
+      "Progressive - Premium 30% off retail price"
+    ],
+    "PROGRESSIVE_STANDARD": [
+      "Progressive - Standard $10 copay",
+      "Progressive - Standard $125",
+      "Progressive - Standard $135",
+      "Progressive - Standard $15 copay",
+      "Progressive - Standard $20 copay",
+      "Progressive - Standard $25 copay",
+      "Progressive - Standard $30 copay",
+      "Progressive - Standard $65 copay",
+      "Progressive - Standard $70 copay",
+      "Progressive - Standard $75 copay",
+      "Progressive - Standard $80 copay",
+      "Progressive - Standard $85 copay",
+      "Progressive - Standard $90 copay"
+    ],
+    "PROGRESSIVE_TIER_1": [
+      "Progressive - Premium Tier 1 $100",
+      "Progressive - Premium Tier 1 $100 copay",
+      "Progressive - Premium Tier 1 $105 copay",
+      "Progressive - Premium Tier 1 $110 copay",
+      "Progressive - Premium Tier 1 $30 copay",
+      "Progressive - Premium Tier 1 $35 copay",
+      "Progressive - Premium Tier 1 $85 copay",
+      "Progressive - Premium Tier 1 $95 copay"
+    ],
+    "PROGRESSIVE_TIER_2": [
+      "Progressive - Premium Tier 2 $105 copay",
+      "Progressive - Premium Tier 2 $110",
+      "Progressive - Premium Tier 2 $110 copay",
+      "Progressive - Premium Tier 2 $115 copay",
+      "Progressive - Premium Tier 2 $120 copay",
+      "Progressive - Premium Tier 2 $40 copay",
+      "Progressive - Premium Tier 2 $45 copay",
+      "Progressive - Premium Tier 2 $95 copay"
+    ],
+    "PROGRESSIVE_TIER_3": [
+      "Progressive - Premium Tier 3 $110 copay",
+      "Progressive - Premium Tier 3 $120 copay",
+      "Progressive - Premium Tier 3 $125",
+      "Progressive - Premium Tier 3 $125 copay",
+      "Progressive - Premium Tier 3 $130 copay",
+      "Progressive - Premium Tier 3 $135 copay",
+      "Progressive - Premium Tier 3 $55 copay",
+      "Progressive - Premium Tier 3 $60 copay"
+    ],
+    "PROGRESSIVE_TIER_4_FLAT": [
+      "Progressive - Premium Tier 4 $185 copay",
+      "Progressive - Premium Tier 4 $190 copay"
+    ],
+    "PROGRESSIVE_TIER_4_WITH_FORMULA": [
+      "Progressive - Premium Tier 4 $15 copay; 20% off retail price less $120 allowance",
+      "Progressive - Premium Tier 4 $25 copay; 20% off retail price less $120 allowance",
+      "Progressive - Premium Tier 4 $65 copay; 20% off retail price less $120 allowance",
+      "Progressive - Premium Tier 4 $75 copay; 20% off retail price less $120 allowance",
+      "Progressive - Premium Tier 4 $80 copay; 20% off retail price less $120 allowance",
+      "Progressive - Premium Tier 4 $85 copay; 20% off retail price less $120 allowance",
+      "Progressive - Premium Tier 4 $90 copay; 20% off retail price less $120 allowance",
+      "Progressive - Premium Tier 4 $90; 20% off retail price less $120 allowance",
+      "Progressive - Premium Tier 4 - age 19 and over $90 copay; 20% off retail price less $120 allowance",
+      "Progressive - Premium Tier 4 - under age 19 $90 copay; 20% off retail price less $120 allowance"
+    ],
+    "RETINAL_IMAGING": [
+      "Retinal Imaging $0 copay",
+      "Retinal Imaging Up to $39"
+    ],
+    "SCRATCH": [
+      "Scratch Coating $15",
+      "Scratch Coating - Standard Plastic $0",
+      "Scratch Coating - Standard Plastic $0 copay",
+      "Scratch Coating - Standard Plastic $12",
+      "Scratch Coating - Standard Plastic $15"
+    ],
+    "SINGLE_VISION": [
+      "Single Vision $0 copay",
+      "Single Vision $10 copay",
+      "Single Vision $15 copay",
+      "Single Vision $20 copay",
+      "Single Vision $25 copay",
+      "Single Vision $40",
+      "Single Vision $50",
+      "Single Vision $55"
+    ],
+    "TINT": [
+      "Tint - Solid and Gradient $0",
+      "Tint - Solid and Gradient $0 copay",
+      "Tint - Solid and Gradient $12",
+      "Tint - Solid and Gradient $15"
+    ],
+    "TRIFOCAL": [
+      "Trifocal $0 copay",
+      "Trifocal $10 copay",
+      "Trifocal $105",
+      "Trifocal $15 copay",
+      "Trifocal $20 copay",
+      "Trifocal $25 copay",
+      "Trifocal $80",
+      "Trifocal $85"
+    ],
+    "UV": [
+      "UV Treatment $0",
+      "UV Treatment $0 copay",
+      "UV Treatment $12",
+      "UV Treatment $15",
+      "UV Treatment $16"
+    ]
+  }
+}

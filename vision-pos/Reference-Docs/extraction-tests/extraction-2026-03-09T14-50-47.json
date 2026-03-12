@@ -1,0 +1,374 @@
+{
+  "authFile": "TC_vspauth.pdf",
+  "enhancementFile": "TC_vsplens1.pdf",
+  "authData": {
+    "document_type": "auth_form",
+    "patient_name": "TAMARA L CARR",
+    "patient_dob": "01/26/1968",
+    "member_name": "BRIAN C CARR",
+    "relationship": "Spouse",
+    "authorization_number": "79325076",
+    "auth_effective_date": "10/03/2025",
+    "auth_expiration_date": "11/02/2025",
+    "plan_type": "choice",
+    "client_name": "ANR0499FLX01",
+    "network": "Choice",
+    "lab_use": "Must use plan designated contract laboratory.",
+    "eligibility": {
+      "exam": true,
+      "lens": true,
+      "frame": true,
+      "contact_lens_exam": true,
+      "contacts": true
+    },
+    "exam_copay": 10,
+    "material_copay": 25,
+    "routine_retinal_screening": "lesser of $39.00 or U&C",
+    "frame_allowance": {
+      "wfa_code": "WFA134",
+      "altair_amount": 220,
+      "non_altair_amount": 350,
+      "frame_overage_discount": 0.2,
+      "easyoptions_wfa_code": null,
+      "easyoptions_amount": null
+    },
+    "contact_lens_pattern": "separate",
+    "cl_exam_copay": 60,
+    "cl_exam_percentage": 0.85,
+    "cl_materials_allowance": 200,
+    "cl_combined_allowance": null,
+    "cl_combined_discount": null,
+    "cl_exam_only_responsibility": null,
+    "cl_easyoptions_allowance": 300,
+    "necessary_cl_copay": 25,
+    "contacts_instead_of": [
+      "lens",
+      "frame"
+    ],
+    "contacts_frame_next_available": null,
+    "has_easyoptions": true,
+    "easyoptions": {
+      "contact_lens_upgrade": 300,
+      "frame_upgrade": 350,
+      "photochromic_upgrade": "covered",
+      "progressive_upgrade": "covered",
+      "ar_upgrade": "covered"
+    },
+    "flags": {
+      "has_emc": true,
+      "emc_type": "diabetic_eyecare_plus",
+      "emc_exam_copay": 20,
+      "is_computer_visioncare": false,
+      "computer_rx_requirement": null,
+      "has_post_laser": false,
+      "has_low_vision": true,
+      "has_vision_therapy": false,
+      "has_cob_restriction": false,
+      "cob_rule": null,
+      "value_added_benefits": {
+        "same_day_discount": null,
+        "same_day_40_discount": null,
+        "within_12_months_discount": 0.2,
+        "within_12_months_40_discount": null,
+        "cl_exam_discount": 0.15
+      }
+    },
+    "eye_health_conditions": {
+      "reported_conditions": [],
+      "systemic_checked": [],
+      "ocular_checked": [],
+      "dilation_performed": false,
+      "pcp_communication": false
+    },
+    "lens_enhancement_summary": {
+      "covered": [
+        "Solid Tints and Plastic Dyes (Pink I & II)",
+        "Standard Progressives",
+        "Aspheric (plastic & digital)",
+        "Blended Bifocal",
+        "Edge Treatments",
+        "Glass Color Coatings",
+        "Mirror/Ski Type Coating",
+        "Near Variable Focus",
+        "Oversize Lenses",
+        "Plastic Dyes (Gradient)",
+        "Plastic Dyes (Solid color except Pink I & II)",
+        "Polarized",
+        "Polycarbonate",
+        "Rimless Drill",
+        "Scratch Resistant Coatings",
+        "UV Protection"
+      ],
+      "covered_with_copay": [
+        "Anti-Reflective Coatings",
+        "Custom Progressives (includes Custom Measurements)",
+        "Photochromics",
+        "Premium Progressives",
+        "High Index",
+        "Light Filter"
+      ],
+      "not_covered": []
+    }
+  },
+  "enhancementData": {
+    "document_type": "enhancement_form",
+    "authorization_number": "79325076",
+    "patient_name": "CARR, TAMARA",
+    "progressives": {
+      "K_standard": 0,
+      "J_premium": 95,
+      "F_premium_adv": 105,
+      "O_custom": 150,
+      "N_custom": 175
+    },
+    "single_vision_base": 0,
+    "materials": {
+      "polycarbonate_sv": 35,
+      "polycarbonate_multi": 35,
+      "trivex_sv": 56,
+      "trivex_multi": 60,
+      "hi_index_167_sv": 83,
+      "hi_index_167_multi": 98,
+      "hi_index_174_sv": 111,
+      "hi_index_174_multi": 118
+    },
+    "lens_matrix": {
+      "SV_plastic": 0,
+      "SV_poly": 35,
+      "SV_trivex": 56,
+      "SV_hi167": 83,
+      "SV_hi174": 111,
+      "KA": 0,
+      "KD": 35,
+      "KB": 47,
+      "KH": 78,
+      "KJ": 125,
+      "JA": 95,
+      "JD": 35,
+      "JB": 47,
+      "JH": 78,
+      "JJ": 125,
+      "FA": 105,
+      "FD": 35,
+      "FB": 47,
+      "FH": 78,
+      "FJ": 125,
+      "OA": 150,
+      "OD": 35,
+      "OB": 47,
+      "OH": 78,
+      "OJ": 125,
+      "NA": 175,
+      "ND": 35,
+      "NB": 47,
+      "NH": 78,
+      "NJ": 125
+    },
+    "ar_coatings": {
+      "QM_standard": 41,
+      "QT_premium_1": 68,
+      "QV_premium_2": 85
+    },
+    "photochromics": {
+      "PR_plastic": 75,
+      "PM_glass": 33
+    },
+    "polarized": {
+      "DA_sv": 57,
+      "DA_multi": 77,
+      "KP": 82,
+      "JP": 82,
+      "FP": 82,
+      "NP": 82,
+      "OP": 82
+    },
+    "tints": {
+      "MN_plastic_sv": 15,
+      "MN_plastic_multi": 15,
+      "MP_gradient_sv": 17,
+      "MP_gradient_multi": 17
+    },
+    "misc": {
+      "SP_edge_polish": 16,
+      "SQ_edge_coating": 36,
+      "SW_rimless": 30,
+      "LF_light_filter": 15,
+      "TA_tech_addon": 10,
+      "IA_near_variable": 50,
+      "RM_oversize_plastic": 11,
+      "RN_oversize_glass": 13,
+      "AA_aspheric": 31,
+      "BA_digital_aspheric": 45,
+      "CM_custom_measurement": 10
+    },
+    "coverage_status": {
+      "progressives_covered": true,
+      "ar_covered": true,
+      "photochromics_covered": true,
+      "photochromics_not_covered": false,
+      "polarized_not_covered": false
+    }
+  },
+  "merged": {
+    "patientInfo": {
+      "name": "TAMARA L CARR",
+      "dob": "01/26/1968",
+      "authNumber": "79325076",
+      "effectiveDate": "10/03/2025",
+      "expirationDate": "11/02/2025",
+      "memberName": "BRIAN C CARR",
+      "relationship": "Spouse"
+    },
+    "planInfo": {
+      "planType": "choice",
+      "clientName": "ANR0499FLX01",
+      "network": "Choice",
+      "labUse": "Must use plan designated contract laboratory."
+    },
+    "eligibility": {
+      "exam": true,
+      "lens": true,
+      "frame": true,
+      "contact_lens_exam": true,
+      "contacts": true
+    },
+    "copays": {
+      "exam": 10,
+      "material": 25,
+      "retinalScreening": null
+    },
+    "frameAllowance": {
+      "wfaCode": "WFA134",
+      "amount": 350,
+      "altairAmount": 220,
+      "overageDiscount": 0.2,
+      "easyOptionsAmount": null
+    },
+    "contactLens": {
+      "pattern": "separate",
+      "examCopay": 60,
+      "examPercentage": 0.85,
+      "materialsAllowance": 200,
+      "combinedAllowance": null,
+      "combinedDiscount": null,
+      "examOnlyResponsibility": null,
+      "easyOptionsAllowance": 300,
+      "necessaryCopay": 25,
+      "insteadOf": [
+        "lens",
+        "frame"
+      ],
+      "frameNextAvailable": null
+    },
+    "easyOptions": {
+      "enabled": true,
+      "contactLensUpgrade": 300,
+      "frameUpgrade": 350,
+      "photochromicCovered": true,
+      "progressiveCovered": true,
+      "arCovered": true
+    },
+    "flags": {
+      "hasEmc": true,
+      "emcType": "diabetic_eyecare_plus",
+      "emcExamCopay": 20,
+      "isComputerVisioncare": false,
+      "computerRxRequirement": null,
+      "hasPostLaser": false,
+      "hasLowVision": true,
+      "hasVisionTherapy": false,
+      "hasCobRestriction": false,
+      "cobRule": null,
+      "valueAddedBenefits": {
+        "sameDayDiscount": null,
+        "sameDay40Discount": null,
+        "within12MonthsDiscount": 0.2,
+        "within12Months40Discount": null,
+        "clExamDiscount": 0.15
+      }
+    },
+    "eyeHealthConditions": {
+      "reportedConditions": [],
+      "systemicChecked": [],
+      "ocularChecked": [],
+      "dilationPerformed": false,
+      "pcpCommunication": false
+    },
+    "lensMatrix": {
+      "SV_plastic": 0,
+      "SV_poly": 35,
+      "SV_trivex": 56,
+      "SV_hi167": 83,
+      "SV_hi174": 111,
+      "KA": 0,
+      "KD": 35,
+      "KB": 47,
+      "KH": 78,
+      "KJ": 125,
+      "JA": 95,
+      "JD": 35,
+      "JB": 47,
+      "JH": 78,
+      "JJ": 125,
+      "FA": 105,
+      "FD": 35,
+      "FB": 47,
+      "FH": 78,
+      "FJ": 125,
+      "OA": 150,
+      "OD": 35,
+      "OB": 47,
+      "OH": 78,
+      "OJ": 125,
+      "NA": 175,
+      "ND": 35,
+      "NB": 47,
+      "NH": 78,
+      "NJ": 125
+    },
+    "arCoatings": {
+      "QM": 41,
+      "QT": 68,
+      "QV": 85
+    },
+    "enhancements": {
+      "PR": 75,
+      "DA": 57,
+      "LF": 15,
+      "SP": 16,
+      "SW": 30,
+      "MN": 15,
+      "TA": 10,
+      "IA": 50,
+      "CM": 10
+    },
+    "polarizedProgressives": {
+      "KP": 82,
+      "JP": 82,
+      "FP": 82,
+      "NP": 82,
+      "OP": 82
+    },
+    "coverageStatus": {
+      "progressivesCovered": true,
+      "arCovered": true,
+      "photochromicsCovered": true,
+      "photochromicsNotCovered": false,
+      "polarizedNotCovered": false
+    }
+  },
+  "validation": {
+    "valid": true,
+    "errors": []
+  },
+  "usage": {
+    "authForm": {
+      "input": 5564,
+      "output": 1118
+    },
+    "enhancement": {
+      "input": 4637,
+      "output": 951
+    }
+  }
+}

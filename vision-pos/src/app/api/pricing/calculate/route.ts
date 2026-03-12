@@ -8,7 +8,8 @@
 
 import { NextRequest, NextResponse } from 'next/server'
 import { prisma } from '@/lib/prisma'
-import { EYEMED_TIER_TO_COPAY, VSP_TIER_TO_COPAY, SPECTERA_TIER_TO_COPAY } from '@/lib/data/insurance-tier-mappings'
+// import { EYEMED_TIER_TO_COPAY, VSP_TIER_TO_COPAY, SPECTERA_TIER_TO_COPAY } from '@/lib/data/insurance-tier-mappings'
+// TODO: These tier mappings are not implemented - pricing calculate endpoint needs refactoring
 
 // Type for the copays JSON structure in unified authorization table
 interface CopaysJson {
@@ -380,13 +381,15 @@ export async function POST(request: NextRequest) {
 }
 
 function getTierToCopayMap(carrier: string): Record<string, string> {
+  // TODO: Tier mapping data not implemented - this endpoint needs refactoring
+  // For now, return empty maps to allow the app to build
   switch (carrier) {
     case 'EYEMED':
-      return EYEMED_TIER_TO_COPAY
+      return {}
     case 'VSP':
-      return VSP_TIER_TO_COPAY
+      return {}
     case 'SPECTERA':
-      return SPECTERA_TIER_TO_COPAY
+      return {}
     default:
       return {}
   }

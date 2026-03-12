@@ -1,0 +1,136 @@
+{
+  "export_date": "2026-01-15T20:35:00Z",
+  "version": 2,
+  "summary": {
+    "total_patients": 6,
+    "carriers": ["EYEMED"],
+    "pricing_methods_explained": {
+      "by_tier": "Explicit copay from authorization (e.g., copay_in_auth: 35 -> patient pays $35)",
+      "ins_discount": "Insurance-defined discount (e.g., DISCOUNT_30 -> patient pays 70% of retail)",
+      "cash_only": "Not covered by insurance - full retail price",
+      "uc_discount": "Fallback 20% discount when no copay data available (needs_review: true)"
+    },
+    "pricing_method_counts": {
+      "by_tier": 82,
+      "ins_discount": 78,
+      "cash_only": 66,
+      "uc_discount": 20
+    }
+  },
+  "fixes_applied_this_session": [
+    "1. Fixed DISCOUNT_XX string handling - now correctly calculates patient pays percentage",
+    "2. Fixed AR coating tier codes (ar_tier_2/ar_tier_3 instead of tier_2/tier_3)",
+    "3. Added allOtherLensOptions fallback for products without specific copays"
+  ],
+  "remaining_uc_discount_cases": {
+    "explanation": "These products have NULL copay AND NULL allOtherLensOptions in some authorizations",
+    "products": ["Essential Blue Series", "Mirror - Solid Color", "Roll & Polish", "Trivex", "Hi-Index 1.67", "Polarized"],
+    "affected_patients": ["Marcell Bailey Ebdrup", "Daniel Dasilveira", "Jacquelyn Burke (partial)"],
+    "root_cause": "GPT extraction not capturing these fields from insurance documents"
+  },
+  "patients": [
+    {
+      "customer_name": "Juan Abadia",
+      "plan_name": "EYEMED HEALTHY INDIVID-MAY-MO",
+      "all_other_fallback": "DISCOUNT_30",
+      "products": [
+        {"product": "Single Vision", "retail": 80.40, "patient_pays": 55.00, "method": "by_tier", "copay_in_auth": "55"},
+        {"product": "Polycarbonate", "retail": 65.00, "patient_pays": 35.00, "method": "by_tier", "copay_in_auth": "35"},
+        {"product": "Hi-Index 1.67", "retail": 125.00, "patient_pays": 87.50, "method": "ins_discount", "note": "30% off via allOther"},
+        {"product": "Transitions GEN S", "retail": 175.00, "patient_pays": 122.50, "method": "ins_discount", "copay_in_auth": "DISCOUNT_30"},
+        {"product": "Polarized", "retail": 155.70, "patient_pays": 108.99, "method": "ins_discount", "note": "30% off via allOther"},
+        {"product": "Crizal Easy Pro", "retail": 147.50, "patient_pays": 103.25, "method": "ins_discount", "note": "30% off via allOther"},
+        {"product": "Crizal Sapphire HR", "retail": 180.00, "patient_pays": 144.00, "method": "ins_discount", "note": "20% off (AR tier 3)"},
+        {"product": "Varilux Comfort DRx", "retail": 254.10, "patient_pays": 177.87, "method": "ins_discount", "note": "30% off via allOther"},
+        {"product": "Varilux Comfort Max", "retail": 393.30, "patient_pays": 275.31, "method": "ins_discount", "note": "30% off via allOther"}
+      ]
+    },
+    {
+      "customer_name": "Marcell Bailey Ebdrup",
+      "plan_name": "Orlando Health, Inc",
+      "all_other_fallback": null,
+      "note": "EXCELLENT plan - most products have explicit $0 or low copays",
+      "products": [
+        {"product": "Single Vision", "retail": 80.40, "patient_pays": 10.00, "method": "by_tier", "copay_in_auth": "10"},
+        {"product": "Polycarbonate", "retail": 65.00, "patient_pays": 0.00, "method": "by_tier", "copay_in_auth": "0"},
+        {"product": "Transitions GEN S", "retail": 175.00, "patient_pays": 0.00, "method": "by_tier", "copay_in_auth": "0"},
+        {"product": "Crizal Easy Pro", "retail": 147.50, "patient_pays": 68.00, "method": "by_tier", "copay_in_auth": "68"},
+        {"product": "Crizal Sapphire HR", "retail": 180.00, "patient_pays": 144.00, "method": "ins_discount", "note": "20% off (AR tier 3)"},
+        {"product": "Varilux Comfort DRx", "retail": 254.10, "patient_pays": 55.00, "method": "by_tier", "copay_in_auth": "55"},
+        {"product": "Varilux Comfort Max", "retail": 393.30, "patient_pays": 185.00, "method": "by_tier", "copay_in_auth": "185"},
+        {"product": "Essential Blue Series", "retail": 30.00, "patient_pays": 24.00, "method": "uc_discount", "needs_review": true},
+        {"product": "Polarized", "retail": 155.70, "patient_pays": 124.56, "method": "uc_discount", "needs_review": true}
+      ]
+    },
+    {
+      "customer_name": "Jacquelyn Burke",
+      "plan_name": "Humana VCP",
+      "all_other_fallback": null,
+      "note": "Good extraction - has specific copays for most products",
+      "products": [
+        {"product": "Single Vision", "retail": 80.40, "patient_pays": 10.00, "method": "by_tier", "copay_in_auth": "10"},
+        {"product": "Polycarbonate", "retail": 65.00, "patient_pays": 25.00, "method": "by_tier", "copay_in_auth": "25"},
+        {"product": "Hi-Index 1.67", "retail": 125.00, "patient_pays": 95.00, "method": "by_tier", "copay_in_auth": "95"},
+        {"product": "Transitions GEN S", "retail": 175.00, "patient_pays": 88.00, "method": "by_tier", "copay_in_auth": "88"},
+        {"product": "Polarized", "retail": 155.70, "patient_pays": 66.00, "method": "by_tier", "copay_in_auth": "66"},
+        {"product": "Crizal Easy Pro", "retail": 147.50, "patient_pays": 85.00, "method": "by_tier", "copay_in_auth": "85"},
+        {"product": "Varilux Comfort DRx", "retail": 254.10, "patient_pays": 145.00, "method": "by_tier", "copay_in_auth": "145"},
+        {"product": "Varilux Comfort Max", "retail": 393.30, "patient_pays": 185.00, "method": "by_tier", "copay_in_auth": "185"}
+      ]
+    },
+    {
+      "customer_name": "Daniel Dasilveira",
+      "plan_name": "Blue View LG GA FI VOL",
+      "all_other_fallback": null,
+      "products": [
+        {"product": "Single Vision", "retail": 80.40, "patient_pays": 20.00, "method": "by_tier", "copay_in_auth": "20"},
+        {"product": "Polycarbonate", "retail": 65.00, "patient_pays": 40.00, "method": "by_tier", "copay_in_auth": "40"},
+        {"product": "Transitions GEN S", "retail": 175.00, "patient_pays": 75.00, "method": "by_tier", "copay_in_auth": "75"},
+        {"product": "Crizal Easy Pro", "retail": 147.50, "patient_pays": 68.00, "method": "by_tier", "copay_in_auth": "68"},
+        {"product": "Varilux Comfort DRx", "retail": 254.10, "patient_pays": 130.00, "method": "by_tier", "copay_in_auth": "130"},
+        {"product": "Varilux Comfort Max", "retail": 393.30, "patient_pays": 85.00, "method": "by_tier", "copay_in_auth": "85"},
+        {"product": "Essential Blue Series", "retail": 30.00, "patient_pays": 24.00, "method": "uc_discount", "needs_review": true},
+        {"product": "Polarized", "retail": 155.70, "patient_pays": 124.56, "method": "uc_discount", "needs_review": true}
+      ]
+    },
+    {
+      "customer_name": "Christopher Irvine",
+      "plan_name": "BVV CA ACA SG Off Exch WGS",
+      "all_other_fallback": "DISCOUNT_20",
+      "products": [
+        {"product": "Single Vision", "retail": 80.40, "patient_pays": 50.00, "method": "by_tier", "copay_in_auth": "50"},
+        {"product": "Polycarbonate", "retail": 65.00, "patient_pays": 40.00, "method": "by_tier", "copay_in_auth": "40"},
+        {"product": "Hi-Index 1.67", "retail": 125.00, "patient_pays": 100.00, "method": "ins_discount", "note": "20% off via allOther"},
+        {"product": "Transitions GEN S", "retail": 175.00, "patient_pays": 140.00, "method": "ins_discount", "copay_in_auth": "DISCOUNT_20"},
+        {"product": "Polarized", "retail": 155.70, "patient_pays": 124.56, "method": "ins_discount", "copay_in_auth": "DISCOUNT_20"},
+        {"product": "Crizal Easy Pro", "retail": 147.50, "patient_pays": 118.00, "method": "ins_discount", "note": "20% off via allOther"},
+        {"product": "Varilux Comfort DRx", "retail": 254.10, "patient_pays": 203.28, "method": "ins_discount", "note": "20% off via allOther"},
+        {"product": "Varilux Comfort Max", "retail": 393.30, "patient_pays": 314.64, "method": "ins_discount", "note": "20% off via allOther"}
+      ]
+    },
+    {
+      "customer_name": "Priscila Pinto",
+      "plan_name": "HCA Healthcare Affiliated Facilities",
+      "all_other_fallback": "DISCOUNT_20",
+      "products": [
+        {"product": "Single Vision", "retail": 80.40, "patient_pays": 20.00, "method": "by_tier", "copay_in_auth": "20"},
+        {"product": "Polycarbonate", "retail": 65.00, "patient_pays": 40.00, "method": "by_tier", "copay_in_auth": "40"},
+        {"product": "Transitions GEN S", "retail": 175.00, "patient_pays": 75.00, "method": "by_tier", "copay_in_auth": "75"},
+        {"product": "Crizal Easy Pro", "retail": 147.50, "patient_pays": 68.00, "method": "by_tier", "copay_in_auth": "68"},
+        {"product": "Crizal Rock", "retail": 145.00, "patient_pays": 116.00, "method": "ins_discount", "copay_in_auth": "DISCOUNT_20"},
+        {"product": "Crizal Sapphire HR", "retail": 180.00, "patient_pays": 144.00, "method": "ins_discount", "copay_in_auth": "DISCOUNT_20"},
+        {"product": "Varilux Comfort DRx", "retail": 254.10, "patient_pays": 130.00, "method": "by_tier", "copay_in_auth": "130"},
+        {"product": "Varilux Comfort Max", "retail": 393.30, "patient_pays": 85.00, "method": "by_tier", "copay_in_auth": "85"},
+        {"product": "Hi-Index 1.67", "retail": 125.00, "patient_pays": 100.00, "method": "ins_discount", "note": "20% off via allOther"},
+        {"product": "Polarized", "retail": 155.70, "patient_pays": 124.56, "method": "ins_discount", "note": "20% off via allOther"}
+      ]
+    }
+  ],
+  "verification_checklist": [
+    "✅ Transitions GEN S for Juan Abadia: DISCOUNT_30 -> $175 × 0.70 = $122.50",
+    "✅ Polycarbonate for Marcell Bailey: copay $0 -> patient pays $0",
+    "✅ Crizal Easy Pro now uses ar_tier_2 (not progressive tier_2)",
+    "✅ allOtherLensOptions fallback working for patients with DISCOUNT_XX",
+    "⚠️ Products without copay AND without allOther fallback use uc_discount (needs manual review)"
+  ]
+}

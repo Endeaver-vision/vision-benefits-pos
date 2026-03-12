@@ -1,0 +1,1231 @@
+Customer Name,Plan Name,Product Name,Category,Retail Price,Patient Pays,Savings,Pricing Method,Tier,Needs Review
+"Juan Abadia","EYEMED HEALTHY INDIVID-MAY-MO","Essential Blue Series","addon",30,21,9,"ins_discount","blue_light",false
+"Juan Abadia","EYEMED HEALTHY INDIVID-MAY-MO","Light Filter (VSP LF)","addon",15,15,0,"cash_only","",false
+"Juan Abadia","EYEMED HEALTHY INDIVID-MAY-MO","Mirror - Solid Color","addon",54,37.8,16.2,"ins_discount","mirror",false
+"Juan Abadia","EYEMED HEALTHY INDIVID-MAY-MO","Oversize Lenses","addon",30,30,0,"cash_only","",false
+"Juan Abadia","EYEMED HEALTHY INDIVID-MAY-MO","Polarized","addon",155.7,108.99,46.71,"ins_discount","polarized",false
+"Juan Abadia","EYEMED HEALTHY INDIVID-MAY-MO","Prism over Base Range, Per D, Per Lens","addon",8.2,8.2,0,"cash_only","",false
+"Juan Abadia","EYEMED HEALTHY INDIVID-MAY-MO","Roll & Polish","addon",14.4,10.08,4.32,"ins_discount","edging",false
+"Juan Abadia","EYEMED HEALTHY INDIVID-MAY-MO","Solid Tint - CR39/Poly CLR Lens","addon",17.8,12,5.8,"by_tier","tint",false
+"Juan Abadia","EYEMED HEALTHY INDIVID-MAY-MO","Technical Add-On (Multifocal/Progressive)","addon",40,40,0,"cash_only","",false
+"Juan Abadia","EYEMED HEALTHY INDIVID-MAY-MO","Technical Add-On (Single Vision)","addon",10,10,0,"cash_only","",false
+"Juan Abadia","EYEMED HEALTHY INDIVID-MAY-MO","UV Protection","addon",15,12,3,"by_tier","uv_treatment",false
+"Juan Abadia","EYEMED HEALTHY INDIVID-MAY-MO","Crizal Easy Pro","ar_coating",147.5,103.25,44.25,"ins_discount","ar_tier_2",false
+"Juan Abadia","EYEMED HEALTHY INDIVID-MAY-MO","Crizal Rock","ar_coating",145,116,29,"ins_discount","ar_tier_3",false
+"Juan Abadia","EYEMED HEALTHY INDIVID-MAY-MO","Crizal Sapphire HR","ar_coating",180,144,36,"ins_discount","ar_tier_3",false
+"Juan Abadia","EYEMED HEALTHY INDIVID-MAY-MO","Crizal Sunshield Mirrors UV","ar_coating",177.5,12,165.5,"by_tier","uv_treatment",false
+"Juan Abadia","EYEMED HEALTHY INDIVID-MAY-MO","Crizal Sunshield UV","ar_coating",177.5,12,165.5,"by_tier","uv_treatment",false
+"Juan Abadia","EYEMED HEALTHY INDIVID-MAY-MO","Neurolens Blue AR","ar_coating",180,180,0,"cash_only","",false
+"Juan Abadia","EYEMED HEALTHY INDIVID-MAY-MO","Neurolens Premium AR","ar_coating",180,180,0,"cash_only","",false
+"Juan Abadia","EYEMED HEALTHY INDIVID-MAY-MO","Flat Top 28","bifocal",126,75,51,"by_tier","standard_bf",false
+"Juan Abadia","EYEMED HEALTHY INDIVID-MAY-MO","Flat Top 7x28","bifocal",132.48,75,57.48,"by_tier","standard_bf",false
+"Juan Abadia","EYEMED HEALTHY INDIVID-MAY-MO","CR-39 (Standard Plastic)","material",0,0,0,"by_tier","standard",false
+"Juan Abadia","EYEMED HEALTHY INDIVID-MAY-MO","Hi-Index 1.67","material",125,87.5,37.5,"ins_discount","high_index_167",false
+"Juan Abadia","EYEMED HEALTHY INDIVID-MAY-MO","Hi-Index 1.72","material",150,150,0,"cash_only","",false
+"Juan Abadia","EYEMED HEALTHY INDIVID-MAY-MO","Polycarbonate","material",65,35,30,"by_tier","polycarbonate",false
+"Juan Abadia","EYEMED HEALTHY INDIVID-MAY-MO","Trivex","material",85,59.5,25.5,"ins_discount","trivex",false
+"Juan Abadia","EYEMED HEALTHY INDIVID-MAY-MO","Full Rim","mount_fee",0,0,0,"by_tier","standard",false
+"Juan Abadia","EYEMED HEALTHY INDIVID-MAY-MO","Rimless (drill mount)","mount_fee",47,47,0,"cash_only","",false
+"Juan Abadia","EYEMED HEALTHY INDIVID-MAY-MO","Semi Rimless (grooved)","mount_fee",35,35,0,"cash_only","",false
+"Juan Abadia","EYEMED HEALTHY INDIVID-MAY-MO","Transitions GEN S","photochromic",175,122.5,52.5,"ins_discount","photochromic",false
+"Juan Abadia","EYEMED HEALTHY INDIVID-MAY-MO","Transitions XTRActive","photochromic",145,101.5,43.5,"ins_discount","photochromic",false
+"Juan Abadia","EYEMED HEALTHY INDIVID-MAY-MO","Neurolens Progressive","progressive",700,700,0,"cash_only","",false
+"Juan Abadia","EYEMED HEALTHY INDIVID-MAY-MO","Sequel PAL","progressive",535,535,0,"cash_only","",false
+"Juan Abadia","EYEMED HEALTHY INDIVID-MAY-MO","Varilux Comfort DRx","progressive",254.1,177.87,76.23,"ins_discount","tier_3",false
+"Juan Abadia","EYEMED HEALTHY INDIVID-MAY-MO","Varilux Comfort Max","progressive",393.3,275.31,117.99,"ins_discount","tier_4",false
+"Juan Abadia","EYEMED HEALTHY INDIVID-MAY-MO","Varilux I design","progressive",480,480,0,"cash_only","",false
+"Juan Abadia","EYEMED HEALTHY INDIVID-MAY-MO","Varilux X Design","progressive",600,420,180,"ins_discount","tier_4",false
+"Juan Abadia","EYEMED HEALTHY INDIVID-MAY-MO","Essilor Eyezen+ / Eyezen Start","single_vision",128.82,103.06,25.76,"ins_discount","all_other_lens_options",false
+"Juan Abadia","EYEMED HEALTHY INDIVID-MAY-MO","Neurolens SV","single_vision",400,400,0,"cash_only","",false
+"Juan Abadia","EYEMED HEALTHY INDIVID-MAY-MO","Sequel Single Vision","single_vision",309,309,0,"cash_only","",false
+"Juan Abadia","EYEMED HEALTHY INDIVID-MAY-MO","Single Vision","single_vision",80.4,55,25.4,"by_tier","standard_sv",false
+"Juan Abadia","EYEMED HEALTHY INDIVID-MAY-MO","Stellest","single_vision",438,438,0,"cash_only","",false
+"Doris Abadia-Fortis","Orlando Health, Inc","Essential Blue Series","addon",30,24,6,"ins_discount","blue_light",false
+"Doris Abadia-Fortis","Orlando Health, Inc","Light Filter (VSP LF)","addon",15,12,3,"ins_discount","all_other_lens_options",false
+"Doris Abadia-Fortis","Orlando Health, Inc","Mirror - Solid Color","addon",54,43.2,10.8,"ins_discount","mirror",false
+"Doris Abadia-Fortis","Orlando Health, Inc","Oversize Lenses","addon",30,30,0,"cash_only","",false
+"Doris Abadia-Fortis","Orlando Health, Inc","Polarized","addon",155.7,124.56,31.14,"ins_discount","polarized",false
+"Doris Abadia-Fortis","Orlando Health, Inc","Prism over Base Range, Per D, Per Lens","addon",8.2,8.2,0,"cash_only","",false
+"Doris Abadia-Fortis","Orlando Health, Inc","Roll & Polish","addon",14.4,11.52,2.88,"ins_discount","edging",false
+"Doris Abadia-Fortis","Orlando Health, Inc","Solid Tint - CR39/Poly CLR Lens","addon",17.8,15,2.8,"by_tier","tint",false
+"Doris Abadia-Fortis","Orlando Health, Inc","Technical Add-On (Multifocal/Progressive)","addon",40,32,8,"ins_discount","all_other_lens_options",false
+"Doris Abadia-Fortis","Orlando Health, Inc","Technical Add-On (Single Vision)","addon",10,8,2,"ins_discount","all_other_lens_options",false
+"Doris Abadia-Fortis","Orlando Health, Inc","UV Protection","addon",15,15,0,"by_tier","uv_treatment",false
+"Doris Abadia-Fortis","Orlando Health, Inc","Crizal Easy Pro","ar_coating",147.5,68,79.5,"by_tier","ar_tier_2",false
+"Doris Abadia-Fortis","Orlando Health, Inc","Crizal Rock","ar_coating",145,116,29,"ins_discount","ar_tier_3",false
+"Doris Abadia-Fortis","Orlando Health, Inc","Crizal Sapphire HR","ar_coating",180,144,36,"ins_discount","ar_tier_3",false
+"Doris Abadia-Fortis","Orlando Health, Inc","Crizal Sunshield Mirrors UV","ar_coating",177.5,15,162.5,"by_tier","uv_treatment",false
+"Doris Abadia-Fortis","Orlando Health, Inc","Crizal Sunshield UV","ar_coating",177.5,15,162.5,"by_tier","uv_treatment",false
+"Doris Abadia-Fortis","Orlando Health, Inc","Neurolens Blue AR","ar_coating",180,180,0,"cash_only","",false
+"Doris Abadia-Fortis","Orlando Health, Inc","Neurolens Premium AR","ar_coating",180,180,0,"cash_only","",false
+"Doris Abadia-Fortis","Orlando Health, Inc","Flat Top 28","bifocal",126,10,116,"by_tier","standard_bf",false
+"Doris Abadia-Fortis","Orlando Health, Inc","Flat Top 7x28","bifocal",132.48,10,122.48,"by_tier","standard_bf",false
+"Doris Abadia-Fortis","Orlando Health, Inc","CR-39 (Standard Plastic)","material",0,0,0,"by_tier","standard",false
+"Doris Abadia-Fortis","Orlando Health, Inc","Hi-Index 1.67","material",125,100,25,"ins_discount","high_index_167",false
+"Doris Abadia-Fortis","Orlando Health, Inc","Hi-Index 1.72","material",150,150,0,"cash_only","",false
+"Doris Abadia-Fortis","Orlando Health, Inc","Polycarbonate","material",65,0,65,"by_tier","polycarbonate",false
+"Doris Abadia-Fortis","Orlando Health, Inc","Trivex","material",85,68,17,"ins_discount","trivex",false
+"Doris Abadia-Fortis","Orlando Health, Inc","Full Rim","mount_fee",0,0,0,"by_tier","standard",false
+"Doris Abadia-Fortis","Orlando Health, Inc","Rimless (drill mount)","mount_fee",47,37.6,9.4,"ins_discount","all_other_lens_options",false
+"Doris Abadia-Fortis","Orlando Health, Inc","Semi Rimless (grooved)","mount_fee",35,28,7,"ins_discount","all_other_lens_options",false
+"Doris Abadia-Fortis","Orlando Health, Inc","Transitions GEN S","photochromic",175,0,175,"by_tier","photochromic",false
+"Doris Abadia-Fortis","Orlando Health, Inc","Transitions XTRActive","photochromic",145,0,145,"by_tier","photochromic",false
+"Doris Abadia-Fortis","Orlando Health, Inc","Neurolens Progressive","progressive",700,700,0,"cash_only","",false
+"Doris Abadia-Fortis","Orlando Health, Inc","Sequel PAL","progressive",535,535,0,"cash_only","",false
+"Doris Abadia-Fortis","Orlando Health, Inc","Varilux Comfort DRx","progressive",254.1,55,199.1,"by_tier","tier_3",false
+"Doris Abadia-Fortis","Orlando Health, Inc","Varilux Comfort Max","progressive",393.3,185,208.3,"by_tier","tier_4",false
+"Doris Abadia-Fortis","Orlando Health, Inc","Varilux I design","progressive",480,480,0,"cash_only","",false
+"Doris Abadia-Fortis","Orlando Health, Inc","Varilux X Design","progressive",600,185,415,"by_tier","tier_4",false
+"Doris Abadia-Fortis","Orlando Health, Inc","Essilor Eyezen+ / Eyezen Start","single_vision",128.82,103.06,25.76,"ins_discount","all_other_lens_options",false
+"Doris Abadia-Fortis","Orlando Health, Inc","Neurolens SV","single_vision",400,400,0,"cash_only","",false
+"Doris Abadia-Fortis","Orlando Health, Inc","Sequel Single Vision","single_vision",309,309,0,"cash_only","",false
+"Doris Abadia-Fortis","Orlando Health, Inc","Single Vision","single_vision",80.4,10,70.4,"by_tier","standard_sv",false
+"Doris Abadia-Fortis","Orlando Health, Inc","Stellest","single_vision",438,438,0,"cash_only","",false
+"Estefany Abastida","C1 PPO Comprehensive Plan CY","Essential Blue Series","addon",30,24,6,"ins_discount","blue_light",false
+"Estefany Abastida","C1 PPO Comprehensive Plan CY","Light Filter (VSP LF)","addon",15,12,3,"ins_discount","all_other_lens_options",false
+"Estefany Abastida","C1 PPO Comprehensive Plan CY","Mirror - Solid Color","addon",54,43.2,10.8,"ins_discount","mirror",false
+"Estefany Abastida","C1 PPO Comprehensive Plan CY","Oversize Lenses","addon",30,30,0,"cash_only","",false
+"Estefany Abastida","C1 PPO Comprehensive Plan CY","Polarized","addon",155.7,124.56,31.14,"ins_discount","polarized",false
+"Estefany Abastida","C1 PPO Comprehensive Plan CY","Prism over Base Range, Per D, Per Lens","addon",8.2,8.2,0,"cash_only","",false
+"Estefany Abastida","C1 PPO Comprehensive Plan CY","Roll & Polish","addon",14.4,11.52,2.88,"ins_discount","edging",false
+"Estefany Abastida","C1 PPO Comprehensive Plan CY","Solid Tint - CR39/Poly CLR Lens","addon",17.8,15,2.8,"by_tier","tint",false
+"Estefany Abastida","C1 PPO Comprehensive Plan CY","Technical Add-On (Multifocal/Progressive)","addon",40,32,8,"ins_discount","all_other_lens_options",false
+"Estefany Abastida","C1 PPO Comprehensive Plan CY","Technical Add-On (Single Vision)","addon",10,8,2,"ins_discount","all_other_lens_options",false
+"Estefany Abastida","C1 PPO Comprehensive Plan CY","UV Protection","addon",15,15,0,"by_tier","uv_treatment",false
+"Estefany Abastida","C1 PPO Comprehensive Plan CY","Crizal Easy Pro","ar_coating",147.5,68,79.5,"by_tier","ar_tier_2",false
+"Estefany Abastida","C1 PPO Comprehensive Plan CY","Crizal Rock","ar_coating",145,116,29,"ins_discount","ar_tier_3",false
+"Estefany Abastida","C1 PPO Comprehensive Plan CY","Crizal Sapphire HR","ar_coating",180,144,36,"ins_discount","ar_tier_3",false
+"Estefany Abastida","C1 PPO Comprehensive Plan CY","Crizal Sunshield Mirrors UV","ar_coating",177.5,15,162.5,"by_tier","uv_treatment",false
+"Estefany Abastida","C1 PPO Comprehensive Plan CY","Crizal Sunshield UV","ar_coating",177.5,15,162.5,"by_tier","uv_treatment",false
+"Estefany Abastida","C1 PPO Comprehensive Plan CY","Neurolens Blue AR","ar_coating",180,180,0,"cash_only","",false
+"Estefany Abastida","C1 PPO Comprehensive Plan CY","Neurolens Premium AR","ar_coating",180,180,0,"cash_only","",false
+"Estefany Abastida","C1 PPO Comprehensive Plan CY","Flat Top 28","bifocal",126,10,116,"by_tier","standard_bf",false
+"Estefany Abastida","C1 PPO Comprehensive Plan CY","Flat Top 7x28","bifocal",132.48,10,122.48,"by_tier","standard_bf",false
+"Estefany Abastida","C1 PPO Comprehensive Plan CY","CR-39 (Standard Plastic)","material",0,0,0,"by_tier","standard",false
+"Estefany Abastida","C1 PPO Comprehensive Plan CY","Hi-Index 1.67","material",125,100,25,"ins_discount","high_index_167",false
+"Estefany Abastida","C1 PPO Comprehensive Plan CY","Hi-Index 1.72","material",150,150,0,"cash_only","",false
+"Estefany Abastida","C1 PPO Comprehensive Plan CY","Polycarbonate","material",65,40,25,"by_tier","polycarbonate",false
+"Estefany Abastida","C1 PPO Comprehensive Plan CY","Trivex","material",85,68,17,"ins_discount","trivex",false
+"Estefany Abastida","C1 PPO Comprehensive Plan CY","Full Rim","mount_fee",0,0,0,"by_tier","standard",false
+"Estefany Abastida","C1 PPO Comprehensive Plan CY","Rimless (drill mount)","mount_fee",47,37.6,9.4,"ins_discount","all_other_lens_options",false
+"Estefany Abastida","C1 PPO Comprehensive Plan CY","Semi Rimless (grooved)","mount_fee",35,28,7,"ins_discount","all_other_lens_options",false
+"Estefany Abastida","C1 PPO Comprehensive Plan CY","Transitions GEN S","photochromic",175,75,100,"by_tier","photochromic",false
+"Estefany Abastida","C1 PPO Comprehensive Plan CY","Transitions XTRActive","photochromic",145,75,70,"by_tier","photochromic",false
+"Estefany Abastida","C1 PPO Comprehensive Plan CY","Neurolens Progressive","progressive",700,700,0,"cash_only","",false
+"Estefany Abastida","C1 PPO Comprehensive Plan CY","Sequel PAL","progressive",535,535,0,"cash_only","",false
+"Estefany Abastida","C1 PPO Comprehensive Plan CY","Varilux Comfort DRx","progressive",254.1,120,134.1,"by_tier","tier_3",false
+"Estefany Abastida","C1 PPO Comprehensive Plan CY","Varilux Comfort Max","progressive",393.3,75,318.3,"by_tier","tier_4",false
+"Estefany Abastida","C1 PPO Comprehensive Plan CY","Varilux I design","progressive",480,480,0,"cash_only","",false
+"Estefany Abastida","C1 PPO Comprehensive Plan CY","Varilux X Design","progressive",600,75,525,"by_tier","tier_4",false
+"Estefany Abastida","C1 PPO Comprehensive Plan CY","Essilor Eyezen+ / Eyezen Start","single_vision",128.82,103.06,25.76,"ins_discount","all_other_lens_options",false
+"Estefany Abastida","C1 PPO Comprehensive Plan CY","Neurolens SV","single_vision",400,400,0,"cash_only","",false
+"Estefany Abastida","C1 PPO Comprehensive Plan CY","Sequel Single Vision","single_vision",309,309,0,"cash_only","",false
+"Estefany Abastida","C1 PPO Comprehensive Plan CY","Single Vision","single_vision",80.4,10,70.4,"by_tier","standard_sv",false
+"Estefany Abastida","C1 PPO Comprehensive Plan CY","Stellest","single_vision",438,438,0,"cash_only","",false
+"Johnnie Alexander","Humana Medicare 694 PPO 50 Plus","Essential Blue Series","addon",30,24,6,"ins_discount","blue_light",false
+"Johnnie Alexander","Humana Medicare 694 PPO 50 Plus","Light Filter (VSP LF)","addon",15,12,3,"ins_discount","all_other_lens_options",false
+"Johnnie Alexander","Humana Medicare 694 PPO 50 Plus","Mirror - Solid Color","addon",54,43.2,10.8,"ins_discount","mirror",false
+"Johnnie Alexander","Humana Medicare 694 PPO 50 Plus","Oversize Lenses","addon",30,30,0,"cash_only","",false
+"Johnnie Alexander","Humana Medicare 694 PPO 50 Plus","Polarized","addon",155.7,124.56,31.14,"ins_discount","polarized",false
+"Johnnie Alexander","Humana Medicare 694 PPO 50 Plus","Prism over Base Range, Per D, Per Lens","addon",8.2,8.2,0,"cash_only","",false
+"Johnnie Alexander","Humana Medicare 694 PPO 50 Plus","Roll & Polish","addon",14.4,11.52,2.88,"ins_discount","edging",false
+"Johnnie Alexander","Humana Medicare 694 PPO 50 Plus","Solid Tint - CR39/Poly CLR Lens","addon",17.8,14.24,3.56,"ins_discount","tint",false
+"Johnnie Alexander","Humana Medicare 694 PPO 50 Plus","Technical Add-On (Multifocal/Progressive)","addon",40,32,8,"ins_discount","all_other_lens_options",false
+"Johnnie Alexander","Humana Medicare 694 PPO 50 Plus","Technical Add-On (Single Vision)","addon",10,8,2,"ins_discount","all_other_lens_options",false
+"Johnnie Alexander","Humana Medicare 694 PPO 50 Plus","UV Protection","addon",15,12,3,"ins_discount","uv_treatment",false
+"Johnnie Alexander","Humana Medicare 694 PPO 50 Plus","Crizal Easy Pro","ar_coating",147.5,118,29.5,"ins_discount","ar_tier_2",false
+"Johnnie Alexander","Humana Medicare 694 PPO 50 Plus","Crizal Rock","ar_coating",145,116,29,"ins_discount","ar_tier_3",false
+"Johnnie Alexander","Humana Medicare 694 PPO 50 Plus","Crizal Sapphire HR","ar_coating",180,144,36,"ins_discount","ar_tier_3",false
+"Johnnie Alexander","Humana Medicare 694 PPO 50 Plus","Crizal Sunshield Mirrors UV","ar_coating",177.5,142,35.5,"ins_discount","uv_treatment",false
+"Johnnie Alexander","Humana Medicare 694 PPO 50 Plus","Crizal Sunshield UV","ar_coating",177.5,142,35.5,"ins_discount","uv_treatment",false
+"Johnnie Alexander","Humana Medicare 694 PPO 50 Plus","Neurolens Blue AR","ar_coating",180,180,0,"cash_only","",false
+"Johnnie Alexander","Humana Medicare 694 PPO 50 Plus","Neurolens Premium AR","ar_coating",180,180,0,"cash_only","",false
+"Johnnie Alexander","Humana Medicare 694 PPO 50 Plus","Flat Top 28","bifocal",126,0,126,"by_tier","standard_bf",false
+"Johnnie Alexander","Humana Medicare 694 PPO 50 Plus","Flat Top 7x28","bifocal",132.48,0,132.48,"by_tier","standard_bf",false
+"Johnnie Alexander","Humana Medicare 694 PPO 50 Plus","CR-39 (Standard Plastic)","material",0,0,0,"by_tier","standard",false
+"Johnnie Alexander","Humana Medicare 694 PPO 50 Plus","Hi-Index 1.67","material",125,100,25,"ins_discount","high_index_167",false
+"Johnnie Alexander","Humana Medicare 694 PPO 50 Plus","Hi-Index 1.72","material",150,150,0,"cash_only","",false
+"Johnnie Alexander","Humana Medicare 694 PPO 50 Plus","Polycarbonate","material",65,52,13,"ins_discount","polycarbonate",false
+"Johnnie Alexander","Humana Medicare 694 PPO 50 Plus","Trivex","material",85,68,17,"ins_discount","trivex",false
+"Johnnie Alexander","Humana Medicare 694 PPO 50 Plus","Full Rim","mount_fee",0,0,0,"by_tier","standard",false
+"Johnnie Alexander","Humana Medicare 694 PPO 50 Plus","Rimless (drill mount)","mount_fee",47,37.6,9.4,"ins_discount","all_other_lens_options",false
+"Johnnie Alexander","Humana Medicare 694 PPO 50 Plus","Semi Rimless (grooved)","mount_fee",35,28,7,"ins_discount","all_other_lens_options",false
+"Johnnie Alexander","Humana Medicare 694 PPO 50 Plus","Transitions GEN S","photochromic",175,140,35,"ins_discount","photochromic",false
+"Johnnie Alexander","Humana Medicare 694 PPO 50 Plus","Transitions XTRActive","photochromic",145,116,29,"ins_discount","photochromic",false
+"Johnnie Alexander","Humana Medicare 694 PPO 50 Plus","Neurolens Progressive","progressive",700,700,0,"cash_only","",false
+"Johnnie Alexander","Humana Medicare 694 PPO 50 Plus","Sequel PAL","progressive",535,535,0,"cash_only","",false
+"Johnnie Alexander","Humana Medicare 694 PPO 50 Plus","Varilux Comfort DRx","progressive",254.1,203.28,50.82,"ins_discount","tier_3",false
+"Johnnie Alexander","Humana Medicare 694 PPO 50 Plus","Varilux Comfort Max","progressive",393.3,314.64,78.66,"ins_discount","tier_4",false
+"Johnnie Alexander","Humana Medicare 694 PPO 50 Plus","Varilux I design","progressive",480,480,0,"cash_only","",false
+"Johnnie Alexander","Humana Medicare 694 PPO 50 Plus","Varilux X Design","progressive",600,480,120,"ins_discount","tier_4",false
+"Johnnie Alexander","Humana Medicare 694 PPO 50 Plus","Essilor Eyezen+ / Eyezen Start","single_vision",128.82,103.06,25.76,"ins_discount","all_other_lens_options",false
+"Johnnie Alexander","Humana Medicare 694 PPO 50 Plus","Neurolens SV","single_vision",400,400,0,"cash_only","",false
+"Johnnie Alexander","Humana Medicare 694 PPO 50 Plus","Sequel Single Vision","single_vision",309,309,0,"cash_only","",false
+"Johnnie Alexander","Humana Medicare 694 PPO 50 Plus","Single Vision","single_vision",80.4,0,80.4,"by_tier","standard_sv",false
+"Johnnie Alexander","Humana Medicare 694 PPO 50 Plus","Stellest","single_vision",438,438,0,"cash_only","",false
+"Lisa Amos","BCBSMA-H Plan-Insight-VOL-12/12/12 PLUS","Essential Blue Series","addon",30,24,6,"ins_discount","blue_light",false
+"Lisa Amos","BCBSMA-H Plan-Insight-VOL-12/12/12 PLUS","Light Filter (VSP LF)","addon",15,12,3,"ins_discount","all_other_lens_options",false
+"Lisa Amos","BCBSMA-H Plan-Insight-VOL-12/12/12 PLUS","Mirror - Solid Color","addon",54,43.2,10.8,"ins_discount","mirror",false
+"Lisa Amos","BCBSMA-H Plan-Insight-VOL-12/12/12 PLUS","Oversize Lenses","addon",30,30,0,"cash_only","",false
+"Lisa Amos","BCBSMA-H Plan-Insight-VOL-12/12/12 PLUS","Polarized","addon",155.7,124.56,31.14,"ins_discount","polarized",false
+"Lisa Amos","BCBSMA-H Plan-Insight-VOL-12/12/12 PLUS","Prism over Base Range, Per D, Per Lens","addon",8.2,8.2,0,"cash_only","",false
+"Lisa Amos","BCBSMA-H Plan-Insight-VOL-12/12/12 PLUS","Roll & Polish","addon",14.4,11.52,2.88,"ins_discount","edging",false
+"Lisa Amos","BCBSMA-H Plan-Insight-VOL-12/12/12 PLUS","Solid Tint - CR39/Poly CLR Lens","addon",17.8,15,2.8,"by_tier","tint",false
+"Lisa Amos","BCBSMA-H Plan-Insight-VOL-12/12/12 PLUS","Technical Add-On (Multifocal/Progressive)","addon",40,32,8,"ins_discount","all_other_lens_options",false
+"Lisa Amos","BCBSMA-H Plan-Insight-VOL-12/12/12 PLUS","Technical Add-On (Single Vision)","addon",10,8,2,"ins_discount","all_other_lens_options",false
+"Lisa Amos","BCBSMA-H Plan-Insight-VOL-12/12/12 PLUS","UV Protection","addon",15,15,0,"by_tier","uv_treatment",false
+"Lisa Amos","BCBSMA-H Plan-Insight-VOL-12/12/12 PLUS","Crizal Easy Pro","ar_coating",147.5,68,79.5,"by_tier","ar_tier_2",false
+"Lisa Amos","BCBSMA-H Plan-Insight-VOL-12/12/12 PLUS","Crizal Rock","ar_coating",145,116,29,"ins_discount","ar_tier_3",false
+"Lisa Amos","BCBSMA-H Plan-Insight-VOL-12/12/12 PLUS","Crizal Sapphire HR","ar_coating",180,144,36,"ins_discount","ar_tier_3",false
+"Lisa Amos","BCBSMA-H Plan-Insight-VOL-12/12/12 PLUS","Crizal Sunshield Mirrors UV","ar_coating",177.5,15,162.5,"by_tier","uv_treatment",false
+"Lisa Amos","BCBSMA-H Plan-Insight-VOL-12/12/12 PLUS","Crizal Sunshield UV","ar_coating",177.5,15,162.5,"by_tier","uv_treatment",false
+"Lisa Amos","BCBSMA-H Plan-Insight-VOL-12/12/12 PLUS","Neurolens Blue AR","ar_coating",180,180,0,"cash_only","",false
+"Lisa Amos","BCBSMA-H Plan-Insight-VOL-12/12/12 PLUS","Neurolens Premium AR","ar_coating",180,180,0,"cash_only","",false
+"Lisa Amos","BCBSMA-H Plan-Insight-VOL-12/12/12 PLUS","Flat Top 28","bifocal",126,25,101,"by_tier","standard_bf",false
+"Lisa Amos","BCBSMA-H Plan-Insight-VOL-12/12/12 PLUS","Flat Top 7x28","bifocal",132.48,25,107.48,"by_tier","standard_bf",false
+"Lisa Amos","BCBSMA-H Plan-Insight-VOL-12/12/12 PLUS","CR-39 (Standard Plastic)","material",0,0,0,"by_tier","standard",false
+"Lisa Amos","BCBSMA-H Plan-Insight-VOL-12/12/12 PLUS","Hi-Index 1.67","material",125,100,25,"ins_discount","high_index_167",false
+"Lisa Amos","BCBSMA-H Plan-Insight-VOL-12/12/12 PLUS","Hi-Index 1.72","material",150,150,0,"cash_only","",false
+"Lisa Amos","BCBSMA-H Plan-Insight-VOL-12/12/12 PLUS","Polycarbonate","material",65,40,25,"by_tier","polycarbonate",false
+"Lisa Amos","BCBSMA-H Plan-Insight-VOL-12/12/12 PLUS","Trivex","material",85,68,17,"ins_discount","trivex",false
+"Lisa Amos","BCBSMA-H Plan-Insight-VOL-12/12/12 PLUS","Full Rim","mount_fee",0,0,0,"by_tier","standard",false
+"Lisa Amos","BCBSMA-H Plan-Insight-VOL-12/12/12 PLUS","Rimless (drill mount)","mount_fee",47,37.6,9.4,"ins_discount","all_other_lens_options",false
+"Lisa Amos","BCBSMA-H Plan-Insight-VOL-12/12/12 PLUS","Semi Rimless (grooved)","mount_fee",35,28,7,"ins_discount","all_other_lens_options",false
+"Lisa Amos","BCBSMA-H Plan-Insight-VOL-12/12/12 PLUS","Transitions GEN S","photochromic",175,75,100,"by_tier","photochromic",false
+"Lisa Amos","BCBSMA-H Plan-Insight-VOL-12/12/12 PLUS","Transitions XTRActive","photochromic",145,75,70,"by_tier","photochromic",false
+"Lisa Amos","BCBSMA-H Plan-Insight-VOL-12/12/12 PLUS","Neurolens Progressive","progressive",700,700,0,"cash_only","",false
+"Lisa Amos","BCBSMA-H Plan-Insight-VOL-12/12/12 PLUS","Sequel PAL","progressive",535,535,0,"cash_only","",false
+"Lisa Amos","BCBSMA-H Plan-Insight-VOL-12/12/12 PLUS","Varilux Comfort DRx","progressive",254.1,135,119.1,"by_tier","tier_3",false
+"Lisa Amos","BCBSMA-H Plan-Insight-VOL-12/12/12 PLUS","Varilux Comfort Max","progressive",393.3,90,303.3,"by_tier","tier_4",false
+"Lisa Amos","BCBSMA-H Plan-Insight-VOL-12/12/12 PLUS","Varilux I design","progressive",480,480,0,"cash_only","",false
+"Lisa Amos","BCBSMA-H Plan-Insight-VOL-12/12/12 PLUS","Varilux X Design","progressive",600,90,510,"by_tier","tier_4",false
+"Lisa Amos","BCBSMA-H Plan-Insight-VOL-12/12/12 PLUS","Essilor Eyezen+ / Eyezen Start","single_vision",128.82,103.06,25.76,"ins_discount","all_other_lens_options",false
+"Lisa Amos","BCBSMA-H Plan-Insight-VOL-12/12/12 PLUS","Neurolens SV","single_vision",400,400,0,"cash_only","",false
+"Lisa Amos","BCBSMA-H Plan-Insight-VOL-12/12/12 PLUS","Sequel Single Vision","single_vision",309,309,0,"cash_only","",false
+"Lisa Amos","BCBSMA-H Plan-Insight-VOL-12/12/12 PLUS","Single Vision","single_vision",80.4,25,55.4,"by_tier","standard_sv",false
+"Lisa Amos","BCBSMA-H Plan-Insight-VOL-12/12/12 PLUS","Stellest","single_vision",438,438,0,"cash_only","",false
+"Marcell Bailey Ebdrup","Orlando Health, Inc","Essential Blue Series","addon",30,24,6,"uc_discount","blue_light",true
+"Marcell Bailey Ebdrup","Orlando Health, Inc","Light Filter (VSP LF)","addon",15,15,0,"cash_only","",false
+"Marcell Bailey Ebdrup","Orlando Health, Inc","Mirror - Solid Color","addon",54,43.2,10.8,"uc_discount","mirror",true
+"Marcell Bailey Ebdrup","Orlando Health, Inc","Oversize Lenses","addon",30,30,0,"cash_only","",false
+"Marcell Bailey Ebdrup","Orlando Health, Inc","Polarized","addon",155.7,124.56,31.14,"uc_discount","polarized",true
+"Marcell Bailey Ebdrup","Orlando Health, Inc","Prism over Base Range, Per D, Per Lens","addon",8.2,8.2,0,"cash_only","",false
+"Marcell Bailey Ebdrup","Orlando Health, Inc","Roll & Polish","addon",14.4,11.52,2.88,"uc_discount","edging",true
+"Marcell Bailey Ebdrup","Orlando Health, Inc","Solid Tint - CR39/Poly CLR Lens","addon",17.8,14.24,3.56,"uc_discount","tint",true
+"Marcell Bailey Ebdrup","Orlando Health, Inc","Technical Add-On (Multifocal/Progressive)","addon",40,40,0,"cash_only","",false
+"Marcell Bailey Ebdrup","Orlando Health, Inc","Technical Add-On (Single Vision)","addon",10,10,0,"cash_only","",false
+"Marcell Bailey Ebdrup","Orlando Health, Inc","UV Protection","addon",15,12,3,"uc_discount","uv_treatment",true
+"Marcell Bailey Ebdrup","Orlando Health, Inc","Crizal Easy Pro","ar_coating",147.5,68,79.5,"by_tier","ar_tier_2",false
+"Marcell Bailey Ebdrup","Orlando Health, Inc","Crizal Rock","ar_coating",145,116,29,"ins_discount","ar_tier_3",false
+"Marcell Bailey Ebdrup","Orlando Health, Inc","Crizal Sapphire HR","ar_coating",180,144,36,"ins_discount","ar_tier_3",false
+"Marcell Bailey Ebdrup","Orlando Health, Inc","Crizal Sunshield Mirrors UV","ar_coating",177.5,142,35.5,"uc_discount","uv_treatment",true
+"Marcell Bailey Ebdrup","Orlando Health, Inc","Crizal Sunshield UV","ar_coating",177.5,142,35.5,"uc_discount","uv_treatment",true
+"Marcell Bailey Ebdrup","Orlando Health, Inc","Neurolens Blue AR","ar_coating",180,180,0,"cash_only","",false
+"Marcell Bailey Ebdrup","Orlando Health, Inc","Neurolens Premium AR","ar_coating",180,180,0,"cash_only","",false
+"Marcell Bailey Ebdrup","Orlando Health, Inc","Flat Top 28","bifocal",126,10,116,"by_tier","standard_bf",false
+"Marcell Bailey Ebdrup","Orlando Health, Inc","Flat Top 7x28","bifocal",132.48,10,122.48,"by_tier","standard_bf",false
+"Marcell Bailey Ebdrup","Orlando Health, Inc","CR-39 (Standard Plastic)","material",0,0,0,"by_tier","standard",false
+"Marcell Bailey Ebdrup","Orlando Health, Inc","Hi-Index 1.67","material",125,100,25,"uc_discount","high_index_167",true
+"Marcell Bailey Ebdrup","Orlando Health, Inc","Hi-Index 1.72","material",150,150,0,"cash_only","",false
+"Marcell Bailey Ebdrup","Orlando Health, Inc","Polycarbonate","material",65,0,65,"by_tier","polycarbonate",false
+"Marcell Bailey Ebdrup","Orlando Health, Inc","Trivex","material",85,68,17,"uc_discount","trivex",true
+"Marcell Bailey Ebdrup","Orlando Health, Inc","Full Rim","mount_fee",0,0,0,"by_tier","standard",false
+"Marcell Bailey Ebdrup","Orlando Health, Inc","Rimless (drill mount)","mount_fee",47,47,0,"cash_only","",false
+"Marcell Bailey Ebdrup","Orlando Health, Inc","Semi Rimless (grooved)","mount_fee",35,35,0,"cash_only","",false
+"Marcell Bailey Ebdrup","Orlando Health, Inc","Transitions GEN S","photochromic",175,0,175,"by_tier","photochromic",false
+"Marcell Bailey Ebdrup","Orlando Health, Inc","Transitions XTRActive","photochromic",145,0,145,"by_tier","photochromic",false
+"Marcell Bailey Ebdrup","Orlando Health, Inc","Neurolens Progressive","progressive",700,700,0,"cash_only","",false
+"Marcell Bailey Ebdrup","Orlando Health, Inc","Sequel PAL","progressive",535,535,0,"cash_only","",false
+"Marcell Bailey Ebdrup","Orlando Health, Inc","Varilux Comfort DRx","progressive",254.1,55,199.1,"by_tier","tier_3",false
+"Marcell Bailey Ebdrup","Orlando Health, Inc","Varilux Comfort Max","progressive",393.3,185,208.3,"by_tier","tier_4",false
+"Marcell Bailey Ebdrup","Orlando Health, Inc","Varilux I design","progressive",480,480,0,"cash_only","",false
+"Marcell Bailey Ebdrup","Orlando Health, Inc","Varilux X Design","progressive",600,185,415,"by_tier","tier_4",false
+"Marcell Bailey Ebdrup","Orlando Health, Inc","Essilor Eyezen+ / Eyezen Start","single_vision",128.82,103.06,25.76,"ins_discount","all_other_lens_options",false
+"Marcell Bailey Ebdrup","Orlando Health, Inc","Neurolens SV","single_vision",400,400,0,"cash_only","",false
+"Marcell Bailey Ebdrup","Orlando Health, Inc","Sequel Single Vision","single_vision",309,309,0,"cash_only","",false
+"Marcell Bailey Ebdrup","Orlando Health, Inc","Single Vision","single_vision",80.4,10,70.4,"by_tier","standard_sv",false
+"Marcell Bailey Ebdrup","Orlando Health, Inc","Stellest","single_vision",438,438,0,"cash_only","",false
+"Gerri Bishop","BVV CA ACA SG Off Exch WGS","Essential Blue Series","addon",30,24,6,"ins_discount","blue_light",false
+"Gerri Bishop","BVV CA ACA SG Off Exch WGS","Light Filter (VSP LF)","addon",15,12,3,"ins_discount","all_other_lens_options",false
+"Gerri Bishop","BVV CA ACA SG Off Exch WGS","Mirror - Solid Color","addon",54,43.2,10.8,"ins_discount","mirror",false
+"Gerri Bishop","BVV CA ACA SG Off Exch WGS","Oversize Lenses","addon",30,30,0,"cash_only","",false
+"Gerri Bishop","BVV CA ACA SG Off Exch WGS","Polarized","addon",155.7,124.56,31.14,"ins_discount","polarized",false
+"Gerri Bishop","BVV CA ACA SG Off Exch WGS","Prism over Base Range, Per D, Per Lens","addon",8.2,8.2,0,"cash_only","",false
+"Gerri Bishop","BVV CA ACA SG Off Exch WGS","Roll & Polish","addon",14.4,11.52,2.88,"ins_discount","edging",false
+"Gerri Bishop","BVV CA ACA SG Off Exch WGS","Solid Tint - CR39/Poly CLR Lens","addon",17.8,15,2.8,"by_tier","tint",false
+"Gerri Bishop","BVV CA ACA SG Off Exch WGS","Technical Add-On (Multifocal/Progressive)","addon",40,32,8,"ins_discount","all_other_lens_options",false
+"Gerri Bishop","BVV CA ACA SG Off Exch WGS","Technical Add-On (Single Vision)","addon",10,8,2,"ins_discount","all_other_lens_options",false
+"Gerri Bishop","BVV CA ACA SG Off Exch WGS","UV Protection","addon",15,15,0,"by_tier","uv_treatment",false
+"Gerri Bishop","BVV CA ACA SG Off Exch WGS","Crizal Easy Pro","ar_coating",147.5,118,29.5,"ins_discount","ar_tier_2",false
+"Gerri Bishop","BVV CA ACA SG Off Exch WGS","Crizal Rock","ar_coating",145,116,29,"ins_discount","ar_tier_3",false
+"Gerri Bishop","BVV CA ACA SG Off Exch WGS","Crizal Sapphire HR","ar_coating",180,144,36,"ins_discount","ar_tier_3",false
+"Gerri Bishop","BVV CA ACA SG Off Exch WGS","Crizal Sunshield Mirrors UV","ar_coating",177.5,15,162.5,"by_tier","uv_treatment",false
+"Gerri Bishop","BVV CA ACA SG Off Exch WGS","Crizal Sunshield UV","ar_coating",177.5,15,162.5,"by_tier","uv_treatment",false
+"Gerri Bishop","BVV CA ACA SG Off Exch WGS","Neurolens Blue AR","ar_coating",180,180,0,"cash_only","",false
+"Gerri Bishop","BVV CA ACA SG Off Exch WGS","Neurolens Premium AR","ar_coating",180,180,0,"cash_only","",false
+"Gerri Bishop","BVV CA ACA SG Off Exch WGS","Flat Top 28","bifocal",126,70,56,"by_tier","standard_bf",false
+"Gerri Bishop","BVV CA ACA SG Off Exch WGS","Flat Top 7x28","bifocal",132.48,70,62.48,"by_tier","standard_bf",false
+"Gerri Bishop","BVV CA ACA SG Off Exch WGS","CR-39 (Standard Plastic)","material",0,0,0,"by_tier","standard",false
+"Gerri Bishop","BVV CA ACA SG Off Exch WGS","Hi-Index 1.67","material",125,100,25,"ins_discount","high_index_167",false
+"Gerri Bishop","BVV CA ACA SG Off Exch WGS","Hi-Index 1.72","material",150,150,0,"cash_only","",false
+"Gerri Bishop","BVV CA ACA SG Off Exch WGS","Polycarbonate","material",65,40,25,"by_tier","polycarbonate",false
+"Gerri Bishop","BVV CA ACA SG Off Exch WGS","Trivex","material",85,68,17,"ins_discount","trivex",false
+"Gerri Bishop","BVV CA ACA SG Off Exch WGS","Full Rim","mount_fee",0,0,0,"by_tier","standard",false
+"Gerri Bishop","BVV CA ACA SG Off Exch WGS","Rimless (drill mount)","mount_fee",47,37.6,9.4,"ins_discount","all_other_lens_options",false
+"Gerri Bishop","BVV CA ACA SG Off Exch WGS","Semi Rimless (grooved)","mount_fee",35,28,7,"ins_discount","all_other_lens_options",false
+"Gerri Bishop","BVV CA ACA SG Off Exch WGS","Transitions GEN S","photochromic",175,140,35,"ins_discount","photochromic",false
+"Gerri Bishop","BVV CA ACA SG Off Exch WGS","Transitions XTRActive","photochromic",145,116,29,"ins_discount","photochromic",false
+"Gerri Bishop","BVV CA ACA SG Off Exch WGS","Neurolens Progressive","progressive",700,700,0,"cash_only","",false
+"Gerri Bishop","BVV CA ACA SG Off Exch WGS","Sequel PAL","progressive",535,535,0,"cash_only","",false
+"Gerri Bishop","BVV CA ACA SG Off Exch WGS","Varilux Comfort DRx","progressive",254.1,203.28,50.82,"ins_discount","tier_3",false
+"Gerri Bishop","BVV CA ACA SG Off Exch WGS","Varilux Comfort Max","progressive",393.3,314.64,78.66,"ins_discount","tier_4",false
+"Gerri Bishop","BVV CA ACA SG Off Exch WGS","Varilux I design","progressive",480,480,0,"cash_only","",false
+"Gerri Bishop","BVV CA ACA SG Off Exch WGS","Varilux X Design","progressive",600,480,120,"ins_discount","tier_4",false
+"Gerri Bishop","BVV CA ACA SG Off Exch WGS","Essilor Eyezen+ / Eyezen Start","single_vision",128.82,103.06,25.76,"ins_discount","all_other_lens_options",false
+"Gerri Bishop","BVV CA ACA SG Off Exch WGS","Neurolens SV","single_vision",400,400,0,"cash_only","",false
+"Gerri Bishop","BVV CA ACA SG Off Exch WGS","Sequel Single Vision","single_vision",309,309,0,"cash_only","",false
+"Gerri Bishop","BVV CA ACA SG Off Exch WGS","Single Vision","single_vision",80.4,50,30.4,"by_tier","standard_sv",false
+"Gerri Bishop","BVV CA ACA SG Off Exch WGS","Stellest","single_vision",438,438,0,"cash_only","",false
+"Joana Black","Humana Medicare 703 PPO 400 Plus","Essential Blue Series","addon",30,24,6,"ins_discount","blue_light",false
+"Joana Black","Humana Medicare 703 PPO 400 Plus","Light Filter (VSP LF)","addon",15,12,3,"ins_discount","all_other_lens_options",false
+"Joana Black","Humana Medicare 703 PPO 400 Plus","Mirror - Solid Color","addon",54,43.2,10.8,"ins_discount","mirror",false
+"Joana Black","Humana Medicare 703 PPO 400 Plus","Oversize Lenses","addon",30,30,0,"cash_only","",false
+"Joana Black","Humana Medicare 703 PPO 400 Plus","Polarized","addon",155.7,124.56,31.14,"ins_discount","polarized",false
+"Joana Black","Humana Medicare 703 PPO 400 Plus","Prism over Base Range, Per D, Per Lens","addon",8.2,8.2,0,"cash_only","",false
+"Joana Black","Humana Medicare 703 PPO 400 Plus","Roll & Polish","addon",14.4,11.52,2.88,"ins_discount","edging",false
+"Joana Black","Humana Medicare 703 PPO 400 Plus","Solid Tint - CR39/Poly CLR Lens","addon",17.8,14.24,3.56,"ins_discount","tint",false
+"Joana Black","Humana Medicare 703 PPO 400 Plus","Technical Add-On (Multifocal/Progressive)","addon",40,32,8,"ins_discount","all_other_lens_options",false
+"Joana Black","Humana Medicare 703 PPO 400 Plus","Technical Add-On (Single Vision)","addon",10,8,2,"ins_discount","all_other_lens_options",false
+"Joana Black","Humana Medicare 703 PPO 400 Plus","UV Protection","addon",15,12,3,"ins_discount","uv_treatment",false
+"Joana Black","Humana Medicare 703 PPO 400 Plus","Crizal Easy Pro","ar_coating",147.5,118,29.5,"ins_discount","ar_tier_2",false
+"Joana Black","Humana Medicare 703 PPO 400 Plus","Crizal Rock","ar_coating",145,116,29,"ins_discount","ar_tier_3",false
+"Joana Black","Humana Medicare 703 PPO 400 Plus","Crizal Sapphire HR","ar_coating",180,144,36,"ins_discount","ar_tier_3",false
+"Joana Black","Humana Medicare 703 PPO 400 Plus","Crizal Sunshield Mirrors UV","ar_coating",177.5,142,35.5,"ins_discount","uv_treatment",false
+"Joana Black","Humana Medicare 703 PPO 400 Plus","Crizal Sunshield UV","ar_coating",177.5,142,35.5,"ins_discount","uv_treatment",false
+"Joana Black","Humana Medicare 703 PPO 400 Plus","Neurolens Blue AR","ar_coating",180,180,0,"cash_only","",false
+"Joana Black","Humana Medicare 703 PPO 400 Plus","Neurolens Premium AR","ar_coating",180,180,0,"cash_only","",false
+"Joana Black","Humana Medicare 703 PPO 400 Plus","Flat Top 28","bifocal",126,0,126,"by_tier","standard_bf",false
+"Joana Black","Humana Medicare 703 PPO 400 Plus","Flat Top 7x28","bifocal",132.48,0,132.48,"by_tier","standard_bf",false
+"Joana Black","Humana Medicare 703 PPO 400 Plus","CR-39 (Standard Plastic)","material",0,0,0,"by_tier","standard",false
+"Joana Black","Humana Medicare 703 PPO 400 Plus","Hi-Index 1.67","material",125,100,25,"ins_discount","high_index_167",false
+"Joana Black","Humana Medicare 703 PPO 400 Plus","Hi-Index 1.72","material",150,150,0,"cash_only","",false
+"Joana Black","Humana Medicare 703 PPO 400 Plus","Polycarbonate","material",65,52,13,"ins_discount","polycarbonate",false
+"Joana Black","Humana Medicare 703 PPO 400 Plus","Trivex","material",85,68,17,"ins_discount","trivex",false
+"Joana Black","Humana Medicare 703 PPO 400 Plus","Full Rim","mount_fee",0,0,0,"by_tier","standard",false
+"Joana Black","Humana Medicare 703 PPO 400 Plus","Rimless (drill mount)","mount_fee",47,37.6,9.4,"ins_discount","all_other_lens_options",false
+"Joana Black","Humana Medicare 703 PPO 400 Plus","Semi Rimless (grooved)","mount_fee",35,28,7,"ins_discount","all_other_lens_options",false
+"Joana Black","Humana Medicare 703 PPO 400 Plus","Transitions GEN S","photochromic",175,140,35,"ins_discount","photochromic",false
+"Joana Black","Humana Medicare 703 PPO 400 Plus","Transitions XTRActive","photochromic",145,116,29,"ins_discount","photochromic",false
+"Joana Black","Humana Medicare 703 PPO 400 Plus","Neurolens Progressive","progressive",700,700,0,"cash_only","",false
+"Joana Black","Humana Medicare 703 PPO 400 Plus","Sequel PAL","progressive",535,535,0,"cash_only","",false
+"Joana Black","Humana Medicare 703 PPO 400 Plus","Varilux Comfort DRx","progressive",254.1,203.28,50.82,"ins_discount","tier_3",false
+"Joana Black","Humana Medicare 703 PPO 400 Plus","Varilux Comfort Max","progressive",393.3,314.64,78.66,"ins_discount","tier_4",false
+"Joana Black","Humana Medicare 703 PPO 400 Plus","Varilux I design","progressive",480,480,0,"cash_only","",false
+"Joana Black","Humana Medicare 703 PPO 400 Plus","Varilux X Design","progressive",600,480,120,"ins_discount","tier_4",false
+"Joana Black","Humana Medicare 703 PPO 400 Plus","Essilor Eyezen+ / Eyezen Start","single_vision",128.82,103.06,25.76,"ins_discount","all_other_lens_options",false
+"Joana Black","Humana Medicare 703 PPO 400 Plus","Neurolens SV","single_vision",400,400,0,"cash_only","",false
+"Joana Black","Humana Medicare 703 PPO 400 Plus","Sequel Single Vision","single_vision",309,309,0,"cash_only","",false
+"Joana Black","Humana Medicare 703 PPO 400 Plus","Single Vision","single_vision",80.4,0,80.4,"by_tier","standard_sv",false
+"Joana Black","Humana Medicare 703 PPO 400 Plus","Stellest","single_vision",438,438,0,"cash_only","",false
+"Jacquelyn Burke","Humana VCP","Essential Blue Series","addon",30,24,6,"uc_discount","blue_light",true
+"Jacquelyn Burke","Humana VCP","Light Filter (VSP LF)","addon",15,15,0,"cash_only","",false
+"Jacquelyn Burke","Humana VCP","Mirror - Solid Color","addon",54,43.2,10.8,"uc_discount","mirror",true
+"Jacquelyn Burke","Humana VCP","Oversize Lenses","addon",30,30,0,"cash_only","",false
+"Jacquelyn Burke","Humana VCP","Polarized","addon",155.7,66,89.7,"by_tier","polarized",false
+"Jacquelyn Burke","Humana VCP","Prism over Base Range, Per D, Per Lens","addon",8.2,8.2,0,"cash_only","",false
+"Jacquelyn Burke","Humana VCP","Roll & Polish","addon",14.4,11.52,2.88,"uc_discount","edging",true
+"Jacquelyn Burke","Humana VCP","Solid Tint - CR39/Poly CLR Lens","addon",17.8,15,2.8,"by_tier","tint",false
+"Jacquelyn Burke","Humana VCP","Technical Add-On (Multifocal/Progressive)","addon",40,40,0,"cash_only","",false
+"Jacquelyn Burke","Humana VCP","Technical Add-On (Single Vision)","addon",10,10,0,"cash_only","",false
+"Jacquelyn Burke","Humana VCP","UV Protection","addon",15,15,0,"by_tier","uv_treatment",false
+"Jacquelyn Burke","Humana VCP","Crizal Easy Pro","ar_coating",147.5,85,62.5,"by_tier","ar_tier_2",false
+"Jacquelyn Burke","Humana VCP","Crizal Rock","ar_coating",145,116,29,"ins_discount","ar_tier_3",false
+"Jacquelyn Burke","Humana VCP","Crizal Sapphire HR","ar_coating",180,144,36,"ins_discount","ar_tier_3",false
+"Jacquelyn Burke","Humana VCP","Crizal Sunshield Mirrors UV","ar_coating",177.5,15,162.5,"by_tier","uv_treatment",false
+"Jacquelyn Burke","Humana VCP","Crizal Sunshield UV","ar_coating",177.5,15,162.5,"by_tier","uv_treatment",false
+"Jacquelyn Burke","Humana VCP","Neurolens Blue AR","ar_coating",180,180,0,"cash_only","",false
+"Jacquelyn Burke","Humana VCP","Neurolens Premium AR","ar_coating",180,180,0,"cash_only","",false
+"Jacquelyn Burke","Humana VCP","Flat Top 28","bifocal",126,10,116,"by_tier","standard_bf",false
+"Jacquelyn Burke","Humana VCP","Flat Top 7x28","bifocal",132.48,10,122.48,"by_tier","standard_bf",false
+"Jacquelyn Burke","Humana VCP","CR-39 (Standard Plastic)","material",0,0,0,"by_tier","standard",false
+"Jacquelyn Burke","Humana VCP","Hi-Index 1.67","material",125,95,30,"by_tier","high_index_167",false
+"Jacquelyn Burke","Humana VCP","Hi-Index 1.72","material",150,150,0,"cash_only","",false
+"Jacquelyn Burke","Humana VCP","Polycarbonate","material",65,25,40,"by_tier","polycarbonate",false
+"Jacquelyn Burke","Humana VCP","Trivex","material",85,68,17,"uc_discount","trivex",true
+"Jacquelyn Burke","Humana VCP","Full Rim","mount_fee",0,0,0,"by_tier","standard",false
+"Jacquelyn Burke","Humana VCP","Rimless (drill mount)","mount_fee",47,47,0,"cash_only","",false
+"Jacquelyn Burke","Humana VCP","Semi Rimless (grooved)","mount_fee",35,35,0,"cash_only","",false
+"Jacquelyn Burke","Humana VCP","Transitions GEN S","photochromic",175,88,87,"by_tier","photochromic",false
+"Jacquelyn Burke","Humana VCP","Transitions XTRActive","photochromic",145,88,57,"by_tier","photochromic",false
+"Jacquelyn Burke","Humana VCP","Neurolens Progressive","progressive",700,700,0,"cash_only","",false
+"Jacquelyn Burke","Humana VCP","Sequel PAL","progressive",535,535,0,"cash_only","",false
+"Jacquelyn Burke","Humana VCP","Varilux Comfort DRx","progressive",254.1,145,109.1,"by_tier","tier_3",false
+"Jacquelyn Burke","Humana VCP","Varilux Comfort Max","progressive",393.3,185,208.3,"by_tier","tier_4",false
+"Jacquelyn Burke","Humana VCP","Varilux I design","progressive",480,480,0,"cash_only","",false
+"Jacquelyn Burke","Humana VCP","Varilux X Design","progressive",600,185,415,"by_tier","tier_4",false
+"Jacquelyn Burke","Humana VCP","Essilor Eyezen+ / Eyezen Start","single_vision",128.82,103.06,25.76,"ins_discount","all_other_lens_options",false
+"Jacquelyn Burke","Humana VCP","Neurolens SV","single_vision",400,400,0,"cash_only","",false
+"Jacquelyn Burke","Humana VCP","Sequel Single Vision","single_vision",309,309,0,"cash_only","",false
+"Jacquelyn Burke","Humana VCP","Single Vision","single_vision",80.4,10,70.4,"by_tier","standard_sv",false
+"Jacquelyn Burke","Humana VCP","Stellest","single_vision",438,438,0,"cash_only","",false
+"Chucky Carusotto","ECOLAB ACTIVE","Essential Blue Series","addon",30,24,6,"ins_discount","blue_light",false
+"Chucky Carusotto","ECOLAB ACTIVE","Light Filter (VSP LF)","addon",15,12,3,"ins_discount","all_other_lens_options",false
+"Chucky Carusotto","ECOLAB ACTIVE","Mirror - Solid Color","addon",54,43.2,10.8,"ins_discount","mirror",false
+"Chucky Carusotto","ECOLAB ACTIVE","Oversize Lenses","addon",30,30,0,"cash_only","",false
+"Chucky Carusotto","ECOLAB ACTIVE","Polarized","addon",155.7,124.56,31.14,"ins_discount","polarized",false
+"Chucky Carusotto","ECOLAB ACTIVE","Prism over Base Range, Per D, Per Lens","addon",8.2,8.2,0,"cash_only","",false
+"Chucky Carusotto","ECOLAB ACTIVE","Roll & Polish","addon",14.4,11.52,2.88,"ins_discount","edging",false
+"Chucky Carusotto","ECOLAB ACTIVE","Solid Tint - CR39/Poly CLR Lens","addon",17.8,0,17.8,"by_tier","tint",false
+"Chucky Carusotto","ECOLAB ACTIVE","Technical Add-On (Multifocal/Progressive)","addon",40,32,8,"ins_discount","all_other_lens_options",false
+"Chucky Carusotto","ECOLAB ACTIVE","Technical Add-On (Single Vision)","addon",10,8,2,"ins_discount","all_other_lens_options",false
+"Chucky Carusotto","ECOLAB ACTIVE","UV Protection","addon",15,15,0,"by_tier","uv_treatment",false
+"Chucky Carusotto","ECOLAB ACTIVE","Crizal Easy Pro","ar_coating",147.5,68,79.5,"by_tier","ar_tier_2",false
+"Chucky Carusotto","ECOLAB ACTIVE","Crizal Rock","ar_coating",145,116,29,"ins_discount","ar_tier_3",false
+"Chucky Carusotto","ECOLAB ACTIVE","Crizal Sapphire HR","ar_coating",180,144,36,"ins_discount","ar_tier_3",false
+"Chucky Carusotto","ECOLAB ACTIVE","Crizal Sunshield Mirrors UV","ar_coating",177.5,15,162.5,"by_tier","uv_treatment",false
+"Chucky Carusotto","ECOLAB ACTIVE","Crizal Sunshield UV","ar_coating",177.5,15,162.5,"by_tier","uv_treatment",false
+"Chucky Carusotto","ECOLAB ACTIVE","Neurolens Blue AR","ar_coating",180,180,0,"cash_only","",false
+"Chucky Carusotto","ECOLAB ACTIVE","Neurolens Premium AR","ar_coating",180,180,0,"cash_only","",false
+"Chucky Carusotto","ECOLAB ACTIVE","Flat Top 28","bifocal",126,20,106,"by_tier","standard_bf",false
+"Chucky Carusotto","ECOLAB ACTIVE","Flat Top 7x28","bifocal",132.48,20,112.48,"by_tier","standard_bf",false
+"Chucky Carusotto","ECOLAB ACTIVE","CR-39 (Standard Plastic)","material",0,0,0,"by_tier","standard",false
+"Chucky Carusotto","ECOLAB ACTIVE","Hi-Index 1.67","material",125,100,25,"ins_discount","high_index_167",false
+"Chucky Carusotto","ECOLAB ACTIVE","Hi-Index 1.72","material",150,150,0,"cash_only","",false
+"Chucky Carusotto","ECOLAB ACTIVE","Polycarbonate","material",65,40,25,"by_tier","polycarbonate",false
+"Chucky Carusotto","ECOLAB ACTIVE","Trivex","material",85,68,17,"ins_discount","trivex",false
+"Chucky Carusotto","ECOLAB ACTIVE","Full Rim","mount_fee",0,0,0,"by_tier","standard",false
+"Chucky Carusotto","ECOLAB ACTIVE","Rimless (drill mount)","mount_fee",47,37.6,9.4,"ins_discount","all_other_lens_options",false
+"Chucky Carusotto","ECOLAB ACTIVE","Semi Rimless (grooved)","mount_fee",35,28,7,"ins_discount","all_other_lens_options",false
+"Chucky Carusotto","ECOLAB ACTIVE","Transitions GEN S","photochromic",175,0,175,"by_tier","photochromic",false
+"Chucky Carusotto","ECOLAB ACTIVE","Transitions XTRActive","photochromic",145,0,145,"by_tier","photochromic",false
+"Chucky Carusotto","ECOLAB ACTIVE","Neurolens Progressive","progressive",700,700,0,"cash_only","",false
+"Chucky Carusotto","ECOLAB ACTIVE","Sequel PAL","progressive",535,535,0,"cash_only","",false
+"Chucky Carusotto","ECOLAB ACTIVE","Varilux Comfort DRx","progressive",254.1,68,186.1,"by_tier","tier_3",false
+"Chucky Carusotto","ECOLAB ACTIVE","Varilux Comfort Max","progressive",393.3,100,293.3,"by_tier","tier_4",false
+"Chucky Carusotto","ECOLAB ACTIVE","Varilux I design","progressive",480,480,0,"cash_only","",false
+"Chucky Carusotto","ECOLAB ACTIVE","Varilux X Design","progressive",600,100,500,"by_tier","tier_4",false
+"Chucky Carusotto","ECOLAB ACTIVE","Essilor Eyezen+ / Eyezen Start","single_vision",128.82,103.06,25.76,"ins_discount","all_other_lens_options",false
+"Chucky Carusotto","ECOLAB ACTIVE","Neurolens SV","single_vision",400,400,0,"cash_only","",false
+"Chucky Carusotto","ECOLAB ACTIVE","Sequel Single Vision","single_vision",309,309,0,"cash_only","",false
+"Chucky Carusotto","ECOLAB ACTIVE","Single Vision","single_vision",80.4,20,60.4,"by_tier","standard_sv",false
+"Chucky Carusotto","ECOLAB ACTIVE","Stellest","single_vision",438,438,0,"cash_only","",false
+"Thomas Chadwick","GEHA Connection Members Plan C Doctor","Essential Blue Series","addon",30,24,6,"ins_discount","blue_light",false
+"Thomas Chadwick","GEHA Connection Members Plan C Doctor","Light Filter (VSP LF)","addon",15,12,3,"ins_discount","all_other_lens_options",false
+"Thomas Chadwick","GEHA Connection Members Plan C Doctor","Mirror - Solid Color","addon",54,43.2,10.8,"ins_discount","mirror",false
+"Thomas Chadwick","GEHA Connection Members Plan C Doctor","Oversize Lenses","addon",30,30,0,"cash_only","",false
+"Thomas Chadwick","GEHA Connection Members Plan C Doctor","Polarized","addon",155.7,124.56,31.14,"ins_discount","polarized",false
+"Thomas Chadwick","GEHA Connection Members Plan C Doctor","Prism over Base Range, Per D, Per Lens","addon",8.2,8.2,0,"cash_only","",false
+"Thomas Chadwick","GEHA Connection Members Plan C Doctor","Roll & Polish","addon",14.4,11.52,2.88,"ins_discount","edging",false
+"Thomas Chadwick","GEHA Connection Members Plan C Doctor","Solid Tint - CR39/Poly CLR Lens","addon",17.8,15,2.8,"by_tier","tint",false
+"Thomas Chadwick","GEHA Connection Members Plan C Doctor","Technical Add-On (Multifocal/Progressive)","addon",40,32,8,"ins_discount","all_other_lens_options",false
+"Thomas Chadwick","GEHA Connection Members Plan C Doctor","Technical Add-On (Single Vision)","addon",10,8,2,"ins_discount","all_other_lens_options",false
+"Thomas Chadwick","GEHA Connection Members Plan C Doctor","UV Protection","addon",15,15,0,"by_tier","uv_treatment",false
+"Thomas Chadwick","GEHA Connection Members Plan C Doctor","Crizal Easy Pro","ar_coating",147.5,118,29.5,"ins_discount","ar_tier_2",false
+"Thomas Chadwick","GEHA Connection Members Plan C Doctor","Crizal Rock","ar_coating",145,116,29,"ins_discount","ar_tier_3",false
+"Thomas Chadwick","GEHA Connection Members Plan C Doctor","Crizal Sapphire HR","ar_coating",180,144,36,"ins_discount","ar_tier_3",false
+"Thomas Chadwick","GEHA Connection Members Plan C Doctor","Crizal Sunshield Mirrors UV","ar_coating",177.5,15,162.5,"by_tier","uv_treatment",false
+"Thomas Chadwick","GEHA Connection Members Plan C Doctor","Crizal Sunshield UV","ar_coating",177.5,15,162.5,"by_tier","uv_treatment",false
+"Thomas Chadwick","GEHA Connection Members Plan C Doctor","Neurolens Blue AR","ar_coating",180,180,0,"cash_only","",false
+"Thomas Chadwick","GEHA Connection Members Plan C Doctor","Neurolens Premium AR","ar_coating",180,180,0,"cash_only","",false
+"Thomas Chadwick","GEHA Connection Members Plan C Doctor","Flat Top 28","bifocal",126,70,56,"by_tier","standard_bf",false
+"Thomas Chadwick","GEHA Connection Members Plan C Doctor","Flat Top 7x28","bifocal",132.48,70,62.48,"by_tier","standard_bf",false
+"Thomas Chadwick","GEHA Connection Members Plan C Doctor","CR-39 (Standard Plastic)","material",0,0,0,"by_tier","standard",false
+"Thomas Chadwick","GEHA Connection Members Plan C Doctor","Hi-Index 1.67","material",125,100,25,"ins_discount","high_index_167",false
+"Thomas Chadwick","GEHA Connection Members Plan C Doctor","Hi-Index 1.72","material",150,150,0,"cash_only","",false
+"Thomas Chadwick","GEHA Connection Members Plan C Doctor","Polycarbonate","material",65,40,25,"by_tier","polycarbonate",false
+"Thomas Chadwick","GEHA Connection Members Plan C Doctor","Trivex","material",85,68,17,"ins_discount","trivex",false
+"Thomas Chadwick","GEHA Connection Members Plan C Doctor","Full Rim","mount_fee",0,0,0,"by_tier","standard",false
+"Thomas Chadwick","GEHA Connection Members Plan C Doctor","Rimless (drill mount)","mount_fee",47,37.6,9.4,"ins_discount","all_other_lens_options",false
+"Thomas Chadwick","GEHA Connection Members Plan C Doctor","Semi Rimless (grooved)","mount_fee",35,28,7,"ins_discount","all_other_lens_options",false
+"Thomas Chadwick","GEHA Connection Members Plan C Doctor","Transitions GEN S","photochromic",175,140,35,"ins_discount","photochromic",false
+"Thomas Chadwick","GEHA Connection Members Plan C Doctor","Transitions XTRActive","photochromic",145,116,29,"ins_discount","photochromic",false
+"Thomas Chadwick","GEHA Connection Members Plan C Doctor","Neurolens Progressive","progressive",700,700,0,"cash_only","",false
+"Thomas Chadwick","GEHA Connection Members Plan C Doctor","Sequel PAL","progressive",535,535,0,"cash_only","",false
+"Thomas Chadwick","GEHA Connection Members Plan C Doctor","Varilux Comfort DRx","progressive",254.1,203.28,50.82,"ins_discount","tier_3",false
+"Thomas Chadwick","GEHA Connection Members Plan C Doctor","Varilux Comfort Max","progressive",393.3,314.64,78.66,"ins_discount","tier_4",false
+"Thomas Chadwick","GEHA Connection Members Plan C Doctor","Varilux I design","progressive",480,480,0,"cash_only","",false
+"Thomas Chadwick","GEHA Connection Members Plan C Doctor","Varilux X Design","progressive",600,480,120,"ins_discount","tier_4",false
+"Thomas Chadwick","GEHA Connection Members Plan C Doctor","Essilor Eyezen+ / Eyezen Start","single_vision",128.82,103.06,25.76,"ins_discount","all_other_lens_options",false
+"Thomas Chadwick","GEHA Connection Members Plan C Doctor","Neurolens SV","single_vision",400,400,0,"cash_only","",false
+"Thomas Chadwick","GEHA Connection Members Plan C Doctor","Sequel Single Vision","single_vision",309,309,0,"cash_only","",false
+"Thomas Chadwick","GEHA Connection Members Plan C Doctor","Single Vision","single_vision",80.4,50,30.4,"by_tier","standard_sv",false
+"Thomas Chadwick","GEHA Connection Members Plan C Doctor","Stellest","single_vision",438,438,0,"cash_only","",false
+"Joshua Cruz","Orlando Health, Inc","Essential Blue Series","addon",30,24,6,"ins_discount","blue_light",false
+"Joshua Cruz","Orlando Health, Inc","Light Filter (VSP LF)","addon",15,12,3,"ins_discount","all_other_lens_options",false
+"Joshua Cruz","Orlando Health, Inc","Mirror - Solid Color","addon",54,43.2,10.8,"ins_discount","mirror",false
+"Joshua Cruz","Orlando Health, Inc","Oversize Lenses","addon",30,30,0,"cash_only","",false
+"Joshua Cruz","Orlando Health, Inc","Polarized","addon",155.7,124.56,31.14,"ins_discount","polarized",false
+"Joshua Cruz","Orlando Health, Inc","Prism over Base Range, Per D, Per Lens","addon",8.2,8.2,0,"cash_only","",false
+"Joshua Cruz","Orlando Health, Inc","Roll & Polish","addon",14.4,11.52,2.88,"ins_discount","edging",false
+"Joshua Cruz","Orlando Health, Inc","Solid Tint - CR39/Poly CLR Lens","addon",17.8,15,2.8,"by_tier","tint",false
+"Joshua Cruz","Orlando Health, Inc","Technical Add-On (Multifocal/Progressive)","addon",40,32,8,"ins_discount","all_other_lens_options",false
+"Joshua Cruz","Orlando Health, Inc","Technical Add-On (Single Vision)","addon",10,8,2,"ins_discount","all_other_lens_options",false
+"Joshua Cruz","Orlando Health, Inc","UV Protection","addon",15,15,0,"by_tier","uv_treatment",false
+"Joshua Cruz","Orlando Health, Inc","Crizal Easy Pro","ar_coating",147.5,68,79.5,"by_tier","ar_tier_2",false
+"Joshua Cruz","Orlando Health, Inc","Crizal Rock","ar_coating",145,116,29,"ins_discount","ar_tier_3",false
+"Joshua Cruz","Orlando Health, Inc","Crizal Sapphire HR","ar_coating",180,144,36,"ins_discount","ar_tier_3",false
+"Joshua Cruz","Orlando Health, Inc","Crizal Sunshield Mirrors UV","ar_coating",177.5,15,162.5,"by_tier","uv_treatment",false
+"Joshua Cruz","Orlando Health, Inc","Crizal Sunshield UV","ar_coating",177.5,15,162.5,"by_tier","uv_treatment",false
+"Joshua Cruz","Orlando Health, Inc","Neurolens Blue AR","ar_coating",180,180,0,"cash_only","",false
+"Joshua Cruz","Orlando Health, Inc","Neurolens Premium AR","ar_coating",180,180,0,"cash_only","",false
+"Joshua Cruz","Orlando Health, Inc","Flat Top 28","bifocal",126,10,116,"by_tier","standard_bf",false
+"Joshua Cruz","Orlando Health, Inc","Flat Top 7x28","bifocal",132.48,10,122.48,"by_tier","standard_bf",false
+"Joshua Cruz","Orlando Health, Inc","CR-39 (Standard Plastic)","material",0,0,0,"by_tier","standard",false
+"Joshua Cruz","Orlando Health, Inc","Hi-Index 1.67","material",125,100,25,"ins_discount","high_index_167",false
+"Joshua Cruz","Orlando Health, Inc","Hi-Index 1.72","material",150,150,0,"cash_only","",false
+"Joshua Cruz","Orlando Health, Inc","Polycarbonate","material",65,0,65,"by_tier","polycarbonate",false
+"Joshua Cruz","Orlando Health, Inc","Trivex","material",85,68,17,"ins_discount","trivex",false
+"Joshua Cruz","Orlando Health, Inc","Full Rim","mount_fee",0,0,0,"by_tier","standard",false
+"Joshua Cruz","Orlando Health, Inc","Rimless (drill mount)","mount_fee",47,37.6,9.4,"ins_discount","all_other_lens_options",false
+"Joshua Cruz","Orlando Health, Inc","Semi Rimless (grooved)","mount_fee",35,28,7,"ins_discount","all_other_lens_options",false
+"Joshua Cruz","Orlando Health, Inc","Transitions GEN S","photochromic",175,0,175,"by_tier","photochromic",false
+"Joshua Cruz","Orlando Health, Inc","Transitions XTRActive","photochromic",145,0,145,"by_tier","photochromic",false
+"Joshua Cruz","Orlando Health, Inc","Neurolens Progressive","progressive",700,700,0,"cash_only","",false
+"Joshua Cruz","Orlando Health, Inc","Sequel PAL","progressive",535,535,0,"cash_only","",false
+"Joshua Cruz","Orlando Health, Inc","Varilux Comfort DRx","progressive",254.1,55,199.1,"by_tier","tier_3",false
+"Joshua Cruz","Orlando Health, Inc","Varilux Comfort Max","progressive",393.3,185,208.3,"by_tier","tier_4",false
+"Joshua Cruz","Orlando Health, Inc","Varilux I design","progressive",480,480,0,"cash_only","",false
+"Joshua Cruz","Orlando Health, Inc","Varilux X Design","progressive",600,185,415,"by_tier","tier_4",false
+"Joshua Cruz","Orlando Health, Inc","Essilor Eyezen+ / Eyezen Start","single_vision",128.82,103.06,25.76,"ins_discount","all_other_lens_options",false
+"Joshua Cruz","Orlando Health, Inc","Neurolens SV","single_vision",400,400,0,"cash_only","",false
+"Joshua Cruz","Orlando Health, Inc","Sequel Single Vision","single_vision",309,309,0,"cash_only","",false
+"Joshua Cruz","Orlando Health, Inc","Single Vision","single_vision",80.4,10,70.4,"by_tier","standard_sv",false
+"Joshua Cruz","Orlando Health, Inc","Stellest","single_vision",438,438,0,"cash_only","",false
+"Daniel Dasilveira","Blue View LG GA FI VOL","Essential Blue Series","addon",30,24,6,"ins_discount","blue_light",false
+"Daniel Dasilveira","Blue View LG GA FI VOL","Light Filter (VSP LF)","addon",15,12,3,"ins_discount","all_other_lens_options",false
+"Daniel Dasilveira","Blue View LG GA FI VOL","Mirror - Solid Color","addon",54,43.2,10.8,"ins_discount","mirror",false
+"Daniel Dasilveira","Blue View LG GA FI VOL","Oversize Lenses","addon",30,30,0,"cash_only","",false
+"Daniel Dasilveira","Blue View LG GA FI VOL","Polarized","addon",155.7,124.56,31.14,"ins_discount","polarized",false
+"Daniel Dasilveira","Blue View LG GA FI VOL","Prism over Base Range, Per D, Per Lens","addon",8.2,8.2,0,"cash_only","",false
+"Daniel Dasilveira","Blue View LG GA FI VOL","Roll & Polish","addon",14.4,11.52,2.88,"ins_discount","edging",false
+"Daniel Dasilveira","Blue View LG GA FI VOL","Solid Tint - CR39/Poly CLR Lens","addon",17.8,15,2.8,"by_tier","tint",false
+"Daniel Dasilveira","Blue View LG GA FI VOL","Technical Add-On (Multifocal/Progressive)","addon",40,32,8,"ins_discount","all_other_lens_options",false
+"Daniel Dasilveira","Blue View LG GA FI VOL","Technical Add-On (Single Vision)","addon",10,8,2,"ins_discount","all_other_lens_options",false
+"Daniel Dasilveira","Blue View LG GA FI VOL","UV Protection","addon",15,15,0,"by_tier","uv_treatment",false
+"Daniel Dasilveira","Blue View LG GA FI VOL","Crizal Easy Pro","ar_coating",147.5,68,79.5,"by_tier","ar_tier_2",false
+"Daniel Dasilveira","Blue View LG GA FI VOL","Crizal Rock","ar_coating",145,116,29,"ins_discount","ar_tier_3",false
+"Daniel Dasilveira","Blue View LG GA FI VOL","Crizal Sapphire HR","ar_coating",180,144,36,"ins_discount","ar_tier_3",false
+"Daniel Dasilveira","Blue View LG GA FI VOL","Crizal Sunshield Mirrors UV","ar_coating",177.5,15,162.5,"by_tier","uv_treatment",false
+"Daniel Dasilveira","Blue View LG GA FI VOL","Crizal Sunshield UV","ar_coating",177.5,15,162.5,"by_tier","uv_treatment",false
+"Daniel Dasilveira","Blue View LG GA FI VOL","Neurolens Blue AR","ar_coating",180,180,0,"cash_only","",false
+"Daniel Dasilveira","Blue View LG GA FI VOL","Neurolens Premium AR","ar_coating",180,180,0,"cash_only","",false
+"Daniel Dasilveira","Blue View LG GA FI VOL","Flat Top 28","bifocal",126,20,106,"by_tier","standard_bf",false
+"Daniel Dasilveira","Blue View LG GA FI VOL","Flat Top 7x28","bifocal",132.48,20,112.48,"by_tier","standard_bf",false
+"Daniel Dasilveira","Blue View LG GA FI VOL","CR-39 (Standard Plastic)","material",0,0,0,"by_tier","standard",false
+"Daniel Dasilveira","Blue View LG GA FI VOL","Hi-Index 1.67","material",125,100,25,"ins_discount","high_index_167",false
+"Daniel Dasilveira","Blue View LG GA FI VOL","Hi-Index 1.72","material",150,150,0,"cash_only","",false
+"Daniel Dasilveira","Blue View LG GA FI VOL","Polycarbonate","material",65,40,25,"by_tier","polycarbonate",false
+"Daniel Dasilveira","Blue View LG GA FI VOL","Trivex","material",85,68,17,"ins_discount","trivex",false
+"Daniel Dasilveira","Blue View LG GA FI VOL","Full Rim","mount_fee",0,0,0,"by_tier","standard",false
+"Daniel Dasilveira","Blue View LG GA FI VOL","Rimless (drill mount)","mount_fee",47,37.6,9.4,"ins_discount","all_other_lens_options",false
+"Daniel Dasilveira","Blue View LG GA FI VOL","Semi Rimless (grooved)","mount_fee",35,28,7,"ins_discount","all_other_lens_options",false
+"Daniel Dasilveira","Blue View LG GA FI VOL","Transitions GEN S","photochromic",175,75,100,"by_tier","photochromic",false
+"Daniel Dasilveira","Blue View LG GA FI VOL","Transitions XTRActive","photochromic",145,75,70,"by_tier","photochromic",false
+"Daniel Dasilveira","Blue View LG GA FI VOL","Neurolens Progressive","progressive",700,700,0,"cash_only","",false
+"Daniel Dasilveira","Blue View LG GA FI VOL","Sequel PAL","progressive",535,535,0,"cash_only","",false
+"Daniel Dasilveira","Blue View LG GA FI VOL","Varilux Comfort DRx","progressive",254.1,130,124.1,"by_tier","tier_3",false
+"Daniel Dasilveira","Blue View LG GA FI VOL","Varilux Comfort Max","progressive",393.3,85,308.3,"by_tier","tier_4",false
+"Daniel Dasilveira","Blue View LG GA FI VOL","Varilux I design","progressive",480,480,0,"cash_only","",false
+"Daniel Dasilveira","Blue View LG GA FI VOL","Varilux X Design","progressive",600,85,515,"by_tier","tier_4",false
+"Daniel Dasilveira","Blue View LG GA FI VOL","Essilor Eyezen+ / Eyezen Start","single_vision",128.82,103.06,25.76,"ins_discount","all_other_lens_options",false
+"Daniel Dasilveira","Blue View LG GA FI VOL","Neurolens SV","single_vision",400,400,0,"cash_only","",false
+"Daniel Dasilveira","Blue View LG GA FI VOL","Sequel Single Vision","single_vision",309,309,0,"cash_only","",false
+"Daniel Dasilveira","Blue View LG GA FI VOL","Single Vision","single_vision",80.4,20,60.4,"by_tier","standard_sv",false
+"Daniel Dasilveira","Blue View LG GA FI VOL","Stellest","single_vision",438,438,0,"cash_only","",false
+"Daniel Foster","HCA Healthcare Affiliated Facilities","Essential Blue Series","addon",30,24,6,"ins_discount","blue_light",false
+"Daniel Foster","HCA Healthcare Affiliated Facilities","Light Filter (VSP LF)","addon",15,12,3,"ins_discount","all_other_lens_options",false
+"Daniel Foster","HCA Healthcare Affiliated Facilities","Mirror - Solid Color","addon",54,43.2,10.8,"ins_discount","mirror",false
+"Daniel Foster","HCA Healthcare Affiliated Facilities","Oversize Lenses","addon",30,30,0,"cash_only","",false
+"Daniel Foster","HCA Healthcare Affiliated Facilities","Polarized","addon",155.7,124.56,31.14,"ins_discount","polarized",false
+"Daniel Foster","HCA Healthcare Affiliated Facilities","Prism over Base Range, Per D, Per Lens","addon",8.2,8.2,0,"cash_only","",false
+"Daniel Foster","HCA Healthcare Affiliated Facilities","Roll & Polish","addon",14.4,11.52,2.88,"ins_discount","edging",false
+"Daniel Foster","HCA Healthcare Affiliated Facilities","Solid Tint - CR39/Poly CLR Lens","addon",17.8,15,2.8,"by_tier","tint",false
+"Daniel Foster","HCA Healthcare Affiliated Facilities","Technical Add-On (Multifocal/Progressive)","addon",40,32,8,"ins_discount","all_other_lens_options",false
+"Daniel Foster","HCA Healthcare Affiliated Facilities","Technical Add-On (Single Vision)","addon",10,8,2,"ins_discount","all_other_lens_options",false
+"Daniel Foster","HCA Healthcare Affiliated Facilities","UV Protection","addon",15,15,0,"by_tier","uv_treatment",false
+"Daniel Foster","HCA Healthcare Affiliated Facilities","Crizal Easy Pro","ar_coating",147.5,68,79.5,"by_tier","ar_tier_2",false
+"Daniel Foster","HCA Healthcare Affiliated Facilities","Crizal Rock","ar_coating",145,116,29,"ins_discount","ar_tier_3",false
+"Daniel Foster","HCA Healthcare Affiliated Facilities","Crizal Sapphire HR","ar_coating",180,144,36,"ins_discount","ar_tier_3",false
+"Daniel Foster","HCA Healthcare Affiliated Facilities","Crizal Sunshield Mirrors UV","ar_coating",177.5,15,162.5,"by_tier","uv_treatment",false
+"Daniel Foster","HCA Healthcare Affiliated Facilities","Crizal Sunshield UV","ar_coating",177.5,15,162.5,"by_tier","uv_treatment",false
+"Daniel Foster","HCA Healthcare Affiliated Facilities","Neurolens Blue AR","ar_coating",180,180,0,"cash_only","",false
+"Daniel Foster","HCA Healthcare Affiliated Facilities","Neurolens Premium AR","ar_coating",180,180,0,"cash_only","",false
+"Daniel Foster","HCA Healthcare Affiliated Facilities","Flat Top 28","bifocal",126,20,106,"by_tier","standard_bf",false
+"Daniel Foster","HCA Healthcare Affiliated Facilities","Flat Top 7x28","bifocal",132.48,20,112.48,"by_tier","standard_bf",false
+"Daniel Foster","HCA Healthcare Affiliated Facilities","CR-39 (Standard Plastic)","material",0,0,0,"by_tier","standard",false
+"Daniel Foster","HCA Healthcare Affiliated Facilities","Hi-Index 1.67","material",125,100,25,"ins_discount","high_index_167",false
+"Daniel Foster","HCA Healthcare Affiliated Facilities","Hi-Index 1.72","material",150,150,0,"cash_only","",false
+"Daniel Foster","HCA Healthcare Affiliated Facilities","Polycarbonate","material",65,40,25,"by_tier","polycarbonate",false
+"Daniel Foster","HCA Healthcare Affiliated Facilities","Trivex","material",85,68,17,"ins_discount","trivex",false
+"Daniel Foster","HCA Healthcare Affiliated Facilities","Full Rim","mount_fee",0,0,0,"by_tier","standard",false
+"Daniel Foster","HCA Healthcare Affiliated Facilities","Rimless (drill mount)","mount_fee",47,37.6,9.4,"ins_discount","all_other_lens_options",false
+"Daniel Foster","HCA Healthcare Affiliated Facilities","Semi Rimless (grooved)","mount_fee",35,28,7,"ins_discount","all_other_lens_options",false
+"Daniel Foster","HCA Healthcare Affiliated Facilities","Transitions GEN S","photochromic",175,75,100,"by_tier","photochromic",false
+"Daniel Foster","HCA Healthcare Affiliated Facilities","Transitions XTRActive","photochromic",145,75,70,"by_tier","photochromic",false
+"Daniel Foster","HCA Healthcare Affiliated Facilities","Neurolens Progressive","progressive",700,700,0,"cash_only","",false
+"Daniel Foster","HCA Healthcare Affiliated Facilities","Sequel PAL","progressive",535,535,0,"cash_only","",false
+"Daniel Foster","HCA Healthcare Affiliated Facilities","Varilux Comfort DRx","progressive",254.1,130,124.1,"by_tier","tier_3",false
+"Daniel Foster","HCA Healthcare Affiliated Facilities","Varilux Comfort Max","progressive",393.3,85,308.3,"by_tier","tier_4",false
+"Daniel Foster","HCA Healthcare Affiliated Facilities","Varilux I design","progressive",480,480,0,"cash_only","",false
+"Daniel Foster","HCA Healthcare Affiliated Facilities","Varilux X Design","progressive",600,85,515,"by_tier","tier_4",false
+"Daniel Foster","HCA Healthcare Affiliated Facilities","Essilor Eyezen+ / Eyezen Start","single_vision",128.82,103.06,25.76,"ins_discount","all_other_lens_options",false
+"Daniel Foster","HCA Healthcare Affiliated Facilities","Neurolens SV","single_vision",400,400,0,"cash_only","",false
+"Daniel Foster","HCA Healthcare Affiliated Facilities","Sequel Single Vision","single_vision",309,309,0,"cash_only","",false
+"Daniel Foster","HCA Healthcare Affiliated Facilities","Single Vision","single_vision",80.4,20,60.4,"by_tier","standard_sv",false
+"Daniel Foster","HCA Healthcare Affiliated Facilities","Stellest","single_vision",438,438,0,"cash_only","",false
+"Stephen Glass","Humana VCP","Essential Blue Series","addon",30,24,6,"ins_discount","blue_light",false
+"Stephen Glass","Humana VCP","Light Filter (VSP LF)","addon",15,12,3,"ins_discount","all_other_lens_options",false
+"Stephen Glass","Humana VCP","Mirror - Solid Color","addon",54,43.2,10.8,"ins_discount","mirror",false
+"Stephen Glass","Humana VCP","Oversize Lenses","addon",30,30,0,"cash_only","",false
+"Stephen Glass","Humana VCP","Polarized","addon",155.7,66,89.7,"by_tier","polarized",false
+"Stephen Glass","Humana VCP","Prism over Base Range, Per D, Per Lens","addon",8.2,8.2,0,"cash_only","",false
+"Stephen Glass","Humana VCP","Roll & Polish","addon",14.4,11.52,2.88,"ins_discount","edging",false
+"Stephen Glass","Humana VCP","Solid Tint - CR39/Poly CLR Lens","addon",17.8,15,2.8,"by_tier","tint",false
+"Stephen Glass","Humana VCP","Technical Add-On (Multifocal/Progressive)","addon",40,32,8,"ins_discount","all_other_lens_options",false
+"Stephen Glass","Humana VCP","Technical Add-On (Single Vision)","addon",10,8,2,"ins_discount","all_other_lens_options",false
+"Stephen Glass","Humana VCP","UV Protection","addon",15,15,0,"by_tier","uv_treatment",false
+"Stephen Glass","Humana VCP","Crizal Easy Pro","ar_coating",147.5,85,62.5,"by_tier","ar_tier_2",false
+"Stephen Glass","Humana VCP","Crizal Rock","ar_coating",145,116,29,"ins_discount","ar_tier_3",false
+"Stephen Glass","Humana VCP","Crizal Sapphire HR","ar_coating",180,144,36,"ins_discount","ar_tier_3",false
+"Stephen Glass","Humana VCP","Crizal Sunshield Mirrors UV","ar_coating",177.5,15,162.5,"by_tier","uv_treatment",false
+"Stephen Glass","Humana VCP","Crizal Sunshield UV","ar_coating",177.5,15,162.5,"by_tier","uv_treatment",false
+"Stephen Glass","Humana VCP","Neurolens Blue AR","ar_coating",180,180,0,"cash_only","",false
+"Stephen Glass","Humana VCP","Neurolens Premium AR","ar_coating",180,180,0,"cash_only","",false
+"Stephen Glass","Humana VCP","Flat Top 28","bifocal",126,10,116,"by_tier","standard_bf",false
+"Stephen Glass","Humana VCP","Flat Top 7x28","bifocal",132.48,10,122.48,"by_tier","standard_bf",false
+"Stephen Glass","Humana VCP","CR-39 (Standard Plastic)","material",0,0,0,"by_tier","standard",false
+"Stephen Glass","Humana VCP","Hi-Index 1.67","material",125,95,30,"by_tier","high_index_167",false
+"Stephen Glass","Humana VCP","Hi-Index 1.72","material",150,150,0,"cash_only","",false
+"Stephen Glass","Humana VCP","Polycarbonate","material",65,25,40,"by_tier","polycarbonate",false
+"Stephen Glass","Humana VCP","Trivex","material",85,68,17,"ins_discount","trivex",false
+"Stephen Glass","Humana VCP","Full Rim","mount_fee",0,0,0,"by_tier","standard",false
+"Stephen Glass","Humana VCP","Rimless (drill mount)","mount_fee",47,37.6,9.4,"ins_discount","all_other_lens_options",false
+"Stephen Glass","Humana VCP","Semi Rimless (grooved)","mount_fee",35,28,7,"ins_discount","all_other_lens_options",false
+"Stephen Glass","Humana VCP","Transitions GEN S","photochromic",175,88,87,"by_tier","photochromic",false
+"Stephen Glass","Humana VCP","Transitions XTRActive","photochromic",145,88,57,"by_tier","photochromic",false
+"Stephen Glass","Humana VCP","Neurolens Progressive","progressive",700,700,0,"cash_only","",false
+"Stephen Glass","Humana VCP","Sequel PAL","progressive",535,535,0,"cash_only","",false
+"Stephen Glass","Humana VCP","Varilux Comfort DRx","progressive",254.1,145,109.1,"by_tier","tier_3",false
+"Stephen Glass","Humana VCP","Varilux Comfort Max","progressive",393.3,185,208.3,"by_tier","tier_4",false
+"Stephen Glass","Humana VCP","Varilux I design","progressive",480,480,0,"cash_only","",false
+"Stephen Glass","Humana VCP","Varilux X Design","progressive",600,185,415,"by_tier","tier_4",false
+"Stephen Glass","Humana VCP","Essilor Eyezen+ / Eyezen Start","single_vision",128.82,103.06,25.76,"ins_discount","all_other_lens_options",false
+"Stephen Glass","Humana VCP","Neurolens SV","single_vision",400,400,0,"cash_only","",false
+"Stephen Glass","Humana VCP","Sequel Single Vision","single_vision",309,309,0,"cash_only","",false
+"Stephen Glass","Humana VCP","Single Vision","single_vision",80.4,10,70.4,"by_tier","standard_sv",false
+"Stephen Glass","Humana VCP","Stellest","single_vision",438,438,0,"cash_only","",false
+"Joseph Hernandez","Osceola County Government","Essential Blue Series","addon",30,24,6,"ins_discount","blue_light",false
+"Joseph Hernandez","Osceola County Government","Light Filter (VSP LF)","addon",15,12,3,"ins_discount","all_other_lens_options",false
+"Joseph Hernandez","Osceola County Government","Mirror - Solid Color","addon",54,43.2,10.8,"ins_discount","mirror",false
+"Joseph Hernandez","Osceola County Government","Oversize Lenses","addon",30,30,0,"cash_only","",false
+"Joseph Hernandez","Osceola County Government","Polarized","addon",155.7,124.56,31.14,"ins_discount","polarized",false
+"Joseph Hernandez","Osceola County Government","Prism over Base Range, Per D, Per Lens","addon",8.2,8.2,0,"cash_only","",false
+"Joseph Hernandez","Osceola County Government","Roll & Polish","addon",14.4,11.52,2.88,"ins_discount","edging",false
+"Joseph Hernandez","Osceola County Government","Solid Tint - CR39/Poly CLR Lens","addon",17.8,15,2.8,"by_tier","tint",false
+"Joseph Hernandez","Osceola County Government","Technical Add-On (Multifocal/Progressive)","addon",40,32,8,"ins_discount","all_other_lens_options",false
+"Joseph Hernandez","Osceola County Government","Technical Add-On (Single Vision)","addon",10,8,2,"ins_discount","all_other_lens_options",false
+"Joseph Hernandez","Osceola County Government","UV Protection","addon",15,15,0,"by_tier","uv_treatment",false
+"Joseph Hernandez","Osceola County Government","Crizal Easy Pro","ar_coating",147.5,68,79.5,"by_tier","ar_tier_2",false
+"Joseph Hernandez","Osceola County Government","Crizal Rock","ar_coating",145,116,29,"ins_discount","ar_tier_3",false
+"Joseph Hernandez","Osceola County Government","Crizal Sapphire HR","ar_coating",180,144,36,"ins_discount","ar_tier_3",false
+"Joseph Hernandez","Osceola County Government","Crizal Sunshield Mirrors UV","ar_coating",177.5,15,162.5,"by_tier","uv_treatment",false
+"Joseph Hernandez","Osceola County Government","Crizal Sunshield UV","ar_coating",177.5,15,162.5,"by_tier","uv_treatment",false
+"Joseph Hernandez","Osceola County Government","Neurolens Blue AR","ar_coating",180,180,0,"cash_only","",false
+"Joseph Hernandez","Osceola County Government","Neurolens Premium AR","ar_coating",180,180,0,"cash_only","",false
+"Joseph Hernandez","Osceola County Government","Flat Top 28","bifocal",126,15,111,"by_tier","standard_bf",false
+"Joseph Hernandez","Osceola County Government","Flat Top 7x28","bifocal",132.48,15,117.48,"by_tier","standard_bf",false
+"Joseph Hernandez","Osceola County Government","CR-39 (Standard Plastic)","material",0,0,0,"by_tier","standard",false
+"Joseph Hernandez","Osceola County Government","Hi-Index 1.67","material",125,100,25,"ins_discount","high_index_167",false
+"Joseph Hernandez","Osceola County Government","Hi-Index 1.72","material",150,150,0,"cash_only","",false
+"Joseph Hernandez","Osceola County Government","Polycarbonate","material",65,40,25,"by_tier","polycarbonate",false
+"Joseph Hernandez","Osceola County Government","Trivex","material",85,68,17,"ins_discount","trivex",false
+"Joseph Hernandez","Osceola County Government","Full Rim","mount_fee",0,0,0,"by_tier","standard",false
+"Joseph Hernandez","Osceola County Government","Rimless (drill mount)","mount_fee",47,37.6,9.4,"ins_discount","all_other_lens_options",false
+"Joseph Hernandez","Osceola County Government","Semi Rimless (grooved)","mount_fee",35,28,7,"ins_discount","all_other_lens_options",false
+"Joseph Hernandez","Osceola County Government","Transitions GEN S","photochromic",175,75,100,"by_tier","photochromic",false
+"Joseph Hernandez","Osceola County Government","Transitions XTRActive","photochromic",145,75,70,"by_tier","photochromic",false
+"Joseph Hernandez","Osceola County Government","Neurolens Progressive","progressive",700,700,0,"cash_only","",false
+"Joseph Hernandez","Osceola County Government","Sequel PAL","progressive",535,535,0,"cash_only","",false
+"Joseph Hernandez","Osceola County Government","Varilux Comfort DRx","progressive",254.1,60,194.1,"by_tier","tier_3",false
+"Joseph Hernandez","Osceola County Government","Varilux Comfort Max","progressive",393.3,15,378.3,"by_tier","tier_4",false
+"Joseph Hernandez","Osceola County Government","Varilux I design","progressive",480,480,0,"cash_only","",false
+"Joseph Hernandez","Osceola County Government","Varilux X Design","progressive",600,15,585,"by_tier","tier_4",false
+"Joseph Hernandez","Osceola County Government","Essilor Eyezen+ / Eyezen Start","single_vision",128.82,103.06,25.76,"ins_discount","all_other_lens_options",false
+"Joseph Hernandez","Osceola County Government","Neurolens SV","single_vision",400,400,0,"cash_only","",false
+"Joseph Hernandez","Osceola County Government","Sequel Single Vision","single_vision",309,309,0,"cash_only","",false
+"Joseph Hernandez","Osceola County Government","Single Vision","single_vision",80.4,15,65.4,"by_tier","standard_sv",false
+"Joseph Hernandez","Osceola County Government","Stellest","single_vision",438,438,0,"cash_only","",false
+"CHRISTOPHER IRVINE","BVV CA ACA SG Off Exch WGS","Essential Blue Series","addon",30,24,6,"ins_discount","blue_light",false
+"CHRISTOPHER IRVINE","BVV CA ACA SG Off Exch WGS","Light Filter (VSP LF)","addon",15,15,0,"cash_only","",false
+"CHRISTOPHER IRVINE","BVV CA ACA SG Off Exch WGS","Mirror - Solid Color","addon",54,43.2,10.8,"ins_discount","mirror",false
+"CHRISTOPHER IRVINE","BVV CA ACA SG Off Exch WGS","Oversize Lenses","addon",30,30,0,"cash_only","",false
+"CHRISTOPHER IRVINE","BVV CA ACA SG Off Exch WGS","Polarized","addon",155.7,124.56,31.14,"ins_discount","polarized",false
+"CHRISTOPHER IRVINE","BVV CA ACA SG Off Exch WGS","Prism over Base Range, Per D, Per Lens","addon",8.2,8.2,0,"cash_only","",false
+"CHRISTOPHER IRVINE","BVV CA ACA SG Off Exch WGS","Roll & Polish","addon",14.4,11.52,2.88,"ins_discount","edging",false
+"CHRISTOPHER IRVINE","BVV CA ACA SG Off Exch WGS","Solid Tint - CR39/Poly CLR Lens","addon",17.8,15,2.8,"by_tier","tint",false
+"CHRISTOPHER IRVINE","BVV CA ACA SG Off Exch WGS","Technical Add-On (Multifocal/Progressive)","addon",40,40,0,"cash_only","",false
+"CHRISTOPHER IRVINE","BVV CA ACA SG Off Exch WGS","Technical Add-On (Single Vision)","addon",10,10,0,"cash_only","",false
+"CHRISTOPHER IRVINE","BVV CA ACA SG Off Exch WGS","UV Protection","addon",15,15,0,"by_tier","uv_treatment",false
+"CHRISTOPHER IRVINE","BVV CA ACA SG Off Exch WGS","Crizal Easy Pro","ar_coating",147.5,118,29.5,"ins_discount","ar_tier_2",false
+"CHRISTOPHER IRVINE","BVV CA ACA SG Off Exch WGS","Crizal Rock","ar_coating",145,116,29,"ins_discount","ar_tier_3",false
+"CHRISTOPHER IRVINE","BVV CA ACA SG Off Exch WGS","Crizal Sapphire HR","ar_coating",180,144,36,"ins_discount","ar_tier_3",false
+"CHRISTOPHER IRVINE","BVV CA ACA SG Off Exch WGS","Crizal Sunshield Mirrors UV","ar_coating",177.5,15,162.5,"by_tier","uv_treatment",false
+"CHRISTOPHER IRVINE","BVV CA ACA SG Off Exch WGS","Crizal Sunshield UV","ar_coating",177.5,15,162.5,"by_tier","uv_treatment",false
+"CHRISTOPHER IRVINE","BVV CA ACA SG Off Exch WGS","Neurolens Blue AR","ar_coating",180,180,0,"cash_only","",false
+"CHRISTOPHER IRVINE","BVV CA ACA SG Off Exch WGS","Neurolens Premium AR","ar_coating",180,180,0,"cash_only","",false
+"CHRISTOPHER IRVINE","BVV CA ACA SG Off Exch WGS","Flat Top 28","bifocal",126,70,56,"by_tier","standard_bf",false
+"CHRISTOPHER IRVINE","BVV CA ACA SG Off Exch WGS","Flat Top 7x28","bifocal",132.48,70,62.48,"by_tier","standard_bf",false
+"CHRISTOPHER IRVINE","BVV CA ACA SG Off Exch WGS","CR-39 (Standard Plastic)","material",0,0,0,"by_tier","standard",false
+"CHRISTOPHER IRVINE","BVV CA ACA SG Off Exch WGS","Hi-Index 1.67","material",125,100,25,"ins_discount","high_index_167",false
+"CHRISTOPHER IRVINE","BVV CA ACA SG Off Exch WGS","Hi-Index 1.72","material",150,150,0,"cash_only","",false
+"CHRISTOPHER IRVINE","BVV CA ACA SG Off Exch WGS","Polycarbonate","material",65,40,25,"by_tier","polycarbonate",false
+"CHRISTOPHER IRVINE","BVV CA ACA SG Off Exch WGS","Trivex","material",85,68,17,"ins_discount","trivex",false
+"CHRISTOPHER IRVINE","BVV CA ACA SG Off Exch WGS","Full Rim","mount_fee",0,0,0,"by_tier","standard",false
+"CHRISTOPHER IRVINE","BVV CA ACA SG Off Exch WGS","Rimless (drill mount)","mount_fee",47,47,0,"cash_only","",false
+"CHRISTOPHER IRVINE","BVV CA ACA SG Off Exch WGS","Semi Rimless (grooved)","mount_fee",35,35,0,"cash_only","",false
+"CHRISTOPHER IRVINE","BVV CA ACA SG Off Exch WGS","Transitions GEN S","photochromic",175,140,35,"ins_discount","photochromic",false
+"CHRISTOPHER IRVINE","BVV CA ACA SG Off Exch WGS","Transitions XTRActive","photochromic",145,116,29,"ins_discount","photochromic",false
+"CHRISTOPHER IRVINE","BVV CA ACA SG Off Exch WGS","Neurolens Progressive","progressive",700,700,0,"cash_only","",false
+"CHRISTOPHER IRVINE","BVV CA ACA SG Off Exch WGS","Sequel PAL","progressive",535,535,0,"cash_only","",false
+"CHRISTOPHER IRVINE","BVV CA ACA SG Off Exch WGS","Varilux Comfort DRx","progressive",254.1,203.28,50.82,"ins_discount","tier_3",false
+"CHRISTOPHER IRVINE","BVV CA ACA SG Off Exch WGS","Varilux Comfort Max","progressive",393.3,314.64,78.66,"ins_discount","tier_4",false
+"CHRISTOPHER IRVINE","BVV CA ACA SG Off Exch WGS","Varilux I design","progressive",480,480,0,"cash_only","",false
+"CHRISTOPHER IRVINE","BVV CA ACA SG Off Exch WGS","Varilux X Design","progressive",600,480,120,"ins_discount","tier_4",false
+"CHRISTOPHER IRVINE","BVV CA ACA SG Off Exch WGS","Essilor Eyezen+ / Eyezen Start","single_vision",128.82,103.06,25.76,"ins_discount","all_other_lens_options",false
+"CHRISTOPHER IRVINE","BVV CA ACA SG Off Exch WGS","Neurolens SV","single_vision",400,400,0,"cash_only","",false
+"CHRISTOPHER IRVINE","BVV CA ACA SG Off Exch WGS","Sequel Single Vision","single_vision",309,309,0,"cash_only","",false
+"CHRISTOPHER IRVINE","BVV CA ACA SG Off Exch WGS","Single Vision","single_vision",80.4,50,30.4,"by_tier","standard_sv",false
+"CHRISTOPHER IRVINE","BVV CA ACA SG Off Exch WGS","Stellest","single_vision",438,438,0,"cash_only","",false
+"Zachary Jones","Humana Vision Plus Individual","Essential Blue Series","addon",30,24,6,"ins_discount","blue_light",false
+"Zachary Jones","Humana Vision Plus Individual","Light Filter (VSP LF)","addon",15,12,3,"ins_discount","all_other_lens_options",false
+"Zachary Jones","Humana Vision Plus Individual","Mirror - Solid Color","addon",54,43.2,10.8,"ins_discount","mirror",false
+"Zachary Jones","Humana Vision Plus Individual","Oversize Lenses","addon",30,30,0,"cash_only","",false
+"Zachary Jones","Humana Vision Plus Individual","Polarized","addon",155.7,124.56,31.14,"ins_discount","polarized",false
+"Zachary Jones","Humana Vision Plus Individual","Prism over Base Range, Per D, Per Lens","addon",8.2,8.2,0,"cash_only","",false
+"Zachary Jones","Humana Vision Plus Individual","Roll & Polish","addon",14.4,11.52,2.88,"ins_discount","edging",false
+"Zachary Jones","Humana Vision Plus Individual","Solid Tint - CR39/Poly CLR Lens","addon",17.8,0,17.8,"by_tier","tint",false
+"Zachary Jones","Humana Vision Plus Individual","Technical Add-On (Multifocal/Progressive)","addon",40,32,8,"ins_discount","all_other_lens_options",false
+"Zachary Jones","Humana Vision Plus Individual","Technical Add-On (Single Vision)","addon",10,8,2,"ins_discount","all_other_lens_options",false
+"Zachary Jones","Humana Vision Plus Individual","UV Protection","addon",15,0,15,"by_tier","uv_treatment",false
+"Zachary Jones","Humana Vision Plus Individual","Crizal Easy Pro","ar_coating",147.5,68,79.5,"by_tier","ar_tier_2",false
+"Zachary Jones","Humana Vision Plus Individual","Crizal Rock","ar_coating",145,116,29,"ins_discount","ar_tier_3",false
+"Zachary Jones","Humana Vision Plus Individual","Crizal Sapphire HR","ar_coating",180,144,36,"ins_discount","ar_tier_3",false
+"Zachary Jones","Humana Vision Plus Individual","Crizal Sunshield Mirrors UV","ar_coating",177.5,0,177.5,"by_tier","uv_treatment",false
+"Zachary Jones","Humana Vision Plus Individual","Crizal Sunshield UV","ar_coating",177.5,0,177.5,"by_tier","uv_treatment",false
+"Zachary Jones","Humana Vision Plus Individual","Neurolens Blue AR","ar_coating",180,180,0,"cash_only","",false
+"Zachary Jones","Humana Vision Plus Individual","Neurolens Premium AR","ar_coating",180,180,0,"cash_only","",false
+"Zachary Jones","Humana Vision Plus Individual","Flat Top 28","bifocal",126,10,116,"by_tier","standard_bf",false
+"Zachary Jones","Humana Vision Plus Individual","Flat Top 7x28","bifocal",132.48,10,122.48,"by_tier","standard_bf",false
+"Zachary Jones","Humana Vision Plus Individual","CR-39 (Standard Plastic)","material",0,0,0,"by_tier","standard",false
+"Zachary Jones","Humana Vision Plus Individual","Hi-Index 1.67","material",125,100,25,"ins_discount","high_index_167",false
+"Zachary Jones","Humana Vision Plus Individual","Hi-Index 1.72","material",150,150,0,"cash_only","",false
+"Zachary Jones","Humana Vision Plus Individual","Polycarbonate","material",65,20,45,"by_tier","polycarbonate",false
+"Zachary Jones","Humana Vision Plus Individual","Trivex","material",85,68,17,"ins_discount","trivex",false
+"Zachary Jones","Humana Vision Plus Individual","Full Rim","mount_fee",0,0,0,"by_tier","standard",false
+"Zachary Jones","Humana Vision Plus Individual","Rimless (drill mount)","mount_fee",47,37.6,9.4,"ins_discount","all_other_lens_options",false
+"Zachary Jones","Humana Vision Plus Individual","Semi Rimless (grooved)","mount_fee",35,28,7,"ins_discount","all_other_lens_options",false
+"Zachary Jones","Humana Vision Plus Individual","Transitions GEN S","photochromic",175,75,100,"by_tier","photochromic",false
+"Zachary Jones","Humana Vision Plus Individual","Transitions XTRActive","photochromic",145,75,70,"by_tier","photochromic",false
+"Zachary Jones","Humana Vision Plus Individual","Neurolens Progressive","progressive",700,700,0,"cash_only","",false
+"Zachary Jones","Humana Vision Plus Individual","Sequel PAL","progressive",535,535,0,"cash_only","",false
+"Zachary Jones","Humana Vision Plus Individual","Varilux Comfort DRx","progressive",254.1,125,129.1,"by_tier","tier_3",false
+"Zachary Jones","Humana Vision Plus Individual","Varilux Comfort Max","progressive",393.3,90,303.3,"by_tier","tier_4",false
+"Zachary Jones","Humana Vision Plus Individual","Varilux I design","progressive",480,480,0,"cash_only","",false
+"Zachary Jones","Humana Vision Plus Individual","Varilux X Design","progressive",600,90,510,"by_tier","tier_4",false
+"Zachary Jones","Humana Vision Plus Individual","Essilor Eyezen+ / Eyezen Start","single_vision",128.82,103.06,25.76,"ins_discount","all_other_lens_options",false
+"Zachary Jones","Humana Vision Plus Individual","Neurolens SV","single_vision",400,400,0,"cash_only","",false
+"Zachary Jones","Humana Vision Plus Individual","Sequel Single Vision","single_vision",309,309,0,"cash_only","",false
+"Zachary Jones","Humana Vision Plus Individual","Single Vision","single_vision",80.4,10,70.4,"by_tier","standard_sv",false
+"Zachary Jones","Humana Vision Plus Individual","Stellest","single_vision",438,438,0,"cash_only","",false
+"Robert Kerstetter","AETNA COMMERCIAL PPO/POS","Essential Blue Series","addon",30,24,6,"ins_discount","blue_light",false
+"Robert Kerstetter","AETNA COMMERCIAL PPO/POS","Light Filter (VSP LF)","addon",15,12,3,"ins_discount","all_other_lens_options",false
+"Robert Kerstetter","AETNA COMMERCIAL PPO/POS","Mirror - Solid Color","addon",54,43.2,10.8,"ins_discount","mirror",false
+"Robert Kerstetter","AETNA COMMERCIAL PPO/POS","Oversize Lenses","addon",30,30,0,"cash_only","",false
+"Robert Kerstetter","AETNA COMMERCIAL PPO/POS","Polarized","addon",155.7,124.56,31.14,"ins_discount","polarized",false
+"Robert Kerstetter","AETNA COMMERCIAL PPO/POS","Prism over Base Range, Per D, Per Lens","addon",8.2,8.2,0,"cash_only","",false
+"Robert Kerstetter","AETNA COMMERCIAL PPO/POS","Roll & Polish","addon",14.4,11.52,2.88,"ins_discount","edging",false
+"Robert Kerstetter","AETNA COMMERCIAL PPO/POS","Solid Tint - CR39/Poly CLR Lens","addon",17.8,15,2.8,"by_tier","tint",false
+"Robert Kerstetter","AETNA COMMERCIAL PPO/POS","Technical Add-On (Multifocal/Progressive)","addon",40,32,8,"ins_discount","all_other_lens_options",false
+"Robert Kerstetter","AETNA COMMERCIAL PPO/POS","Technical Add-On (Single Vision)","addon",10,8,2,"ins_discount","all_other_lens_options",false
+"Robert Kerstetter","AETNA COMMERCIAL PPO/POS","UV Protection","addon",15,15,0,"by_tier","uv_treatment",false
+"Robert Kerstetter","AETNA COMMERCIAL PPO/POS","Crizal Easy Pro","ar_coating",147.5,118,29.5,"ins_discount","ar_tier_2",false
+"Robert Kerstetter","AETNA COMMERCIAL PPO/POS","Crizal Rock","ar_coating",145,116,29,"ins_discount","ar_tier_3",false
+"Robert Kerstetter","AETNA COMMERCIAL PPO/POS","Crizal Sapphire HR","ar_coating",180,144,36,"ins_discount","ar_tier_3",false
+"Robert Kerstetter","AETNA COMMERCIAL PPO/POS","Crizal Sunshield Mirrors UV","ar_coating",177.5,15,162.5,"by_tier","uv_treatment",false
+"Robert Kerstetter","AETNA COMMERCIAL PPO/POS","Crizal Sunshield UV","ar_coating",177.5,15,162.5,"by_tier","uv_treatment",false
+"Robert Kerstetter","AETNA COMMERCIAL PPO/POS","Neurolens Blue AR","ar_coating",180,180,0,"cash_only","",false
+"Robert Kerstetter","AETNA COMMERCIAL PPO/POS","Neurolens Premium AR","ar_coating",180,180,0,"cash_only","",false
+"Robert Kerstetter","AETNA COMMERCIAL PPO/POS","Flat Top 28","bifocal",126,60,66,"by_tier","standard_bf",false
+"Robert Kerstetter","AETNA COMMERCIAL PPO/POS","Flat Top 7x28","bifocal",132.48,60,72.48,"by_tier","standard_bf",false
+"Robert Kerstetter","AETNA COMMERCIAL PPO/POS","CR-39 (Standard Plastic)","material",0,0,0,"by_tier","standard",false
+"Robert Kerstetter","AETNA COMMERCIAL PPO/POS","Hi-Index 1.67","material",125,100,25,"ins_discount","high_index_167",false
+"Robert Kerstetter","AETNA COMMERCIAL PPO/POS","Hi-Index 1.72","material",150,150,0,"cash_only","",false
+"Robert Kerstetter","AETNA COMMERCIAL PPO/POS","Polycarbonate","material",65,40,25,"by_tier","polycarbonate",false
+"Robert Kerstetter","AETNA COMMERCIAL PPO/POS","Trivex","material",85,68,17,"ins_discount","trivex",false
+"Robert Kerstetter","AETNA COMMERCIAL PPO/POS","Full Rim","mount_fee",0,0,0,"by_tier","standard",false
+"Robert Kerstetter","AETNA COMMERCIAL PPO/POS","Rimless (drill mount)","mount_fee",47,37.6,9.4,"ins_discount","all_other_lens_options",false
+"Robert Kerstetter","AETNA COMMERCIAL PPO/POS","Semi Rimless (grooved)","mount_fee",35,28,7,"ins_discount","all_other_lens_options",false
+"Robert Kerstetter","AETNA COMMERCIAL PPO/POS","Transitions GEN S","photochromic",175,140,35,"ins_discount","photochromic",false
+"Robert Kerstetter","AETNA COMMERCIAL PPO/POS","Transitions XTRActive","photochromic",145,116,29,"ins_discount","photochromic",false
+"Robert Kerstetter","AETNA COMMERCIAL PPO/POS","Neurolens Progressive","progressive",700,700,0,"cash_only","",false
+"Robert Kerstetter","AETNA COMMERCIAL PPO/POS","Sequel PAL","progressive",535,535,0,"cash_only","",false
+"Robert Kerstetter","AETNA COMMERCIAL PPO/POS","Varilux Comfort DRx","progressive",254.1,203.28,50.82,"ins_discount","tier_3",false
+"Robert Kerstetter","AETNA COMMERCIAL PPO/POS","Varilux Comfort Max","progressive",393.3,314.64,78.66,"ins_discount","tier_4",false
+"Robert Kerstetter","AETNA COMMERCIAL PPO/POS","Varilux I design","progressive",480,480,0,"cash_only","",false
+"Robert Kerstetter","AETNA COMMERCIAL PPO/POS","Varilux X Design","progressive",600,480,120,"ins_discount","tier_4",false
+"Robert Kerstetter","AETNA COMMERCIAL PPO/POS","Essilor Eyezen+ / Eyezen Start","single_vision",128.82,103.06,25.76,"ins_discount","all_other_lens_options",false
+"Robert Kerstetter","AETNA COMMERCIAL PPO/POS","Neurolens SV","single_vision",400,400,0,"cash_only","",false
+"Robert Kerstetter","AETNA COMMERCIAL PPO/POS","Sequel Single Vision","single_vision",309,309,0,"cash_only","",false
+"Robert Kerstetter","AETNA COMMERCIAL PPO/POS","Single Vision","single_vision",80.4,40,40.4,"by_tier","standard_sv",false
+"Robert Kerstetter","AETNA COMMERCIAL PPO/POS","Stellest","single_vision",438,438,0,"cash_only","",false
+"Yuenmei Kwan","Paramount Actives","Essential Blue Series","addon",30,24,6,"ins_discount","blue_light",false
+"Yuenmei Kwan","Paramount Actives","Light Filter (VSP LF)","addon",15,12,3,"ins_discount","all_other_lens_options",false
+"Yuenmei Kwan","Paramount Actives","Mirror - Solid Color","addon",54,43.2,10.8,"ins_discount","mirror",false
+"Yuenmei Kwan","Paramount Actives","Oversize Lenses","addon",30,30,0,"cash_only","",false
+"Yuenmei Kwan","Paramount Actives","Polarized","addon",155.7,124.56,31.14,"ins_discount","polarized",false
+"Yuenmei Kwan","Paramount Actives","Prism over Base Range, Per D, Per Lens","addon",8.2,8.2,0,"cash_only","",false
+"Yuenmei Kwan","Paramount Actives","Roll & Polish","addon",14.4,11.52,2.88,"ins_discount","edging",false
+"Yuenmei Kwan","Paramount Actives","Solid Tint - CR39/Poly CLR Lens","addon",17.8,0,17.8,"by_tier","tint",false
+"Yuenmei Kwan","Paramount Actives","Technical Add-On (Multifocal/Progressive)","addon",40,32,8,"ins_discount","all_other_lens_options",false
+"Yuenmei Kwan","Paramount Actives","Technical Add-On (Single Vision)","addon",10,8,2,"ins_discount","all_other_lens_options",false
+"Yuenmei Kwan","Paramount Actives","UV Protection","addon",15,0,15,"by_tier","uv_treatment",false
+"Yuenmei Kwan","Paramount Actives","Crizal Easy Pro","ar_coating",147.5,23,124.5,"by_tier","ar_tier_2",false
+"Yuenmei Kwan","Paramount Actives","Crizal Rock","ar_coating",145,116,29,"ins_discount","ar_tier_3",false
+"Yuenmei Kwan","Paramount Actives","Crizal Sapphire HR","ar_coating",180,144,36,"ins_discount","ar_tier_3",false
+"Yuenmei Kwan","Paramount Actives","Crizal Sunshield Mirrors UV","ar_coating",177.5,0,177.5,"by_tier","uv_treatment",false
+"Yuenmei Kwan","Paramount Actives","Crizal Sunshield UV","ar_coating",177.5,0,177.5,"by_tier","uv_treatment",false
+"Yuenmei Kwan","Paramount Actives","Neurolens Blue AR","ar_coating",180,180,0,"cash_only","",false
+"Yuenmei Kwan","Paramount Actives","Neurolens Premium AR","ar_coating",180,180,0,"cash_only","",false
+"Yuenmei Kwan","Paramount Actives","Flat Top 28","bifocal",126,0,126,"by_tier","standard_bf",false
+"Yuenmei Kwan","Paramount Actives","Flat Top 7x28","bifocal",132.48,0,132.48,"by_tier","standard_bf",false
+"Yuenmei Kwan","Paramount Actives","CR-39 (Standard Plastic)","material",0,0,0,"by_tier","standard",false
+"Yuenmei Kwan","Paramount Actives","Hi-Index 1.67","material",125,100,25,"ins_discount","high_index_167",false
+"Yuenmei Kwan","Paramount Actives","Hi-Index 1.72","material",150,150,0,"cash_only","",false
+"Yuenmei Kwan","Paramount Actives","Polycarbonate","material",65,0,65,"by_tier","polycarbonate",false
+"Yuenmei Kwan","Paramount Actives","Trivex","material",85,68,17,"ins_discount","trivex",false
+"Yuenmei Kwan","Paramount Actives","Full Rim","mount_fee",0,0,0,"by_tier","standard",false
+"Yuenmei Kwan","Paramount Actives","Rimless (drill mount)","mount_fee",47,37.6,9.4,"ins_discount","all_other_lens_options",false
+"Yuenmei Kwan","Paramount Actives","Semi Rimless (grooved)","mount_fee",35,28,7,"ins_discount","all_other_lens_options",false
+"Yuenmei Kwan","Paramount Actives","Transitions GEN S","photochromic",175,0,175,"by_tier","photochromic",false
+"Yuenmei Kwan","Paramount Actives","Transitions XTRActive","photochromic",145,0,145,"by_tier","photochromic",false
+"Yuenmei Kwan","Paramount Actives","Neurolens Progressive","progressive",700,700,0,"cash_only","",false
+"Yuenmei Kwan","Paramount Actives","Sequel PAL","progressive",535,535,0,"cash_only","",false
+"Yuenmei Kwan","Paramount Actives","Varilux Comfort DRx","progressive",254.1,23,231.1,"by_tier","tier_3",false
+"Yuenmei Kwan","Paramount Actives","Varilux Comfort Max","progressive",393.3,85,308.3,"by_tier","tier_4",false
+"Yuenmei Kwan","Paramount Actives","Varilux I design","progressive",480,480,0,"cash_only","",false
+"Yuenmei Kwan","Paramount Actives","Varilux X Design","progressive",600,85,515,"by_tier","tier_4",false
+"Yuenmei Kwan","Paramount Actives","Essilor Eyezen+ / Eyezen Start","single_vision",128.82,103.06,25.76,"ins_discount","all_other_lens_options",false
+"Yuenmei Kwan","Paramount Actives","Neurolens SV","single_vision",400,400,0,"cash_only","",false
+"Yuenmei Kwan","Paramount Actives","Sequel Single Vision","single_vision",309,309,0,"cash_only","",false
+"Yuenmei Kwan","Paramount Actives","Single Vision","single_vision",80.4,0,80.4,"by_tier","standard_sv",false
+"Yuenmei Kwan","Paramount Actives","Stellest","single_vision",438,438,0,"cash_only","",false
+"Kaleb Lamug","TeamCare Vision - High","Essential Blue Series","addon",30,24,6,"ins_discount","blue_light",false
+"Kaleb Lamug","TeamCare Vision - High","Light Filter (VSP LF)","addon",15,12,3,"ins_discount","all_other_lens_options",false
+"Kaleb Lamug","TeamCare Vision - High","Mirror - Solid Color","addon",54,43.2,10.8,"ins_discount","mirror",false
+"Kaleb Lamug","TeamCare Vision - High","Oversize Lenses","addon",30,30,0,"cash_only","",false
+"Kaleb Lamug","TeamCare Vision - High","Polarized","addon",155.7,124.56,31.14,"ins_discount","polarized",false
+"Kaleb Lamug","TeamCare Vision - High","Prism over Base Range, Per D, Per Lens","addon",8.2,8.2,0,"cash_only","",false
+"Kaleb Lamug","TeamCare Vision - High","Roll & Polish","addon",14.4,11.52,2.88,"ins_discount","edging",false
+"Kaleb Lamug","TeamCare Vision - High","Solid Tint - CR39/Poly CLR Lens","addon",17.8,15,2.8,"by_tier","tint",false
+"Kaleb Lamug","TeamCare Vision - High","Technical Add-On (Multifocal/Progressive)","addon",40,32,8,"ins_discount","all_other_lens_options",false
+"Kaleb Lamug","TeamCare Vision - High","Technical Add-On (Single Vision)","addon",10,8,2,"ins_discount","all_other_lens_options",false
+"Kaleb Lamug","TeamCare Vision - High","UV Protection","addon",15,15,0,"by_tier","uv_treatment",false
+"Kaleb Lamug","TeamCare Vision - High","Crizal Easy Pro","ar_coating",147.5,68,79.5,"by_tier","ar_tier_2",false
+"Kaleb Lamug","TeamCare Vision - High","Crizal Rock","ar_coating",145,116,29,"ins_discount","ar_tier_3",false
+"Kaleb Lamug","TeamCare Vision - High","Crizal Sapphire HR","ar_coating",180,144,36,"ins_discount","ar_tier_3",false
+"Kaleb Lamug","TeamCare Vision - High","Crizal Sunshield Mirrors UV","ar_coating",177.5,15,162.5,"by_tier","uv_treatment",false
+"Kaleb Lamug","TeamCare Vision - High","Crizal Sunshield UV","ar_coating",177.5,15,162.5,"by_tier","uv_treatment",false
+"Kaleb Lamug","TeamCare Vision - High","Neurolens Blue AR","ar_coating",180,180,0,"cash_only","",false
+"Kaleb Lamug","TeamCare Vision - High","Neurolens Premium AR","ar_coating",180,180,0,"cash_only","",false
+"Kaleb Lamug","TeamCare Vision - High","Flat Top 28","bifocal",126,0,126,"by_tier","standard_bf",false
+"Kaleb Lamug","TeamCare Vision - High","Flat Top 7x28","bifocal",132.48,0,132.48,"by_tier","standard_bf",false
+"Kaleb Lamug","TeamCare Vision - High","CR-39 (Standard Plastic)","material",0,0,0,"by_tier","standard",false
+"Kaleb Lamug","TeamCare Vision - High","Hi-Index 1.67","material",125,100,25,"ins_discount","high_index_167",false
+"Kaleb Lamug","TeamCare Vision - High","Hi-Index 1.72","material",150,150,0,"cash_only","",false
+"Kaleb Lamug","TeamCare Vision - High","Polycarbonate","material",65,40,25,"by_tier","polycarbonate",false
+"Kaleb Lamug","TeamCare Vision - High","Trivex","material",85,68,17,"ins_discount","trivex",false
+"Kaleb Lamug","TeamCare Vision - High","Full Rim","mount_fee",0,0,0,"by_tier","standard",false
+"Kaleb Lamug","TeamCare Vision - High","Rimless (drill mount)","mount_fee",47,37.6,9.4,"ins_discount","all_other_lens_options",false
+"Kaleb Lamug","TeamCare Vision - High","Semi Rimless (grooved)","mount_fee",35,28,7,"ins_discount","all_other_lens_options",false
+"Kaleb Lamug","TeamCare Vision - High","Transitions GEN S","photochromic",175,140,35,"ins_discount","photochromic",false
+"Kaleb Lamug","TeamCare Vision - High","Transitions XTRActive","photochromic",145,116,29,"ins_discount","photochromic",false
+"Kaleb Lamug","TeamCare Vision - High","Neurolens Progressive","progressive",700,700,0,"cash_only","",false
+"Kaleb Lamug","TeamCare Vision - High","Sequel PAL","progressive",535,535,0,"cash_only","",false
+"Kaleb Lamug","TeamCare Vision - High","Varilux Comfort DRx","progressive",254.1,203.28,50.82,"ins_discount","tier_3",false
+"Kaleb Lamug","TeamCare Vision - High","Varilux Comfort Max","progressive",393.3,314.64,78.66,"ins_discount","tier_4",false
+"Kaleb Lamug","TeamCare Vision - High","Varilux I design","progressive",480,480,0,"cash_only","",false
+"Kaleb Lamug","TeamCare Vision - High","Varilux X Design","progressive",600,480,120,"ins_discount","tier_4",false
+"Kaleb Lamug","TeamCare Vision - High","Essilor Eyezen+ / Eyezen Start","single_vision",128.82,103.06,25.76,"ins_discount","all_other_lens_options",false
+"Kaleb Lamug","TeamCare Vision - High","Neurolens SV","single_vision",400,400,0,"cash_only","",false
+"Kaleb Lamug","TeamCare Vision - High","Sequel Single Vision","single_vision",309,309,0,"cash_only","",false
+"Kaleb Lamug","TeamCare Vision - High","Single Vision","single_vision",80.4,0,80.4,"by_tier","standard_sv",false
+"Kaleb Lamug","TeamCare Vision - High","Stellest","single_vision",438,438,0,"cash_only","",false
+"Syliana Laurent","Marriott Vision Coverage","Essential Blue Series","addon",30,24,6,"ins_discount","blue_light",false
+"Syliana Laurent","Marriott Vision Coverage","Light Filter (VSP LF)","addon",15,12,3,"ins_discount","all_other_lens_options",false
+"Syliana Laurent","Marriott Vision Coverage","Mirror - Solid Color","addon",54,43.2,10.8,"ins_discount","mirror",false
+"Syliana Laurent","Marriott Vision Coverage","Oversize Lenses","addon",30,30,0,"cash_only","",false
+"Syliana Laurent","Marriott Vision Coverage","Polarized","addon",155.7,124.56,31.14,"ins_discount","polarized",false
+"Syliana Laurent","Marriott Vision Coverage","Prism over Base Range, Per D, Per Lens","addon",8.2,8.2,0,"cash_only","",false
+"Syliana Laurent","Marriott Vision Coverage","Roll & Polish","addon",14.4,11.52,2.88,"ins_discount","edging",false
+"Syliana Laurent","Marriott Vision Coverage","Solid Tint - CR39/Poly CLR Lens","addon",17.8,15,2.8,"by_tier","tint",false
+"Syliana Laurent","Marriott Vision Coverage","Technical Add-On (Multifocal/Progressive)","addon",40,32,8,"ins_discount","all_other_lens_options",false
+"Syliana Laurent","Marriott Vision Coverage","Technical Add-On (Single Vision)","addon",10,8,2,"ins_discount","all_other_lens_options",false
+"Syliana Laurent","Marriott Vision Coverage","UV Protection","addon",15,15,0,"by_tier","uv_treatment",false
+"Syliana Laurent","Marriott Vision Coverage","Crizal Easy Pro","ar_coating",147.5,68,79.5,"by_tier","ar_tier_2",false
+"Syliana Laurent","Marriott Vision Coverage","Crizal Rock","ar_coating",145,116,29,"ins_discount","ar_tier_3",false
+"Syliana Laurent","Marriott Vision Coverage","Crizal Sapphire HR","ar_coating",180,144,36,"ins_discount","ar_tier_3",false
+"Syliana Laurent","Marriott Vision Coverage","Crizal Sunshield Mirrors UV","ar_coating",177.5,15,162.5,"by_tier","uv_treatment",false
+"Syliana Laurent","Marriott Vision Coverage","Crizal Sunshield UV","ar_coating",177.5,15,162.5,"by_tier","uv_treatment",false
+"Syliana Laurent","Marriott Vision Coverage","Neurolens Blue AR","ar_coating",180,180,0,"cash_only","",false
+"Syliana Laurent","Marriott Vision Coverage","Neurolens Premium AR","ar_coating",180,180,0,"cash_only","",false
+"Syliana Laurent","Marriott Vision Coverage","Flat Top 28","bifocal",126,0,126,"by_tier","standard_bf",false
+"Syliana Laurent","Marriott Vision Coverage","Flat Top 7x28","bifocal",132.48,0,132.48,"by_tier","standard_bf",false
+"Syliana Laurent","Marriott Vision Coverage","CR-39 (Standard Plastic)","material",0,0,0,"by_tier","standard",false
+"Syliana Laurent","Marriott Vision Coverage","Hi-Index 1.67","material",125,100,25,"ins_discount","high_index_167",false
+"Syliana Laurent","Marriott Vision Coverage","Hi-Index 1.72","material",150,150,0,"cash_only","",false
+"Syliana Laurent","Marriott Vision Coverage","Polycarbonate","material",65,40,25,"by_tier","polycarbonate",false
+"Syliana Laurent","Marriott Vision Coverage","Trivex","material",85,68,17,"ins_discount","trivex",false
+"Syliana Laurent","Marriott Vision Coverage","Full Rim","mount_fee",0,0,0,"by_tier","standard",false
+"Syliana Laurent","Marriott Vision Coverage","Rimless (drill mount)","mount_fee",47,37.6,9.4,"ins_discount","all_other_lens_options",false
+"Syliana Laurent","Marriott Vision Coverage","Semi Rimless (grooved)","mount_fee",35,28,7,"ins_discount","all_other_lens_options",false
+"Syliana Laurent","Marriott Vision Coverage","Transitions GEN S","photochromic",175,75,100,"by_tier","photochromic",false
+"Syliana Laurent","Marriott Vision Coverage","Transitions XTRActive","photochromic",145,75,70,"by_tier","photochromic",false
+"Syliana Laurent","Marriott Vision Coverage","Neurolens Progressive","progressive",700,700,0,"cash_only","",false
+"Syliana Laurent","Marriott Vision Coverage","Sequel PAL","progressive",535,535,0,"cash_only","",false
+"Syliana Laurent","Marriott Vision Coverage","Varilux Comfort DRx","progressive",254.1,110,144.1,"by_tier","tier_3",false
+"Syliana Laurent","Marriott Vision Coverage","Varilux Comfort Max","progressive",393.3,65,328.3,"by_tier","tier_4",false
+"Syliana Laurent","Marriott Vision Coverage","Varilux I design","progressive",480,480,0,"cash_only","",false
+"Syliana Laurent","Marriott Vision Coverage","Varilux X Design","progressive",600,65,535,"by_tier","tier_4",false
+"Syliana Laurent","Marriott Vision Coverage","Essilor Eyezen+ / Eyezen Start","single_vision",128.82,103.06,25.76,"ins_discount","all_other_lens_options",false
+"Syliana Laurent","Marriott Vision Coverage","Neurolens SV","single_vision",400,400,0,"cash_only","",false
+"Syliana Laurent","Marriott Vision Coverage","Sequel Single Vision","single_vision",309,309,0,"cash_only","",false
+"Syliana Laurent","Marriott Vision Coverage","Single Vision","single_vision",80.4,0,80.4,"by_tier","standard_sv",false
+"Syliana Laurent","Marriott Vision Coverage","Stellest","single_vision",438,438,0,"cash_only","",false
+"Lorene Mingione","Osceola County Sheriffs Office Enhanced","Essential Blue Series","addon",30,24,6,"ins_discount","blue_light",false
+"Lorene Mingione","Osceola County Sheriffs Office Enhanced","Light Filter (VSP LF)","addon",15,12,3,"ins_discount","all_other_lens_options",false
+"Lorene Mingione","Osceola County Sheriffs Office Enhanced","Mirror - Solid Color","addon",54,43.2,10.8,"ins_discount","mirror",false
+"Lorene Mingione","Osceola County Sheriffs Office Enhanced","Oversize Lenses","addon",30,30,0,"cash_only","",false
+"Lorene Mingione","Osceola County Sheriffs Office Enhanced","Polarized","addon",155.7,124.56,31.14,"ins_discount","polarized",false
+"Lorene Mingione","Osceola County Sheriffs Office Enhanced","Prism over Base Range, Per D, Per Lens","addon",8.2,8.2,0,"cash_only","",false
+"Lorene Mingione","Osceola County Sheriffs Office Enhanced","Roll & Polish","addon",14.4,11.52,2.88,"ins_discount","edging",false
+"Lorene Mingione","Osceola County Sheriffs Office Enhanced","Solid Tint - CR39/Poly CLR Lens","addon",17.8,15,2.8,"by_tier","tint",false
+"Lorene Mingione","Osceola County Sheriffs Office Enhanced","Technical Add-On (Multifocal/Progressive)","addon",40,32,8,"ins_discount","all_other_lens_options",false
+"Lorene Mingione","Osceola County Sheriffs Office Enhanced","Technical Add-On (Single Vision)","addon",10,8,2,"ins_discount","all_other_lens_options",false
+"Lorene Mingione","Osceola County Sheriffs Office Enhanced","UV Protection","addon",15,15,0,"by_tier","uv_treatment",false
+"Lorene Mingione","Osceola County Sheriffs Office Enhanced","Crizal Easy Pro","ar_coating",147.5,68,79.5,"by_tier","ar_tier_2",false
+"Lorene Mingione","Osceola County Sheriffs Office Enhanced","Crizal Rock","ar_coating",145,116,29,"ins_discount","ar_tier_3",false
+"Lorene Mingione","Osceola County Sheriffs Office Enhanced","Crizal Sapphire HR","ar_coating",180,144,36,"ins_discount","ar_tier_3",false
+"Lorene Mingione","Osceola County Sheriffs Office Enhanced","Crizal Sunshield Mirrors UV","ar_coating",177.5,15,162.5,"by_tier","uv_treatment",false
+"Lorene Mingione","Osceola County Sheriffs Office Enhanced","Crizal Sunshield UV","ar_coating",177.5,15,162.5,"by_tier","uv_treatment",false
+"Lorene Mingione","Osceola County Sheriffs Office Enhanced","Neurolens Blue AR","ar_coating",180,180,0,"cash_only","",false
+"Lorene Mingione","Osceola County Sheriffs Office Enhanced","Neurolens Premium AR","ar_coating",180,180,0,"cash_only","",false
+"Lorene Mingione","Osceola County Sheriffs Office Enhanced","Flat Top 28","bifocal",126,15,111,"by_tier","standard_bf",false
+"Lorene Mingione","Osceola County Sheriffs Office Enhanced","Flat Top 7x28","bifocal",132.48,15,117.48,"by_tier","standard_bf",false
+"Lorene Mingione","Osceola County Sheriffs Office Enhanced","CR-39 (Standard Plastic)","material",0,0,0,"by_tier","standard",false
+"Lorene Mingione","Osceola County Sheriffs Office Enhanced","Hi-Index 1.67","material",125,100,25,"ins_discount","high_index_167",false
+"Lorene Mingione","Osceola County Sheriffs Office Enhanced","Hi-Index 1.72","material",150,150,0,"cash_only","",false
+"Lorene Mingione","Osceola County Sheriffs Office Enhanced","Polycarbonate","material",65,40,25,"by_tier","polycarbonate",false
+"Lorene Mingione","Osceola County Sheriffs Office Enhanced","Trivex","material",85,68,17,"ins_discount","trivex",false
+"Lorene Mingione","Osceola County Sheriffs Office Enhanced","Full Rim","mount_fee",0,0,0,"by_tier","standard",false
+"Lorene Mingione","Osceola County Sheriffs Office Enhanced","Rimless (drill mount)","mount_fee",47,37.6,9.4,"ins_discount","all_other_lens_options",false
+"Lorene Mingione","Osceola County Sheriffs Office Enhanced","Semi Rimless (grooved)","mount_fee",35,28,7,"ins_discount","all_other_lens_options",false
+"Lorene Mingione","Osceola County Sheriffs Office Enhanced","Transitions GEN S","photochromic",175,75,100,"by_tier","photochromic",false
+"Lorene Mingione","Osceola County Sheriffs Office Enhanced","Transitions XTRActive","photochromic",145,75,70,"by_tier","photochromic",false
+"Lorene Mingione","Osceola County Sheriffs Office Enhanced","Neurolens Progressive","progressive",700,700,0,"cash_only","",false
+"Lorene Mingione","Osceola County Sheriffs Office Enhanced","Sequel PAL","progressive",535,535,0,"cash_only","",false
+"Lorene Mingione","Osceola County Sheriffs Office Enhanced","Varilux Comfort DRx","progressive",254.1,125,129.1,"by_tier","tier_3",false
+"Lorene Mingione","Osceola County Sheriffs Office Enhanced","Varilux Comfort Max","progressive",393.3,190,203.3,"by_tier","tier_4",false
+"Lorene Mingione","Osceola County Sheriffs Office Enhanced","Varilux I design","progressive",480,480,0,"cash_only","",false
+"Lorene Mingione","Osceola County Sheriffs Office Enhanced","Varilux X Design","progressive",600,190,410,"by_tier","tier_4",false
+"Lorene Mingione","Osceola County Sheriffs Office Enhanced","Essilor Eyezen+ / Eyezen Start","single_vision",128.82,103.06,25.76,"ins_discount","all_other_lens_options",false
+"Lorene Mingione","Osceola County Sheriffs Office Enhanced","Neurolens SV","single_vision",400,400,0,"cash_only","",false
+"Lorene Mingione","Osceola County Sheriffs Office Enhanced","Sequel Single Vision","single_vision",309,309,0,"cash_only","",false
+"Lorene Mingione","Osceola County Sheriffs Office Enhanced","Single Vision","single_vision",80.4,15,65.4,"by_tier","standard_sv",false
+"Lorene Mingione","Osceola County Sheriffs Office Enhanced","Stellest","single_vision",438,438,0,"cash_only","",false
+"Amanda Pinto","Humana VCP","Essential Blue Series","addon",30,24,6,"ins_discount","blue_light",false
+"Amanda Pinto","Humana VCP","Light Filter (VSP LF)","addon",15,12,3,"ins_discount","all_other_lens_options",false
+"Amanda Pinto","Humana VCP","Mirror - Solid Color","addon",54,43.2,10.8,"ins_discount","mirror",false
+"Amanda Pinto","Humana VCP","Oversize Lenses","addon",30,30,0,"cash_only","",false
+"Amanda Pinto","Humana VCP","Polarized","addon",155.7,66,89.7,"by_tier","polarized",false
+"Amanda Pinto","Humana VCP","Prism over Base Range, Per D, Per Lens","addon",8.2,8.2,0,"cash_only","",false
+"Amanda Pinto","Humana VCP","Roll & Polish","addon",14.4,11.52,2.88,"ins_discount","edging",false
+"Amanda Pinto","Humana VCP","Solid Tint - CR39/Poly CLR Lens","addon",17.8,15,2.8,"by_tier","tint",false
+"Amanda Pinto","Humana VCP","Technical Add-On (Multifocal/Progressive)","addon",40,32,8,"ins_discount","all_other_lens_options",false
+"Amanda Pinto","Humana VCP","Technical Add-On (Single Vision)","addon",10,8,2,"ins_discount","all_other_lens_options",false
+"Amanda Pinto","Humana VCP","UV Protection","addon",15,15,0,"by_tier","uv_treatment",false
+"Amanda Pinto","Humana VCP","Crizal Easy Pro","ar_coating",147.5,85,62.5,"by_tier","ar_tier_2",false
+"Amanda Pinto","Humana VCP","Crizal Rock","ar_coating",145,116,29,"ins_discount","ar_tier_3",false
+"Amanda Pinto","Humana VCP","Crizal Sapphire HR","ar_coating",180,144,36,"ins_discount","ar_tier_3",false
+"Amanda Pinto","Humana VCP","Crizal Sunshield Mirrors UV","ar_coating",177.5,15,162.5,"by_tier","uv_treatment",false
+"Amanda Pinto","Humana VCP","Crizal Sunshield UV","ar_coating",177.5,15,162.5,"by_tier","uv_treatment",false
+"Amanda Pinto","Humana VCP","Neurolens Blue AR","ar_coating",180,180,0,"cash_only","",false
+"Amanda Pinto","Humana VCP","Neurolens Premium AR","ar_coating",180,180,0,"cash_only","",false
+"Amanda Pinto","Humana VCP","Flat Top 28","bifocal",126,10,116,"by_tier","standard_bf",false
+"Amanda Pinto","Humana VCP","Flat Top 7x28","bifocal",132.48,10,122.48,"by_tier","standard_bf",false
+"Amanda Pinto","Humana VCP","CR-39 (Standard Plastic)","material",0,0,0,"by_tier","standard",false
+"Amanda Pinto","Humana VCP","Hi-Index 1.67","material",125,95,30,"by_tier","high_index_167",false
+"Amanda Pinto","Humana VCP","Hi-Index 1.72","material",150,150,0,"cash_only","",false
+"Amanda Pinto","Humana VCP","Polycarbonate","material",65,25,40,"by_tier","polycarbonate",false
+"Amanda Pinto","Humana VCP","Trivex","material",85,68,17,"ins_discount","trivex",false
+"Amanda Pinto","Humana VCP","Full Rim","mount_fee",0,0,0,"by_tier","standard",false
+"Amanda Pinto","Humana VCP","Rimless (drill mount)","mount_fee",47,37.6,9.4,"ins_discount","all_other_lens_options",false
+"Amanda Pinto","Humana VCP","Semi Rimless (grooved)","mount_fee",35,28,7,"ins_discount","all_other_lens_options",false
+"Amanda Pinto","Humana VCP","Transitions GEN S","photochromic",175,88,87,"by_tier","photochromic",false
+"Amanda Pinto","Humana VCP","Transitions XTRActive","photochromic",145,88,57,"by_tier","photochromic",false
+"Amanda Pinto","Humana VCP","Neurolens Progressive","progressive",700,700,0,"cash_only","",false
+"Amanda Pinto","Humana VCP","Sequel PAL","progressive",535,535,0,"cash_only","",false
+"Amanda Pinto","Humana VCP","Varilux Comfort DRx","progressive",254.1,145,109.1,"by_tier","tier_3",false
+"Amanda Pinto","Humana VCP","Varilux Comfort Max","progressive",393.3,185,208.3,"by_tier","tier_4",false
+"Amanda Pinto","Humana VCP","Varilux I design","progressive",480,480,0,"cash_only","",false
+"Amanda Pinto","Humana VCP","Varilux X Design","progressive",600,185,415,"by_tier","tier_4",false
+"Amanda Pinto","Humana VCP","Essilor Eyezen+ / Eyezen Start","single_vision",128.82,103.06,25.76,"ins_discount","all_other_lens_options",false
+"Amanda Pinto","Humana VCP","Neurolens SV","single_vision",400,400,0,"cash_only","",false
+"Amanda Pinto","Humana VCP","Sequel Single Vision","single_vision",309,309,0,"cash_only","",false
+"Amanda Pinto","Humana VCP","Single Vision","single_vision",80.4,10,70.4,"by_tier","standard_sv",false
+"Amanda Pinto","Humana VCP","Stellest","single_vision",438,438,0,"cash_only","",false
+"PRISCILA PINTO","HCA Healthcare Affiliated Facilities","Essential Blue Series","addon",30,24,6,"ins_discount","blue_light",false
+"PRISCILA PINTO","HCA Healthcare Affiliated Facilities","Light Filter (VSP LF)","addon",15,15,0,"cash_only","",false
+"PRISCILA PINTO","HCA Healthcare Affiliated Facilities","Mirror - Solid Color","addon",54,43.2,10.8,"ins_discount","mirror",false
+"PRISCILA PINTO","HCA Healthcare Affiliated Facilities","Oversize Lenses","addon",30,30,0,"cash_only","",false
+"PRISCILA PINTO","HCA Healthcare Affiliated Facilities","Polarized","addon",155.7,124.56,31.14,"ins_discount","polarized",false
+"PRISCILA PINTO","HCA Healthcare Affiliated Facilities","Prism over Base Range, Per D, Per Lens","addon",8.2,8.2,0,"cash_only","",false
+"PRISCILA PINTO","HCA Healthcare Affiliated Facilities","Roll & Polish","addon",14.4,11.52,2.88,"ins_discount","edging",false
+"PRISCILA PINTO","HCA Healthcare Affiliated Facilities","Solid Tint - CR39/Poly CLR Lens","addon",17.8,15,2.8,"by_tier","tint",false
+"PRISCILA PINTO","HCA Healthcare Affiliated Facilities","Technical Add-On (Multifocal/Progressive)","addon",40,40,0,"cash_only","",false
+"PRISCILA PINTO","HCA Healthcare Affiliated Facilities","Technical Add-On (Single Vision)","addon",10,10,0,"cash_only","",false
+"PRISCILA PINTO","HCA Healthcare Affiliated Facilities","UV Protection","addon",15,15,0,"by_tier","uv_treatment",false
+"PRISCILA PINTO","HCA Healthcare Affiliated Facilities","Crizal Easy Pro","ar_coating",147.5,68,79.5,"by_tier","ar_tier_2",false
+"PRISCILA PINTO","HCA Healthcare Affiliated Facilities","Crizal Rock","ar_coating",145,116,29,"ins_discount","ar_tier_3",false
+"PRISCILA PINTO","HCA Healthcare Affiliated Facilities","Crizal Sapphire HR","ar_coating",180,144,36,"ins_discount","ar_tier_3",false
+"PRISCILA PINTO","HCA Healthcare Affiliated Facilities","Crizal Sunshield Mirrors UV","ar_coating",177.5,15,162.5,"by_tier","uv_treatment",false
+"PRISCILA PINTO","HCA Healthcare Affiliated Facilities","Crizal Sunshield UV","ar_coating",177.5,15,162.5,"by_tier","uv_treatment",false
+"PRISCILA PINTO","HCA Healthcare Affiliated Facilities","Neurolens Blue AR","ar_coating",180,180,0,"cash_only","",false
+"PRISCILA PINTO","HCA Healthcare Affiliated Facilities","Neurolens Premium AR","ar_coating",180,180,0,"cash_only","",false
+"PRISCILA PINTO","HCA Healthcare Affiliated Facilities","Flat Top 28","bifocal",126,20,106,"by_tier","standard_bf",false
+"PRISCILA PINTO","HCA Healthcare Affiliated Facilities","Flat Top 7x28","bifocal",132.48,20,112.48,"by_tier","standard_bf",false
+"PRISCILA PINTO","HCA Healthcare Affiliated Facilities","CR-39 (Standard Plastic)","material",0,0,0,"by_tier","standard",false
+"PRISCILA PINTO","HCA Healthcare Affiliated Facilities","Hi-Index 1.67","material",125,100,25,"ins_discount","high_index_167",false
+"PRISCILA PINTO","HCA Healthcare Affiliated Facilities","Hi-Index 1.72","material",150,150,0,"cash_only","",false
+"PRISCILA PINTO","HCA Healthcare Affiliated Facilities","Polycarbonate","material",65,40,25,"by_tier","polycarbonate",false
+"PRISCILA PINTO","HCA Healthcare Affiliated Facilities","Trivex","material",85,68,17,"ins_discount","trivex",false
+"PRISCILA PINTO","HCA Healthcare Affiliated Facilities","Full Rim","mount_fee",0,0,0,"by_tier","standard",false
+"PRISCILA PINTO","HCA Healthcare Affiliated Facilities","Rimless (drill mount)","mount_fee",47,47,0,"cash_only","",false
+"PRISCILA PINTO","HCA Healthcare Affiliated Facilities","Semi Rimless (grooved)","mount_fee",35,35,0,"cash_only","",false
+"PRISCILA PINTO","HCA Healthcare Affiliated Facilities","Transitions GEN S","photochromic",175,75,100,"by_tier","photochromic",false
+"PRISCILA PINTO","HCA Healthcare Affiliated Facilities","Transitions XTRActive","photochromic",145,75,70,"by_tier","photochromic",false
+"PRISCILA PINTO","HCA Healthcare Affiliated Facilities","Neurolens Progressive","progressive",700,700,0,"cash_only","",false
+"PRISCILA PINTO","HCA Healthcare Affiliated Facilities","Sequel PAL","progressive",535,535,0,"cash_only","",false
+"PRISCILA PINTO","HCA Healthcare Affiliated Facilities","Varilux Comfort DRx","progressive",254.1,130,124.1,"by_tier","tier_3",false
+"PRISCILA PINTO","HCA Healthcare Affiliated Facilities","Varilux Comfort Max","progressive",393.3,85,308.3,"by_tier","tier_4",false
+"PRISCILA PINTO","HCA Healthcare Affiliated Facilities","Varilux I design","progressive",480,480,0,"cash_only","",false
+"PRISCILA PINTO","HCA Healthcare Affiliated Facilities","Varilux X Design","progressive",600,85,515,"by_tier","tier_4",false
+"PRISCILA PINTO","HCA Healthcare Affiliated Facilities","Essilor Eyezen+ / Eyezen Start","single_vision",128.82,103.06,25.76,"ins_discount","all_other_lens_options",false
+"PRISCILA PINTO","HCA Healthcare Affiliated Facilities","Neurolens SV","single_vision",400,400,0,"cash_only","",false
+"PRISCILA PINTO","HCA Healthcare Affiliated Facilities","Sequel Single Vision","single_vision",309,309,0,"cash_only","",false
+"PRISCILA PINTO","HCA Healthcare Affiliated Facilities","Single Vision","single_vision",80.4,20,60.4,"by_tier","standard_sv",false
+"PRISCILA PINTO","HCA Healthcare Affiliated Facilities","Stellest","single_vision",438,438,0,"cash_only","",false
+"Eva Reis","EYEMED HEALTHY INDIVID-MAY-MO","Essential Blue Series","addon",30,21,9,"ins_discount","blue_light",false
+"Eva Reis","EYEMED HEALTHY INDIVID-MAY-MO","Light Filter (VSP LF)","addon",15,12,3,"ins_discount","all_other_lens_options",false
+"Eva Reis","EYEMED HEALTHY INDIVID-MAY-MO","Mirror - Solid Color","addon",54,37.8,16.2,"ins_discount","mirror",false
+"Eva Reis","EYEMED HEALTHY INDIVID-MAY-MO","Oversize Lenses","addon",30,30,0,"cash_only","",false
+"Eva Reis","EYEMED HEALTHY INDIVID-MAY-MO","Polarized","addon",155.7,108.99,46.71,"ins_discount","polarized",false
+"Eva Reis","EYEMED HEALTHY INDIVID-MAY-MO","Prism over Base Range, Per D, Per Lens","addon",8.2,8.2,0,"cash_only","",false
+"Eva Reis","EYEMED HEALTHY INDIVID-MAY-MO","Roll & Polish","addon",14.4,10.08,4.32,"ins_discount","edging",false
+"Eva Reis","EYEMED HEALTHY INDIVID-MAY-MO","Solid Tint - CR39/Poly CLR Lens","addon",17.8,12,5.8,"by_tier","tint",false
+"Eva Reis","EYEMED HEALTHY INDIVID-MAY-MO","Technical Add-On (Multifocal/Progressive)","addon",40,32,8,"ins_discount","all_other_lens_options",false
+"Eva Reis","EYEMED HEALTHY INDIVID-MAY-MO","Technical Add-On (Single Vision)","addon",10,8,2,"ins_discount","all_other_lens_options",false
+"Eva Reis","EYEMED HEALTHY INDIVID-MAY-MO","UV Protection","addon",15,12,3,"by_tier","uv_treatment",false
+"Eva Reis","EYEMED HEALTHY INDIVID-MAY-MO","Crizal Easy Pro","ar_coating",147.5,103.25,44.25,"ins_discount","ar_tier_2",false
+"Eva Reis","EYEMED HEALTHY INDIVID-MAY-MO","Crizal Rock","ar_coating",145,116,29,"ins_discount","ar_tier_3",false
+"Eva Reis","EYEMED HEALTHY INDIVID-MAY-MO","Crizal Sapphire HR","ar_coating",180,144,36,"ins_discount","ar_tier_3",false
+"Eva Reis","EYEMED HEALTHY INDIVID-MAY-MO","Crizal Sunshield Mirrors UV","ar_coating",177.5,12,165.5,"by_tier","uv_treatment",false
+"Eva Reis","EYEMED HEALTHY INDIVID-MAY-MO","Crizal Sunshield UV","ar_coating",177.5,12,165.5,"by_tier","uv_treatment",false
+"Eva Reis","EYEMED HEALTHY INDIVID-MAY-MO","Neurolens Blue AR","ar_coating",180,180,0,"cash_only","",false
+"Eva Reis","EYEMED HEALTHY INDIVID-MAY-MO","Neurolens Premium AR","ar_coating",180,180,0,"cash_only","",false
+"Eva Reis","EYEMED HEALTHY INDIVID-MAY-MO","Flat Top 28","bifocal",126,75,51,"by_tier","standard_bf",false
+"Eva Reis","EYEMED HEALTHY INDIVID-MAY-MO","Flat Top 7x28","bifocal",132.48,75,57.48,"by_tier","standard_bf",false
+"Eva Reis","EYEMED HEALTHY INDIVID-MAY-MO","CR-39 (Standard Plastic)","material",0,0,0,"by_tier","standard",false
+"Eva Reis","EYEMED HEALTHY INDIVID-MAY-MO","Hi-Index 1.67","material",125,87.5,37.5,"ins_discount","high_index_167",false
+"Eva Reis","EYEMED HEALTHY INDIVID-MAY-MO","Hi-Index 1.72","material",150,150,0,"cash_only","",false
+"Eva Reis","EYEMED HEALTHY INDIVID-MAY-MO","Polycarbonate","material",65,35,30,"by_tier","polycarbonate",false
+"Eva Reis","EYEMED HEALTHY INDIVID-MAY-MO","Trivex","material",85,59.5,25.5,"ins_discount","trivex",false
+"Eva Reis","EYEMED HEALTHY INDIVID-MAY-MO","Full Rim","mount_fee",0,0,0,"by_tier","standard",false
+"Eva Reis","EYEMED HEALTHY INDIVID-MAY-MO","Rimless (drill mount)","mount_fee",47,37.6,9.4,"ins_discount","all_other_lens_options",false
+"Eva Reis","EYEMED HEALTHY INDIVID-MAY-MO","Semi Rimless (grooved)","mount_fee",35,28,7,"ins_discount","all_other_lens_options",false
+"Eva Reis","EYEMED HEALTHY INDIVID-MAY-MO","Transitions GEN S","photochromic",175,122.5,52.5,"ins_discount","photochromic",false
+"Eva Reis","EYEMED HEALTHY INDIVID-MAY-MO","Transitions XTRActive","photochromic",145,101.5,43.5,"ins_discount","photochromic",false
+"Eva Reis","EYEMED HEALTHY INDIVID-MAY-MO","Neurolens Progressive","progressive",700,700,0,"cash_only","",false
+"Eva Reis","EYEMED HEALTHY INDIVID-MAY-MO","Sequel PAL","progressive",535,535,0,"cash_only","",false
+"Eva Reis","EYEMED HEALTHY INDIVID-MAY-MO","Varilux Comfort DRx","progressive",254.1,177.87,76.23,"ins_discount","tier_3",false
+"Eva Reis","EYEMED HEALTHY INDIVID-MAY-MO","Varilux Comfort Max","progressive",393.3,275.31,117.99,"ins_discount","tier_4",false
+"Eva Reis","EYEMED HEALTHY INDIVID-MAY-MO","Varilux I design","progressive",480,480,0,"cash_only","",false
+"Eva Reis","EYEMED HEALTHY INDIVID-MAY-MO","Varilux X Design","progressive",600,420,180,"ins_discount","tier_4",false
+"Eva Reis","EYEMED HEALTHY INDIVID-MAY-MO","Essilor Eyezen+ / Eyezen Start","single_vision",128.82,103.06,25.76,"ins_discount","all_other_lens_options",false
+"Eva Reis","EYEMED HEALTHY INDIVID-MAY-MO","Neurolens SV","single_vision",400,400,0,"cash_only","",false
+"Eva Reis","EYEMED HEALTHY INDIVID-MAY-MO","Sequel Single Vision","single_vision",309,309,0,"cash_only","",false
+"Eva Reis","EYEMED HEALTHY INDIVID-MAY-MO","Single Vision","single_vision",80.4,55,25.4,"by_tier","standard_sv",false
+"Eva Reis","EYEMED HEALTHY INDIVID-MAY-MO","Stellest","single_vision",438,438,0,"cash_only","",false
+"Elizabeth Lana Sookram","Orlando Health, Inc","Essential Blue Series","addon",30,24,6,"ins_discount","blue_light",false
+"Elizabeth Lana Sookram","Orlando Health, Inc","Light Filter (VSP LF)","addon",15,12,3,"ins_discount","all_other_lens_options",false
+"Elizabeth Lana Sookram","Orlando Health, Inc","Mirror - Solid Color","addon",54,43.2,10.8,"ins_discount","mirror",false
+"Elizabeth Lana Sookram","Orlando Health, Inc","Oversize Lenses","addon",30,30,0,"cash_only","",false
+"Elizabeth Lana Sookram","Orlando Health, Inc","Polarized","addon",155.7,124.56,31.14,"ins_discount","polarized",false
+"Elizabeth Lana Sookram","Orlando Health, Inc","Prism over Base Range, Per D, Per Lens","addon",8.2,8.2,0,"cash_only","",false
+"Elizabeth Lana Sookram","Orlando Health, Inc","Roll & Polish","addon",14.4,11.52,2.88,"ins_discount","edging",false
+"Elizabeth Lana Sookram","Orlando Health, Inc","Solid Tint - CR39/Poly CLR Lens","addon",17.8,15,2.8,"by_tier","tint",false
+"Elizabeth Lana Sookram","Orlando Health, Inc","Technical Add-On (Multifocal/Progressive)","addon",40,32,8,"ins_discount","all_other_lens_options",false
+"Elizabeth Lana Sookram","Orlando Health, Inc","Technical Add-On (Single Vision)","addon",10,8,2,"ins_discount","all_other_lens_options",false
+"Elizabeth Lana Sookram","Orlando Health, Inc","UV Protection","addon",15,15,0,"by_tier","uv_treatment",false
+"Elizabeth Lana Sookram","Orlando Health, Inc","Crizal Easy Pro","ar_coating",147.5,68,79.5,"by_tier","ar_tier_2",false
+"Elizabeth Lana Sookram","Orlando Health, Inc","Crizal Rock","ar_coating",145,116,29,"ins_discount","ar_tier_3",false
+"Elizabeth Lana Sookram","Orlando Health, Inc","Crizal Sapphire HR","ar_coating",180,144,36,"ins_discount","ar_tier_3",false
+"Elizabeth Lana Sookram","Orlando Health, Inc","Crizal Sunshield Mirrors UV","ar_coating",177.5,15,162.5,"by_tier","uv_treatment",false
+"Elizabeth Lana Sookram","Orlando Health, Inc","Crizal Sunshield UV","ar_coating",177.5,15,162.5,"by_tier","uv_treatment",false
+"Elizabeth Lana Sookram","Orlando Health, Inc","Neurolens Blue AR","ar_coating",180,180,0,"cash_only","",false
+"Elizabeth Lana Sookram","Orlando Health, Inc","Neurolens Premium AR","ar_coating",180,180,0,"cash_only","",false
+"Elizabeth Lana Sookram","Orlando Health, Inc","Flat Top 28","bifocal",126,10,116,"by_tier","standard_bf",false
+"Elizabeth Lana Sookram","Orlando Health, Inc","Flat Top 7x28","bifocal",132.48,10,122.48,"by_tier","standard_bf",false
+"Elizabeth Lana Sookram","Orlando Health, Inc","CR-39 (Standard Plastic)","material",0,0,0,"by_tier","standard",false
+"Elizabeth Lana Sookram","Orlando Health, Inc","Hi-Index 1.67","material",125,100,25,"ins_discount","high_index_167",false
+"Elizabeth Lana Sookram","Orlando Health, Inc","Hi-Index 1.72","material",150,150,0,"cash_only","",false
+"Elizabeth Lana Sookram","Orlando Health, Inc","Polycarbonate","material",65,0,65,"by_tier","polycarbonate",false
+"Elizabeth Lana Sookram","Orlando Health, Inc","Trivex","material",85,68,17,"ins_discount","trivex",false
+"Elizabeth Lana Sookram","Orlando Health, Inc","Full Rim","mount_fee",0,0,0,"by_tier","standard",false
+"Elizabeth Lana Sookram","Orlando Health, Inc","Rimless (drill mount)","mount_fee",47,37.6,9.4,"ins_discount","all_other_lens_options",false
+"Elizabeth Lana Sookram","Orlando Health, Inc","Semi Rimless (grooved)","mount_fee",35,28,7,"ins_discount","all_other_lens_options",false
+"Elizabeth Lana Sookram","Orlando Health, Inc","Transitions GEN S","photochromic",175,0,175,"by_tier","photochromic",false
+"Elizabeth Lana Sookram","Orlando Health, Inc","Transitions XTRActive","photochromic",145,0,145,"by_tier","photochromic",false
+"Elizabeth Lana Sookram","Orlando Health, Inc","Neurolens Progressive","progressive",700,700,0,"cash_only","",false
+"Elizabeth Lana Sookram","Orlando Health, Inc","Sequel PAL","progressive",535,535,0,"cash_only","",false
+"Elizabeth Lana Sookram","Orlando Health, Inc","Varilux Comfort DRx","progressive",254.1,55,199.1,"by_tier","tier_3",false
+"Elizabeth Lana Sookram","Orlando Health, Inc","Varilux Comfort Max","progressive",393.3,185,208.3,"by_tier","tier_4",false
+"Elizabeth Lana Sookram","Orlando Health, Inc","Varilux I design","progressive",480,480,0,"cash_only","",false
+"Elizabeth Lana Sookram","Orlando Health, Inc","Varilux X Design","progressive",600,185,415,"by_tier","tier_4",false
+"Elizabeth Lana Sookram","Orlando Health, Inc","Essilor Eyezen+ / Eyezen Start","single_vision",128.82,103.06,25.76,"ins_discount","all_other_lens_options",false
+"Elizabeth Lana Sookram","Orlando Health, Inc","Neurolens SV","single_vision",400,400,0,"cash_only","",false
+"Elizabeth Lana Sookram","Orlando Health, Inc","Sequel Single Vision","single_vision",309,309,0,"cash_only","",false
+"Elizabeth Lana Sookram","Orlando Health, Inc","Single Vision","single_vision",80.4,10,70.4,"by_tier","standard_sv",false
+"Elizabeth Lana Sookram","Orlando Health, Inc","Stellest","single_vision",438,438,0,"cash_only","",false
+"Steven Soto","Orlando Health, Inc","Essential Blue Series","addon",30,24,6,"ins_discount","blue_light",false
+"Steven Soto","Orlando Health, Inc","Light Filter (VSP LF)","addon",15,12,3,"ins_discount","all_other_lens_options",false
+"Steven Soto","Orlando Health, Inc","Mirror - Solid Color","addon",54,43.2,10.8,"ins_discount","mirror",false
+"Steven Soto","Orlando Health, Inc","Oversize Lenses","addon",30,30,0,"cash_only","",false
+"Steven Soto","Orlando Health, Inc","Polarized","addon",155.7,124.56,31.14,"ins_discount","polarized",false
+"Steven Soto","Orlando Health, Inc","Prism over Base Range, Per D, Per Lens","addon",8.2,8.2,0,"cash_only","",false
+"Steven Soto","Orlando Health, Inc","Roll & Polish","addon",14.4,11.52,2.88,"ins_discount","edging",false
+"Steven Soto","Orlando Health, Inc","Solid Tint - CR39/Poly CLR Lens","addon",17.8,15,2.8,"by_tier","tint",false
+"Steven Soto","Orlando Health, Inc","Technical Add-On (Multifocal/Progressive)","addon",40,32,8,"ins_discount","all_other_lens_options",false
+"Steven Soto","Orlando Health, Inc","Technical Add-On (Single Vision)","addon",10,8,2,"ins_discount","all_other_lens_options",false
+"Steven Soto","Orlando Health, Inc","UV Protection","addon",15,15,0,"by_tier","uv_treatment",false
+"Steven Soto","Orlando Health, Inc","Crizal Easy Pro","ar_coating",147.5,68,79.5,"by_tier","ar_tier_2",false
+"Steven Soto","Orlando Health, Inc","Crizal Rock","ar_coating",145,116,29,"ins_discount","ar_tier_3",false
+"Steven Soto","Orlando Health, Inc","Crizal Sapphire HR","ar_coating",180,144,36,"ins_discount","ar_tier_3",false
+"Steven Soto","Orlando Health, Inc","Crizal Sunshield Mirrors UV","ar_coating",177.5,15,162.5,"by_tier","uv_treatment",false
+"Steven Soto","Orlando Health, Inc","Crizal Sunshield UV","ar_coating",177.5,15,162.5,"by_tier","uv_treatment",false
+"Steven Soto","Orlando Health, Inc","Neurolens Blue AR","ar_coating",180,180,0,"cash_only","",false
+"Steven Soto","Orlando Health, Inc","Neurolens Premium AR","ar_coating",180,180,0,"cash_only","",false
+"Steven Soto","Orlando Health, Inc","Flat Top 28","bifocal",126,10,116,"by_tier","standard_bf",false
+"Steven Soto","Orlando Health, Inc","Flat Top 7x28","bifocal",132.48,10,122.48,"by_tier","standard_bf",false
+"Steven Soto","Orlando Health, Inc","CR-39 (Standard Plastic)","material",0,0,0,"by_tier","standard",false
+"Steven Soto","Orlando Health, Inc","Hi-Index 1.67","material",125,100,25,"ins_discount","high_index_167",false
+"Steven Soto","Orlando Health, Inc","Hi-Index 1.72","material",150,150,0,"cash_only","",false
+"Steven Soto","Orlando Health, Inc","Polycarbonate","material",65,0,65,"by_tier","polycarbonate",false
+"Steven Soto","Orlando Health, Inc","Trivex","material",85,68,17,"ins_discount","trivex",false
+"Steven Soto","Orlando Health, Inc","Full Rim","mount_fee",0,0,0,"by_tier","standard",false
+"Steven Soto","Orlando Health, Inc","Rimless (drill mount)","mount_fee",47,37.6,9.4,"ins_discount","all_other_lens_options",false
+"Steven Soto","Orlando Health, Inc","Semi Rimless (grooved)","mount_fee",35,28,7,"ins_discount","all_other_lens_options",false
+"Steven Soto","Orlando Health, Inc","Transitions GEN S","photochromic",175,0,175,"by_tier","photochromic",false
+"Steven Soto","Orlando Health, Inc","Transitions XTRActive","photochromic",145,0,145,"by_tier","photochromic",false
+"Steven Soto","Orlando Health, Inc","Neurolens Progressive","progressive",700,700,0,"cash_only","",false
+"Steven Soto","Orlando Health, Inc","Sequel PAL","progressive",535,535,0,"cash_only","",false
+"Steven Soto","Orlando Health, Inc","Varilux Comfort DRx","progressive",254.1,55,199.1,"by_tier","tier_3",false
+"Steven Soto","Orlando Health, Inc","Varilux Comfort Max","progressive",393.3,185,208.3,"by_tier","tier_4",false
+"Steven Soto","Orlando Health, Inc","Varilux I design","progressive",480,480,0,"cash_only","",false
+"Steven Soto","Orlando Health, Inc","Varilux X Design","progressive",600,185,415,"by_tier","tier_4",false
+"Steven Soto","Orlando Health, Inc","Essilor Eyezen+ / Eyezen Start","single_vision",128.82,103.06,25.76,"ins_discount","all_other_lens_options",false
+"Steven Soto","Orlando Health, Inc","Neurolens SV","single_vision",400,400,0,"cash_only","",false
+"Steven Soto","Orlando Health, Inc","Sequel Single Vision","single_vision",309,309,0,"cash_only","",false
+"Steven Soto","Orlando Health, Inc","Single Vision","single_vision",80.4,10,70.4,"by_tier","standard_sv",false
+"Steven Soto","Orlando Health, Inc","Stellest","single_vision",438,438,0,"cash_only","",false
+"Courtney Sternick","HCA Healthcare Affiliated Facilities","Essential Blue Series","addon",30,24,6,"ins_discount","blue_light",false
+"Courtney Sternick","HCA Healthcare Affiliated Facilities","Light Filter (VSP LF)","addon",15,12,3,"ins_discount","all_other_lens_options",false
+"Courtney Sternick","HCA Healthcare Affiliated Facilities","Mirror - Solid Color","addon",54,43.2,10.8,"ins_discount","mirror",false
+"Courtney Sternick","HCA Healthcare Affiliated Facilities","Oversize Lenses","addon",30,30,0,"cash_only","",false
+"Courtney Sternick","HCA Healthcare Affiliated Facilities","Polarized","addon",155.7,124.56,31.14,"ins_discount","polarized",false
+"Courtney Sternick","HCA Healthcare Affiliated Facilities","Prism over Base Range, Per D, Per Lens","addon",8.2,8.2,0,"cash_only","",false
+"Courtney Sternick","HCA Healthcare Affiliated Facilities","Roll & Polish","addon",14.4,11.52,2.88,"ins_discount","edging",false
+"Courtney Sternick","HCA Healthcare Affiliated Facilities","Solid Tint - CR39/Poly CLR Lens","addon",17.8,15,2.8,"by_tier","tint",false
+"Courtney Sternick","HCA Healthcare Affiliated Facilities","Technical Add-On (Multifocal/Progressive)","addon",40,32,8,"ins_discount","all_other_lens_options",false
+"Courtney Sternick","HCA Healthcare Affiliated Facilities","Technical Add-On (Single Vision)","addon",10,8,2,"ins_discount","all_other_lens_options",false
+"Courtney Sternick","HCA Healthcare Affiliated Facilities","UV Protection","addon",15,15,0,"by_tier","uv_treatment",false
+"Courtney Sternick","HCA Healthcare Affiliated Facilities","Crizal Easy Pro","ar_coating",147.5,68,79.5,"by_tier","ar_tier_2",false
+"Courtney Sternick","HCA Healthcare Affiliated Facilities","Crizal Rock","ar_coating",145,116,29,"ins_discount","ar_tier_3",false
+"Courtney Sternick","HCA Healthcare Affiliated Facilities","Crizal Sapphire HR","ar_coating",180,144,36,"ins_discount","ar_tier_3",false
+"Courtney Sternick","HCA Healthcare Affiliated Facilities","Crizal Sunshield Mirrors UV","ar_coating",177.5,15,162.5,"by_tier","uv_treatment",false
+"Courtney Sternick","HCA Healthcare Affiliated Facilities","Crizal Sunshield UV","ar_coating",177.5,15,162.5,"by_tier","uv_treatment",false
+"Courtney Sternick","HCA Healthcare Affiliated Facilities","Neurolens Blue AR","ar_coating",180,180,0,"cash_only","",false
+"Courtney Sternick","HCA Healthcare Affiliated Facilities","Neurolens Premium AR","ar_coating",180,180,0,"cash_only","",false
+"Courtney Sternick","HCA Healthcare Affiliated Facilities","Flat Top 28","bifocal",126,20,106,"by_tier","standard_bf",false
+"Courtney Sternick","HCA Healthcare Affiliated Facilities","Flat Top 7x28","bifocal",132.48,20,112.48,"by_tier","standard_bf",false
+"Courtney Sternick","HCA Healthcare Affiliated Facilities","CR-39 (Standard Plastic)","material",0,0,0,"by_tier","standard",false
+"Courtney Sternick","HCA Healthcare Affiliated Facilities","Hi-Index 1.67","material",125,100,25,"ins_discount","high_index_167",false
+"Courtney Sternick","HCA Healthcare Affiliated Facilities","Hi-Index 1.72","material",150,150,0,"cash_only","",false
+"Courtney Sternick","HCA Healthcare Affiliated Facilities","Polycarbonate","material",65,40,25,"by_tier","polycarbonate",false
+"Courtney Sternick","HCA Healthcare Affiliated Facilities","Trivex","material",85,68,17,"ins_discount","trivex",false
+"Courtney Sternick","HCA Healthcare Affiliated Facilities","Full Rim","mount_fee",0,0,0,"by_tier","standard",false
+"Courtney Sternick","HCA Healthcare Affiliated Facilities","Rimless (drill mount)","mount_fee",47,37.6,9.4,"ins_discount","all_other_lens_options",false
+"Courtney Sternick","HCA Healthcare Affiliated Facilities","Semi Rimless (grooved)","mount_fee",35,28,7,"ins_discount","all_other_lens_options",false
+"Courtney Sternick","HCA Healthcare Affiliated Facilities","Transitions GEN S","photochromic",175,75,100,"by_tier","photochromic",false
+"Courtney Sternick","HCA Healthcare Affiliated Facilities","Transitions XTRActive","photochromic",145,75,70,"by_tier","photochromic",false
+"Courtney Sternick","HCA Healthcare Affiliated Facilities","Neurolens Progressive","progressive",700,700,0,"cash_only","",false
+"Courtney Sternick","HCA Healthcare Affiliated Facilities","Sequel PAL","progressive",535,535,0,"cash_only","",false
+"Courtney Sternick","HCA Healthcare Affiliated Facilities","Varilux Comfort DRx","progressive",254.1,130,124.1,"by_tier","tier_3",false
+"Courtney Sternick","HCA Healthcare Affiliated Facilities","Varilux Comfort Max","progressive",393.3,85,308.3,"by_tier","tier_4",false
+"Courtney Sternick","HCA Healthcare Affiliated Facilities","Varilux I design","progressive",480,480,0,"cash_only","",false
+"Courtney Sternick","HCA Healthcare Affiliated Facilities","Varilux X Design","progressive",600,85,515,"by_tier","tier_4",false
+"Courtney Sternick","HCA Healthcare Affiliated Facilities","Essilor Eyezen+ / Eyezen Start","single_vision",128.82,103.06,25.76,"ins_discount","all_other_lens_options",false
+"Courtney Sternick","HCA Healthcare Affiliated Facilities","Neurolens SV","single_vision",400,400,0,"cash_only","",false
+"Courtney Sternick","HCA Healthcare Affiliated Facilities","Sequel Single Vision","single_vision",309,309,0,"cash_only","",false
+"Courtney Sternick","HCA Healthcare Affiliated Facilities","Single Vision","single_vision",80.4,20,60.4,"by_tier","standard_sv",false
+"Courtney Sternick","HCA Healthcare Affiliated Facilities","Stellest","single_vision",438,438,0,"cash_only","",false
+"Steven Zhang","Siemens Energy Premier","Essential Blue Series","addon",30,24,6,"uc_discount","blue_light",true
+"Steven Zhang","Siemens Energy Premier","Light Filter (VSP LF)","addon",15,12,3,"ins_discount","all_other_lens_options",false
+"Steven Zhang","Siemens Energy Premier","Mirror - Solid Color","addon",54,43.2,10.8,"uc_discount","mirror",true
+"Steven Zhang","Siemens Energy Premier","Oversize Lenses","addon",30,30,0,"cash_only","",false
+"Steven Zhang","Siemens Energy Premier","Polarized","addon",155.7,75,80.7,"by_tier","polarized",false
+"Steven Zhang","Siemens Energy Premier","Prism over Base Range, Per D, Per Lens","addon",8.2,8.2,0,"cash_only","",false
+"Steven Zhang","Siemens Energy Premier","Roll & Polish","addon",14.4,11.52,2.88,"uc_discount","edging",true
+"Steven Zhang","Siemens Energy Premier","Solid Tint - CR39/Poly CLR Lens","addon",17.8,0,17.8,"by_tier","tint",false
+"Steven Zhang","Siemens Energy Premier","Technical Add-On (Multifocal/Progressive)","addon",40,32,8,"ins_discount","all_other_lens_options",false
+"Steven Zhang","Siemens Energy Premier","Technical Add-On (Single Vision)","addon",10,8,2,"ins_discount","all_other_lens_options",false
+"Steven Zhang","Siemens Energy Premier","UV Protection","addon",15,0,15,"by_tier","uv_treatment",false
+"Steven Zhang","Siemens Energy Premier","Crizal Easy Pro","ar_coating",147.5,58,89.5,"by_tier","ar_tier_2",false
+"Steven Zhang","Siemens Energy Premier","Crizal Rock","ar_coating",145,116,29,"ins_discount","ar_tier_3",false
+"Steven Zhang","Siemens Energy Premier","Crizal Sapphire HR","ar_coating",180,144,36,"ins_discount","ar_tier_3",false
+"Steven Zhang","Siemens Energy Premier","Crizal Sunshield Mirrors UV","ar_coating",177.5,0,177.5,"by_tier","uv_treatment",false
+"Steven Zhang","Siemens Energy Premier","Crizal Sunshield UV","ar_coating",177.5,0,177.5,"by_tier","uv_treatment",false
+"Steven Zhang","Siemens Energy Premier","Neurolens Blue AR","ar_coating",180,180,0,"cash_only","",false
+"Steven Zhang","Siemens Energy Premier","Neurolens Premium AR","ar_coating",180,180,0,"cash_only","",false
+"Steven Zhang","Siemens Energy Premier","Flat Top 28","bifocal",126,15,111,"by_tier","standard_bf",false
+"Steven Zhang","Siemens Energy Premier","Flat Top 7x28","bifocal",132.48,15,117.48,"by_tier","standard_bf",false
+"Steven Zhang","Siemens Energy Premier","CR-39 (Standard Plastic)","material",0,0,0,"by_tier","standard",false
+"Steven Zhang","Siemens Energy Premier","Hi-Index 1.67","material",125,100,25,"uc_discount","high_index_167",true
+"Steven Zhang","Siemens Energy Premier","Hi-Index 1.72","material",150,150,0,"cash_only","",false
+"Steven Zhang","Siemens Energy Premier","Polycarbonate","material",65,0,65,"by_tier","polycarbonate",false
+"Steven Zhang","Siemens Energy Premier","Trivex","material",85,68,17,"uc_discount","trivex",true
+"Steven Zhang","Siemens Energy Premier","Full Rim","mount_fee",0,0,0,"by_tier","standard",false
+"Steven Zhang","Siemens Energy Premier","Rimless (drill mount)","mount_fee",47,37.6,9.4,"ins_discount","all_other_lens_options",false
+"Steven Zhang","Siemens Energy Premier","Semi Rimless (grooved)","mount_fee",35,28,7,"ins_discount","all_other_lens_options",false
+"Steven Zhang","Siemens Energy Premier","Transitions GEN S","photochromic",175,65,110,"by_tier","photochromic",false
+"Steven Zhang","Siemens Energy Premier","Transitions XTRActive","photochromic",145,65,80,"by_tier","photochromic",false
+"Steven Zhang","Siemens Energy Premier","Neurolens Progressive","progressive",700,700,0,"cash_only","",false
+"Steven Zhang","Siemens Energy Premier","Sequel PAL","progressive",535,535,0,"cash_only","",false
+"Steven Zhang","Siemens Energy Premier","Varilux Comfort DRx","progressive",254.1,60,194.1,"by_tier","tier_3",false
+"Steven Zhang","Siemens Energy Premier","Varilux Comfort Max","progressive",393.3,314.64,78.66,"ins_discount","tier_4",false
+"Steven Zhang","Siemens Energy Premier","Varilux I design","progressive",480,480,0,"cash_only","",false
+"Steven Zhang","Siemens Energy Premier","Varilux X Design","progressive",600,480,120,"ins_discount","tier_4",false
+"Steven Zhang","Siemens Energy Premier","Essilor Eyezen+ / Eyezen Start","single_vision",128.82,103.06,25.76,"ins_discount","all_other_lens_options",false
+"Steven Zhang","Siemens Energy Premier","Neurolens SV","single_vision",400,400,0,"cash_only","",false
+"Steven Zhang","Siemens Energy Premier","Sequel Single Vision","single_vision",309,309,0,"cash_only","",false
+"Steven Zhang","Siemens Energy Premier","Single Vision","single_vision",80.4,15,65.4,"by_tier","standard_sv",false
+"Steven Zhang","Siemens Energy Premier","Stellest","single_vision",438,438,0,"cash_only","",false

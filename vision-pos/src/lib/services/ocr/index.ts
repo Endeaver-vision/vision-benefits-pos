@@ -1,19 +1,31 @@
 // OCR Services - Export all components
-// Uses Google Cloud Vision for OCR (cheap) + GPT for text parsing
 
-// Core OCR processing (Google Vision OCR + GPT parsing)
+// TWO-PROMPT EXTRACTION SYSTEM (Recommended approach)
+// Prompt 1: Raw extraction without interpretation
 export {
-  processDocument,
-  processDocumentFromBase64,
-  processDocumentWithVision
-} from './ocr-service'
+  extractRawDocument,
+  type RawExtractionResult,
+  type RawBenefit,
+  type RawMemberInfo,
+  type RawDocumentStructure,
+} from './prompt-1-raw-extraction'
 
-// GPT text extraction utilities
+// Prompt 2: Normalization using rosetta stones and business rules
 export {
-  parseInsuranceDocument,
-  calculateOverallConfidence,
-  getConfidenceLevel,
-} from './gpt-extraction'
+  normalizeBenefits,
+  type NormalizedExtractionResult,
+  type NormalizedBenefit,
+  type MappingResult,
+  type ValidationWarning,
+} from './prompt-2-normalization'
+
+// LEGACY: Haiku vision extraction (use two-prompt system instead)
+export {
+  readDocumentWithHaiku,
+  assignToCatalog,
+  extractInsuranceDocument,
+  processDocumentWithHaiku,
+} from './haiku-extraction'
 
 // Carrier detection utilities
 export {
@@ -23,11 +35,3 @@ export {
   countLowConfidenceFields,
   getCarrierHints,
 } from './carrier-detection'
-
-// Main orchestrator
-export {
-  processInsuranceDocument,
-  verifyInsuranceDocument,
-  getCustomerDocuments,
-  getPendingDocuments,
-} from './insurance-parser'

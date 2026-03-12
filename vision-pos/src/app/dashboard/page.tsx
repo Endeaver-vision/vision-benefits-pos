@@ -2,7 +2,7 @@
 
 import Link from 'next/link'
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
-import { Store, Users, Package, DollarSign, BarChart3, Box, Shield, FileSearch, ArrowRight } from 'lucide-react'
+import { Store, Users, Package, DollarSign, BarChart3, Box, Shield, ArrowRight, FileUp } from 'lucide-react'
 import AppNavigation from '@/components/layout/app-navigation'
 
 export default function DashboardPage() {
@@ -17,15 +17,15 @@ export default function DashboardPage() {
 
       {/* Main Content */}
       <main className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
-        {/* Main Quote Button - Full Width Solid Chip */}
+        {/* Main POS Button - Full Width Solid Chip */}
         <div className="mb-8">
-          <Link href="/quote-builder" className="block">
+          <Link href="/pos" className="block">
             <div className="cursor-pointer hover:shadow-xl transition-all chip-blue rounded-xl p-8">
               <div className="flex items-center justify-center gap-4">
                 <Store className="h-12 w-12 text-white" />
                 <div className="text-center">
-                  <h2 className="text-3xl font-bold text-white">Quote</h2>
-                  <p className="text-blue-100 mt-1">Start or continue a quote</p>
+                  <h2 className="text-3xl font-bold text-white">Point of Sale</h2>
+                  <p className="text-blue-100 mt-1">Start a new quote or checkout</p>
                 </div>
               </div>
             </div>
@@ -158,20 +158,35 @@ export default function DashboardPage() {
           </Link>
         </div>
 
-        {/* Insurance Scanner Section */}
-        <div className="mb-8">
-          <Link href="/scanner" className="block">
-            <Card className="glass-card border-white/20 cursor-pointer hover:shadow-lg transition-all hover:scale-[1.01] hover:bg-white/20">
+        {/* Insurance Pricers */}
+        <div className="grid grid-cols-1 md:grid-cols-2 gap-6 mb-8">
+          <Link href="/eyemed-pricer" className="block">
+            <Card className="glass-card border-white/20 cursor-pointer hover:shadow-lg transition-all hover:scale-[1.01] hover:bg-white/20 h-full">
               <CardContent className="py-8">
                 <div className="flex items-center gap-6">
                   <div className="h-16 w-16 rounded-2xl bg-emerald-500/20 flex items-center justify-center">
-                    <FileSearch className="h-8 w-8 text-emerald-400" />
+                    <FileUp className="h-8 w-8 text-emerald-400" />
                   </div>
                   <div className="flex-1">
-                    <h3 className="text-xl font-semibold text-white mb-1">Insurance Document Scanner</h3>
-                    <p className="text-white/70">
-                      Scan insurance cards, authorizations, and eligibility documents with AI-powered extraction
-                    </p>
+                    <h3 className="text-2xl font-bold text-white mb-2">EyeMed Pricer</h3>
+                    <p className="text-white/70">Upload auth PDF • Extract benefits • Calculate prices</p>
+                  </div>
+                  <ArrowRight className="h-6 w-6 text-white/50" />
+                </div>
+              </CardContent>
+            </Card>
+          </Link>
+
+          <Link href="/vsp-pricer" className="block">
+            <Card className="glass-card border-white/20 cursor-pointer hover:shadow-lg transition-all hover:scale-[1.01] hover:bg-white/20 h-full">
+              <CardContent className="py-8">
+                <div className="flex items-center gap-6">
+                  <div className="h-16 w-16 rounded-2xl bg-blue-500/20 flex items-center justify-center">
+                    <Shield className="h-8 w-8 text-blue-400" />
+                  </div>
+                  <div className="flex-1">
+                    <h3 className="text-2xl font-bold text-white mb-2">VSP Pricer</h3>
+                    <p className="text-white/70">Upload auth + enhancement PDFs • Extract copays • Generate price list</p>
                   </div>
                   <ArrowRight className="h-6 w-6 text-white/50" />
                 </div>

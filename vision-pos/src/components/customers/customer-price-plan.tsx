@@ -29,7 +29,7 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select"
-import { Loader2, DollarSign, Edit, Sparkles, AlertCircle, AlertTriangle, ChevronDown, ChevronRight, Star, Package } from 'lucide-react'
+import { Loader2, DollarSign, Edit, Sparkles, AlertCircle, AlertTriangle, ChevronDown, ChevronRight, Star, Package, Download } from 'lucide-react'
 
 interface Product {
   id: string
@@ -38,7 +38,7 @@ interface Product {
   category: string
   categoryCode: string
   categoryDisplayOrder: number
-  displayTier: string  // 'everyday' or 'reserve'
+  displayGroup: string  // 'everyday' or 'reserve'
   displayOrder: number
   retailPrice: number
   customerPrice: number | null
@@ -132,6 +132,41 @@ export default function CustomerPricePlan({ customerId }: CustomerPricePlanProps
     }
   }
 
+  const exportPriceList = () => {
+    // Build CSV content
+    const headers = ['Product', 'Category', 'SKU', 'Retail Price', 'Customer Price', 'Savings', 'Tier', 'Carrier']
+    const rows = products.map(p => [
+      p.name,
+      p.category,
+      p.sku || '',
+      p.retailPrice.toFixed(2),
+      p.customerPrice !== null ? p.customerPrice.toFixed(2) : 'N/A',
+      p.savings > 0 ? p.savings.toFixed(2) : '0.00',
+      p.insuranceTier || '',
+      p.insuranceCarrier || 'Cash'
+    ])
+
+    const csvContent = [
+      `Price List for ${customer?.name || 'Customer'}`,
+      `Generated: ${new Date().toLocaleDateString()}`,
+      `Insurance: ${customer?.insurance?.carrier || 'None'}`,
+      '',
+      headers.join(','),
+      ...rows.map(row => row.map(cell => `"${cell}"`).join(','))
+    ].join('\n')
+
+    // Download file
+    const blob = new Blob([csvContent], { type: 'text/csv;charset=utf-8;' })
+    const link = document.createElement('a')
+    const url = URL.createObjectURL(blob)
+    link.setAttribute('href', url)
+    link.setAttribute('download', `price-list-${customer?.name?.replace(/\s+/g, '-') || 'customer'}-${new Date().toISOString().split('T')[0]}.csv`)
+    link.style.visibility = 'hidden'
+    document.body.appendChild(link)
+    link.click()
+    document.body.removeChild(link)
+  }
+
   const openOverrideModal = (product: Product) => {
     setSelectedProduct(product)
     setOverridePrice(product.customerPrice?.toString() || product.retailPrice.toString())
@@ -210,8 +245,8 @@ export default function CustomerPricePlan({ customerId }: CustomerPricePlanProps
   })
 
   // Split into everyday and reserve products
-  const everydayProducts = filteredProducts.filter(p => p.displayTier === 'everyday')
-  const reserveProducts = filteredProducts.filter(p => p.displayTier === 'reserve')
+  const everydayProducts = filteredProducts.filter(p => p.displayGroup === 'everyday')
+  const reserveProducts = filteredProducts.filter(p => p.displayGroup === 'reserve')
 
   // Group products by category for display
   const groupByCategory = (prods: Product[]) => {
@@ -248,18 +283,29 @@ export default function CustomerPricePlan({ customerId }: CustomerPricePlanProps
         <CardHeader>
           <CardTitle className="flex items-center justify-between">
             <span>Price Plan for {customer?.name}</span>
-            <Button 
-              onClick={generateBulkPricePlan}
-              disabled={generating}
-              className="flex items-center gap-2"
-            >
-              {generating ? (
-                <Loader2 className="h-4 w-4 animate-spin" />
-              ) : (
-                <Sparkles className="h-4 w-4" />
-              )}
-              {generating ? 'Generating...' : 'Generate Price Plan'}
-            </Button>
+            <div className="flex items-center gap-2">
+              <Button
+                variant="outline"
+                onClick={exportPriceList}
+                disabled={products.length === 0}
+                className="flex items-center gap-2"
+              >
+                <Download className="h-4 w-4" />
+                Export CSV
+              </Button>
+              <Button
+                onClick={generateBulkPricePlan}
+                disabled={generating}
+                className="flex items-center gap-2"
+              >
+                {generating ? (
+                  <Loader2 className="h-4 w-4 animate-spin" />
+                ) : (
+                  <Sparkles className="h-4 w-4" />
+                )}
+                {generating ? 'Generating...' : 'Generate Price Plan'}
+              </Button>
+            </div>
           </CardTitle>
         </CardHeader>
         <CardContent>

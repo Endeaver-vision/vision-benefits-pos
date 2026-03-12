@@ -2,6 +2,14 @@
 
 import React, { createContext, useContext, useState, useCallback, useEffect } from 'react'
 import { QuoteResult, QuoteLineItem } from '@/types/product-catalog'
+import {
+  getVspCombinedCopay,
+  getVspSingleVisionMaterialCopay,
+  getVspFlatAddonCopay,
+  isSingleVisionLens,
+  isProgressiveLens,
+  VspMatrixResult,
+} from '@/lib/services/vsp-matrix-lookup'
 
 // Types for quote items
 interface QuoteItem {
@@ -11,6 +19,31 @@ interface QuoteItem {
   pricingCategory?: string | null  // e.g., "VISION_EXAM", "PROGRESSIVE", "FRAME"
   retailPrice: number
   quantity?: number
+}
+
+// Saved price list types - for using pre-calculated prices from a saved version
+export interface SavedPriceItem {
+  sku: string
+  productId: string
+  displayName: string
+  category: 'exam' | 'frame' | 'lens' | 'coating' | 'addon' | 'contact' | 'service'
+  retailPrice: number
+  finalPrice: number
+  patientPays: number
+  insurancePays: number
+  savings: number
+  tier?: string | null
+  copay?: number | null
+  notes?: string[]
+}
+
+export interface SavedPriceListVersion {
+  id: string
+  versionLabel: string
+  carrier: string
+  planName: string | null
+  createdAt: string
+  active: boolean
 }
 
 // Second pair (cash only) pricing
@@ -129,6 +162,7 @@ interface Authorization {
   effectiveDate?: string | null
   expirationDate: string | null
   isActive?: boolean
+  lastVerified?: string | null  // For staleness checking (48-hour threshold)
 
   // ===== DECLINING BALANCE / FLEX PLAN SUPPORT =====
   benefitStructure?: 'COPAY_ALLOWANCE' | 'DECLINING_BALANCE' | 'PACKAGE' | null
@@ -316,6 +350,12 @@ interface QuotePricingState {
   isCalculating: boolean
   error: string | null
   lastCalculatedAt: Date | null
+
+  // Saved price list mode
+  // When enabled, uses pre-calculated prices from a saved version instead of dynamic calculation
+  useSavedPriceList: boolean
+  activePriceListVersion: SavedPriceListVersion | null
+  savedPriceItems: Map<string, SavedPriceItem>
 }
 
 // Context actions
@@ -357,6 +397,11 @@ interface QuotePricingActions {
 
   // Force recalculation
   recalculatePricing: () => Promise<void>
+
+  // Saved price list mode
+  enableSavedPriceListMode: (customerId: string, versionId: string) => Promise<void>
+  disableSavedPriceListMode: () => void
+  getSavedPrice: (sku: string) => SavedPriceItem | null
 }
 
 type QuotePricingContextType = QuotePricingState & QuotePricingActions
@@ -394,6 +439,11 @@ export function QuotePricingProvider({ children }: { children: React.ReactNode }
   const [eyeglassesSelections, setEyeglassesSelections] = useState<EyeglassesSelections>(initialEyeglassesSelections)
   const [secondPairSelections, setSecondPairSelections] = useState<SecondPairSelections>(initialSecondPairSelections)
   const [contactLensSelections, setContactLensSelections] = useState<ContactLensSelections>(initialContactLensSelections)
+
+  // Saved price list mode state
+  const [useSavedPriceList, setUseSavedPriceList] = useState(false)
+  const [activePriceListVersion, setActivePriceListVersion] = useState<SavedPriceListVersion | null>(null)
+  const [savedPriceItems, setSavedPriceItems] = useState<Map<string, SavedPriceItem>>(new Map())
 
   // Fetch authorization function (reusable for initial load and refresh)
   const fetchAuthorizationForCustomer = useCallback(async (id: string) => {
@@ -436,6 +486,7 @@ export function QuotePricingProvider({ children }: { children: React.ReactNode }
 
   // Calculate pricing when items or authorization changes
   // Also recalculates when activeMaterialsBenefit changes (user switches glasses/contacts)
+  // When useSavedPriceList is true, uses saved prices instead of dynamic API calculation
   const calculatePricing = useCallback(async () => {
     if (!customerId || selectedItems.size === 0) {
       setPricedItems([])
@@ -447,6 +498,54 @@ export function QuotePricingProvider({ children }: { children: React.ReactNode }
     setError(null)
 
     try {
+      // If using saved price list mode, calculate from saved prices
+      if (useSavedPriceList && savedPriceItems.size > 0) {
+        console.log('[QuotePricing] Using saved price list mode')
+
+        const priced: PricedItem[] = Array.from(selectedItems.values()).map(item => {
+          const savedPrice = savedPriceItems.get(item.sku)
+
+          if (savedPrice) {
+            return {
+              ...item,
+              patientPays: savedPrice.patientPays,
+              insurancePays: savedPrice.insurancePays,
+              savings: savedPrice.savings,
+              tierUsed: savedPrice.tier || undefined,
+              notes: savedPrice.notes?.join(', '),
+            }
+          }
+
+          // If item not in saved prices, use retail (no insurance coverage)
+          console.log(`[QuotePricing] Item ${item.sku} not in saved prices, using retail`)
+          return {
+            ...item,
+            patientPays: item.retailPrice,
+            insurancePays: 0,
+            savings: 0,
+          }
+        })
+
+        // Calculate totals from priced items
+        const retailTotal = priced.reduce((sum, item) => sum + item.retailPrice * (item.quantity || 1), 0)
+        const patientTotal = priced.reduce((sum, item) => sum + item.patientPays * (item.quantity || 1), 0)
+        const insuranceTotal = priced.reduce((sum, item) => sum + item.insurancePays * (item.quantity || 1), 0)
+        const totalSavings = priced.reduce((sum, item) => sum + item.savings * (item.quantity || 1), 0)
+
+        setPricedItems(priced)
+        setPricingSummary({
+          retailTotal,
+          insuranceTotal,
+          patientTotal,
+          totalSavings,
+          examCopay: 0, // Not tracked in saved mode
+          materialsCopay: 0,
+        })
+        setLastCalculatedAt(new Date())
+        return
+      }
+
+      // Standard dynamic pricing via API
       // Convert Map to array for API
       const items = Array.from(selectedItems.values()).map(item => ({
         sku: item.sku,
@@ -543,7 +642,7 @@ export function QuotePricingProvider({ children }: { children: React.ReactNode }
     } finally {
       setIsCalculating(false)
     }
-  }, [customerId, selectedItems, materialsConflict.activeBenefit, authorization])
+  }, [customerId, selectedItems, materialsConflict.activeBenefit, authorization, useSavedPriceList, savedPriceItems])
 
   // Trigger recalculation when items change
   useEffect(() => {
@@ -582,6 +681,10 @@ export function QuotePricingProvider({ children }: { children: React.ReactNode }
     setEyeglassesSelections(initialEyeglassesSelections)
     setSecondPairSelections(initialSecondPairSelections)
     setContactLensSelections(initialContactLensSelections)
+    // Clear saved price list mode
+    setUseSavedPriceList(false)
+    setActivePriceListVersion(null)
+    setSavedPriceItems(new Map())
   }, [])
 
   // Helper to determine what type of materials category an item belongs to
@@ -796,6 +899,50 @@ export function QuotePricingProvider({ children }: { children: React.ReactNode }
     setContactLensSelections(prev => ({ ...prev, ...selections }))
   }, [])
 
+  // Saved price list mode functions
+  const enableSavedPriceListMode = useCallback(async (customerId: string, versionId: string) => {
+    try {
+      setIsCalculating(true)
+      const response = await fetch(`/api/customers/${customerId}/price-list/versions/${versionId}/prices`)
+      const data = await response.json()
+
+      if (data.success) {
+        // Store version info
+        setActivePriceListVersion(data.version)
+
+        // Convert price items to map for quick lookup by SKU
+        const priceMap = new Map<string, SavedPriceItem>()
+        for (const item of data.priceItems) {
+          priceMap.set(item.sku, item)
+        }
+        setSavedPriceItems(priceMap)
+        setUseSavedPriceList(true)
+
+        console.log('[QuotePricing] Enabled saved price list mode:', data.version.versionLabel, `(${priceMap.size} items)`)
+      } else {
+        console.error('[QuotePricing] Failed to load price list version:', data.error)
+        setError(data.error || 'Failed to load price list')
+      }
+    } catch (err) {
+      console.error('[QuotePricing] Error enabling saved price list mode:', err)
+      setError('Failed to load saved price list')
+    } finally {
+      setIsCalculating(false)
+    }
+  }, [])
+
+  const disableSavedPriceListMode = useCallback(() => {
+    setUseSavedPriceList(false)
+    setActivePriceListVersion(null)
+    setSavedPriceItems(new Map())
+    console.log('[QuotePricing] Disabled saved price list mode')
+  }, [])
+
+  const getSavedPrice = useCallback((sku: string): SavedPriceItem | null => {
+    if (!useSavedPriceList) return null
+    return savedPriceItems.get(sku) || null
+  }, [useSavedPriceList, savedPriceItems])
+
   const value: QuotePricingContextType = {
     // State
     customerId,
@@ -816,6 +963,11 @@ export function QuotePricingProvider({ children }: { children: React.ReactNode }
     error,
     lastCalculatedAt,
 
+    // Saved price list mode state
+    useSavedPriceList,
+    activePriceListVersion,
+    savedPriceItems,
+
     // Actions
     setCustomer,
     clearCustomer,
@@ -835,6 +987,11 @@ export function QuotePricingProvider({ children }: { children: React.ReactNode }
     updateSecondPairSelections,
     updateContactLensSelections,
     recalculatePricing,
+
+    // Saved price list mode actions
+    enableSavedPriceListMode,
+    disableSavedPriceListMode,
+    getSavedPrice,
   }
 
   return (
@@ -1061,6 +1218,138 @@ export function useAuthorizationPricing() {
     }
   }
 
+  /**
+   * VSP Matrix Pricing: Get combined price for progressive + material
+   *
+   * VSP uses combined codes where progressive tier + material = single copay
+   * Example: Varilux X (N) + Hi-Index 1.74 (J) = "NJ" = $125
+   * NOT: NA ($175) + AJ ($118) = $293
+   *
+   * @param progressiveName - The progressive lens name (e.g., "Varilux X Design")
+   * @param materialName - The material name (e.g., "Hi-Index 1.74")
+   * @returns Combined copay result or null if not VSP or lookup fails
+   */
+  const getVspMatrixPrice = (
+    progressiveName: string,
+    materialName: string
+  ): VspMatrixResult | null => {
+    // Only applies to VSP
+    if (authorization?.carrier?.toUpperCase() !== 'VSP') return null
+
+    // Get copays JSON from authorization
+    const copays = (authorization as { copays?: Record<string, number | null> })?.copays
+    if (!copays) return null
+
+    return getVspCombinedCopay(progressiveName, materialName, copays)
+  }
+
+  /**
+   * VSP: Get material price for Single Vision lenses
+   * Single Vision doesn't use the progressive matrix - just material-only codes
+   *
+   * @param materialName - The material name (e.g., "Polycarbonate")
+   * @returns Material copay for SV or null if not VSP
+   */
+  const getVspSvMaterialPrice = (materialName: string): VspMatrixResult | null => {
+    if (authorization?.carrier?.toUpperCase() !== 'VSP') return null
+
+    const copays = (authorization as { copays?: Record<string, number | null> })?.copays
+    if (!copays) return null
+
+    return getVspSingleVisionMaterialCopay(materialName, copays)
+  }
+
+  /**
+   * VSP: Get flat add-on copay (AR coating, photochromic, etc.)
+   * These are NOT part of the progressive+material matrix
+   *
+   * @param addonCode - VSP two-letter code (e.g., "QV" for premium AR)
+   * @param isSingleVision - Whether to use SV pricing (default: false = MF)
+   * @returns The addon copay or null
+   */
+  const getVspAddonPrice = (addonCode: string, isSingleVision: boolean = false): number | null => {
+    if (authorization?.carrier?.toUpperCase() !== 'VSP') return null
+
+    const copays = (authorization as { copays?: Record<string, number | null> })?.copays
+    if (!copays) return null
+
+    return getVspFlatAddonCopay(addonCode, copays, !isSingleVision)
+  }
+
+  /**
+   * Calculate total eyeglasses patient cost using VSP matrix pricing
+   *
+   * This correctly handles VSP's combined progressive+material codes.
+   * For non-VSP carriers, returns null (use standard additive pricing).
+   *
+   * @param selections - Current eyeglasses selections
+   * @returns Total patient cost or null if not applicable
+   */
+  const calculateVspEyeglassesTotal = (
+    lensTypeName: string | null,
+    materialName: string | null,
+    arCoatingCode: string | null,
+    photochromicCode: string | null,
+    polarizedCode: string | null,
+    otherAddonCodes: string[],
+    materialsCopay: number | null
+  ): { total: number; breakdown: Record<string, number> } | null => {
+    if (authorization?.carrier?.toUpperCase() !== 'VSP') return null
+
+    const copays = (authorization as { copays?: Record<string, number | null> })?.copays
+    if (!copays) return null
+
+    let total = 0
+    const breakdown: Record<string, number> = {}
+
+    // Materials copay is always added
+    if (materialsCopay !== null) {
+      total += materialsCopay
+      breakdown['materialsCopay'] = materialsCopay
+    }
+
+    // Determine if Single Vision or Progressive
+    const isSV = lensTypeName ? isSingleVisionLens(lensTypeName) : false
+    const isProgressive = lensTypeName ? isProgressiveLens(lensTypeName) : false
+
+    // Lens + Material pricing
+    if (isProgressive && materialName) {
+      // Progressive: use matrix combined code
+      const matrixResult = getVspCombinedCopay(lensTypeName!, materialName, copays)
+      if (matrixResult) {
+        total += matrixResult.copay
+        breakdown[`lens+material (${matrixResult.combinedCode})`] = matrixResult.copay
+      }
+    } else if (isSV && materialName) {
+      // Single Vision: use material-only code
+      const svMaterialResult = getVspSingleVisionMaterialCopay(materialName, copays)
+      if (svMaterialResult) {
+        total += svMaterialResult.copay
+        breakdown[`material (${svMaterialResult.combinedCode})`] = svMaterialResult.copay
+      }
+    }
+
+    // Add-ons (flat copays, not part of matrix)
+    const addonsToCheck = [
+      { code: arCoatingCode, name: 'AR Coating' },
+      { code: photochromicCode, name: 'Photochromic' },
+      { code: polarizedCode, name: 'Polarized' },
+      ...otherAddonCodes.map(code => ({ code, name: code }))
+    ]
+
+    for (const addon of addonsToCheck) {
+      if (addon.code) {
+        const addonCopay = getVspFlatAddonCopay(addon.code, copays, !isSV)
+        if (addonCopay !== null) {
+          total += addonCopay
+          breakdown[`${addon.name} (${addon.code})`] = addonCopay
+        }
+      }
+    }
+
+    return { total, breakdown }
+  }
+
   return {
     authorization,
     isLoading: authorizationLoading,
@@ -1090,5 +1379,11 @@ export function useAuthorizationPricing() {
     getEnhancementCopay,
     calculateFramePrice,
     calculateDecliningBalance,
+
+    // VSP Matrix pricing functions
+    getVspMatrixPrice,
+    getVspSvMaterialPrice,
+    getVspAddonPrice,
+    calculateVspEyeglassesTotal,
   }
 }

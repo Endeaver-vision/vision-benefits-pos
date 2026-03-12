@@ -3,7 +3,13 @@
  * GET /api/pos/services - Fetch exam services, procedures, diagnostics
  * POST /api/pos/services - Create new service
  *
- * Returns services with pre-calculated patient copays based on authorization.
+ * Returns services with pre-calculated patient copays from PatientPriceList.
+ * Uses the unified insurance_authorizations table for authorization info.
+ *
+ * Price List Only (NO FALLBACKS):
+ * - If customer has a price list entry for service, use that price
+ * - Services WITHOUT price list entries are flagged as "needsPricing" = true
+ * - PatientPriceList is the ONLY source of truth for pricing
  *
  * Location-Specific Visibility:
  * - When locationId is provided, filters services based on LocationProductSettings
@@ -13,9 +19,7 @@
 
 import { NextRequest, NextResponse } from 'next/server'
 import { prisma } from '@/lib/prisma'
-import { getActiveAuthorizationForCustomer } from '@/lib/services/authorization-service'
 import { getLocationSettings, mergeVisibilitySettings } from '@/lib/services/product-visibility'
-import { calculateServicePricingByCategory } from '@/lib/services/pricing-by-category'
 
 type ServiceCategory = 'EXAM' | 'PROCEDURE' | 'DIAGNOSTIC' | 'CONTACT_LENS_FIT' | 'all'
 
@@ -30,15 +34,37 @@ export async function GET(request: NextRequest) {
     const page = parseInt(searchParams.get('page') || '1')
     const includeHidden = searchParams.get('includeHidden') === 'true'
 
-    // Get customer's authorization if customerId provided
-    let authorization = null
+    // Get customer's authorization from unified table
     let carrier: string | null = null
+    let hasAuthorization = false
+
+    // Get customer's pre-calculated price list
+    let priceList = new Map<string, { finalPrice: number | null; customPrice: number | null; tier: string | null }>()
 
     if (customerId) {
-      const authResult = await getActiveAuthorizationForCustomer(customerId)
-      if (authResult) {
-        authorization = authResult.authorization
-        carrier = authResult.carrier
+      const auth = await prisma.insuranceAuthorization.findFirst({
+        where: {
+          customerId,
+          isActive: true,
+        },
+        orderBy: { createdAt: 'desc' },
+      })
+
+      if (auth) {
+        carrier = auth.carrier
+        hasAuthorization = true
+      }
+
+      // Load price list for this customer (services use productId field too)
+      const customerPrices = await prisma.patientPriceList.findMany({
+        where: { customerId, active: true }
+      })
+      for (const price of customerPrices) {
+        priceList.set(price.productId, {
+          finalPrice: price.finalPrice ? Number(price.finalPrice) : null,
+          customPrice: null,
+          tier: price.tier
+        })
       }
     }
 
@@ -76,7 +102,7 @@ export async function GET(request: NextRequest) {
 
     // Merge with location settings
     const servicesWithVisibility = locationId
-      ? mergeVisibilitySettings(services as any[], serviceSettings, 'SERVICE')
+      ? mergeVisibilitySettings(services as unknown[], serviceSettings, 'SERVICE')
       : services.map(s => ({ ...s, hasLocationOverride: false }))
 
     // Filter by visibility
@@ -95,13 +121,39 @@ export async function GET(request: NextRequest) {
     // Apply pagination
     const paginatedServices = visibleServices.slice(0, limit)
 
-    // Calculate pricing for each service using pricingCategory
+    // Get pricing from PatientPriceList only - NO FALLBACKS
     const posServices = paginatedServices.map(service => {
-      const pricing = calculateServicePricingByCategory(
-        service.pricingCategory,
-        service.retailPrice,
-        authorization
-      )
+      // Check for pre-calculated price from price list
+      const priceEntry = priceList.get(service.id)
+
+      let patientPays: number | null
+      let insurancePays: number
+      let tier: string | null = null
+      let pricingNotes: string | undefined
+      let needsPricing = false
+      let hasCustomPrice = false
+
+      if (priceEntry) {
+        // Use price list entry
+        if (priceEntry.finalPrice === null) {
+          patientPays = null
+          insurancePays = 0
+          needsPricing = true
+          pricingNotes = 'Price not set - manual entry required'
+        } else {
+          patientPays = priceEntry.finalPrice
+          insurancePays = Math.max(0, service.retailPrice - priceEntry.finalPrice)
+          tier = priceEntry.tier
+          hasCustomPrice = priceEntry.customPrice !== null
+          pricingNotes = hasCustomPrice ? 'Custom price override' : undefined
+        }
+      } else {
+        // NO FALLBACK - PatientPriceList is the only source of truth
+        patientPays = null
+        insurancePays = 0
+        needsPricing = true
+        pricingNotes = 'No price list entry - must be added to patient price list'
+      }
 
       return {
         id: service.id,
@@ -112,9 +164,12 @@ export async function GET(request: NextRequest) {
         category: service.category || 'OTHER',
         pricingCategory: service.pricingCategory,
         retailPrice: service.retailPrice,
-        patientPays: pricing.patientPays,
-        insurancePays: pricing.insurancePays,
-        pricingNotes: pricing.notes,
+        patientPays,
+        insurancePays,
+        tier,
+        pricingNotes,
+        needsPricing,
+        hasCustomPrice,
         isCoveredByVision: service.isCoveredByVision,
         isCoveredByMedical: service.isCoveredByMedical,
         billingBucket: service.billingBucket,
@@ -129,6 +184,9 @@ export async function GET(request: NextRequest) {
       _count: { category: true },
     })
 
+    // Count services needing pricing
+    const servicesNeedingPricing = posServices.filter(s => s.needsPricing).length
+
     return NextResponse.json({
       success: true,
       services: posServices,
@@ -142,8 +200,13 @@ export async function GET(request: NextRequest) {
       customer: customerId ? {
         id: customerId,
         carrier,
-        hasAuthorization: !!authorization,
+        hasAuthorization,
+        hasPriceList: priceList.size > 0,
       } : null,
+      pricing: {
+        servicesNeedingPricing,
+        canAddToCart: servicesNeedingPricing === 0,
+      },
       pagination: {
         page,
         limit,
@@ -222,4 +285,3 @@ export async function POST(request: NextRequest) {
     )
   }
 }
-

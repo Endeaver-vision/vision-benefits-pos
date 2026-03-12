@@ -13,6 +13,8 @@
 
 import { NextRequest, NextResponse } from 'next/server'
 import { prisma } from '@/lib/prisma'
+import { precomputeCustomerPrices } from '@/lib/services/price-list-precompute'
+import type { BenefitAuthorization } from '@/types/benefit-authorization'
 
 // =============================================================================
 // TYPES - Match the insurance-doc-scanner ExtractedInsuranceData structure
@@ -197,6 +199,7 @@ export async function POST(request: NextRequest) {
 
     // Create authorization based on carrier
     let authorizationId: string
+    let planName: string
 
     switch (body.carrier) {
       case 'vsp':
@@ -213,6 +216,36 @@ export async function POST(request: NextRequest) {
           { success: false, error: `Unknown carrier: ${body.carrier}` },
           { status: 400 }
         )
+    }
+
+    // Trigger price pre-computation in background
+    console.log(`[Intake] Authorization ${authorizationId} created, triggering price pre-computation...`)
+
+    try {
+      // Fetch the created authorization with all relations
+      const authData = await fetchAuthorizationForPrecompute(authorizationId, body.carrier)
+
+      if (authData) {
+        planName = authData.planName
+
+        // Map to BenefitAuthorization and trigger pre-computation
+        const benefitAuth = mapAuthToBenefitAuth(authData, body.carrier)
+
+        // Fire pre-computation (don't await - let it run in background)
+        precomputeCustomerPrices(benefitAuth, {
+          customerId: body.customerId,
+          authorizationId,
+          carrier: body.carrier.toUpperCase() as 'VSP' | 'EyeMed' | 'Spectera',
+          planName,
+        }).then(result => {
+          console.log(`[Intake] Pre-computation completed: ${result.productsCreated} created, ${result.productsUpdated} updated`)
+        }).catch(err => {
+          console.error(`[Intake] Pre-computation failed:`, err)
+        })
+      }
+    } catch (precomputeError) {
+      // Log but don't fail the request - pre-computation can be retried manually
+      console.error('[Intake] Failed to trigger pre-computation:', precomputeError)
     }
 
     return NextResponse.json<IntakeResponse>({
@@ -485,6 +518,161 @@ function determinePlanType(planName: string): 'SIGNATURE' | 'CHOICE' | 'ADVANTAG
   if (lower.includes('advantage')) return 'ADVANTAGE'
   if (lower.includes('essential')) return 'ESSENTIALS'
   return 'CHOICE' // Default
+}
+
+// =============================================================================
+// PRE-COMPUTATION HELPERS
+// =============================================================================
+
+async function fetchAuthorizationForPrecompute(authId: string, carrier: string) {
+  switch (carrier) {
+    case 'vsp':
+      return await prisma.vspAuthorization.findUnique({
+        where: { id: authId },
+        include: { lensEnhancementCopays: true },
+      })
+    case 'eyemed':
+      return await prisma.eyemedAuthorization.findUnique({
+        where: { id: authId },
+        include: { arCoatingCopays: true, lensOptionCopays: true },
+      })
+    case 'spectera':
+      return await prisma.specteraAuthorization.findUnique({
+        where: { id: authId },
+        include: { arCoatingCopays: true, lensOptionCopays: true },
+      })
+    default:
+      return null
+  }
+}
+
+function mapAuthToBenefitAuth(auth: any, carrier: string): BenefitAuthorization {
+  switch (carrier) {
+    case 'vsp':
+      return {
+        carrier: 'VSP',
+        plan: {
+          carrier: 'VSP',
+          planName: auth.planName,
+          planType: auth.planType,
+        },
+        patient: {
+          age: null,
+        },
+        copays: {
+          examWellvision: auth.examCopay || 0,
+          materials: auth.materialsCopay || 0,
+          frameAllowanceFeatured: auth.frameAllowanceMarchon || auth.frameAllowanceRetail || 0,
+          frameAllowanceNonFeatured: auth.frameAllowanceRetail || 0,
+          frameOverageDiscount: auth.frameOverageDiscount || 0,
+        },
+        planTier: {
+          progressiveCopays: {},
+          arCopays: {},
+          materialCopays: {
+            polycarbonate: 0,
+            trivex: 0,
+            highIndex167: 0,
+          },
+          enhancementCopays: {
+            photochromic: 0,
+            polarized: 0,
+            blueLightFilter: 0,
+            tint: 0,
+          },
+        },
+        specialRules: {
+          pricingRules: {},
+        },
+      } as BenefitAuthorization
+
+    case 'eyemed':
+      return {
+        carrier: 'EyeMed',
+        plan: {
+          carrier: 'EyeMed',
+          planName: auth.groupName || 'EyeMed',
+          groupNumber: auth.groupNumber,
+          benefitLevel: auth.benefitLevel,
+          network: auth.network,
+        },
+        patient: {
+          age: null,
+        },
+        copays: {
+          exam: auth.examCopay || 0,
+          materials: auth.materialsCopay || 0,
+          lensSv: auth.singleVisionCopay || 0,
+          progressiveStandard: auth.progressiveStandardCopay || 0,
+          progressivePremiumTier1: auth.progressiveTier1Copay || 0,
+          progressivePremiumTier2: auth.progressiveTier2Copay || 0,
+          progressivePremiumTier3: auth.progressiveTier3Copay || 0,
+          progressivePremiumTier4: auth.progressiveTier4Copay || 0,
+          progressivePremiumTier5: auth.progressiveTier5Copay || 0,
+          frameAllowance: auth.frameAllowanceRetail || auth.frameAllowance || 0,
+          frameOverageDiscount: auth.frameOverageDiscount || 0,
+          arStandard: 0,
+          arPremiumTier1: 0,
+          arPremiumTier2: 0,
+          arPremiumTier3: 0,
+          materialPolycarbonate: auth.polycarbonateCopay || 0,
+          materialPolycarbonateChild: 0,
+          materialTrivex: 0,
+          materialHighIndex167: 0,
+          materialHighIndex174: 0,
+          materialHighIndex: 0,
+          photochromic: auth.photochromicCopay || 0,
+          polarized: auth.polarizedCopay || 0,
+          blueLightFilter: 0,
+          tint: 0,
+        },
+        specialRules: {
+          polycarbonateFreeCbildAgeMax: 18,
+        },
+      } as BenefitAuthorization
+
+    case 'spectera':
+      return {
+        carrier: 'Spectera',
+        plan: {
+          carrier: 'Spectera',
+          planName: auth.productName || 'Spectera',
+        },
+        patient: {
+          age: null,
+        },
+        copays: {
+          examAdult: auth.examCopay || 0,
+          examPediatric: auth.pediatricExamCopay || auth.examCopay || 0,
+          materials: auth.materialsCopay || 0,
+          lensStandard: auth.singleVisionCopay || auth.standardLensCopay || 0,
+          progressiveTierI: auth.progressiveTier1Copay || 0,
+          progressiveTierII: auth.progressiveTier2Copay || 0,
+          progressiveTierIII: auth.progressiveTier3Copay || 0,
+          progressiveTierIV: auth.progressiveTier4Copay || 0,
+          progressiveTierV: auth.progressiveTier5Copay || 0,
+          frameAllowance: auth.frameAllowance || 0,
+          frameOveragePercent: auth.frameOveragePercent || 0.70,
+          arTierI: 0,
+          arTierII: 0,
+          arTierIII: 0,
+          arTierIV: 0,
+          materialPolycarbonateAdult: auth.polycarbonateCopay || 0,
+          materialPolycarbonateChild: 0,
+          materialTrivex: 0,
+          materialHighIndex160166: 0,
+          photochromic: auth.photochromicCopay || 0,
+          polarized: auth.polarizedCopay || 0,
+          tint: 0,
+        },
+        specialRules: {
+          polycarbonateFreeCbildAgeMax: 18,
+        },
+      } as BenefitAuthorization
+
+    default:
+      throw new Error(`Unknown carrier: ${carrier}`)
+  }
 }
 
 // =============================================================================

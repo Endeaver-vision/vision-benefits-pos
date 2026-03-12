@@ -7,8 +7,6 @@ export { CardPreview, CardPreviewCompact } from './CardPreview';
 export { ExtractionReview } from './ExtractionReview';
 export type { ExtractedInsuranceData } from './ExtractionReview';
 
-export { InsuranceScannerModal } from './InsuranceScannerModal';
-
 // New scanner components (Phase 3)
 export { DocumentUpload } from './document-upload';
 export { ProcessingStatus } from './processing-status';

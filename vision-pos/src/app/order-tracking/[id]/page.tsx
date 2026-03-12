@@ -1,4 +1,3 @@
-import { prisma } from '@/lib/prisma'
 import { notFound } from 'next/navigation'
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card'
 import { Badge } from '@/components/ui/badge'
@@ -10,44 +9,9 @@ import Link from 'next/link'
 export const dynamic = 'force-dynamic'
 
 async function getOrder(id: string) {
-  try {
-    const order = await prisma.order.findUnique({
-      where: { id },
-      include: {
-        customer: {
-          select: {
-            firstName: true,
-            lastName: true,
-            email: true,
-            phone: true,
-          }
-        },
-        items: true,
-        statusHistory: {
-          orderBy: {
-            timestamp: 'desc'
-          },
-          take: 10
-        },
-        communications: {
-          orderBy: {
-            timestamp: 'desc'
-          },
-          take: 5
-        },
-        qualityChecks: {
-          orderBy: {
-            performedAt: 'desc'
-          },
-          take: 3
-        }
-      }
-    })
-    return order
-  } catch (error) {
-    console.error('Failed to fetch order:', error)
-    return null
-  }
+  // Order model not yet implemented in schema
+  // Return null until schema is updated
+  return null
 }
 
 export default async function OrderDetailPage({ 

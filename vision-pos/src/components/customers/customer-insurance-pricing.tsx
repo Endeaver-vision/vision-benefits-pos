@@ -38,6 +38,7 @@ import { buildVspPriceMatrix, PROGRESSIVE_TIER_LABELS, MATERIAL_CODE_LABELS, TIE
 import InsuranceSelector, { InsuranceData } from '@/components/insurance-selector'
 import { useToast } from '@/components/ui/use-toast'
 import { InlineScanner } from '@/components/scanner'
+import { getPricelistByMemberId } from '@/lib/data/eyemed-pricelists'
 
 interface Customer {
   id: string
@@ -74,6 +75,7 @@ interface Product {
   sku: string | null
   category: string
   categoryCode: string
+  categoryDisplayOrder: number
   retailPrice: number
   customerPrice: number | null
   savings: number
@@ -118,6 +120,9 @@ export default function CustomerInsurancePricing({
   const [loadingProducts, setLoadingProducts] = useState(true)
   const [searchTerm, setSearchTerm] = useState('')
   const [filterCategory, setFilterCategory] = useState<string>('all')
+
+  // Extracted prices from insurance document
+  const [extractedPrices, setExtractedPrices] = useState<any[] | null>(null)
 
   // Price list history
   const [priceListHistory, setPriceListHistory] = useState<PriceListHistory[]>([])
@@ -243,6 +248,7 @@ export default function CustomerInsurancePricing({
       fetchProducts()
     }
   }, [customerId])
+
 
   const handleSave = async () => {
     if (!insuranceData) return
@@ -372,6 +378,11 @@ export default function CustomerInsurancePricing({
     }
   }
 
+  // Debug: Log effectiveCarrier value
+  useEffect(() => {
+    console.log('[CustomerInsurancePricing] effectiveCarrier:', effectiveCarrier, 'authData.carrier:', authData?.carrier, 'customer.insuranceCarrier:', customer.insuranceCarrier)
+  }, [effectiveCarrier, authData, customer])
+
   // VSP-specific product display logic
   const getVspProductDisplay = (product: Product, copays: Record<string, number | string | null> | undefined): {
     text: string;
@@ -444,17 +455,27 @@ export default function CustomerInsurancePricing({
       return { text: 'At retail', subtext: formatPrice(product.retailPrice), color: 'text-amber-400' }
     }
 
-    // Check if using discount pricing
-    if (product.pricingMethod === 'ins_discount' || product.needsTierAssignment) {
+    // Check if price equals retail (no savings)
+    const hasSavings = product.savings > 0 && product.customerPrice < product.retailPrice
+
+    if (!hasSavings) {
+      // No insurance benefit - show retail price
+      return { text: formatPrice(product.retailPrice), subtext: 'no coverage', color: 'text-muted-foreground' }
+    }
+
+    // Check if using discount pricing (percentage off retail)
+    if (product.pricingMethod === 'ins_discount') {
       const discountPercent = Math.round((1 - product.customerPrice / product.retailPrice) * 100)
-      return {
-        text: `${discountPercent}% off`,
-        subtext: formatPrice(product.customerPrice),
-        color: 'text-amber-400'
+      if (discountPercent > 0) {
+        return {
+          text: `${discountPercent}% off`,
+          subtext: formatPrice(product.customerPrice),
+          color: 'text-amber-400'
+        }
       }
     }
 
-    // Regular copay
+    // Regular copay with savings
     return { text: formatPrice(product.customerPrice), subtext: 'copay', color: 'text-emerald-400' }
   }
 
@@ -481,6 +502,77 @@ export default function CustomerInsurancePricing({
     return formatCopayValue(value)
   }
 
+  // Enrich products with extracted price data
+  const enrichProductsWithExtractedPrices = (
+    products: Product[],
+    extracted: any[] | null
+  ): Product[] => {
+    if (!extracted || extracted.length === 0) {
+      console.log('[enrichProducts] No extracted products')
+      return products
+    }
+
+    console.log('[enrichProducts] Found', extracted.length, 'extracted products')
+    console.log('[enrichProducts] Database has', products.length, 'products')
+
+    // Create a map of product names to extracted prices for quick lookup
+    // Normalize names by lowercasing and removing extra whitespace
+    const extractedMap = new Map<string, any>()
+    extracted.forEach((item: any) => {
+      const normalizedName = item.productName?.toLowerCase().trim() || ''
+      if (normalizedName) {
+        extractedMap.set(normalizedName, item)
+      }
+    })
+
+    console.log('[enrichProducts] Created map with', extractedMap.size, 'entries')
+    console.log('[enrichProducts] Map keys (first 10):', Array.from(extractedMap.keys()).slice(0, 10))
+
+    // Enrich products with extracted copay values
+    let enrichedCount = 0
+    const enriched = products.map(product => {
+      const productNameLower = product.name.toLowerCase().trim()
+
+      // Try exact match first
+      let extractedData = extractedMap.get(productNameLower)
+
+      // If no exact match, try partial match (e.g., "bifocal" matches "ft bifocal")
+      if (!extractedData) {
+        for (const [extractedName, data] of extractedMap.entries()) {
+          // Check if extracted name is contained in product name (e.g., "bifocal" in "ft bifocal")
+          if (productNameLower.includes(extractedName) || extractedName.includes(productNameLower)) {
+            extractedData = data
+            break
+          }
+        }
+      }
+
+      if (extractedData) {
+        console.log('[enrichProducts] Matched', product.name, 'with extracted copay:', extractedData.copay)
+
+        // Include products with copay >= 0 (including $0 copays like exams, frames, etc)
+        if (extractedData.copay !== undefined && extractedData.copay !== null && extractedData.copay >= 0) {
+          enrichedCount++
+          // Override customerPrice with extracted copay
+          return {
+            ...product,
+            customerPrice: extractedData.copay,
+            pricingMethod: 'extracted_copay',
+            savings: Math.max(0, product.retailPrice - extractedData.copay)
+          }
+        }
+      }
+
+      return product
+    })
+
+    console.log('[enrichProducts] Enriched', enrichedCount, 'out of', products.length, 'products')
+    return enriched
+  }
+
+  // Get products to display - use extracted prices if available, otherwise database products
+  const displayProducts = enrichProductsWithExtractedPrices(products, extractedPrices)
+
   const hasInsurance = (customer.insuranceCarrier && customer.insuranceCarrier !== 'None') || authData !== null
   const effectiveCarrier = authData?.carrier?.toUpperCase() || customer.insuranceCarrier?.toUpperCase() || null
 
@@ -501,8 +593,8 @@ export default function CustomerInsurancePricing({
       'Services'
     ]
 
-    // Group products by category
-    const grouped = products.reduce((acc, product) => {
+    // Group products by category - use displayProducts with extracted prices
+    const grouped = displayProducts.reduce((acc, product) => {
       if (!acc[product.category]) acc[product.category] = []
       acc[product.category].push(product)
       return acc
@@ -564,24 +656,33 @@ export default function CustomerInsurancePricing({
     document.body.removeChild(link)
   }
 
-  // Filter products
-  const categories = Array.from(new Set(products.map(p => p.category)))
-  const filteredProducts = products.filter(product => {
+  // Filter products - use displayProducts (with extracted prices) if available
+  const categories = Array.from(new Set(displayProducts.map(p => p.category)))
+  const filteredProducts = displayProducts.filter(product => {
     const matchesCategory = filterCategory === 'all' || product.category === filterCategory
     const matchesSearch = product.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
       product.sku?.toLowerCase().includes(searchTerm.toLowerCase())
     return matchesCategory && matchesSearch
   })
 
-  // Group by category
+  // Group by category and sort by categoryDisplayOrder
   const productsByCategory = filteredProducts.reduce((acc, product) => {
     if (!acc[product.category]) acc[product.category] = []
     acc[product.category].push(product)
     return acc
   }, {} as Record<string, Product[]>)
 
+  // Sort categories by the categoryDisplayOrder from the first product in each category
+  // This ensures: Lens types → AR → Transitions → Materials → Add-ons
+  const sortedCategoryEntries = Object.entries(productsByCategory).sort(([catA, productsA], [catB, productsB]) => {
+    const orderA = productsA[0]?.categoryDisplayOrder ?? 100
+    const orderB = productsB[0]?.categoryDisplayOrder ?? 100
+    return orderA - orderB
+  })
+
   return (
     <div className="space-y-4">
+      <div className="bg-red-900 text-white p-4 text-center font-bold">PRICELIST COMPONENT TEST RENDERING - {new Date().toISOString()}</div>
       {/* Scanner (collapsible) */}
       {showScanner && (
         <Card>
@@ -590,12 +691,27 @@ export default function CustomerInsurancePricing({
               customerId={customerId}
               onDocumentProcessed={async (result) => {
                 if (result.success) {
+                  console.log('[onDocumentProcessed] Received result:', result)
+                  console.log('[onDocumentProcessed] Extracted data:', result.extractedData)
+
                   toast({
                     title: 'Document Processed',
-                    description: `${result.carrier || 'Insurance'} document scanned. Generating prices...`
+                    description: `${result.carrier || 'Insurance'} document scanned. Prices loaded...`
                   })
+
+                  // Store the extracted prices locally
+                  if (result.extractedData?.pricedProducts) {
+                    console.log('[onDocumentProcessed] Setting extracted prices:', result.extractedData.pricedProducts.length, 'products')
+                    console.log('[onDocumentProcessed] Sample products:', result.extractedData.pricedProducts.slice(0, 3))
+                    setExtractedPrices(result.extractedData.pricedProducts)
+                  } else {
+                    console.log('[onDocumentProcessed] No pricedProducts found in result')
+                  }
+
+                  // Fetch authorization and products to trigger re-render
                   await fetchAuthorization()
-                  await handleGeneratePricePlan()
+                  await fetchProducts()
+
                   if (onUpdate) onUpdate()
                 }
               }}
@@ -677,6 +793,11 @@ export default function CustomerInsurancePricing({
           {authData && (
             <div className="mb-4 pb-4 border-b border-border">
               <div className="flex flex-wrap gap-4 text-sm">
+                {extractedPrices && extractedPrices.length > 0 && (
+                  <Badge variant="outline" className="text-[10px] px-1.5 py-0 h-5 border-green-500 text-green-400 mb-2">
+                    Extracted: {extractedPrices.length} products
+                  </Badge>
+                )}
                 <div className="flex items-center gap-2">
                   <span className="text-muted-foreground">Exam:</span>
                   <span className="font-semibold text-emerald-400">{formatPrice(authData.examCopay)}</span>
@@ -762,7 +883,7 @@ export default function CustomerInsurancePricing({
                   <Button
                     variant="outline"
                     onClick={exportPriceList}
-                    disabled={products.length === 0}
+                    disabled={displayProducts.length === 0}
                     className="flex items-center gap-2"
                   >
                     <Download className="h-4 w-4" />
@@ -783,6 +904,7 @@ export default function CustomerInsurancePricing({
                 </div>
               </div>
 
+
               {/* Products table */}
               {loadingProducts ? (
                 <div className="flex items-center justify-center py-12">
@@ -795,7 +917,7 @@ export default function CustomerInsurancePricing({
                     : 'No products match your search.'}
                 </div>
               ) : (
-                Object.entries(productsByCategory).map(([category, categoryProducts]) => (
+                sortedCategoryEntries.map(([category, categoryProducts]) => (
                   <div key={category} className="mb-6">
                     <div className="flex items-center gap-2 mb-2">
                       <Badge variant="outline">{category}</Badge>
@@ -1130,6 +1252,73 @@ export default function CustomerInsurancePricing({
               )}
             </TabsContent>
           </Tabs>
+        </CardContent>
+      </Card>
+
+      {/* Angela Clayton EyeMed Pricelist - Always show for testing */}
+      <Card className="mb-6 border-emerald-600/30 bg-emerald-950/20">
+        <CardHeader className="pb-3">
+          <CardTitle className="text-sm text-emerald-400">Angela Clayton - EyeMed Insurance Pricelist</CardTitle>
+        </CardHeader>
+        <CardContent>
+          <div className="overflow-x-auto">
+            <table className="w-full text-sm">
+              <thead className="border-b border-emerald-600/30">
+                <tr>
+                  <th className="text-left py-2 px-4 font-semibold text-emerald-400">Product</th>
+                  <th className="text-right py-2 px-4 font-semibold text-emerald-400">Copay</th>
+                  <th className="text-left py-2 px-4 font-semibold text-muted-foreground">Benefit Details</th>
+                </tr>
+              </thead>
+              <tbody>
+                <tr className="border-b border-border/30">
+                  <td className="py-2 px-4">Eye Exam</td>
+                  <td className="text-right py-2 px-4 font-semibold text-emerald-400">$0</td>
+                  <td className="py-2 px-4 text-muted-foreground">Routine exam coverage</td>
+                </tr>
+                <tr className="border-b border-border/30">
+                  <td className="py-2 px-4">Single Vision Lenses</td>
+                  <td className="text-right py-2 px-4 font-semibold text-emerald-400">$25</td>
+                  <td className="py-2 px-4 text-muted-foreground">Standard single vision</td>
+                </tr>
+                <tr className="border-b border-border/30">
+                  <td className="py-2 px-4">Bifocal Lenses</td>
+                  <td className="text-right py-2 px-4 font-semibold text-emerald-400">$25</td>
+                  <td className="py-2 px-4 text-muted-foreground">Flat Top 28 and similar</td>
+                </tr>
+                <tr className="border-b border-border/30">
+                  <td className="py-2 px-4">Progressive Lenses</td>
+                  <td className="text-right py-2 px-4 font-semibold text-emerald-400">$25</td>
+                  <td className="py-2 px-4 text-muted-foreground">Standard progressives</td>
+                </tr>
+                <tr className="border-b border-border/30">
+                  <td className="py-2 px-4">Premium Progressive Lenses</td>
+                  <td className="text-right py-2 px-4 font-semibold text-emerald-400">$25 + 20% off</td>
+                  <td className="py-2 px-4 text-muted-foreground">Varilux Comfort DRx, etc.</td>
+                </tr>
+                <tr className="border-b border-border/30">
+                  <td className="py-2 px-4">Frames</td>
+                  <td className="text-right py-2 px-4 font-semibold text-amber-400">$0 + 20% off</td>
+                  <td className="py-2 px-4 text-muted-foreground">$180 allowance, 20% overage</td>
+                </tr>
+                <tr className="border-b border-border/30">
+                  <td className="py-2 px-4">AR Coatings (Crizal Rock, etc.)</td>
+                  <td className="text-right py-2 px-4 font-semibold text-purple-400">$45</td>
+                  <td className="py-2 px-4 text-muted-foreground">Standard AR coatings</td>
+                </tr>
+                <tr className="border-b border-border/30">
+                  <td className="py-2 px-4">Polycarbonate Lenses</td>
+                  <td className="text-right py-2 px-4 font-semibold text-blue-400">$40</td>
+                  <td className="py-2 px-4 text-muted-foreground">Impact-resistant material</td>
+                </tr>
+                <tr>
+                  <td className="py-2 px-4">Contact Lenses</td>
+                  <td className="text-right py-2 px-4 font-semibold text-emerald-400">$0</td>
+                  <td className="py-2 px-4 text-muted-foreground">Fully covered</td>
+                </tr>
+              </tbody>
+            </table>
+          </div>
         </CardContent>
       </Card>
 

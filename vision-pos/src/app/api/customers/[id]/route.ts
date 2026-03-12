@@ -14,16 +14,15 @@ export async function GET(
         active: true
       },
       include: {
-        transactions: {
+        primaryLocation: true,
+        authorizations: {
+          where: { isActive: true },
           orderBy: { createdAt: 'desc' },
-          take: 10, // Last 10 transactions
-          include: {
-            items: {
-              include: {
-                product: true
-              }
-            }
-          }
+          take: 5
+        },
+        quotes: {
+          orderBy: { createdAt: 'desc' },
+          take: 10
         }
       }
     })

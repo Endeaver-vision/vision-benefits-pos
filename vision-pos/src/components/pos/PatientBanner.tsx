@@ -1,6 +1,8 @@
 'use client'
 
+import { useRouter } from 'next/navigation'
 import { usePOSStore } from '@/stores/pos-store'
+import { useCurrentPatient } from '@/hooks/useCurrentPatient'
 import { Badge } from '@/components/ui/badge'
 import { Button } from '@/components/ui/button'
 import {
@@ -11,6 +13,7 @@ import {
   DollarSign,
   Loader2,
   X,
+  ExternalLink,
 } from 'lucide-react'
 
 /**
@@ -19,6 +22,7 @@ import {
  * Shows: Patient info, insurance status, allowances, save status
  */
 export default function PatientBanner() {
+  const router = useRouter()
   const {
     quote,
     priceList,
@@ -28,8 +32,24 @@ export default function PatientBanner() {
     lastSavedAt,
     clearPatient,
   } = usePOSStore()
+  const { clearCurrentPatient } = useCurrentPatient()
 
   const { patient, insurance } = quote
+
+  // Handle changing patient - clear state AND URL param
+  const handleChangePatient = () => {
+    clearPatient()
+    clearCurrentPatient()
+    // Navigate to POS without customerId param to prevent re-fetch
+    router.replace('/pos')
+  }
+
+  // Navigate to patient profile, with param indicating we came from POS
+  const handleViewProfile = () => {
+    if (patient?.id) {
+      router.push(`/customers/${patient.id}?from=pos`)
+    }
+  }
 
   // No patient selected
   if (!patient) {
@@ -63,9 +83,15 @@ export default function PatientBanner() {
 
         {/* Patient Details */}
         <div>
-          <h2 className="font-semibold text-lg text-white">
-            {patient.firstName} {patient.lastName}
-          </h2>
+          <button
+            onClick={handleViewProfile}
+            className="group flex items-center gap-1 hover:opacity-80 transition-opacity"
+          >
+            <h2 className="font-semibold text-lg text-white group-hover:underline">
+              {patient.firstName} {patient.lastName}
+            </h2>
+            <ExternalLink className="h-3 w-3 text-white/40 group-hover:text-white/70" />
+          </button>
           <div className="flex items-center gap-3 text-sm text-white/60">
             {patient.dob && <span>DOB: {patient.dob}</span>}
             {patient.phone && <span>{patient.phone}</span>}
@@ -190,7 +216,7 @@ export default function PatientBanner() {
         <Button
           variant="ghost"
           size="sm"
-          onClick={clearPatient}
+          onClick={handleChangePatient}
           className="text-white/60 hover:text-white hover:bg-white/10"
         >
           <X className="h-4 w-4 mr-1" />

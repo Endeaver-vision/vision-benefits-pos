@@ -99,7 +99,9 @@ model Customer {
   authorizations        InsuranceAuthorization[]
   insuranceDocuments    InsuranceDocument[]
   priceLists            PatientPriceList[]
+  priceListVersions     PriceListVersion[]
   quotes                Quote[]
+  priceListAudits       PriceListAudit[]
 
   @@map("customers")
 }
@@ -301,45 +303,59 @@ model Employee {
 }
 
 model InsuranceAuthorization {
-  id               String    @id @default(dbgenerated("(gen_random_uuid())::text"))
-  customerId       String    @map("customer_id")
-  carrier          String
-  planName         String?   @map("plan_name")
-  memberId         String?   @map("member_id")
-  memberName       String?   @map("member_name")
-  examEligible     Boolean?  @default(false) @map("exam_eligible")
-  lensesEligible   Boolean?  @default(false) @map("lenses_eligible")
-  frameEligible    Boolean?  @default(false) @map("frame_eligible")
-  contactsEligible Boolean?  @default(false) @map("contacts_eligible")
-  frameAllowance            Decimal?  @map("frame_allowance") @db.Decimal(10, 2)
-  contactAllowance          Decimal?  @map("contact_allowance") @db.Decimal(10, 2)
-  isContactDecliningBalance Boolean?  @default(false) @map("is_contact_declining_balance")
+  id                        String   @id @default(dbgenerated("(gen_random_uuid())::text"))
+  customerId                String   @map("customer_id")
+  carrier                   String
+  planName                  String?  @map("plan_name")
+  memberId                  String?  @map("member_id")
+  memberName                String?  @map("member_name")
+  examEligible              Boolean? @default(false) @map("exam_eligible")
+  lensesEligible            Boolean? @default(false) @map("lenses_eligible")
+  frameEligible             Boolean? @default(false) @map("frame_eligible")
+  contactsEligible          Boolean? @default(false) @map("contacts_eligible")
+  frameAllowance            Decimal? @map("frame_allowance") @db.Decimal(10, 2)
+  contactAllowance          Decimal? @map("contact_allowance") @db.Decimal(10, 2)
+  isContactDecliningBalance Boolean? @default(false) @map("is_contact_declining_balance")
 
   // Benefit structure: COPAY_ALLOWANCE (traditional) or DECLINING_BALANCE (unified pool)
-  benefitStructure          String?   @default("COPAY_ALLOWANCE") @map("benefit_structure")
+  benefitStructure           String?  @default("COPAY_ALLOWANCE") @map("benefit_structure")
   // Unified declining balance fields (when benefitStructure = DECLINING_BALANCE)
-  totalMaterialsAllowance   Decimal?  @map("total_materials_allowance") @db.Decimal(10, 2)
-  decliningBalanceAppliesTo String[]  @default([]) @map("declining_balance_applies_to")  // ["frame", "lens", "lensOptions", "contacts"]
-  overageDiscountFrame      Decimal?  @map("overage_discount_frame") @db.Decimal(5, 2)  // e.g., 20.00 for 20%
+  totalMaterialsAllowance    Decimal? @map("total_materials_allowance") @db.Decimal(10, 2)
+  decliningBalanceAppliesTo  String[] @default([]) @map("declining_balance_applies_to") // ["frame", "lens", "lensOptions", "contacts"]
+  overageDiscountFrame       Decimal? @map("overage_discount_frame") @db.Decimal(5, 2) // e.g., 20.00 for 20%
   overageDiscountContactConv Decimal? @map("overage_discount_contact_conv") @db.Decimal(5, 2)
   overageDiscountContactDisp Decimal? @map("overage_discount_contact_disp") @db.Decimal(5, 2)
-  eitherOrRestriction       Boolean?  @default(false) @map("either_or_restriction")
+  eitherOrRestriction        Boolean? @default(false) @map("either_or_restriction")
 
-  examCopay                 Decimal?  @map("exam_copay") @db.Decimal(10, 2)
-  materialsCopay   Decimal?  @map("materials_copay") @db.Decimal(10, 2)
-  copays           Json      @default("{}")
-  rawExtractedData Json?     @map("raw_extracted_data")
-  confidenceScore  Decimal?  @map("confidence_score") @db.Decimal(3, 2)
-  isActive         Boolean?  @default(true) @map("is_active")
-  usedForOrder     Boolean?  @default(false) @map("used_for_order")
-  usedDate         DateTime? @map("used_date") @db.Timestamp(6)
-  expirationDate   DateTime? @map("expiration_date") @db.Date
-  createdAt        DateTime? @default(now()) @map("created_at") @db.Timestamp(6)
-  updatedAt        DateTime? @default(now()) @map("updated_at") @db.Timestamp(6)
+  examCopay            Decimal? @map("exam_copay") @db.Decimal(10, 2)
+  materialsCopay       Decimal? @map("materials_copay") @db.Decimal(10, 2)
+  frameAllowanceAltair Decimal? @map("frame_allowance_altair") @db.Decimal(10, 2)
+  clExamCopay          Decimal? @map("cl_exam_copay") @db.Decimal(10, 2)
+  clFitStandard        Decimal? @map("cl_fit_standard") @db.Decimal(10, 2)
+  clFitPremium         Decimal? @map("cl_fit_premium") @db.Decimal(10, 2)
+  copays               Json     @default("{}")
+  rawExtractedData     Json?    @map("raw_extracted_data")
+  confidenceScore      Decimal? @map("confidence_score") @db.Decimal(3, 2)
+  isActive             Boolean? @default(true) @map("is_active")
 
-  customer   Customer            @relation(fields: [customerId], references: [id], onDelete: Cascade, onUpdate: NoAction)
-  documents  InsuranceDocument[]
-  priceLists PatientPriceList[]
+  // VSP two-document pairing fields
+  // VSP requires two documents (auth + lens) that must be paired by Auth#
+  vspAuthNumber   String?  @map("vsp_auth_number") @db.VarChar(20)
+  vspDocumentType String?  @map("vsp_document_type") @db.VarChar(20) // 'vsp-auth', 'vsp-lens', 'vsp-combined', null
+  vspPendingPair  Boolean? @default(false) @map("vsp_pending_pair")
+  vspPairedAuthId String?  @map("vsp_paired_auth_id")
+
+  usedForOrder   Boolean?  @default(false) @map("used_for_order")
+  usedDate       DateTime? @map("used_date") @db.Timestamp(6)
+  expirationDate DateTime? @map("expiration_date") @db.Date
+  createdAt      DateTime? @default(now()) @map("created_at") @db.Timestamp(6)
+  updatedAt      DateTime? @default(now()) @map("updated_at") @db.Timestamp(6)
+
+  customer          Customer            @relation(fields: [customerId], references: [id], onDelete: Cascade, onUpdate: NoAction)
+  documents         InsuranceDocument[]
+  priceLists        PatientPriceList[]
+  priceListVersions PriceListVersion[]
+  priceListAudits   PriceListAudit[]
 
   @@index([isActive], map: "idx_auth_active")
   @@index([carrier], map: "idx_auth_carrier")
@@ -366,10 +382,308 @@ model PatientPriceList {
   authorization       InsuranceAuthorization? @relation(fields: [authorizationId], references: [id], onDelete: Cascade, onUpdate: NoAction, map: "customer_price_lists_authorization_id_fkey")
   customer            Customer                @relation(fields: [customerId], references: [id], onDelete: Cascade, onUpdate: NoAction, map: "customer_price_lists_customer_id_fkey")
 
-  @@unique([customerId, productId, insuranceCarrier], map: "customer_price_lists_customer_id_product_id_insurance_carri_key")
+  // Link to version (for versioned price lists)
+  versionId String?           @map("version_id")
+  version   PriceListVersion? @relation(fields: [versionId], references: [id], onDelete: Cascade)
+
+  @@unique([versionId, productId], map: "patient_price_lists_version_product_key")
   @@index([active], map: "idx_price_active")
   @@index([customerId], map: "idx_price_customer")
+  @@index([versionId], map: "idx_price_version")
   @@map("patient_price_lists")
+}
+
+// ============================================================================
+// PRICE LIST VERSIONING
+// Groups price list items into versioned sets for patient history
+// ============================================================================
+
+model PriceListVersion {
+  id               String  @id @default(cuid())
+  customerId       String  @map("customer_id")
+  authorizationId  String? @map("authorization_id")
+  insuranceCarrier String  @map("insurance_carrier")
+  planName         String? @map("plan_name")
+
+  // Versioning
+  version      Int // Auto-increment per customer+carrier
+  versionLabel String @map("version_label") // "v1 - 03/09/2026"
+
+  // Full data storage (JSON)
+  lensMatrixData Json? @map("lens_matrix_data") // VSP lens matrix
+  extractedData  Json? @map("extracted_data") // Raw extraction result
+  priceListData  Json? @map("price_list_data") // Complete calculated price list
+
+  // Status
+  active    Boolean  @default(true)
+  createdAt DateTime @default(now()) @map("created_at") @db.Timestamp(6)
+  createdBy String?  @map("created_by")
+
+  // Relations
+  customer      Customer                @relation(fields: [customerId], references: [id], onDelete: Cascade)
+  authorization InsuranceAuthorization? @relation(fields: [authorizationId], references: [id], onDelete: SetNull)
+  priceItems    PatientPriceList[]
+
+  @@unique([customerId, insuranceCarrier, version], map: "price_list_versions_customer_carrier_version_key")
+  @@index([customerId, active], map: "idx_version_customer_active")
+  @@index([insuranceCarrier], map: "idx_version_carrier")
+  @@map("price_list_versions")
+}
+
+// ============================================================================
+// VERIFICATION FRAMEWORK MODELS
+// Track test runs, results, and expected values for insurance pricing validation
+// ============================================================================
+
+model VerificationRun {
+  id             String               @id @default(cuid())
+  runType        String               @map("run_type") // 'vsp-extraction', 'eyemed-extraction', 'price-verification', 'full-pipeline'
+  carrier        String? // 'VSP', 'EyeMed', 'Spectera', or 'ALL'
+  startedAt      DateTime             @default(now()) @map("started_at")
+  completedAt    DateTime?            @map("completed_at")
+  status         VerificationStatus   @default(RUNNING)
+  totalDocuments Int                  @default(0) @map("total_documents")
+  passed         Int                  @default(0)
+  failed         Int                  @default(0)
+  warnings       Int                  @default(0)
+  runBy          String?              @map("run_by") // User ID or 'system'
+  notes          String?
+  results        VerificationResult[]
+
+  @@map("verification_runs")
+}
+
+model VerificationResult {
+  id              String  @id @default(cuid())
+  runId           String  @map("run_id")
+  customerId      String? @map("customer_id")
+  documentId      String? @map("document_id")
+  authorizationId String? @map("authorization_id")
+  carrier         String
+  customerName    String? @map("customer_name") // For display
+
+  // Field being verified
+  fieldName     String  @map("field_name") // 'examCopay', 'frameAllowance', 'NJ', 'progressiveTier3'
+  fieldCategory String? @map("field_category") // 'copay', 'allowance', 'matrix', 'eligibility'
+
+  // Values
+  expectedValue  String? @map("expected_value") // From PDF/manual entry
+  extractedValue String? @map("extracted_value") // From GPT extraction
+  databaseValue  String? @map("database_value") // From DB after save
+  generatedPrice String? @map("generated_price") // From price list (if applicable)
+
+  // Status
+  status          VerificationResultStatus
+  mismatchType    String?                  @map("mismatch_type") // 'extraction_error', 'price_calculation_error', 'null_value'
+  confidenceScore Decimal?                 @map("confidence_score") @db.Decimal(3, 2)
+
+  // Audit
+  verifiedBy String?   @map("verified_by") // 'agent', 'user:{id}', 'system'
+  verifiedAt DateTime? @map("verified_at")
+  auditNotes String?   @map("audit_notes")
+
+  createdAt DateTime        @default(now()) @map("created_at")
+  run       VerificationRun @relation(fields: [runId], references: [id], onDelete: Cascade)
+
+  @@index([runId], map: "idx_verification_run")
+  @@index([carrier], map: "idx_verification_carrier")
+  @@index([status], map: "idx_verification_status")
+  @@map("verification_results")
+}
+
+model ExpectedValue {
+  id            String   @id @default(cuid())
+  documentPath  String   @map("document_path") // Path to source PDF
+  customerName  String?  @map("customer_name") // For reference
+  carrier       String
+  fieldName     String   @map("field_name")
+  expectedValue String   @map("expected_value")
+  source        String? // 'pdf_manual_entry', 'eop_document'
+  enteredBy     String?  @map("entered_by")
+  enteredAt     DateTime @default(now()) @map("entered_at")
+
+  @@unique([documentPath, fieldName], map: "expected_values_document_field_key")
+  @@index([carrier], map: "idx_expected_carrier")
+  @@map("expected_values")
+}
+
+// ============================================================================
+// PRICE LIST AUDITING SYSTEM MODELS
+// Track audit runs, validation results, and regeneration attempts
+// ============================================================================
+
+model PriceListAudit {
+  id              String           @id @default(cuid())
+  customerId      String           @map("customer_id")
+  authorizationId String           @map("authorization_id")
+  carrier         String
+  planName        String?          @map("plan_name")
+  status          AuditStatus      @default(PENDING)
+  triggeredBy     AuditTriggerType @map("triggered_by") // DOCUMENT_UPLOAD, MANUAL, SCHEDULED
+  auditStartTime  DateTime         @default(now()) @map("audit_start_time")
+  auditEndTime    DateTime?        @map("audit_end_time")
+
+  // Summary metrics
+  totalRules   Int      @default(0) @map("total_rules")
+  passedRules  Int      @default(0) @map("passed_rules")
+  failedRules  Int      @default(0) @map("failed_rules")
+  warningRules Int      @default(0) @map("warning_rules")
+  passRate     Decimal? @map("pass_rate") @db.Decimal(5, 2)
+
+  // Regeneration tracking
+  autoRegenerationAttempts Int     @default(0) @map("auto_regeneration_attempts")
+  lastRegenerationResult   String? @map("last_regeneration_result") // SUCCESS, STILL_FAILING
+
+  // Audit details
+  findings       Json @default("[]") // Array of findings summary
+  criticalIssues Int  @default(0) @map("critical_issues")
+
+  createdAt DateTime @default(now()) @map("created_at")
+  updatedAt DateTime @updatedAt @map("updated_at")
+
+  customer         Customer                   @relation(fields: [customerId], references: [id], onDelete: Cascade)
+  authorization    InsuranceAuthorization     @relation(fields: [authorizationId], references: [id], onDelete: Cascade)
+  results          AuditResult[]
+  regenerationLogs PriceListRegenerationLog[]
+
+  @@index([customerId], map: "idx_audit_customer")
+  @@index([authorizationId], map: "idx_audit_authorization")
+  @@index([status], map: "idx_audit_status")
+  @@index([carrier], map: "idx_audit_carrier")
+  @@index([createdAt], map: "idx_audit_created")
+  @@map("price_list_audits")
+}
+
+model AuditResult {
+  id      String            @id @default(cuid())
+  auditId String            @map("audit_id")
+  ruleId  String            @map("rule_id")
+  status  AuditResultStatus // PASS, FAIL, WARNING
+
+  // Rule info
+  ruleName     String            @map("rule_name")
+  ruleCategory AuditRuleCategory @map("rule_category") // ACCURACY, COMPLETENESS, CONSISTENCY
+  carrier      String
+
+  // What was checked
+  fieldChecked  String  @map("field_checked") // e.g., 'frame_copay_accuracy', 'lens_product_completeness'
+  expectedValue String? @map("expected_value") // What should be true
+  actualValue   String? @map("actual_value") // What we found
+
+  // Issue details
+  severity      Decimal? @db.Decimal(5, 2) // 1.0 = critical, 0.5 = warning
+  details       Json     @default("{}") // Detailed error info
+  affectedCount Int?     @map("affected_count") // e.g., 5 frames missing prices
+
+  createdAt DateTime @default(now()) @map("created_at")
+
+  audit PriceListAudit @relation(fields: [auditId], references: [id], onDelete: Cascade)
+
+  @@index([auditId], map: "idx_result_audit")
+  @@index([ruleId], map: "idx_result_rule")
+  @@index([status], map: "idx_result_status")
+  @@map("audit_results")
+}
+
+model AuditRule {
+  id          String            @id @default(cuid())
+  name        String            @unique
+  category    AuditRuleCategory // ACCURACY, COMPLETENESS, CONSISTENCY
+  carrier     String? // VSP, EYEMED, SPECTERA, or null for ALL
+  description String?
+
+  // Rule execution
+  ruleCode  String // Function name/identifier
+  ruleLogic String? // Description of validation logic
+
+  // Rule configuration
+  enabled     Boolean @default(true)
+  criticality Decimal @default(1) @db.Decimal(3, 2) // 1.0 = critical failure, 0.5 = warning
+
+  // Metadata
+  createdAt DateTime @default(now()) @map("created_at")
+  updatedAt DateTime @updatedAt @map("updated_at")
+  createdBy String?  @map("created_by")
+
+  @@index([carrier], map: "idx_rule_carrier")
+  @@index([category], map: "idx_rule_category")
+  @@index([enabled], map: "idx_rule_enabled")
+  @@map("audit_rules")
+}
+
+model PriceListRegenerationLog {
+  id              String @id @default(cuid())
+  auditId         String @map("audit_id")
+  customerId      String @map("customer_id")
+  authorizationId String @map("authorization_id")
+
+  // Regeneration attempt tracking
+  attemptNumber      Int      @map("attempt_number") // 1, 2, or 3
+  regeneratedAt      DateTime @default(now()) @map("regenerated_at")
+  regenerationResult String   @map("regeneration_result") // SUCCESS, STILL_FAILING
+
+  // What happened
+  errorMessage String? @map("error_message")
+  details      Json    @default("{}") // Detailed result info
+
+  // Re-audit after regeneration
+  subsequentAuditId String? @map("subsequent_audit_id") // Link to re-audit that ran after regeneration
+
+  createdAt DateTime @default(now()) @map("created_at")
+
+  audit PriceListAudit @relation(fields: [auditId], references: [id], onDelete: Cascade)
+
+  @@index([auditId], map: "idx_regen_audit")
+  @@index([customerId], map: "idx_regen_customer")
+  @@map("price_list_regeneration_logs")
+}
+
+// ============================================================================
+// AUDIT SYSTEM ENUMS
+// ============================================================================
+
+enum AuditStatus {
+  PENDING // Audit queued but not started
+  RUNNING // Audit in progress
+  PASSED // All rules passed
+  PASSED_WITH_WARNINGS // Passed but has warnings
+  FAILED // Some rules failed
+  REGENERATING // Auto-regeneration in progress
+  REGENERATION_FAILED // Auto-regeneration attempts exhausted
+}
+
+enum AuditResultStatus {
+  PASS // Rule validation passed
+  FAIL // Rule validation failed (critical)
+  WARNING // Rule validation passed but with warnings
+  SKIPPED // Rule skipped (not applicable)
+}
+
+enum AuditRuleCategory {
+  ACCURACY // Calculations and values correct
+  COMPLETENESS // All products have prices
+  CONSISTENCY // Same rules applied uniformly
+}
+
+enum AuditTriggerType {
+  DOCUMENT_UPLOAD // Triggered by insurance document processing
+  MANUAL // Manually triggered by user
+  SCHEDULED // Scheduled audit (daily/weekly)
+  REGENERATION // Triggered by auto-regeneration
+}
+
+enum VerificationStatus {
+  RUNNING
+  COMPLETED
+  FAILED
+  CANCELLED
+}
+
+enum VerificationResultStatus {
+  PASS
+  FAIL
+  WARNING
+  SKIPPED
 }
 
 enum BatchScanStatus {

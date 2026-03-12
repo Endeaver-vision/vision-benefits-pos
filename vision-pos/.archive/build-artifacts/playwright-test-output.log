@@ -1,0 +1,114 @@
+
+Running 8 tests using 4 workers
+
+[1A[2K(node:42176) Warning: The 'NO_COLOR' env is ignored due to the 'FORCE_COLOR' env being set.
+(Use `node --trace-warnings ...` to show where the warning was created)
+
+
+[1A[2K(node:42174) Warning: The 'NO_COLOR' env is ignored due to the 'FORCE_COLOR' env being set.
+(Use `node --trace-warnings ...` to show where the warning was created)
+
+
+[1A[2K(node:42175) Warning: The 'NO_COLOR' env is ignored due to the 'FORCE_COLOR' env being set.
+(Use `node --trace-warnings ...` to show where the warning was created)
+
+
+[1A[2K(node:42173) Warning: The 'NO_COLOR' env is ignored due to the 'FORCE_COLOR' env being set.
+(Use `node --trace-warnings ...` to show where the warning was created)
+
+
+[1A[2K(node:42175) Warning: The 'NO_COLOR' env is ignored due to the 'FORCE_COLOR' env being set.
+(Use `node --trace-warnings ...` to show where the warning was created)
+
+
+[1A[2K(node:42173) Warning: The 'NO_COLOR' env is ignored due to the 'FORCE_COLOR' env being set.
+(Use `node --trace-warnings ...` to show where the warning was created)
+
+
+[1A[2K(node:42174) Warning: The 'NO_COLOR' env is ignored due to the 'FORCE_COLOR' env being set.
+(Use `node --trace-warnings ...` to show where the warning was created)
+
+
+[1A[2K(node:42176) Warning: The 'NO_COLOR' env is ignored due to the 'FORCE_COLOR' env being set.
+(Use `node --trace-warnings ...` to show where the warning was created)
+
+
+[1A[2K[1/8] [chromium] › e2e/scanner-eyemed-pattern-extraction.spec.ts:282:7 › Scanner - EyeMed Pattern-Based Extraction › Should verify extraction stats in API response
+[1A[2K[2/8] [chromium] › e2e/scanner-eyemed-pattern-extraction.spec.ts:32:7 › Scanner - EyeMed Pattern-Based Extraction › Should navigate to scanner and display customer selection
+[1A[2K[3/8] [chromium] › e2e/scanner-eyemed-pattern-extraction.spec.ts:84:7 › Scanner - EyeMed Pattern-Based Extraction › Should extract benefits and show pattern-based extraction results
+[1A[2K[4/8] [chromium] › e2e/scanner-eyemed-pattern-extraction.spec.ts:211:7 › Scanner - EyeMed Pattern-Based Extraction › Should handle multiple documents (auth + lens enhancement)
+[1A[2K[chromium] › e2e/scanner-eyemed-pattern-extraction.spec.ts:211:7 › Scanner - EyeMed Pattern-Based Extraction › Should handle multiple documents (auth + lens enhancement)
+No customers available
+
+[1A[2K[chromium] › e2e/scanner-eyemed-pattern-extraction.spec.ts:282:7 › Scanner - EyeMed Pattern-Based Extraction › Should verify extraction stats in API response
+No customers available
+
+[1A[2K[chromium] › e2e/scanner-eyemed-pattern-extraction.spec.ts:84:7 › Scanner - EyeMed Pattern-Based Extraction › Should extract benefits and show pattern-based extraction results
+No customers available for test
+
+[1A[2K[5/8] [chromium] › e2e/scanner-eyemed-pattern-extraction.spec.ts:165:7 › Scanner - EyeMed Pattern-Based Extraction › Should display copay calculations
+[1A[2K[6/8] [chromium] › e2e/scanner-eyemed-pattern-extraction.spec.ts:245:7 › Scanner - EyeMed Pattern-Based Extraction › Should allow navigation back to quote builder
+[1A[2K[7/8] [chromium] › e2e/scanner-eyemed-pattern-extraction.spec.ts:339:7 › Scanner - EyeMed Pattern-Based Extraction › Should start over and process another document
+[1A[2K  1) [chromium] › e2e/scanner-eyemed-pattern-extraction.spec.ts:32:7 › Scanner - EyeMed Pattern-Based Extraction › Should navigate to scanner and display customer selection 
+
+    Error: [2mexpect([22m[31mlocator[39m[2m).[22mtoBeVisible[2m([22m[2m)[22m failed
+
+    Locator: locator('text=Customer')
+    Expected: visible
+    Error: strict mode violation: locator('text=Customer') resolved to 10 elements:
+        1) <span class="hidden sm:inline">Customer</span> aka getByText('Customer').first()
+        2) <div data-slot="card-title" class="text-lg leading-none font-semibold tracking-tight flex items-center gap-2">…</div> aka getByText('Select Customer').first()
+        3) <div data-slot="card-description" class="text-muted-foreground text-sm">Choose the customer to associate with this docume…</div> aka getByText('Choose the customer to').first()
+        4) <p class="text-muted-foreground">No customers found</p> aka getByText('No customers found')
+        5) <button data-slot="button" class="inline-flex items-center justify-center gap-2 whitespace-nowrap font-semibold transition-[background-color,border-color,box-shadow,transform,opacity] duration-200 transform-gpu disabled:pointer-events-none disabled:opacity-50 [&_svg]:pointer-events-none [&_svg:not([class*='size-'])]:size-4 shrink-0 [&_svg]:shrink-0 outline-none focus-visible:ring-[3px] focus-visible:ring-ring border border-white/20 bg-white/5 backdrop-blur-sm text-foreground hover:bg-white/10 hover:bo…>Create New Customer</button> aka getByText('Create New Customer')
+        6) <button data-slot="button" class="inline-flex items-center justify-center gap-2 whitespace-nowrap font-semibold transition-[background-color,border-color,box-shadow,transform,opacity] duration-200 transform-gpu disabled:pointer-events-none disabled:opacity-50 [&_svg]:pointer-events-none [&_svg:not([class*='size-'])]:size-4 shrink-0 [&_svg]:shrink-0 outline-none focus-visible:ring-[3px] focus-visible:ring-ring text-foreground hover:bg-white/10 active:scale-[0.98] h-9 px-4 rounded-xl text-xs">Customers</button> aka getByText('Customers').nth(1)
+        7) <span class="hidden sm:inline">Customer</span> aka getByRole('main').getByText('Customer', { exact: true })
+        8) <div data-slot="card-title" class="text-lg leading-none font-semibold tracking-tight flex items-center gap-2">…</div> aka getByRole('main').getByText('Select Customer')
+        9) <div data-slot="card-description" class="text-muted-foreground text-sm">Choose the customer to associate with this docume…</div> aka getByRole('main').getByText('Choose the customer to')
+        10) <button data-slot="button" class="inline-flex items-center justify-center gap-2 whitespace-nowrap font-semibold transition-[background-color,border-color,box-shadow,transform,opacity] duration-200 transform-gpu disabled:pointer-events-none disabled:opacity-50 [&_svg]:pointer-events-none [&_svg:not([class*='size-'])]:size-4 shrink-0 [&_svg]:shrink-0 outline-none focus-visible:ring-[3px] focus-visible:ring-ring text-foreground hover:bg-white/10 active:scale-[0.98] h-9 px-4 rounded-xl text-xs">Customers</button> aka getByRole('button', { name: 'Customers' })
+
+    Call log:
+    [2m  - Expect "toBeVisible" with timeout 5000ms[22m
+    [2m  - waiting for locator('text=Customer')[22m
+
+
+      37 |
+      38 |     // Should see step indicator
+    > 39 |     await expect(page.locator('text=Customer')).toBeVisible()
+         |                                                 ^
+      40 |     await expect(page.locator('text=Upload')).toBeVisible()
+      41 |     await expect(page.locator('text=Process')).toBeVisible()
+      42 |     await expect(page.locator('text=Complete')).toBeVisible()
+        at /Users/cmac/let/vision-pos/e2e/scanner-eyemed-pattern-extraction.spec.ts:39:49
+
+    attachment #1: screenshot (image/png) ──────────────────────────────────────────────────────────
+    test-results/scanner-eyemed-pattern-ext-15492--display-customer-selection-chromium/test-failed-1.png
+    ────────────────────────────────────────────────────────────────────────────────────────────────
+
+    Error Context: test-results/scanner-eyemed-pattern-ext-15492--display-customer-selection-chromium/error-context.md
+
+
+[1A[2K(node:42242) Warning: The 'NO_COLOR' env is ignored due to the 'FORCE_COLOR' env being set.
+(Use `node --trace-warnings ...` to show where the warning was created)
+
+
+[1A[2K[chromium] › e2e/scanner-eyemed-pattern-extraction.spec.ts:165:7 › Scanner - EyeMed Pattern-Based Extraction › Should display copay calculations
+No customers available
+
+[1A[2K(node:42242) Warning: The 'NO_COLOR' env is ignored due to the 'FORCE_COLOR' env being set.
+(Use `node --trace-warnings ...` to show where the warning was created)
+
+
+[1A[2K[8/8] [chromium] › e2e/scanner-eyemed-pattern-extraction.spec.ts:48:7 › Scanner - EyeMed Pattern-Based Extraction › Should upload EyeMed PDF and start processing
+[1A[2K[chromium] › e2e/scanner-eyemed-pattern-extraction.spec.ts:245:7 › Scanner - EyeMed Pattern-Based Extraction › Should allow navigation back to quote builder
+No customers available
+
+[1A[2K[chromium] › e2e/scanner-eyemed-pattern-extraction.spec.ts:339:7 › Scanner - EyeMed Pattern-Based Extraction › Should start over and process another document
+No customers available
+
+[1A[2K[chromium] › e2e/scanner-eyemed-pattern-extraction.spec.ts:48:7 › Scanner - EyeMed Pattern-Based Extraction › Should upload EyeMed PDF and start processing
+No customers found - this is expected in test environment
+
+[1A[2K  1 failed
+    [chromium] › e2e/scanner-eyemed-pattern-extraction.spec.ts:32:7 › Scanner - EyeMed Pattern-Based Extraction › Should navigate to scanner and display customer selection 
+  7 passed (6.7s)

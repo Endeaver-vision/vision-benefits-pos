@@ -1,0 +1,383 @@
+{
+  "authFile": "SA_vspauth.pdf",
+  "enhancementFile": "SA_vsplens.pdf",
+  "authData": {
+    "document_type": "auth_form",
+    "patient_name": "SHARON J ABRAMS RIVERA",
+    "patient_dob": "06/13/1998",
+    "member_name": "SHARON J ABRAMS RIVERA",
+    "relationship": "Member",
+    "authorization_number": "67545585",
+    "auth_effective_date": "02/02/2024",
+    "auth_expiration_date": "03/03/2024",
+    "plan_type": "signature",
+    "client_name": "DISNEY WORLDWIDE SVCS., INC.",
+    "network": "VSP",
+    "lab_use": "Must use plan designated contract laboratory.",
+    "eligibility": {
+      "exam": true,
+      "lens": true,
+      "frame": true,
+      "contact_lens_exam": true,
+      "contacts": true
+    },
+    "exam_copay": 0,
+    "material_copay": 10,
+    "routine_retinal_screening": "lesser of $39.00 or U&C",
+    "frame_allowance": {
+      "wfa_code": "WFA60",
+      "altair_amount": 175,
+      "non_altair_amount": 155,
+      "frame_overage_discount": 0.2,
+      "easyoptions_wfa_code": null,
+      "easyoptions_amount": null
+    },
+    "contact_lens_pattern": "separate",
+    "cl_exam_copay": 10,
+    "cl_exam_percentage": 0.85,
+    "cl_materials_allowance": 155,
+    "cl_combined_allowance": null,
+    "cl_combined_discount": null,
+    "cl_exam_only_responsibility": null,
+    "cl_easyoptions_allowance": null,
+    "necessary_cl_copay": 10,
+    "contacts_instead_of": [
+      "lens",
+      "frame"
+    ],
+    "contacts_frame_next_available": null,
+    "has_easyoptions": false,
+    "easyoptions": null,
+    "flags": {
+      "has_emc": true,
+      "emc_type": "essential_medical_eye_care",
+      "emc_exam_copay": 5,
+      "is_computer_visioncare": false,
+      "computer_rx_requirement": null,
+      "has_post_laser": true,
+      "has_low_vision": true,
+      "has_vision_therapy": false,
+      "has_cob_restriction": false,
+      "cob_rule": null,
+      "value_added_benefits": {
+        "same_day_discount": 0.3,
+        "same_day_40_discount": 0.4,
+        "within_12_months_discount": 0.2,
+        "within_12_months_40_discount": null,
+        "cl_exam_discount": 0.15
+      }
+    },
+    "eye_health_conditions": {
+      "reported_conditions": [
+        "DIABETES",
+        "DIABETIC RETIN",
+        "HYPERTENSION",
+        "HIGH CHOLESTEROL"
+      ],
+      "systemic_checked": [
+        "HYPERTENSION",
+        "HIGH CHOLESTEROL"
+      ],
+      "ocular_checked": [
+        "DIABETES",
+        "DIABETIC RETIN"
+      ],
+      "dilation_performed": false,
+      "pcp_communication": false
+    },
+    "lens_enhancement_summary": {
+      "covered": [
+        "Anti-Reflective Coatings",
+        "UV Protection",
+        "Blended Bifocal",
+        "Custom Progressives (includes Custom Measurements)",
+        "Glass Color Coatings",
+        "Mirror/Ski Type Coating",
+        "Premium Progressives",
+        "Scratch Resistant Coatings",
+        "Solid Tints and Plastic Dyes (Pink I & II)",
+        "Standard Progressives",
+        "Aspheric (plastic & digital)",
+        "Edge Treatments",
+        "High Index",
+        "Light Filter",
+        "Near Variable Focus",
+        "Oversize Lenses",
+        "Photochromics"
+      ],
+      "covered_with_copay": [
+        "Plastic Dyes (Gradient)",
+        "Plastic Dyes (Solid color except Pink I & II)",
+        "Polarized",
+        "Polycarbonate",
+        "Rimless Drill"
+      ],
+      "not_covered": []
+    }
+  },
+  "enhancementData": {
+    "document_type": "enhancement_form",
+    "authorization_number": "67545585",
+    "patient_name": "ABRAMS RIVERA, SHARON",
+    "progressives": {
+      "K_standard": 0,
+      "J_premium": 0,
+      "F_premium_adv": 0,
+      "O_custom": 0,
+      "N_custom": 0
+    },
+    "single_vision_base": 0,
+    "materials": {
+      "polycarbonate_sv": 33,
+      "polycarbonate_multi": 33,
+      "trivex_sv": 51,
+      "trivex_multi": 55,
+      "hi_index_167_sv": 76,
+      "hi_index_167_multi": 90,
+      "hi_index_174_sv": 102,
+      "hi_index_174_multi": 110
+    },
+    "lens_matrix": {
+      "SV_plastic": 0,
+      "SV_poly": 33,
+      "SV_trivex": 51,
+      "SV_hi167": 76,
+      "SV_hi174": 102,
+      "KA": 0,
+      "KD": 33,
+      "KB": 42,
+      "KH": 72,
+      "KJ": 115,
+      "JA": 0,
+      "JD": 33,
+      "JB": 42,
+      "JH": 72,
+      "JJ": 115,
+      "FA": 0,
+      "FD": 33,
+      "FB": 42,
+      "FH": 72,
+      "FJ": 115,
+      "OA": 0,
+      "OD": 33,
+      "OB": 42,
+      "OH": 72,
+      "OJ": 115,
+      "NA": 0,
+      "ND": 33,
+      "NB": 42,
+      "NH": 72,
+      "NJ": 115
+    },
+    "ar_coatings": {
+      "QM_standard": 0,
+      "QT_premium_1": 0,
+      "QV_premium_2": 0
+    },
+    "photochromics": {
+      "PR_plastic": 70,
+      "PM_glass": 29
+    },
+    "polarized": {
+      "DA_sv": 53,
+      "DA_multi": 71,
+      "KP": 76,
+      "JP": 76,
+      "FP": 76,
+      "NP": 76,
+      "OP": 76
+    },
+    "tints": {
+      "MN_plastic_sv": 13,
+      "MN_plastic_multi": 13,
+      "MP_gradient_sv": 15,
+      "MP_gradient_multi": 15
+    },
+    "misc": {
+      "SP_edge_polish": 14,
+      "SQ_edge_coating": 32,
+      "SW_rimless": 30,
+      "LF_light_filter": 15,
+      "TA_tech_addon": 10,
+      "IA_near_variable": 46,
+      "RM_oversize_plastic": 10,
+      "RN_oversize_glass": 12,
+      "AA_aspheric": 23,
+      "BA_digital_aspheric": 40,
+      "CM_custom_measurement": 0
+    },
+    "coverage_status": {
+      "progressives_covered": true,
+      "ar_covered": true,
+      "photochromics_covered": true,
+      "photochromics_not_covered": false,
+      "polarized_not_covered": false
+    }
+  },
+  "merged": {
+    "patientInfo": {
+      "name": "SHARON J ABRAMS RIVERA",
+      "dob": "06/13/1998",
+      "authNumber": "67545585",
+      "effectiveDate": "02/02/2024",
+      "expirationDate": "03/03/2024",
+      "memberName": "SHARON J ABRAMS RIVERA",
+      "relationship": "Member"
+    },
+    "planInfo": {
+      "planType": "signature",
+      "clientName": "DISNEY WORLDWIDE SVCS., INC.",
+      "network": "VSP",
+      "labUse": "Must use plan designated contract laboratory."
+    },
+    "eligibility": {
+      "exam": true,
+      "lens": true,
+      "frame": true,
+      "contact_lens_exam": true,
+      "contacts": true
+    },
+    "copays": {
+      "exam": 0,
+      "material": 10,
+      "retinalScreening": null
+    },
+    "frameAllowance": {
+      "wfaCode": "WFA60",
+      "amount": 155,
+      "altairAmount": 175,
+      "overageDiscount": 0.2,
+      "easyOptionsAmount": null
+    },
+    "contactLens": {
+      "pattern": "separate",
+      "examCopay": 10,
+      "examPercentage": 0.85,
+      "materialsAllowance": 155,
+      "combinedAllowance": null,
+      "combinedDiscount": null,
+      "examOnlyResponsibility": null,
+      "easyOptionsAllowance": null,
+      "necessaryCopay": 10,
+      "insteadOf": [
+        "lens",
+        "frame"
+      ],
+      "frameNextAvailable": null
+    },
+    "easyOptions": null,
+    "flags": {
+      "hasEmc": true,
+      "emcType": "essential_medical_eye_care",
+      "emcExamCopay": 5,
+      "isComputerVisioncare": false,
+      "computerRxRequirement": null,
+      "hasPostLaser": true,
+      "hasLowVision": true,
+      "hasVisionTherapy": false,
+      "hasCobRestriction": false,
+      "cobRule": null,
+      "valueAddedBenefits": {
+        "sameDayDiscount": 0.3,
+        "sameDay40Discount": 0.4,
+        "within12MonthsDiscount": 0.2,
+        "within12Months40Discount": null,
+        "clExamDiscount": 0.15
+      }
+    },
+    "eyeHealthConditions": {
+      "reportedConditions": [
+        "DIABETES",
+        "DIABETIC RETIN",
+        "HYPERTENSION",
+        "HIGH CHOLESTEROL"
+      ],
+      "systemicChecked": [
+        "HYPERTENSION",
+        "HIGH CHOLESTEROL"
+      ],
+      "ocularChecked": [
+        "DIABETES",
+        "DIABETIC RETIN"
+      ],
+      "dilationPerformed": false,
+      "pcpCommunication": false
+    },
+    "lensMatrix": {
+      "SV_plastic": 0,
+      "SV_poly": 33,
+      "SV_trivex": 51,
+      "SV_hi167": 76,
+      "SV_hi174": 102,
+      "KA": 0,
+      "KD": 33,
+      "KB": 42,
+      "KH": 72,
+      "KJ": 115,
+      "JA": 0,
+      "JD": 33,
+      "JB": 42,
+      "JH": 72,
+      "JJ": 115,
+      "FA": 0,
+      "FD": 33,
+      "FB": 42,
+      "FH": 72,
+      "FJ": 115,
+      "OA": 0,
+      "OD": 33,
+      "OB": 42,
+      "OH": 72,
+      "OJ": 115,
+      "NA": 0,
+      "ND": 33,
+      "NB": 42,
+      "NH": 72,
+      "NJ": 115
+    },
+    "arCoatings": {
+      "QM": 0,
+      "QT": 0,
+      "QV": 0
+    },
+    "enhancements": {
+      "PR": 70,
+      "DA": 53,
+      "LF": 15,
+      "SP": 14,
+      "SW": 30,
+      "MN": 13,
+      "TA": 10,
+      "IA": 46,
+      "CM": 0
+    },
+    "polarizedProgressives": {
+      "KP": 76,
+      "JP": 76,
+      "FP": 76,
+      "NP": 76,
+      "OP": 76
+    },
+    "coverageStatus": {
+      "progressivesCovered": true,
+      "arCovered": true,
+      "photochromicsCovered": true,
+      "photochromicsNotCovered": false,
+      "polarizedNotCovered": false
+    }
+  },
+  "validation": {
+    "valid": true,
+    "errors": []
+  },
+  "usage": {
+    "authForm": {
+      "input": 5497,
+      "output": 1153
+    },
+    "enhancement": {
+      "input": 4397,
+      "output": 953
+    }
+  }
+}

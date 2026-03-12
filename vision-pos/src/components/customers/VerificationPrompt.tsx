@@ -10,8 +10,12 @@ import {
   DialogHeader,
   DialogTitle,
 } from '@/components/ui/dialog';
-import { InsuranceScannerModal } from '@/components/scanner';
+import { InlineScanner } from '@/components/scanner';
 import { InsuranceStatusBadge, InsuranceVerificationStatus } from './InsuranceStatusBadge';
+
+// Note: "Verification" in this component refers to prompting the user to scan
+// insurance documents - not a manual GPT verification step. Documents are
+// processed and saved automatically when scanned.
 
 interface VerificationPromptProps {
   isOpen: boolean;
@@ -32,27 +36,45 @@ export function VerificationPrompt({
   customerName,
   status,
   carrier,
-  onVerificationComplete,
   onProceedWithRetail,
   onManualEntry,
+  onVerificationComplete,
 }: VerificationPromptProps) {
   const [showScanner, setShowScanner] = useState(false);
 
-  const handleScannerComplete = () => {
-    setShowScanner(false);
-    onVerificationComplete?.();
-    onClose();
+  const handleScanComplete = async (result: any) => {
+    if (result.success) {
+      setShowScanner(false);
+      onVerificationComplete?.();
+      onClose();
+    }
   };
 
   if (showScanner) {
     return (
-      <InsuranceScannerModal
-        isOpen={true}
-        onClose={() => setShowScanner(false)}
-        customerId={customerId}
-        customerName={customerName}
-        onVerificationComplete={handleScannerComplete}
-      />
+      <Dialog open={isOpen} onOpenChange={(open) => {
+        if (!open) {
+          setShowScanner(false);
+          onClose();
+        }
+      }}>
+        <DialogContent className="max-w-2xl">
+          <DialogHeader>
+            <DialogTitle className="flex items-center gap-2">
+              <Camera className="h-5 w-5 text-emerald-500" />
+              Scan Insurance Document
+            </DialogTitle>
+            <DialogDescription>
+              Upload {customerName}&apos;s insurance authorization or benefits document
+            </DialogDescription>
+          </DialogHeader>
+          <InlineScanner
+            customerId={customerId}
+            onDocumentProcessed={handleScanComplete}
+            compact={false}
+          />
+        </DialogContent>
+      </Dialog>
     );
   }
 
@@ -62,10 +84,10 @@ export function VerificationPrompt({
         <DialogHeader>
           <DialogTitle className="flex items-center gap-2">
             <AlertTriangle className="h-5 w-5 text-yellow-500" />
-            Insurance Verification Required
+            Insurance Scan Required
           </DialogTitle>
           <DialogDescription>
-            {customerName}&apos;s insurance information needs to be verified before
+            {customerName}&apos;s insurance information needs to be scanned before
             calculating accurate pricing.
           </DialogDescription>
         </DialogHeader>
@@ -85,7 +107,7 @@ export function VerificationPrompt({
           <div className="space-y-3">
             <p className="text-sm font-medium">How would you like to proceed?</p>
 
-            {/* Option 1: Scan Card */}
+            {/* Option 1: Scan Document */}
             <button
               onClick={() => setShowScanner(true)}
               className="w-full p-4 text-left rounded-lg border-2 border-primary/20 bg-primary/5 hover:bg-primary/10 transition-colors"
@@ -95,9 +117,9 @@ export function VerificationPrompt({
                   <Camera className="h-5 w-5 text-primary" />
                 </div>
                 <div>
-                  <p className="font-medium">Scan Insurance Card</p>
+                  <p className="font-medium">Scan Insurance Document</p>
                   <p className="text-sm text-muted-foreground">
-                    Take a photo or upload an image of the insurance card. AI will
+                    Upload the insurance authorization or benefits document. AI will
                     extract the benefits automatically.
                   </p>
                 </div>
@@ -243,6 +265,8 @@ export function VerificationBanner({
           setShowPrompt(false);
           onVerificationComplete?.();
         }}
+        onProceedWithRetail={() => {}}
+        onManualEntry={() => {}}
       />
     </>
   );

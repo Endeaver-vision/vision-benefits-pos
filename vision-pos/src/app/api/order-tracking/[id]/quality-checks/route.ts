@@ -1,32 +1,21 @@
 import { NextRequest, NextResponse } from 'next/server'
-import { prisma } from '@/lib/prisma'
 
+/**
+ * Order Quality Checks API
+ * NOTE: Order model not yet implemented in database schema
+ */
+
+/**
+ * POST /api/order-tracking/[id]/quality-checks
+ * Create a quality check record
+ */
 export async function POST(
   request: NextRequest,
   { params }: { params: Promise<{ id: string }> }
 ) {
-  try {
-    const { id } = await params
-    const body = await request.json()
-    const { passed, notes, performedBy, performedByName } = body
-
-    const qualityCheck = await prisma.orderQualityCheck.create({
-      data: {
-        orderId: id,
-        passed,
-        notes,
-        performedBy,
-        performedByName,
-        performedAt: new Date(),
-      },
-    })
-
-    return NextResponse.json(qualityCheck)
-  } catch (error) {
-    console.error('Error creating quality check:', error)
-    return NextResponse.json(
-      { error: 'Failed to create quality check' },
-      { status: 500 }
-    )
-  }
+  // Order model not yet implemented
+  return NextResponse.json(
+    { error: 'Order tracking not yet implemented' },
+    { status: 501 }
+  )
 }

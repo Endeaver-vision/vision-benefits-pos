@@ -60,6 +60,7 @@ export async function GET(
     }
 
     // Fetch the active authorization from unified table
+    console.log(`[Authorization API] Querying for customerId: ${customerId}`);
     const auth = await prisma.insuranceAuthorization.findFirst({
       where: {
         customerId,
@@ -68,6 +69,7 @@ export async function GET(
       orderBy: { createdAt: 'desc' },
     })
 
+    console.log(`[Authorization API] Found auth ID: ${auth?.id}, carrier: ${auth?.carrier}, isActive: ${auth?.isActive}`);
     if (!auth) {
       return NextResponse.json({
         success: true,
@@ -110,17 +112,24 @@ export async function GET(
       // Contact lens benefits
       contactAllowance: auth.contactAllowance ? Number(auth.contactAllowance) : null,
       isContactDecliningBalance: auth.isContactDecliningBalance ?? false,
-      contactFittingCovered: copays.clFitStandard !== null && copays.clFitStandard !== undefined,
-      contactExamCopay: null,
-      contactFittingCopay: copays.clFitStandard ?? copays.clFitPremium ?? null,
+      // For VSP, CL Exam Copay is the contact lens fitting charge
+      // Check DB columns first, then fall back to copays JSON
+      contactFittingCovered: auth.clExamCopay !== null || auth.clFitStandard !== null || copays.clFitStandard !== undefined,
+      contactExamCopay: auth.clExamCopay !== null ? Number(auth.clExamCopay) : null,
+      contactFittingCopay: auth.clExamCopay !== null
+        ? Number(auth.clExamCopay)
+        : (auth.clFitStandard !== null ? Number(auth.clFitStandard)
+          : (copays.clFitStandard ?? copays.clFitPremium ?? null)),
 
       // Plan rules
-      glassesContactsExclusive: carrier === 'VSP',
+      // For declining balance plans, use eitherOrRestriction; for others, VSP is typically exclusive
+      glassesContactsExclusive: auth.eitherOrRestriction ?? (carrier === 'VSP'),
 
-      // Validity
+      // Validity and timestamps
       effectiveDate: auth.createdAt,
       expirationDate: auth.expirationDate,
       isActive: auth.isActive,
+      lastVerified: auth.updatedAt,  // For staleness checking (48-hour threshold)
 
       // ===== PRICING TIERS FOR POS =====
       // These are the copays associates need to see when selecting products
@@ -192,6 +201,10 @@ export async function GET(
       creditAppliesToCoatings: true,
       overageDiscountPercent: auth.overageDiscountFrame ? Number(auth.overageDiscountFrame) : null,
       eitherOrRestriction: auth.eitherOrRestriction ?? false,
+
+      // Raw copays JSON for VSP matrix pricing
+      // This allows the UI to do direct lookups for combined codes (e.g., NJ, KA)
+      copays: auth.copays || null,
     }
 
     return NextResponse.json({

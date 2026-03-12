@@ -244,6 +244,12 @@ export async function GET(
     const benefitStructure = (authorization.benefitStructure as 'COPAY_ALLOWANCE' | 'DECLINING_BALANCE') || 'COPAY_ALLOWANCE'
     const isDecliningBalance = benefitStructure === 'DECLINING_BALANCE'
 
+    // For VSP, CL Exam Copay is the contact lens fitting charge
+    // For other carriers, use clFitStandard as the base fitting cost
+    const contactFittingValue = authorization.clExamCopay
+      ? Number(authorization.clExamCopay)
+      : (authorization.clFitStandard ? Number(authorization.clFitStandard) : null)
+
     const summary: InsuranceSummary = {
       carrier: authorization.carrier,
       planName: authorization.planName || 'Unknown Plan',
@@ -252,7 +258,7 @@ export async function GET(
         materials: isDecliningBalance ? 0 : (authorization.materialsCopay ? Number(authorization.materialsCopay) : (copays.materialsCopay ?? null)),
         frameAllowance: authorization.frameAllowance ? Number(authorization.frameAllowance) : null,
         contactAllowance: authorization.contactAllowance ? Number(authorization.contactAllowance) : null,
-        contactFitting: null, // Not stored in unified table currently
+        contactFitting: contactFittingValue,
       },
       tierCopays: isDecliningBalance ? [] : tierCopays, // No tier copays for declining balance plans
       expirationDate: authorization.expirationDate?.toISOString().split('T')[0] ?? null,

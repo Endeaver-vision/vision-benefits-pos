@@ -10,7 +10,10 @@ import {
   Glasses,
   Disc,
   Plus,
+  LayoutDashboard,
+  X,
 } from 'lucide-react'
+import Link from 'next/link'
 
 interface NavItem {
   id: MenuId
@@ -32,7 +35,7 @@ const NAV_ITEMS: NavItem[] = [
  * Dark glass theme - blue accent, glass-morphism
  */
 export default function NavigationColumn() {
-  const { activeMenu, setActiveMenu, quote, addPair, setActivePair } = usePOSStore()
+  const { activeMenu, setActiveMenu, quote, addPair, setActivePair, removePair } = usePOSStore()
 
   // Determine which menus should show badges (have items)
   const getMenuItemCount = (menuId: MenuId): number => {
@@ -70,6 +73,17 @@ export default function NavigationColumn() {
 
   return (
     <div className="flex flex-col h-full glass-card border-r border-white/10">
+      {/* Dashboard link */}
+      <div className="p-4 border-b border-white/10">
+        <Link
+          href="/dashboard"
+          className="flex items-center justify-center gap-2 w-full py-2.5 px-3 rounded-lg text-xs font-semibold bg-white/5 text-white/70 hover:bg-white/10 hover:text-white transition-all"
+        >
+          <LayoutDashboard className="h-4 w-4" />
+          Dashboard
+        </Link>
+      </div>
+
       {/* Category buttons - 2:1 width:height ratio with breathing room */}
       <div className="flex flex-col p-4 gap-3 flex-1">
         {NAV_ITEMS.map((item) => {
@@ -121,30 +135,58 @@ export default function NavigationColumn() {
       <div className="p-4 border-t border-white/10 space-y-2">
         {(quote.pairs?.length ?? 0) > 0 && (
           <div className="flex flex-col gap-2">
-            {(quote.pairs ?? []).map((pair) => (
-              <button
-                key={pair.id}
-                onClick={() => setActivePair(pair.id)}
-                className={cn(
-                  'w-full py-2.5 px-3 rounded-lg text-xs font-semibold transition-all',
-                  pair.id === quote.activePairId
-                    ? 'bg-blue-600 text-white'
-                    : 'bg-white/10 text-white/70 hover:bg-white/15'
-                )}
-              >
-                {pair.label || `Pair ${(quote.pairs ?? []).indexOf(pair) + 1}`}
-              </button>
-            ))}
+            {(quote.pairs ?? []).map((pair) => {
+              const isActive = pair.id === quote.activePairId
+              const canDelete = (quote.pairs?.length ?? 0) > 1
+
+              return (
+                <div key={pair.id} className="relative group">
+                  <button
+                    onClick={() => setActivePair(pair.id)}
+                    className={cn(
+                      'w-full py-2.5 px-3 rounded-lg text-xs font-semibold transition-all',
+                      isActive
+                        ? 'bg-blue-600 text-white'
+                        : 'bg-white/10 text-white/70 hover:bg-white/15'
+                    )}
+                  >
+                    {pair.label || `Pair ${(quote.pairs ?? []).indexOf(pair) + 1}`}
+                  </button>
+
+                  {/* Delete button - shows on hover when deletable */}
+                  {canDelete && (
+                    <button
+                      onClick={(e) => {
+                        e.stopPropagation()
+                        removePair(pair.id)
+                      }}
+                      className={cn(
+                        'absolute -top-1 -right-1 w-5 h-5 rounded-full',
+                        'flex items-center justify-center',
+                        'bg-red-500 text-white opacity-0 group-hover:opacity-100',
+                        'hover:bg-red-600 transition-all shadow-sm'
+                      )}
+                      title={`Delete ${pair.label}`}
+                    >
+                      <X className="h-3 w-3" />
+                    </button>
+                  )}
+                </div>
+              )
+            })}
           </div>
         )}
 
-        <button
-          onClick={() => addPair()}
-          className="w-full py-2.5 px-3 rounded-lg text-xs font-semibold bg-emerald-600/20 text-emerald-400 hover:bg-emerald-600/30 transition-all flex items-center justify-center gap-1.5"
-        >
-          <Plus className="h-4 w-4" />
-          Add Pair
-        </button>
+        {/* Add Pair button - limit to 3 pairs */}
+        {(quote.pairs?.length ?? 0) < 3 && (
+          <button
+            onClick={() => addPair()}
+            className="w-full py-2.5 px-3 rounded-lg text-xs font-semibold bg-emerald-600/20 text-emerald-400 hover:bg-emerald-600/30 transition-all flex items-center justify-center gap-1.5"
+          >
+            <Plus className="h-4 w-4" />
+            Add Pair
+          </button>
+        )}
       </div>
     </div>
   )

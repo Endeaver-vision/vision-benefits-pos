@@ -1,0 +1,22 @@
+Product,Category,Retail Price,EyeMed Tier,VSP Code
+Single Vision,Lens,80.40,standard_sv,standard
+Flat Top Bifocal 28,Bifocal,126.00,standard_bf,GA
+Varilux Comfort DRx,Progressive,254.10,tier_3,JA
+Varilux Comfort Max,Progressive,393.30,tier_4,FA
+Varilux X Design,Progressive,600.00,tier_4,NA
+Polycarbonate,Material,65.00,polycarbonate,AD
+Trivex,Material,85.00,trivex,AB
+Hi-Index 1.67,Material,125.00,high_index_167,AH
+Hi-Index 1.74,Material,175.00,high_index_174,AJ
+Crizal Easy Pro,AR Coating,147.50,ar_tier_2,QT
+Crizal Sapphire HR,AR Coating,180.00,ar_tier_3,QV
+Transitions XTRActive,Photochromic,145.00,photochromic,PR
+Polarized,Treatment,155.70,polarized,DA
+UV Protection,Add-on,15.00,uv_treatment,SV
+Light Filter,Add-on,15.00,all_other_lens_options,LF
+Tint,Add-on,17.80,tint,MN
+Semi Rimless Mount,Mount,35.00,all_other_lens_options,SW
+Rimless Mount,Mount,47.00,all_other_lens_options,SW
+Eye Exam,Service,100.00,exam_copay,exam_copay
+CL Fitting - Sphere,CL Fitting,75.00,cash_pay,cl_fitting_copay
+CL Fitting - Toric,CL Fitting,100.00,cash_pay,cl_fitting_copay

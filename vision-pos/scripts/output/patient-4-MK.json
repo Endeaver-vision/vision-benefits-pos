@@ -1,0 +1,579 @@
+{
+  "patient": "MK",
+  "authorization": {
+    "patientInfo": {
+      "name": "MARITZA KUZIAN",
+      "dob": "07/23/1960",
+      "authNumber": "86078830",
+      "effectiveDate": "04/03/2025",
+      "expirationDate": "04/18/2025",
+      "memberName": "MARITZA KUZIAN",
+      "relationship": "Member"
+    },
+    "planInfo": {
+      "planType": "choice",
+      "clientName": "INDIVIDUAL PLAN FLORIDA",
+      "network": "Choice",
+      "labUse": "Must use plan designated contract laboratory."
+    },
+    "eligibility": {
+      "exam": true,
+      "lens": true,
+      "frame": true,
+      "contactLensExam": true,
+      "contacts": true
+    },
+    "copays": {
+      "exam": 15,
+      "material": 25,
+      "retinalScreening": null
+    },
+    "frameAllowance": {
+      "wfaCode": "WFA88",
+      "amount": 230,
+      "altairAmount": null,
+      "overageDiscount": 0.2,
+      "easyOptionsAmount": 230
+    },
+    "contactLens": {
+      "pattern": "combined",
+      "examCopay": null,
+      "examPercentage": 0.85,
+      "materialsAllowance": 150,
+      "combinedAllowance": 150,
+      "combinedDiscount": 0.15,
+      "examOnlyResponsibility": 60,
+      "easyOptionsAllowance": 230,
+      "necessaryCopay": null,
+      "insteadOf": [
+        "lens",
+        "frame"
+      ],
+      "frameNextAvailable": null
+    },
+    "easyOptions": {
+      "enabled": true,
+      "contactLensUpgrade": 230,
+      "frameUpgrade": 230,
+      "photochromicCovered": true,
+      "progressiveCovered": true,
+      "arCovered": false
+    },
+    "flags": {
+      "hasEmc": false,
+      "emcType": null,
+      "emcExamCopay": null,
+      "isComputerVisioncare": false,
+      "computerRxRequirement": null,
+      "hasPostLaser": false,
+      "hasLowVision": true,
+      "hasVisionTherapy": false,
+      "hasCobRestriction": true,
+      "cobRule": "COB rule 9: COB isn't allowed. Call VSP at 800.615.1883 for client exceptions and specific instructions.",
+      "valueAddedBenefits": {
+        "sameDayDiscount": null,
+        "sameDay40Discount": null,
+        "within12MonthsDiscount": 0.2,
+        "within12Months40Discount": null,
+        "clExamDiscount": 0.15
+      }
+    },
+    "eyeHealthConditions": {
+      "reportedConditions": [],
+      "systemicChecked": [],
+      "ocularChecked": [],
+      "dilationPerformed": false,
+      "pcpCommunication": false
+    },
+    "lensMatrix": {
+      "SV_plastic": 0,
+      "SV_poly": 35,
+      "SV_trivex": 56,
+      "SV_hi167": 83,
+      "SV_hi174": 111,
+      "KA": 0,
+      "KD": 35,
+      "KB": 47,
+      "KH": 78,
+      "KJ": 125,
+      "JA": 95,
+      "JD": 35,
+      "JB": 47,
+      "JH": 78,
+      "JJ": 125,
+      "FA": 105,
+      "FD": 35,
+      "FB": 47,
+      "FH": 78,
+      "FJ": 125,
+      "OA": 150,
+      "OD": 35,
+      "OB": 47,
+      "OH": 78,
+      "OJ": 125,
+      "NA": 175,
+      "ND": 35,
+      "NB": 47,
+      "NH": 78,
+      "NJ": 125
+    },
+    "arCoatings": {
+      "QM": 41,
+      "QT": 68,
+      "QV": 85
+    },
+    "enhancements": {
+      "PR": 75,
+      "DA": 57,
+      "LF": 15,
+      "SP": 16,
+      "SW": 30,
+      "MN": 15,
+      "TA": 10,
+      "IA": 50,
+      "CM": 10
+    },
+    "polarizedProgressives": {
+      "KP": 82,
+      "JP": 82,
+      "FP": 82,
+      "NP": 82,
+      "OP": 82
+    },
+    "progressives": {
+      "K_standard": 0,
+      "J_premium": 95,
+      "F_premium_adv": 105,
+      "O_custom": 150,
+      "N_custom": 175
+    },
+    "materials": {
+      "polycarbonate_sv": 35,
+      "polycarbonate_multi": 35,
+      "trivex_sv": 56,
+      "trivex_multi": 60,
+      "hi_index_167_sv": 83,
+      "hi_index_167_multi": 98,
+      "hi_index_174_sv": 111,
+      "hi_index_174_multi": 118
+    },
+    "coverageStatus": {
+      "progressivesCovered": true,
+      "arCovered": true,
+      "photochromicsCovered": true,
+      "photochromicsNotCovered": false,
+      "polarizedNotCovered": false
+    }
+  },
+  "priceList": {
+    "LENS TYPES": [
+      {
+        "section": "LENS TYPES",
+        "productId": "sv",
+        "productName": "Single Vision",
+        "retail": 80,
+        "copay": 25,
+        "patientCost": 25,
+        "notes": [],
+        "isCashOnly": false,
+        "isNotCovered": false
+      },
+      {
+        "section": "LENS TYPES",
+        "productId": "eyezen",
+        "productName": "Eyezen",
+        "retail": 130,
+        "copay": 25,
+        "patientCost": 25,
+        "notes": [
+          "Progressive covered via EasyOptions"
+        ],
+        "isCashOnly": false,
+        "isNotCovered": false
+      },
+      {
+        "section": "LENS TYPES",
+        "productId": "bifocal",
+        "productName": "FT Bifocal",
+        "retail": 182,
+        "copay": 25,
+        "patientCost": 25,
+        "notes": [
+          "Progressive covered via EasyOptions"
+        ],
+        "isCashOnly": false,
+        "isNotCovered": false
+      },
+      {
+        "section": "LENS TYPES",
+        "productId": "trifocal",
+        "productName": "FT Trifocal",
+        "retail": 135,
+        "copay": 25,
+        "patientCost": 25,
+        "notes": [
+          "Progressive covered via EasyOptions"
+        ],
+        "isCashOnly": false,
+        "isNotCovered": false
+      },
+      {
+        "section": "LENS TYPES",
+        "productId": "comfortDRx",
+        "productName": "Varilux Comfort DRx",
+        "retail": 280,
+        "copay": 25,
+        "patientCost": 25,
+        "notes": [
+          "Progressive covered via EasyOptions"
+        ],
+        "isCashOnly": false,
+        "isNotCovered": false
+      },
+      {
+        "section": "LENS TYPES",
+        "productId": "comfortMax",
+        "productName": "Varilux Comfort Max",
+        "retail": 394,
+        "copay": 25,
+        "patientCost": 25,
+        "notes": [
+          "Progressive covered via EasyOptions"
+        ],
+        "isCashOnly": false,
+        "isNotCovered": false
+      },
+      {
+        "section": "LENS TYPES",
+        "productId": "variluxX",
+        "productName": "Varilux X",
+        "retail": 600,
+        "copay": 25,
+        "patientCost": 25,
+        "notes": [
+          "Progressive covered via EasyOptions"
+        ],
+        "isCashOnly": false,
+        "isNotCovered": false
+      },
+      {
+        "section": "LENS TYPES",
+        "productId": "neurolens_sv",
+        "productName": "Neurolens SV",
+        "retail": 400,
+        "copay": 0,
+        "patientCost": 400,
+        "notes": [
+          "Cash only - not covered by VSP"
+        ],
+        "isCashOnly": true,
+        "isNotCovered": false
+      },
+      {
+        "section": "LENS TYPES",
+        "productId": "neurolens_pal",
+        "productName": "Neurolens Progressive",
+        "retail": 700,
+        "copay": 0,
+        "patientCost": 700,
+        "notes": [
+          "Cash only - not covered by VSP"
+        ],
+        "isCashOnly": true,
+        "isNotCovered": false
+      }
+    ],
+    "MATERIALS": [
+      {
+        "section": "MATERIALS",
+        "productId": "poly",
+        "productName": "Polycarbonate",
+        "retail": 65,
+        "copay": 35,
+        "patientCost": 35,
+        "svCopay": 35,
+        "multiCopay": 35,
+        "hasVariance": false,
+        "notes": [
+          "FREE under 18"
+        ],
+        "isCashOnly": false,
+        "isNotCovered": false
+      },
+      {
+        "section": "MATERIALS",
+        "productId": "trivex",
+        "productName": "Trivex",
+        "retail": 75,
+        "copay": 56,
+        "patientCost": 56,
+        "svCopay": 56,
+        "multiCopay": 47,
+        "hasVariance": true,
+        "notes": [],
+        "isCashOnly": false,
+        "isNotCovered": false
+      },
+      {
+        "section": "MATERIALS",
+        "productId": "hiIndex167",
+        "productName": "1.67 High Index",
+        "retail": 130,
+        "copay": 83,
+        "patientCost": 83,
+        "svCopay": 83,
+        "multiCopay": 78,
+        "hasVariance": true,
+        "notes": [],
+        "isCashOnly": false,
+        "isNotCovered": false
+      },
+      {
+        "section": "MATERIALS",
+        "productId": "ultraHi172",
+        "productName": "1.72 Ultra High Index",
+        "retail": 150,
+        "copay": 111,
+        "patientCost": 111,
+        "svCopay": 111,
+        "multiCopay": 125,
+        "hasVariance": true,
+        "notes": [],
+        "isCashOnly": false,
+        "isNotCovered": false
+      }
+    ],
+    "AR COATINGS": [
+      {
+        "section": "AR COATINGS",
+        "productId": "crizalEZPro",
+        "productName": "Crizal EZ Pro",
+        "retail": 111,
+        "copay": 68,
+        "patientCost": 68,
+        "notes": [],
+        "isCashOnly": false,
+        "isNotCovered": false
+      },
+      {
+        "section": "AR COATINGS",
+        "productId": "crizalRock",
+        "productName": "Crizal Rock",
+        "retail": 158,
+        "copay": 85,
+        "patientCost": 85,
+        "notes": [],
+        "isCashOnly": false,
+        "isNotCovered": false
+      },
+      {
+        "section": "AR COATINGS",
+        "productId": "crizalSapphire",
+        "productName": "Crizal Sapphire HR",
+        "retail": 187,
+        "copay": 85,
+        "patientCost": 85,
+        "notes": [],
+        "isCashOnly": false,
+        "isNotCovered": false
+      },
+      {
+        "section": "AR COATINGS",
+        "productId": "crizalSunShield",
+        "productName": "Crizal SunShield",
+        "retail": 135,
+        "copay": 68,
+        "patientCost": 68,
+        "notes": [],
+        "isCashOnly": false,
+        "isNotCovered": false
+      },
+      {
+        "section": "AR COATINGS",
+        "productId": "neurolens_premium",
+        "productName": "Neurolens Premium",
+        "retail": 180,
+        "copay": 0,
+        "patientCost": 180,
+        "notes": [
+          "Cash only"
+        ],
+        "isCashOnly": true,
+        "isNotCovered": false
+      },
+      {
+        "section": "AR COATINGS",
+        "productId": "neurolens_blue",
+        "productName": "Neurolens Blue",
+        "retail": 180,
+        "copay": 0,
+        "patientCost": 180,
+        "notes": [
+          "Cash only"
+        ],
+        "isCashOnly": true,
+        "isNotCovered": false
+      }
+    ],
+    "PHOTOCHROMICS": [
+      {
+        "section": "PHOTOCHROMICS",
+        "productId": "genS",
+        "productName": "Transitions Gen S",
+        "retail": 160,
+        "copay": 0,
+        "patientCost": 0,
+        "notes": [
+          "Photochromic covered via EasyOptions"
+        ],
+        "isCashOnly": false,
+        "isNotCovered": false
+      },
+      {
+        "section": "PHOTOCHROMICS",
+        "productId": "xtraActive",
+        "productName": "Transitions XtrActive",
+        "retail": 160,
+        "copay": 0,
+        "patientCost": 0,
+        "notes": [
+          "Photochromic covered via EasyOptions"
+        ],
+        "isCashOnly": false,
+        "isNotCovered": false
+      }
+    ],
+    "ADD-ONS": [
+      {
+        "section": "ADD-ONS",
+        "productId": "uv",
+        "productName": "UV Treatment",
+        "retail": 16,
+        "copay": 0,
+        "patientCost": 0,
+        "hasVariance": false,
+        "notes": [],
+        "isCashOnly": false,
+        "isNotCovered": false
+      },
+      {
+        "section": "ADD-ONS",
+        "productId": "tint",
+        "productName": "Tint",
+        "retail": 30,
+        "copay": 15,
+        "patientCost": 15,
+        "svCopay": 15,
+        "multiCopay": 15,
+        "hasVariance": false,
+        "notes": [],
+        "isCashOnly": false,
+        "isNotCovered": false
+      },
+      {
+        "section": "ADD-ONS",
+        "productId": "polarized",
+        "productName": "Polarized",
+        "retail": 180,
+        "copay": 57,
+        "patientCost": 57,
+        "svCopay": 57,
+        "multiCopay": 57,
+        "hasVariance": false,
+        "notes": [],
+        "isCashOnly": false,
+        "isNotCovered": false
+      },
+      {
+        "section": "ADD-ONS",
+        "productId": "mirror",
+        "productName": "Mirror",
+        "retail": 55,
+        "copay": 0,
+        "patientCost": 0,
+        "hasVariance": false,
+        "notes": [],
+        "isCashOnly": false,
+        "isNotCovered": false
+      },
+      {
+        "section": "ADD-ONS",
+        "productId": "essBlue",
+        "productName": "Essential Blue",
+        "retail": 40,
+        "copay": 15,
+        "patientCost": 15,
+        "hasVariance": false,
+        "notes": [],
+        "isCashOnly": false,
+        "isNotCovered": false
+      },
+      {
+        "section": "ADD-ONS",
+        "productId": "oversize",
+        "productName": "Oversize Lenses",
+        "retail": 30,
+        "copay": 0,
+        "patientCost": 0,
+        "hasVariance": false,
+        "notes": [],
+        "isCashOnly": false,
+        "isNotCovered": false
+      },
+      {
+        "section": "ADD-ONS",
+        "productId": "prism",
+        "productName": "Prism (per D)",
+        "retail": 15,
+        "copay": 0,
+        "patientCost": 0,
+        "hasVariance": false,
+        "notes": [],
+        "isCashOnly": false,
+        "isNotCovered": false
+      },
+      {
+        "section": "ADD-ONS",
+        "productId": "rollPolish",
+        "productName": "Roll & Polish",
+        "retail": 30,
+        "copay": 16,
+        "patientCost": 16,
+        "hasVariance": false,
+        "notes": [],
+        "isCashOnly": false,
+        "isNotCovered": false
+      }
+    ],
+    "MOUNT FEES": [
+      {
+        "section": "MOUNT FEES",
+        "productId": "semiRimless",
+        "productName": "Semi-Rimless",
+        "retail": 35,
+        "copay": 16,
+        "patientCost": 16,
+        "notes": [],
+        "isCashOnly": false,
+        "isNotCovered": false
+      },
+      {
+        "section": "MOUNT FEES",
+        "productId": "rimless",
+        "productName": "Rimless",
+        "retail": 45,
+        "copay": 30,
+        "patientCost": 30,
+        "notes": [],
+        "isCashOnly": false,
+        "isNotCovered": false
+      }
+    ]
+  },
+  "summary": {
+    "totalProducts": 31,
+    "coveredProducts": 27,
+    "cashOnlyProducts": 4,
+    "notCoveredProducts": 0
+  }
+}

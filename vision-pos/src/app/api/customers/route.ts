@@ -4,6 +4,7 @@ import { prisma } from '@/lib/prisma'
 /**
  * Build smart search conditions for customer lookup
  * Supports:
+ * - Comma format: "cl, a" or "clayton, a" → lastName prefix, firstName prefix
  * - Multi-word: "susan mccrae" → matches first+last in either order
  * - Short queries: "mcc" → startsWith on lastName, then firstName
  * - Initial + name: "j smith" or "smi j" → finds "John Smith"
@@ -11,6 +12,30 @@ import { prisma } from '@/lib/prisma'
  */
 function buildSmartSearchConditions(searchTerm: string) {
   const trimmed = searchTerm.trim().toLowerCase()
+
+  // Check for comma-separated format: "lastname, firstname" or "ln, fn"
+  if (trimmed.includes(',')) {
+    const parts = trimmed.split(',').map(p => p.trim()).filter(p => p.length > 0)
+    if (parts.length >= 1) {
+      const lastNamePrefix = parts[0]
+      const firstNamePrefix = parts[1] || ''
+
+      // Build condition: lastName starts with first part, firstName starts with second part
+      if (firstNamePrefix) {
+        return {
+          AND: [
+            { lastName: { startsWith: lastNamePrefix, mode: 'insensitive' as const } },
+            { firstName: { startsWith: firstNamePrefix, mode: 'insensitive' as const } }
+          ]
+        }
+      } else {
+        // Only lastName prefix provided (e.g., "clayton,")
+        return {
+          lastName: { startsWith: lastNamePrefix, mode: 'insensitive' as const }
+        }
+      }
+    }
+  }
 
   // Split into words and filter empty
   const words = trimmed.split(/\s+/).filter(w => w.length > 0)

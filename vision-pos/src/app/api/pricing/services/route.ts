@@ -1,15 +1,14 @@
 /**
  * GET /api/pricing/services
  *
- * Returns all exam and fitting services with prices from customer_price_lists.
+ * Returns all exam and fitting services with prices from patient_price_lists.
  *
- * ARCHITECTURE: All prices come from customer_price_lists table (the single source of truth).
- * NO real-time calculation - prices are pre-computed by generatePriceMapping().
+ * ARCHITECTURE: All prices come from patient_price_lists table (the single source of truth).
+ * Uses the unified insurance_authorizations table.
  */
 
 import { NextRequest, NextResponse } from 'next/server'
 import { prisma } from '@/lib/prisma'
-import { getActiveAuthorizationForCustomer } from '@/lib/services/authorization-service'
 
 interface PricedService {
   sku: string
@@ -29,32 +28,18 @@ interface PricedService {
   tierSpectera: string | null
 }
 
-// Helper to fetch tier codes for services from carrier_tiers
-async function getServiceTierMappings(serviceIds: string[]): Promise<Map<string, { vsp: string | null; eyemed: string | null; spectera: string | null }>> {
-  const tiers = await prisma.carrierTier.findMany({
-    where: {
-      productType: 'SERVICE',
-      productId: { in: serviceIds }
-    },
-    select: {
-      productId: true,
-      carrier: true,
-      tierCode: true
-    }
-  })
-
+// Helper to get tier codes from service_prices fields (tierVsp, tierEyemed, tierSpectera)
+function getServiceTierMappingsFromServices(
+  services: Array<{ id: string; tierVsp: string | null; tierEyemed: string | null; tierSpectera: string | null }>
+): Map<string, { vsp: string | null; eyemed: string | null; spectera: string | null }> {
   const result = new Map<string, { vsp: string | null; eyemed: string | null; spectera: string | null }>()
 
-  for (const tier of tiers) {
-    const existing = result.get(tier.productId) || { vsp: null, eyemed: null, spectera: null }
-    if (tier.carrier === 'VSP') {
-      existing.vsp = tier.tierCode
-    } else if (tier.carrier === 'EYEMED') {
-      existing.eyemed = tier.tierCode
-    } else if (tier.carrier === 'SPECTERA') {
-      existing.spectera = tier.tierCode
-    }
-    result.set(tier.productId, existing)
+  for (const service of services) {
+    result.set(service.id, {
+      vsp: service.tierVsp,
+      eyemed: service.tierEyemed,
+      spectera: service.tierSpectera
+    })
   }
 
   return result
@@ -66,11 +51,39 @@ export async function GET(request: NextRequest) {
     const customerId = searchParams.get('customerId')
     const category = searchParams.get('category') // 'exam', 'fitting', or 'all'
 
-    // Get carrier info from authorization
+    // Get carrier info and copays from unified authorization table
     let carrier: string | null = null
+    let examCopay: number | null = null
+    let clExamCopay: number | null = null
     if (customerId) {
-      const authResult = await getActiveAuthorizationForCustomer(customerId)
-      carrier = authResult?.carrier?.toUpperCase() || null
+      const auth = await prisma.insuranceAuthorization.findFirst({
+        where: {
+          customerId,
+          isActive: true,
+        },
+        orderBy: { createdAt: 'desc' },
+      })
+      carrier = auth?.carrier?.toUpperCase() || null
+      examCopay = auth?.examCopay ? Number(auth.examCopay) : null
+      clExamCopay = auth?.clExamCopay ? Number(auth.clExamCopay) : null
+
+      // Use carrier-specific defaults if copay not extracted
+      if (examCopay === null && carrier) {
+        const defaultExamCopays: Record<string, number> = {
+          'VSP': 10,
+          'EYEMED': 10,
+          'SPECTERA': 15,
+        }
+        examCopay = defaultExamCopays[carrier] ?? null
+      }
+      if (clExamCopay === null && carrier) {
+        const defaultClCopays: Record<string, number> = {
+          'VSP': 60,
+          'EYEMED': 0, // Often covered
+          'SPECTERA': 0,
+        }
+        clExamCopay = defaultClCopays[carrier] ?? null
+      }
     }
 
     // Fetch services from database - only those visible in POS
@@ -90,15 +103,14 @@ export async function GET(request: NextRequest) {
       orderBy: [{ category: 'asc' }, { posDisplayOrder: 'asc' }, { name: 'asc' }]
     })
 
-    // Fetch tier mappings from carrier_tiers table
-    const serviceIds = services.map(s => s.id)
-    const tierMappings = await getServiceTierMappings(serviceIds)
+    // Get tier mappings from service fields (tierVsp, tierEyemed, tierSpectera)
+    const tierMappings = getServiceTierMappingsFromServices(services)
 
-    // Fetch pre-computed prices from customer_price_lists
+    // Fetch pre-computed prices from patient_price_lists
     let priceMap = new Map<string, { finalPrice: number | null; tier: string | null; needsTierAssignment: boolean }>()
 
     if (customerId) {
-      const priceLists = await prisma.customerPriceList.findMany({
+      const priceLists = await prisma.patientPriceList.findMany({
         where: {
           customerId,
           active: true,
@@ -108,7 +120,7 @@ export async function GET(request: NextRequest) {
 
       for (const pl of priceLists) {
         priceMap.set(pl.productId, {
-          finalPrice: pl.customPrice ?? pl.finalPrice,
+          finalPrice: pl.finalPrice ? Number(pl.finalPrice) : null,
           tier: pl.tier,
           needsTierAssignment: pl.needsTierAssignment || false
         })
@@ -155,11 +167,24 @@ export async function GET(request: NextRequest) {
         pricingMethod = 'retail'
         notes = 'No customer selected'
       } else {
-        // Customer but no price entry - should not happen if prices are generated
-        patientPays = service.retailPrice
-        pricingMethod = 'retail'
-        notes = 'No price in customer price list - run price generation'
-        needsTierAssignment = true
+        // Customer but no price entry - use copay from authorization if available
+        if (service.category === 'EXAM' && examCopay !== null) {
+          // Use exam copay from insurance authorization
+          patientPays = examCopay
+          pricingMethod = 'copay'
+          notes = 'Exam copay from insurance authorization'
+        } else if (service.category === 'CONTACT_LENS_FIT' && clExamCopay !== null) {
+          // Use CL fitting copay from insurance authorization
+          patientPays = clExamCopay
+          pricingMethod = 'copay'
+          notes = 'CL fitting copay from insurance authorization'
+        } else {
+          // Fall back to retail
+          patientPays = service.retailPrice
+          pricingMethod = 'retail'
+          notes = 'No price in customer price list - run price generation'
+          needsTierAssignment = true
+        }
       }
 
       const insurancePays = Math.max(0, service.retailPrice - patientPays)

@@ -28,7 +28,6 @@ interface QuoteReviewProps {
 }
 
 export function QuoteReviewLayer({ onEdit, onFinalize, onBack }: QuoteReviewProps) {
-  const [termsAccepted, setTermsAccepted] = useState(false)
   const [isSubmitting, setIsSubmitting] = useState(false)
   const [isSavingDraft, setIsSavingDraft] = useState(false)
   const [isSendingEmail, setIsSendingEmail] = useState(false)
@@ -711,20 +710,6 @@ export function QuoteReviewLayer({ onEdit, onFinalize, onBack }: QuoteReviewProp
 
           <Separator className="bg-white/20" />
 
-          {/* Terms */}
-          <div className="flex items-center space-x-3">
-            <input
-              type="checkbox"
-              id="terms"
-              checked={termsAccepted}
-              onChange={(e) => setTermsAccepted(e.target.checked)}
-              className="rounded border-white/30 bg-white/10"
-            />
-            <label htmlFor="terms" className="text-sm text-white/80">
-              I accept the terms and authorize insurance claim processing
-            </label>
-          </div>
-
           {/* Main Actions */}
           <div className="flex gap-3">
             {onBack && (
@@ -741,7 +726,7 @@ export function QuoteReviewLayer({ onEdit, onFinalize, onBack }: QuoteReviewProp
             <Button
               className="flex-1"
               size="lg"
-              disabled={!termsAccepted || !hasItems || isSubmitting || !customerId}
+              disabled={!hasItems || isSubmitting || !customerId}
               onClick={handleFinalize}
             >
               {isSubmitting ? (

@@ -1,9 +1,11 @@
 'use client'
 
+import { useState } from 'react'
 import { usePOSStore } from '@/stores/pos-store'
 import { Button } from '@/components/ui/button'
 import { Badge } from '@/components/ui/badge'
 import { Separator } from '@/components/ui/separator'
+import { Input } from '@/components/ui/input'
 import { cn } from '@/lib/utils'
 import {
   Trash2,
@@ -11,6 +13,9 @@ import {
   ShoppingCart,
   Tag,
   Sparkles,
+  Pencil,
+  Check,
+  X,
 } from 'lucide-react'
 
 /**
@@ -21,10 +26,40 @@ export default function OrderSummary() {
   const {
     quote,
     removeLineItem,
+    updateLineItem,
     addPair,
   } = usePOSStore()
 
   const { pairs = [], lineItems = [], activePairId, subtotal, insuranceSavings, discountTotal, tax, total } = quote || {}
+
+  // Price editing state
+  const [editingItemId, setEditingItemId] = useState<string | null>(null)
+  const [editPrice, setEditPrice] = useState('')
+
+  const handleStartEdit = (itemId: string, currentPrice: number) => {
+    setEditingItemId(itemId)
+    setEditPrice(currentPrice.toFixed(2))
+  }
+
+  const handleSavePrice = (itemId: string, retailPrice: number) => {
+    const newPrice = parseFloat(editPrice)
+    if (!isNaN(newPrice) && newPrice >= 0) {
+      // Calculate new insurance pays (retail - patient pays, but not less than 0)
+      const newInsurancePays = Math.max(0, retailPrice - newPrice)
+      updateLineItem(itemId, {
+        patientPays: newPrice,
+        insurancePays: newInsurancePays,
+        isManualPrice: true,
+      })
+    }
+    setEditingItemId(null)
+    setEditPrice('')
+  }
+
+  const handleCancelEdit = () => {
+    setEditingItemId(null)
+    setEditPrice('')
+  }
 
   // Group line items by pair
   const itemsByPair = pairs.map((pair) => ({
@@ -99,24 +134,70 @@ export default function OrderSummary() {
                             </div>
                           </div>
 
-                          {/* Pricing */}
+                          {/* Pricing - Editable */}
                           <div className="flex items-center gap-2 mt-1">
-                            {item.insurancePays > 0 ? (
-                              <>
-                                <span className="font-semibold text-emerald-400 text-sm">
-                                  ${item.patientPays.toFixed(2)}
-                                </span>
-                                <span className="text-xs text-white/40 line-through">
-                                  ${item.retailPrice.toFixed(2)}
-                                </span>
-                              </>
+                            {editingItemId === item.id ? (
+                              // Edit mode
+                              <div className="flex items-center gap-1">
+                                <span className="text-white/60 text-sm">$</span>
+                                <Input
+                                  type="number"
+                                  step="0.01"
+                                  min="0"
+                                  value={editPrice}
+                                  onChange={(e) => setEditPrice(e.target.value)}
+                                  className="w-20 h-6 text-sm px-1 py-0 bg-white/10 border-white/30 text-white"
+                                  autoFocus
+                                  onKeyDown={(e) => {
+                                    if (e.key === 'Enter') handleSavePrice(item.id, item.retailPrice)
+                                    if (e.key === 'Escape') handleCancelEdit()
+                                  }}
+                                />
+                                <button
+                                  onClick={() => handleSavePrice(item.id, item.retailPrice)}
+                                  className="p-1 hover:bg-white/10 rounded"
+                                >
+                                  <Check className="h-3 w-3 text-emerald-400" />
+                                </button>
+                                <button
+                                  onClick={handleCancelEdit}
+                                  className="p-1 hover:bg-white/10 rounded"
+                                >
+                                  <X className="h-3 w-3 text-red-400" />
+                                </button>
+                              </div>
                             ) : (
-                              <span className="font-medium text-sm text-white">
-                                ${item.patientPays.toFixed(2)}
-                              </span>
+                              // Display mode
+                              <>
+                                <button
+                                  onClick={() => handleStartEdit(item.id, item.patientPays)}
+                                  className={cn(
+                                    'flex items-center gap-1 hover:bg-white/10 px-1 py-0.5 rounded transition-colors',
+                                    item.insurancePays > 0 ? 'text-emerald-400' : 'text-white'
+                                  )}
+                                  title="Click to edit price"
+                                >
+                                  <span className="font-semibold text-sm">
+                                    ${item.patientPays.toFixed(2)}
+                                  </span>
+                                  <Pencil className="h-3 w-3 opacity-0 group-hover:opacity-50" />
+                                </button>
+
+                                {item.insurancePays > 0 && (
+                                  <span className="text-xs text-white/40 line-through">
+                                    ${item.retailPrice.toFixed(2)}
+                                  </span>
+                                )}
+
+                                {item.isManualPrice && (
+                                  <Badge variant="outline" className="text-[10px] px-1 border-orange-400/50 text-orange-400 bg-orange-500/10">
+                                    Adjusted
+                                  </Badge>
+                                )}
+                              </>
                             )}
 
-                            {item.tier && (
+                            {item.tier && editingItemId !== item.id && (
                               <Badge variant="outline" className="text-[10px] px-1 border-white/30 text-white/60">
                                 {item.tier}
                               </Badge>

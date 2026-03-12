@@ -1,0 +1,125 @@
+{
+  "export_date": "2026-01-15",
+  "summary": {
+    "total_patients": 5,
+    "carriers": ["EYEMED"],
+    "pricing_methods": {
+      "by_tier": "Correct - using specific copay from authorization",
+      "ins_discount": "Correct - using DISCOUNT_XX% benefit from authorization",
+      "cash_only": "Correct - product not covered by insurance",
+      "uc_discount": "PROBLEM - fallback 20% discount (copay field is NULL)"
+    }
+  },
+  "known_issues": [
+    "Products with tier_code 'blue_light' should map to copay field 'blueLight' but it's NULL in most auths",
+    "Products with tier_code 'mirror' should map to copay field 'mirror' but it's NULL in all auths",
+    "Products with tier_code 'edging' should map to copay field 'edging' but it's NULL in all auths",
+    "Products with tier_code 'trivex' should map to copay field 'trivex' but it's NULL in most auths",
+    "Products with tier_code 'high_index_167' should map to copay field 'highIndex167' but it's NULL in most auths",
+    "Products with tier_code 'polarized' have DISCOUNT_XX in auth but precompute uses uc_discount instead",
+    "AR coatings with tier_code 'tier_2'/'tier_3' map to arTier2/arTier3 which are often NULL"
+  ],
+  "patients": [
+    {
+      "customer_name": "Juan Abadia",
+      "customer_id": "cust_99896041",
+      "carrier": "EYEMED",
+      "plan_name": "EYEMED HEALTHY INDIVID-MAY-MO",
+      "all_other_fallback": "DISCOUNT_30",
+      "products": [
+        {"product_name": "Essential Blue Series", "category": "addon", "tier_code": "blue_light", "retail_price": 30.00, "patient_pays": 24.00, "pricing_method": "uc_discount", "needs_review": true, "expected_copay_field": "blueLight", "copay_in_auth": null},
+        {"product_name": "Light Filter (VSP LF)", "category": "addon", "tier_code": "all_other_lens_options", "retail_price": 15.00, "patient_pays": 12.00, "pricing_method": "ins_discount", "needs_review": false},
+        {"product_name": "Mirror - Solid Color", "category": "addon", "tier_code": "mirror", "retail_price": 54.00, "patient_pays": 43.20, "pricing_method": "uc_discount", "needs_review": true, "expected_copay_field": "mirror", "copay_in_auth": null},
+        {"product_name": "Polarized", "category": "addon", "tier_code": "polarized", "retail_price": 155.70, "patient_pays": 124.56, "pricing_method": "uc_discount", "needs_review": true, "expected_copay_field": "polarized", "copay_in_auth": null},
+        {"product_name": "Roll & Polish", "category": "addon", "tier_code": "edging", "retail_price": 14.40, "patient_pays": 11.52, "pricing_method": "uc_discount", "needs_review": true, "expected_copay_field": "edging", "copay_in_auth": null},
+        {"product_name": "Solid Tint - CR39/Poly CLR Lens", "category": "addon", "tier_code": "tint", "retail_price": 17.80, "patient_pays": 12.00, "pricing_method": "by_tier", "needs_review": false, "copay_in_auth": 12},
+        {"product_name": "UV Protection", "category": "addon", "tier_code": "uv_treatment", "retail_price": 15.00, "patient_pays": 12.00, "pricing_method": "by_tier", "needs_review": false, "copay_in_auth": 12},
+        {"product_name": "Crizal Easy Pro", "category": "ar_coating", "tier_code": "tier_2", "retail_price": 147.50, "patient_pays": 118.00, "pricing_method": "uc_discount", "needs_review": true, "expected_copay_field": "arTier2", "copay_in_auth": null},
+        {"product_name": "Crizal Rock", "category": "ar_coating", "tier_code": "ar_tier_3", "retail_price": 145.00, "patient_pays": 116.00, "pricing_method": "ins_discount", "needs_review": false},
+        {"product_name": "Crizal Sapphire HR", "category": "ar_coating", "tier_code": "tier_3", "retail_price": 180.00, "patient_pays": 144.00, "pricing_method": "uc_discount", "needs_review": true, "expected_copay_field": "arTier3", "copay_in_auth": null},
+        {"product_name": "Hi-Index 1.67", "category": "material", "tier_code": "high_index_167", "retail_price": 125.00, "patient_pays": 100.00, "pricing_method": "uc_discount", "needs_review": true, "expected_copay_field": "highIndex167", "copay_in_auth": null},
+        {"product_name": "Polycarbonate", "category": "material", "tier_code": "polycarbonate", "retail_price": 65.00, "patient_pays": 35.00, "pricing_method": "by_tier", "needs_review": false, "copay_in_auth": 35},
+        {"product_name": "Trivex", "category": "material", "tier_code": "trivex", "retail_price": 85.00, "patient_pays": 68.00, "pricing_method": "uc_discount", "needs_review": true, "expected_copay_field": "trivex", "copay_in_auth": null},
+        {"product_name": "Transitions GEN S", "category": "photochromic", "tier_code": "photochromic", "retail_price": 175.00, "patient_pays": 140.00, "pricing_method": "uc_discount", "needs_review": true, "expected_copay_field": "photochromic", "copay_in_auth": "DISCOUNT_30"},
+        {"product_name": "Varilux Comfort DRx", "category": "progressive", "tier_code": "tier_3", "retail_price": 254.10, "patient_pays": 203.28, "pricing_method": "uc_discount", "needs_review": true, "expected_copay_field": "progressiveTier3", "copay_in_auth": null},
+        {"product_name": "Varilux Comfort Max", "category": "progressive", "tier_code": "tier_4", "retail_price": 393.30, "patient_pays": 314.64, "pricing_method": "uc_discount", "needs_review": true, "expected_copay_field": "progressiveTier4", "copay_in_auth": null},
+        {"product_name": "Single Vision", "category": "single_vision", "tier_code": "standard_sv", "retail_price": 80.40, "patient_pays": 55.00, "pricing_method": "by_tier", "needs_review": false}
+      ]
+    },
+    {
+      "customer_name": "Marcell Bailey Ebdrup",
+      "customer_id": "cust_93800643",
+      "carrier": "EYEMED",
+      "plan_name": "Orlando Health, Inc",
+      "all_other_fallback": null,
+      "products": [
+        {"product_name": "Polycarbonate", "category": "material", "tier_code": "polycarbonate", "retail_price": 65.00, "patient_pays": 0.00, "pricing_method": "by_tier", "needs_review": false, "copay_in_auth": 0},
+        {"product_name": "Transitions GEN S", "category": "photochromic", "tier_code": "photochromic", "retail_price": 175.00, "patient_pays": 0.00, "pricing_method": "by_tier", "needs_review": false, "copay_in_auth": 0},
+        {"product_name": "Varilux Comfort DRx", "category": "progressive", "tier_code": "tier_3", "retail_price": 254.10, "patient_pays": 55.00, "pricing_method": "by_tier", "needs_review": false, "copay_in_auth": 55},
+        {"product_name": "Varilux Comfort Max", "category": "progressive", "tier_code": "tier_4", "retail_price": 393.30, "patient_pays": 185.00, "pricing_method": "by_tier", "needs_review": false, "copay_in_auth": 185},
+        {"product_name": "Crizal Sapphire HR", "category": "ar_coating", "tier_code": "tier_3", "retail_price": 180.00, "patient_pays": 55.00, "pricing_method": "by_tier", "needs_review": false, "copay_in_auth": 100},
+        {"product_name": "Single Vision", "category": "single_vision", "tier_code": "standard_sv", "retail_price": 80.40, "patient_pays": 10.00, "pricing_method": "by_tier", "needs_review": false}
+      ],
+      "note": "This patient has good extraction - most copays are in the auth JSON"
+    },
+    {
+      "customer_name": "Jacquelyn Burke",
+      "customer_id": "cust_134599062",
+      "carrier": "EYEMED",
+      "plan_name": "Humana VCP",
+      "all_other_fallback": null,
+      "products": [
+        {"product_name": "Polycarbonate", "category": "material", "tier_code": "polycarbonate", "retail_price": 65.00, "patient_pays": 25.00, "pricing_method": "by_tier", "needs_review": false, "copay_in_auth": 25},
+        {"product_name": "Hi-Index 1.67", "category": "material", "tier_code": "high_index_167", "retail_price": 125.00, "patient_pays": 95.00, "pricing_method": "by_tier", "needs_review": false, "copay_in_auth": 95},
+        {"product_name": "Polarized", "category": "addon", "tier_code": "polarized", "retail_price": 155.70, "patient_pays": 66.00, "pricing_method": "by_tier", "needs_review": false, "copay_in_auth": 66},
+        {"product_name": "Transitions GEN S", "category": "photochromic", "tier_code": "photochromic", "retail_price": 175.00, "patient_pays": 88.00, "pricing_method": "by_tier", "needs_review": false, "copay_in_auth": 88},
+        {"product_name": "Varilux Comfort DRx", "category": "progressive", "tier_code": "tier_3", "retail_price": 254.10, "patient_pays": 145.00, "pricing_method": "by_tier", "needs_review": false, "copay_in_auth": 145},
+        {"product_name": "Varilux Comfort Max", "category": "progressive", "tier_code": "tier_4", "retail_price": 393.30, "patient_pays": 185.00, "pricing_method": "by_tier", "needs_review": false, "copay_in_auth": 185}
+      ],
+      "note": "This patient has good extraction - most copays are in the auth JSON"
+    },
+    {
+      "customer_name": "Daniel Dasilveira",
+      "customer_id": "cminudpyls7ymp5h5ta",
+      "carrier": "EYEMED",
+      "plan_name": "Blue View LG GA FI VOL",
+      "all_other_fallback": null,
+      "products": [
+        {"product_name": "Polycarbonate", "category": "material", "tier_code": "polycarbonate", "retail_price": 65.00, "patient_pays": 40.00, "pricing_method": "by_tier", "needs_review": false, "copay_in_auth": 40},
+        {"product_name": "Transitions GEN S", "category": "photochromic", "tier_code": "photochromic", "retail_price": 175.00, "patient_pays": 75.00, "pricing_method": "by_tier", "needs_review": false, "copay_in_auth": 75},
+        {"product_name": "Varilux Comfort DRx", "category": "progressive", "tier_code": "tier_3", "retail_price": 254.10, "patient_pays": 130.00, "pricing_method": "by_tier", "needs_review": false, "copay_in_auth": 130},
+        {"product_name": "Varilux Comfort Max", "category": "progressive", "tier_code": "tier_4", "retail_price": 393.30, "patient_pays": 85.00, "pricing_method": "by_tier", "needs_review": false, "copay_in_auth": 85},
+        {"product_name": "Single Vision", "category": "single_vision", "tier_code": "standard_sv", "retail_price": 80.40, "patient_pays": 20.00, "pricing_method": "by_tier", "needs_review": false}
+      ],
+      "note": "This patient has good extraction for main copays"
+    },
+    {
+      "customer_name": "Christopher Irvine",
+      "customer_id": "cust_123160600",
+      "carrier": "EYEMED",
+      "plan_name": "BVV CA ACA SG Off Exch WGS",
+      "all_other_fallback": "DISCOUNT_20",
+      "products": [
+        {"product_name": "Essential Blue Series", "category": "addon", "tier_code": "blue_light", "retail_price": 30.00, "patient_pays": 24.00, "pricing_method": "uc_discount", "needs_review": true, "expected_copay_field": "blueLight", "copay_in_auth": null},
+        {"product_name": "Polarized", "category": "addon", "tier_code": "polarized", "retail_price": 155.70, "patient_pays": 124.56, "pricing_method": "uc_discount", "needs_review": true, "expected_copay_field": "polarized", "copay_in_auth": "DISCOUNT_20"},
+        {"product_name": "Polycarbonate", "category": "material", "tier_code": "polycarbonate", "retail_price": 65.00, "patient_pays": 40.00, "pricing_method": "by_tier", "needs_review": false, "copay_in_auth": 40},
+        {"product_name": "Hi-Index 1.67", "category": "material", "tier_code": "high_index_167", "retail_price": 125.00, "patient_pays": 100.00, "pricing_method": "uc_discount", "needs_review": true, "expected_copay_field": "highIndex167", "copay_in_auth": null},
+        {"product_name": "Trivex", "category": "material", "tier_code": "trivex", "retail_price": 85.00, "patient_pays": 68.00, "pricing_method": "uc_discount", "needs_review": true, "expected_copay_field": "trivex", "copay_in_auth": null},
+        {"product_name": "Transitions GEN S", "category": "photochromic", "tier_code": "photochromic", "retail_price": 175.00, "patient_pays": 75.00, "pricing_method": "by_tier", "needs_review": false, "copay_in_auth": 75}
+      ],
+      "note": "This patient has DISCOUNT_20 allOtherLensOptions but precompute still uses uc_discount for some products"
+    }
+  ],
+  "analysis": {
+    "root_causes": [
+      "1. GPT extraction is not capturing all copay fields (blueLight, mirror, edging, trivex, highIndex167 are often NULL)",
+      "2. Precompute service doesn't fall back to allOtherLensOptions when specific copay is NULL",
+      "3. For products where copay_in_auth is DISCOUNT_XX string, precompute is using uc_discount instead of ins_discount"
+    ],
+    "recommended_fixes": [
+      "1. Update GPT extraction prompt to explicitly extract these fields from EyeMed docs",
+      "2. Fix precompute service to check allOtherLensOptions when specific copay is NULL",
+      "3. Fix precompute service to properly handle DISCOUNT_XX strings in copay values"
+    ]
+  }
+}

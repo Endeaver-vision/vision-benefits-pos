@@ -7,7 +7,7 @@ import { Badge } from '@/components/ui/badge'
 import { Check, Loader2, Shield, AlertTriangle, Search, X, Glasses, Wallet } from 'lucide-react'
 import { Input } from '@/components/ui/input'
 import { Alert, AlertDescription } from '@/components/ui/alert'
-import { useQuotePricingContext } from '@/contexts/quote-pricing-context'
+import { useQuotePricingContext, useAuthorizationPricing } from '@/contexts/quote-pricing-context'
 
 interface Product {
   id: string
@@ -99,6 +99,18 @@ export function EyeglassesLayerSimple({ className, onNext, onBack, onSkipSecondP
   // Show either/or warning for declining balance plans when contacts are already using the allowance
   const showEitherOrWarning = isDecliningBalancePlan && hasEitherOrRestriction && contactLenses?.enabled && materialsConflict.activeBenefit === 'contacts'
 
+  // VSP Matrix pricing helper
+  const {
+    carrier,
+    materialsCopay,
+    getVspMatrixPrice,
+    getVspSvMaterialPrice,
+    getVspAddonPrice,
+  } = useAuthorizationPricing()
+
+  // Check if this is a VSP customer
+  const isVspCustomer = carrier?.toUpperCase() === 'VSP'
+
   // Products from database
   const [products, setProducts] = useState<ProductsData | null>(null)
 
@@ -173,6 +185,168 @@ export function EyeglassesLayerSimple({ className, onNext, onBack, onSkipSecondP
       totalSavings: insuranceTotal,
     }
   }, [existingEyeglassItems])
+
+  // VSP Matrix-based patient total calculation
+  // For VSP, progressive + material pricing uses combined codes (e.g., "NJ" = $125)
+  // NOT the additive approach (NA $175 + AJ $118 = $293)
+  const vspMatrixTotal = useMemo(() => {
+    if (!isVspCustomer || !products) return null
+
+    // Get selected products
+    const selectedLens = products.lensType?.find(p => p.id === lensType)
+    const selectedMaterial = products.lensMaterial?.find(p => p.id === lensMaterial)
+    const selectedAr = products.arCoating?.find(p => p.id === arCoating)
+    const selectedTrans = products.transitions?.find(p => p.id === transitions)
+    const selectedPolar = products.polarized?.find(p => p.id === polarized)
+
+    let total = 0
+    const breakdown: Record<string, { name: string; copay: number; code?: string }> = {}
+
+    // Materials copay (always added for VSP)
+    if (materialsCopay !== null) {
+      total += materialsCopay
+      breakdown['materialsCopay'] = { name: 'Materials Copay', copay: materialsCopay }
+    }
+
+    // Check if it's Single Vision or Progressive
+    const isSV = selectedLens?.pricingCategory === 'SINGLE_VISION'
+    const isProgressive = selectedLens?.pricingCategory === 'PROGRESSIVE' ||
+                          selectedLens?.pricingCategory === 'BIFOCAL' ||
+                          selectedLens?.pricingCategory === 'TRIFOCAL'
+
+    // Lens + Material pricing (VSP Matrix)
+    if (isProgressive && selectedLens && selectedMaterial) {
+      // Progressive: use matrix combined code (e.g., "NJ" for Varilux X + Hi-Index 1.74)
+      const matrixResult = getVspMatrixPrice(selectedLens.name, selectedMaterial.name)
+      if (matrixResult) {
+        total += matrixResult.copay
+        breakdown['lensAndMaterial'] = {
+          name: `${selectedLens.name} + ${selectedMaterial.name}`,
+          copay: matrixResult.copay,
+          code: matrixResult.combinedCode
+        }
+      } else {
+        // Fallback to additive if matrix lookup fails
+        const lensCopay = selectedLens.customerPrice ?? selectedLens.price
+        const materialCopay = selectedMaterial.customerPrice ?? selectedMaterial.price
+        total += lensCopay + materialCopay
+        breakdown['lens'] = { name: selectedLens.name, copay: lensCopay }
+        breakdown['material'] = { name: selectedMaterial.name, copay: materialCopay }
+      }
+    } else if (isSV && selectedMaterial) {
+      // Single Vision: use material-only code (e.g., "AD_sv" for Poly SV)
+      const svMaterialResult = getVspSvMaterialPrice(selectedMaterial.name)
+      if (svMaterialResult) {
+        total += svMaterialResult.copay
+        breakdown['material'] = {
+          name: selectedMaterial.name,
+          copay: svMaterialResult.copay,
+          code: svMaterialResult.combinedCode
+        }
+      } else {
+        // Fallback
+        const materialCopay = selectedMaterial.customerPrice ?? selectedMaterial.price
+        total += materialCopay
+        breakdown['material'] = { name: selectedMaterial.name, copay: materialCopay }
+      }
+      // SV lens itself is typically covered under materials copay
+    } else if (selectedLens) {
+      // No material selected or unknown category - use individual price
+      const lensCopay = selectedLens.customerPrice ?? selectedLens.price
+      total += lensCopay
+      breakdown['lens'] = { name: selectedLens.name, copay: lensCopay }
+    }
+
+    // Add-ons (flat copays, not part of progressive+material matrix)
+    // AR Coating
+    if (selectedAr?.tier) {
+      const arCopay = getVspAddonPrice(selectedAr.tier, isSV)
+      if (arCopay !== null) {
+        total += arCopay
+        breakdown['arCoating'] = { name: selectedAr.name, copay: arCopay, code: selectedAr.tier }
+      }
+    }
+
+    // Photochromic
+    if (selectedTrans?.tier) {
+      const transCopay = getVspAddonPrice(selectedTrans.tier, isSV)
+      if (transCopay !== null) {
+        total += transCopay
+        breakdown['photochromic'] = { name: selectedTrans.name, copay: transCopay, code: selectedTrans.tier }
+      }
+    }
+
+    // Polarized
+    if (selectedPolar?.tier) {
+      const polarCopay = getVspAddonPrice(selectedPolar.tier, isSV)
+      if (polarCopay !== null) {
+        total += polarCopay
+        breakdown['polarized'] = { name: selectedPolar.name, copay: polarCopay, code: selectedPolar.tier }
+      }
+    }
+
+    // Frame pricing (use standard frame allowance calculation, not matrix)
+    // Frame pricing is handled separately via frameAllowance, not included here
+
+    return {
+      total,
+      breakdown,
+      isMatrixPricing: isProgressive && selectedMaterial !== undefined,
+    }
+  }, [isVspCustomer, products, lensType, lensMaterial, arCoating, transitions, polarized,
+      materialsCopay, getVspMatrixPrice, getVspSvMaterialPrice, getVspAddonPrice])
+
+  // Determine if selected lens type is Single Vision or Multifocal
+  const selectedLensCategory = useMemo(() => {
+    if (!lensType || !products?.lensType) return null
+    const selectedLensProduct = products.lensType.find(p => p.id === lensType)
+    if (!selectedLensProduct?.pricingCategory) return null
+
+    if (selectedLensProduct.pricingCategory === 'SINGLE_VISION') {
+      return 'sv'
+    } else if (['PROGRESSIVE', 'BIFOCAL', 'TRIFOCAL', 'LINED_MULTIFOCAL'].includes(selectedLensProduct.pricingCategory)) {
+      return 'multifocal'
+    }
+    return null
+  }, [lensType, products?.lensType])
+
+  // Group materials by base name to show SV/MF prices side by side
+  interface MaterialGroup {
+    baseName: string
+    sv?: Product
+    mf?: Product
+    standard?: Product  // For materials without SV/MF variants (like CR-39)
+  }
+
+  const groupedMaterials = useMemo((): MaterialGroup[] => {
+    if (!products?.lensMaterial) return []
+
+    const groups: Record<string, MaterialGroup> = {}
+
+    for (const material of products.lensMaterial) {
+      const name = material.name
+      const isSvVariant = name.toLowerCase().includes('(single vision)')
+      const isMfVariant = name.toLowerCase().includes('(multifocal)')
+
+      // Extract base name (e.g., "Polycarbonate" from "Polycarbonate (Single Vision)")
+      const baseName = name.replace(/\s*\((Single Vision|Multifocal)\)/i, '').trim()
+
+      if (!groups[baseName]) {
+        groups[baseName] = { baseName }
+      }
+
+      if (isSvVariant) {
+        groups[baseName].sv = material
+      } else if (isMfVariant) {
+        groups[baseName].mf = material
+      } else {
+        // Standard product without SV/MF variant (like CR-39)
+        groups[baseName].standard = material
+      }
+    }
+
+    return Object.values(groups)
+  }, [products?.lensMaterial])
 
   // Declining balance specific calculations
   const decliningBalanceInfo = useMemo(() => {
@@ -533,6 +707,13 @@ export function EyeglassesLayerSimple({ className, onNext, onBack, onSkipSecondP
     if (techAddon) {
       removeProductFromQuote(techAddon)
       setTechAddon(null)
+    }
+
+    // Clear material selection when lens type changes (SV/MF have different pricing)
+    if (lensMaterial && addedSkus.lensMaterial) {
+      removeProductFromQuote(addedSkus.lensMaterial)
+      setLensMaterial(null)
+      setAddedSkus(prev => ({ ...prev, lensMaterial: undefined }))
     }
 
     setLensType(product.id)
@@ -1211,9 +1392,8 @@ export function EyeglassesLayerSimple({ className, onNext, onBack, onSkipSecondP
         </CardContent>
       </Card>
 
-      {/* Step 2: Lens Type */}
-      {(frame || isPatientOwnedFrame || lensType) && (
-        <Card>
+      {/* Step 2: Lens Type - Always visible */}
+      <Card>
           <CardHeader>
             <CardTitle className="text-lg text-white flex items-center justify-between">
               <span>Step 2: Select Lens Type</span>
@@ -1375,104 +1555,116 @@ export function EyeglassesLayerSimple({ className, onNext, onBack, onSkipSecondP
             )}
           </CardContent>
         </Card>
-      )}
 
-      {/* Step 3: Lens Material */}
-      {(lensType || lensMaterial) && (
-        <Card>
+      {/* Step 3: Lens Material - Always visible */}
+      <Card>
           <CardHeader>
             <CardTitle className="text-lg text-white">Step 3: Select Lens Material</CardTitle>
           </CardHeader>
           <CardContent className="space-y-3">
-            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-5 gap-4">
-              {products.lensMaterial?.map((product) => {
-                const insurancePricing = getInsurancePricing(product.sku || product.id)
-                const priceListInfo = getProductDisplayPrice(product)
-                const isSelected = lensMaterial === product.id
+            {/* Column headers */}
+            <div className="grid grid-cols-[2fr_1fr_1fr] gap-4 text-sm font-medium text-white/70 border-b border-white/20 pb-2">
+              <div>Material</div>
+              <div className="text-center">Single Vision</div>
+              <div className="text-center">Progressive/Bifocal</div>
+            </div>
+            {/* Material rows with SV/MF prices side by side */}
+            <div className="space-y-2">
+              {groupedMaterials.map((group) => {
+                // For standard materials (like CR-39), use the same product for both columns
+                const svProduct = group.sv || group.standard
+                const mfProduct = group.mf || group.standard
+                const svPriceInfo = svProduct ? getProductDisplayPrice(svProduct) : null
+                const mfPriceInfo = mfProduct ? getProductDisplayPrice(mfProduct) : null
+                const isSelected = lensMaterial === svProduct?.id || lensMaterial === mfProduct?.id
+
                 return (
-                  <button
-                    key={product.id}
-                    onClick={() => handleLensMaterialSelect(product)}
-                    className={`relative p-5 rounded-lg border-2 transition-all text-left ${
+                  <div
+                    key={group.baseName}
+                    className={`grid grid-cols-[2fr_1fr_1fr] gap-4 p-3 rounded-lg border-2 transition-all ${
                       isSelected
-                        ? 'border-emerald-400 bg-emerald-500/30'
-                        : priceListInfo.needsPricing
-                          ? 'border-yellow-400/50 hover:border-yellow-400 bg-yellow-500/10'
-                          : 'border-white/20 hover:border-white/40 bg-white/10'
+                        ? 'border-emerald-400 bg-emerald-500/20'
+                        : 'border-white/20 hover:border-white/40 bg-white/5'
                     }`}
                   >
-                    {isSelected && (
-                      <div className="absolute top-3 right-3">
-                        <div className="bg-emerald-500 rounded-full p-1">
-                          <Check className="h-4 w-4 text-white" />
+                    {/* Material name */}
+                    <div className="flex items-center">
+                      <span className="text-lg font-semibold text-white">{group.baseName}</span>
+                      {isSelected && (
+                        <div className="ml-2 bg-emerald-500 rounded-full p-0.5">
+                          <Check className="h-3 w-3 text-white" />
                         </div>
-                      </div>
-                    )}
-                    <div className="text-lg font-semibold mb-2 text-white">{product.name}</div>
-                    {product.price === 0 ? (
-                      <div className="text-2xl font-bold text-emerald-400">Included</div>
-                    ) : priceListInfo.hasPriceListEntry ? (
-                      /* Price List pricing (pre-computed) */
-                      <div className="space-y-1">
-                        <div className="text-sm text-white/60 line-through">
-                          {formatPrice(priceListInfo.retailPrice)}
-                        </div>
-                        {priceListInfo.patientPays !== null ? (
-                          <div className="text-2xl font-bold text-emerald-400">
-                            {formatPrice(priceListInfo.patientPays)}
+                      )}
+                    </div>
+
+                    {/* SV Price */}
+                    <button
+                      onClick={() => svProduct && handleLensMaterialSelect(svProduct)}
+                      disabled={!svProduct}
+                      className={`text-center p-2 rounded transition-all ${
+                        lensMaterial === svProduct?.id
+                          ? 'bg-emerald-500/30 ring-2 ring-emerald-400'
+                          : svProduct ? 'hover:bg-white/10' : 'opacity-50'
+                      }`}
+                    >
+                      {svProduct ? (
+                        svPriceInfo?.hasPriceListEntry && svPriceInfo.patientPays !== null ? (
+                          <div>
+                            <div className="text-lg font-bold text-emerald-400">
+                              {formatPrice(svPriceInfo.patientPays)}
+                            </div>
+                            <div className="text-xs text-white/50 line-through">
+                              {formatPrice(svPriceInfo.retailPrice)}
+                            </div>
                           </div>
                         ) : (
-                          <div className="text-lg font-bold text-yellow-400">
-                            <AlertTriangle className="h-4 w-4 inline mr-1" />
-                            Needs pricing
+                          <div className="text-lg font-bold text-white/70">
+                            {formatPrice(svProduct.price)}
                           </div>
-                        )}
-                        {priceListInfo.insuranceSavings > 0 && (
-                          <div className="text-xs text-emerald-400">
-                            Saves: {formatPrice(priceListInfo.insuranceSavings)}
-                          </div>
-                        )}
-                      </div>
-                    ) : authorization ? (
-                      /* Real-time pricing fallback */
-                      <div className="space-y-1">
-                        <div className="text-sm text-white/60 line-through">
-                          {formatPrice(product.price)}
-                        </div>
-                        {isSelected && insurancePricing ? (
-                          <div className="text-2xl font-bold text-emerald-400">
-                            {formatPrice(insurancePricing.patientPays)}
+                        )
+                      ) : (
+                        <span className="text-white/30">-</span>
+                      )}
+                    </button>
+
+                    {/* MF Price */}
+                    <button
+                      onClick={() => mfProduct && handleLensMaterialSelect(mfProduct)}
+                      disabled={!mfProduct}
+                      className={`text-center p-2 rounded transition-all ${
+                        lensMaterial === mfProduct?.id
+                          ? 'bg-emerald-500/30 ring-2 ring-emerald-400'
+                          : mfProduct ? 'hover:bg-white/10' : 'opacity-50'
+                      }`}
+                    >
+                      {mfProduct ? (
+                        mfPriceInfo?.hasPriceListEntry && mfPriceInfo.patientPays !== null ? (
+                          <div>
+                            <div className="text-lg font-bold text-emerald-400">
+                              {formatPrice(mfPriceInfo.patientPays)}
+                            </div>
+                            <div className="text-xs text-white/50 line-through">
+                              {formatPrice(mfPriceInfo.retailPrice)}
+                            </div>
                           </div>
                         ) : (
-                          <div className="text-2xl font-bold text-emerald-400">
-                            Select to see price
+                          <div className="text-lg font-bold text-white/70">
+                            {formatPrice(mfProduct.price)}
                           </div>
-                        )}
-                      </div>
-                    ) : (
-                      <div className="text-2xl font-bold text-emerald-400">
-                        {formatPrice(product.price)}
-                      </div>
-                    )}
-                    {/* Show insurance savings if selected (real-time fallback) */}
-                    {isSelected && insurancePricing && !priceListInfo.hasPriceListEntry && insurancePricing.savings > 0 && (
-                      <div className="mt-2 pt-2 border-t border-white/20">
-                        <div className="text-xs text-emerald-400">
-                          Insurance saves: {formatPrice(insurancePricing.insurancePays)}
-                        </div>
-                      </div>
-                    )}
-                  </button>
+                        )
+                      ) : (
+                        <span className="text-white/30">-</span>
+                      )}
+                    </button>
+                  </div>
                 )
               })}
             </div>
           </CardContent>
         </Card>
-      )}
 
-      {/* Step 4: AR Coating */}
-      {(lensMaterial || arCoating) && (
-        <Card>
+      {/* Step 4: AR Coating - Always visible */}
+      <Card>
           <CardHeader>
             <CardTitle className="text-lg text-white">Step 4: Select AR Coating</CardTitle>
           </CardHeader>
@@ -1607,11 +1799,9 @@ export function EyeglassesLayerSimple({ className, onNext, onBack, onSkipSecondP
             )}
           </CardContent>
         </Card>
-      )}
 
-      {/* Step 5: Transitions */}
-      {(arCoating || transitions) && (
-        <Card>
+      {/* Step 5: Transitions - Always visible */}
+      <Card>
           <CardHeader>
             <CardTitle className="text-lg text-white">Step 5: Select Transitions</CardTitle>
           </CardHeader>
@@ -1699,11 +1889,9 @@ export function EyeglassesLayerSimple({ className, onNext, onBack, onSkipSecondP
             </div>
           </CardContent>
         </Card>
-      )}
 
-      {/* Step 6: Mount Type */}
-      {(transitions !== null || mountFee) && (
-        <Card>
+      {/* Step 6: Mount Type - Always visible */}
+      <Card>
           <CardHeader>
             <CardTitle className="text-lg text-white">Step 6: Select Mount Type</CardTitle>
           </CardHeader>
@@ -1791,11 +1979,9 @@ export function EyeglassesLayerSimple({ className, onNext, onBack, onSkipSecondP
             </div>
           </CardContent>
         </Card>
-      )}
 
-      {/* Step 8: Add-ons */}
-      {(mountFee || addons.length > 0) && (
-        <Card>
+      {/* Step 7: Add-ons - Always visible */}
+      <Card>
           <CardHeader>
             <CardTitle className="text-lg text-white">Step 7: Select Add-ons</CardTitle>
           </CardHeader>
@@ -1919,11 +2105,9 @@ export function EyeglassesLayerSimple({ className, onNext, onBack, onSkipSecondP
             </div>
           </CardContent>
         </Card>
-      )}
 
-      {/* Eyeglasses Total Summary + Navigation */}
-      {(frame || isPatientOwnedFrame) && (
-        <Card className="bg-white/20">
+      {/* Eyeglasses Total Summary + Navigation - Always visible */}
+      <Card className="bg-white/20">
           <CardContent className="p-6">
             <div className="flex items-center justify-between">
               <div>
@@ -1935,17 +2119,31 @@ export function EyeglassesLayerSimple({ className, onNext, onBack, onSkipSecondP
                     </div>
                     <div>
                       <div className="text-sm text-emerald-400">Insurance saves</div>
-                      <div className="text-lg font-semibold text-emerald-400">{formatPrice(eyeglassesSummary.insuranceTotal)}</div>
+                      <div className="text-lg font-semibold text-emerald-400">
+                        {/* For VSP, calculate savings from matrix total */}
+                        {isVspCustomer && vspMatrixTotal
+                          ? formatPrice(eyeglassesSummary.retailTotal - vspMatrixTotal.total)
+                          : formatPrice(eyeglassesSummary.insuranceTotal)}
+                      </div>
                     </div>
                     <div>
                       <div className="text-sm text-amber-400">You Pay</div>
                       <div className="text-3xl font-bold text-amber-400">
                         {isCalculating ? (
                           <Loader2 className="h-6 w-6 animate-spin inline" />
+                        ) : isVspCustomer && vspMatrixTotal ? (
+                          /* VSP Matrix pricing: show combined total */
+                          formatPrice(vspMatrixTotal.total)
                         ) : (
                           formatPrice(eyeglassesSummary.patientTotal)
                         )}
                       </div>
+                      {/* Show VSP matrix code if using combined pricing */}
+                      {isVspCustomer && vspMatrixTotal?.isMatrixPricing && vspMatrixTotal.breakdown.lensAndMaterial?.code && (
+                        <div className="text-xs text-amber-300 mt-1">
+                          Code: {vspMatrixTotal.breakdown.lensAndMaterial.code}
+                        </div>
+                      )}
                     </div>
                   </div>
                 ) : (
@@ -1988,7 +2186,6 @@ export function EyeglassesLayerSimple({ className, onNext, onBack, onSkipSecondP
             </div>
           </CardContent>
         </Card>
-      )}
 
       {/* Navigation when no frame selected yet */}
       {!frame && !isPatientOwnedFrame && (onBack || onNext || onSkipSecondPair) && (

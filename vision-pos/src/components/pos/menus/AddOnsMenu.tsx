@@ -9,6 +9,7 @@ import {
 import {
   Plus,
   Wrench,
+  AlertTriangle,
 } from 'lucide-react'
 import ProductTile from '../ProductTile'
 
@@ -18,6 +19,7 @@ export default function AddOnsMenu() {
     priceList,
     addLineItem,
     removeLineItem,
+    hasContactItems,
   } = usePOSStore()
 
   // ===== SELECTION STATE =====
@@ -36,13 +38,20 @@ export default function AddOnsMenu() {
 
   const getPrice = (product: Product): number => {
     if (product.retail === 0) return 0
-    if (!priceList || !quote.insurance.hasActiveAuth) {
+
+    // No insurance = retail price
+    if (!quote.insurance.hasActiveAuth) {
       return product.retail
     }
-    const priceData = priceList.prices[product.id]
-    if (typeof priceData === 'number') {
-      return priceData
+
+    // First check price list (from uploaded PDF or synthesized from authorization)
+    if (priceList) {
+      const priceData = priceList.prices[product.id]
+      if (typeof priceData === 'number') {
+        return priceData
+      }
     }
+
     return product.retail
   }
 
@@ -110,8 +119,21 @@ export default function AddOnsMenu() {
     }
   }
 
+  // Check for benefit conflict
+  const contactItemsExist = hasContactItems()
+
   return (
     <div className="p-[2%] space-y-[3%]">
+      {/* Benefit conflict warning */}
+      {contactItemsExist && quote.insurance.hasActiveAuth && (
+        <div className="flex items-center gap-2 p-3 bg-amber-500/20 border border-amber-500/30 rounded-lg">
+          <AlertTriangle className="h-5 w-5 text-amber-400 flex-shrink-0" />
+          <span className="text-sm text-amber-300">
+            <strong>Benefit Conflict:</strong> Contact lenses are in this order. Most vision plans do not cover both contacts and glasses in the same benefit period.
+          </span>
+        </div>
+      )}
+
       {/* ===== ADD-ONS ===== */}
       <div>
         <div className="flex items-center gap-2 mb-[1.5%]">
@@ -124,6 +146,9 @@ export default function AddOnsMenu() {
               key={product.id}
               icon={Plus}
               name={product.name}
+              price={getPrice(product)}
+              retailPrice={product.retail}
+              showPrice={quote.insurance.hasActiveAuth}
               isSelected={selectedAddOns.includes(product.id)}
               onClick={() => handleSelectAddOn(product)}
             />
@@ -143,6 +168,9 @@ export default function AddOnsMenu() {
               key={product.id}
               icon={Wrench}
               name={product.name}
+              price={getPrice(product)}
+              retailPrice={product.retail}
+              showPrice={quote.insurance.hasActiveAuth}
               isSelected={
                 product.id === 'fullRim'
                   ? !selectedMount

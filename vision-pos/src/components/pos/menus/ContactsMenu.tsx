@@ -4,6 +4,7 @@ import { useState, useEffect, useCallback } from 'react'
 import { usePOSStore } from '@/stores/pos-store'
 import { cn } from '@/lib/utils'
 import { Input } from '@/components/ui/input'
+import { Button } from '@/components/ui/button'
 import {
   Search,
   Loader2,
@@ -12,6 +13,9 @@ import {
   Package,
   ChevronDown,
   X,
+  AlertTriangle,
+  Plus,
+  Minus,
 } from 'lucide-react'
 
 interface ContactLens {
@@ -29,147 +33,22 @@ interface ContactLens {
   annualSupplyPerEye: number | null
 }
 
-type EyeSide = 'OD' | 'OS' | 'OU'
-
-interface ContactLensCardProps {
-  lens: ContactLens
-  isSelected: boolean
-  selectedEye: EyeSide | null
-  onSelect: (eye: EyeSide) => void
+// Annual supply discount rules by modality (from calculator)
+const ANNUAL_SUPPLY_DISCOUNT: Record<string, number> = {
+  daily: 30,     // $30 discount for daily annual supply
+  biweekly: 10,  // $10 discount for biweekly annual supply
+  monthly: 10,   // $10 discount for monthly annual supply
 }
 
-function ContactLensCard({
-  lens,
-  isSelected,
-  selectedEye,
-  onSelect,
-}: ContactLensCardProps) {
-  const [showEyeSelector, setShowEyeSelector] = useState(false)
-
-  const handleEyeSelect = (eye: EyeSide) => {
-    onSelect(eye)
-    setShowEyeSelector(false)
-  }
-
-  const getModalityLabel = (modality: string) => {
-    switch (modality) {
-      case 'daily':
-        return 'D'
-      case 'biweekly':
-        return '2W'
-      case 'monthly':
-        return 'M'
-      default:
-        return modality
-    }
-  }
-
-  const getModalityColor = (modality: string) => {
-    switch (modality) {
-      case 'daily':
-        return 'text-emerald-400'
-      case 'biweekly':
-        return 'text-blue-400'
-      case 'monthly':
-        return 'text-purple-400'
-      default:
-        return 'text-white/70'
-    }
-  }
-
-  return (
-    <div
-      className={cn(
-        'relative flex flex-col p-3 rounded-xl border-2 transition-all duration-150 glass-card',
-        'aspect-square',
-        isSelected
-          ? 'border-blue-500 bg-blue-500/20 shadow-md'
-          : 'border-white/10 hover:border-white/30 hover:shadow-sm'
-      )}
-    >
-      {isSelected && (
-        <div className="absolute top-2 right-2 w-5 h-5 rounded-full bg-blue-500 flex items-center justify-center">
-          <Check className="h-3 w-3 text-white" />
-        </div>
-      )}
-
-      {/* Modality badge - simplified */}
-      <div className={cn('absolute top-2 left-2 text-[10px] font-bold', getModalityColor(lens.modality))}>
-        {getModalityLabel(lens.modality)}
-      </div>
-
-      <div className="flex-1 flex flex-col justify-center items-center text-center mt-2">
-        <h3
-          className={cn(
-            'font-semibold text-xs leading-tight text-white',
-            isSelected && 'text-blue-400'
-          )}
-        >
-          {lens.manufacturer}
-        </h3>
-        <p className="text-[11px] text-white/70 mt-0.5 line-clamp-2">{lens.lensName}</p>
-        <p className="text-[10px] text-white/50 mt-1">{lens.boxSize} pack</p>
-      </div>
-
-      {/* Price at bottom */}
-      <div className="text-center">
-        <span className="text-sm font-semibold text-white">${lens.retailPrice.toFixed(0)}</span>
-        <span className="text-[10px] text-white/50">/box</span>
-      </div>
-
-      {/* Eye selection buttons - compact */}
-      <div className="mt-2 pt-2 border-t border-white/10">
-        {showEyeSelector || isSelected ? (
-          <div className="flex gap-1">
-            <button
-              onClick={() => handleEyeSelect('OD')}
-              className={cn(
-                'flex-1 py-1 text-[10px] font-medium rounded border transition-all',
-                selectedEye === 'OD' || selectedEye === 'OU'
-                  ? 'bg-blue-600 text-white border-blue-600'
-                  : 'bg-white/10 hover:bg-white/20 border-white/20 text-white/80'
-              )}
-            >
-              OD
-            </button>
-            <button
-              onClick={() => handleEyeSelect('OS')}
-              className={cn(
-                'flex-1 py-1 text-[10px] font-medium rounded border transition-all',
-                selectedEye === 'OS' || selectedEye === 'OU'
-                  ? 'bg-blue-600 text-white border-blue-600'
-                  : 'bg-white/10 hover:bg-white/20 border-white/20 text-white/80'
-              )}
-            >
-              OS
-            </button>
-            <button
-              onClick={() => handleEyeSelect('OU')}
-              className={cn(
-                'flex-1 py-1 text-[10px] font-medium rounded border transition-all',
-                selectedEye === 'OU'
-                  ? 'bg-emerald-600 text-white border-emerald-600'
-                  : 'bg-white/10 hover:bg-white/20 border-white/20 text-white/80'
-              )}
-            >
-              Both
-            </button>
-          </div>
-        ) : (
-          <button
-            onClick={() => setShowEyeSelector(true)}
-            className="w-full py-1 text-[10px] font-medium text-blue-400 hover:bg-blue-500/10 rounded transition-all"
-          >
-            Select
-          </button>
-        )}
-      </div>
-    </div>
-  )
+interface SelectedLensState {
+  lens: ContactLens
+  boxesOD: number
+  boxesOS: number
+  rebate: number
 }
 
 export default function ContactsMenu() {
-  const { quote, addLineItem, removeLineItem } = usePOSStore()
+  const { quote, addLineItem, removeLineItem, hasGlassesItems } = usePOSStore()
 
   // State
   const [search, setSearch] = useState('')
@@ -179,25 +58,22 @@ export default function ContactsMenu() {
   const [manufacturers, setManufacturers] = useState<string[]>([])
   const [loading, setLoading] = useState(false)
   const [showMfgDropdown, setShowMfgDropdown] = useState(false)
+  const [selectedLens, setSelectedLens] = useState<SelectedLensState | null>(null)
 
   // Get contact allowance from insurance
   const contactAllowance = quote.insurance.contactAllowance || 0
   const hasInsurance = quote.insurance.hasActiveAuth
 
-  // Get selected contacts for current pair
-  const selectedContactItems = (quote.lineItems ?? []).filter(
-    (item) =>
-      item.pairId === quote.activePairId && item.category === 'contact_lens'
+  // Get existing CL items
+  const existingCLItems = (quote.lineItems ?? []).filter(
+    (item) => item.pairId === quote.activePairId && item.category === 'contact_lens'
   )
 
-  // Get selected eye for a specific lens
-  const getSelectedEye = (lensId: string): EyeSide | null => {
-    const items = selectedContactItems.filter((item) => item.productId === lensId)
-    if (items.length === 0) return null
-    if (items.some((item) => item.subcategory === 'OU')) return 'OU'
-    if (items.length === 2) return 'OU'
-    return items[0]?.subcategory as EyeSide
-  }
+  // Calculate how much allowance is already used
+  const usedAllowance = existingCLItems
+    .filter(item => item.category === 'contact_lens')
+    .reduce((sum, item) => sum + (item.insurancePays || 0), 0)
+  const remainingAllowance = Math.max(0, contactAllowance - usedAllowance)
 
   // Fetch lenses
   const fetchLenses = useCallback(async () => {
@@ -248,67 +124,327 @@ export default function ContactsMenu() {
     fetchLenses()
   }, [])
 
-  const handleSelectLens = (lens: ContactLens, eye: EyeSide) => {
-    // Remove any existing selections for this lens
-    const existingItems = selectedContactItems.filter(
-      (item) => item.productId === lens.id
+  // Check if meets annual supply threshold
+  const meetsAnnualSupply = (lens: ContactLens, totalBoxes: number): boolean => {
+    const threshold = lens.annualSupplyBothEyes || 8 // Default to 8 if not set
+    return totalBoxes >= threshold
+  }
+
+  // Get annual supply discount amount
+  const getAnnualSupplyDiscount = (lens: ContactLens, totalBoxes: number): number => {
+    if (!meetsAnnualSupply(lens, totalBoxes)) return 0
+    const modality = lens.modality || 'daily'
+    return ANNUAL_SUPPLY_DISCOUNT[modality] || 0
+  }
+
+  // Handle lens selection
+  const handleSelectLens = (lens: ContactLens) => {
+    // Set initial box counts to annual supply recommendation
+    const annualBoxes = lens.annualSupplyBothEyes || 8
+    const perEye = lens.annualSupplyPerEye || Math.ceil(annualBoxes / 2)
+    setSelectedLens({
+      lens,
+      boxesOD: perEye,
+      boxesOS: perEye,
+      rebate: 0,
+    })
+  }
+
+  // Update box count
+  const updateBoxCount = (eye: 'OD' | 'OS', delta: number) => {
+    if (!selectedLens) return
+    setSelectedLens(prev => {
+      if (!prev) return prev
+      const key = eye === 'OD' ? 'boxesOD' : 'boxesOS'
+      const newValue = Math.max(0, prev[key] + delta)
+      return { ...prev, [key]: newValue }
+    })
+  }
+
+  // Update rebate amount
+  const updateRebate = (value: number) => {
+    if (!selectedLens) return
+    setSelectedLens(prev => {
+      if (!prev) return prev
+      return { ...prev, rebate: Math.max(0, value) }
+    })
+  }
+
+  // Add lens to order
+  const addLensToOrder = () => {
+    if (!selectedLens) return
+
+    const { lens, boxesOD, boxesOS, rebate } = selectedLens
+    const totalBoxes = boxesOD + boxesOS
+    if (totalBoxes === 0) return
+
+    // Calculate pricing with annual supply discount
+    const retailTotal = totalBoxes * lens.retailPrice
+    const annualDiscount = getAnnualSupplyDiscount(lens, totalBoxes)
+    const subtotal = retailTotal - annualDiscount
+
+    // Apply remaining allowance to subtotal
+    const insuranceApplied = hasInsurance ? Math.min(remainingAllowance, subtotal) : 0
+    const inOfficeTotal = subtotal - insuranceApplied
+
+    // Rebate is post-purchase (mail-in), so it doesn't affect in-office total
+    // But we'll store it in the note for reference
+
+    // Remove any existing lens items for this lens
+    const existingLensItems = existingCLItems.filter(
+      item => item.productId === lens.id && item.category === 'contact_lens'
     )
-    existingItems.forEach((item) => removeLineItem(item.id))
+    existingLensItems.forEach(item => removeLineItem(item.id))
 
-    // If clicking same eye again, just deselect
-    const currentEye = getSelectedEye(lens.id)
-    if (currentEye === eye) {
-      return
-    }
+    // Build note with box breakdown and rebate info
+    const boxBreakdown: string[] = []
+    if (boxesOD > 0) boxBreakdown.push(`${boxesOD} OD`)
+    if (boxesOS > 0) boxBreakdown.push(`${boxesOS} OS`)
 
-    // Calculate pricing
-    const boxesPerYear = eye === 'OU' ? 8 : 4 // 4 boxes per eye per year
-    const annualCost =
-      eye === 'OU'
-        ? lens.annualSupplyBothEyes || lens.retailPrice * 8
-        : lens.annualSupplyPerEye || lens.retailPrice * 4
-    const allowanceUsed = hasInsurance ? Math.min(annualCost, contactAllowance) : 0
-    const patientPays = Math.max(0, annualCost - allowanceUsed)
+    let note = `${lens.boxSize}-pk × ${totalBoxes} (${boxBreakdown.join(', ')})`
+    if (annualDiscount > 0) note += ` | Annual -$${annualDiscount}`
+    if (rebate > 0) note += ` | Rebate -$${rebate}`
 
-    // Add line item(s)
-    if (eye === 'OU') {
-      addLineItem({
-        productId: lens.id,
-        name: `${lens.manufacturer} ${lens.lensName}`,
-        category: 'contact_lens',
-        subcategory: 'OU',
-        quantity: boxesPerYear,
-        retailPrice: annualCost,
-        patientPays,
-        insurancePays: allowanceUsed,
-        note: `${lens.boxSize} pack - Both Eyes`,
-        pairId: quote.activePairId,
-      })
-    } else {
-      addLineItem({
-        productId: lens.id,
-        name: `${lens.manufacturer} ${lens.lensName}`,
-        category: 'contact_lens',
-        subcategory: eye,
-        quantity: boxesPerYear,
-        retailPrice: annualCost,
-        patientPays,
-        insurancePays: allowanceUsed,
-        note: `${lens.boxSize} pack - ${eye === 'OD' ? 'Right Eye' : 'Left Eye'}`,
-        pairId: quote.activePairId,
-      })
+    // Add single line item (quantity is 1 since retailPrice is already the total)
+    addLineItem({
+      productId: lens.id,
+      name: `${lens.manufacturer} ${lens.lensName}`,
+      category: 'contact_lens',
+      subcategory: boxesOD > 0 && boxesOS > 0 ? 'OU' : (boxesOD > 0 ? 'OD' : 'OS'),
+      quantity: 1,
+      retailPrice: retailTotal,
+      patientPays: inOfficeTotal,
+      insurancePays: insuranceApplied,
+      note,
+      pairId: quote.activePairId,
+    })
+
+    // Clear selection
+    setSelectedLens(null)
+  }
+
+  // Check for benefit conflict
+  const glassesItemsExist = hasGlassesItems()
+
+  // Get modality label
+  const getModalityLabel = (modality: string) => {
+    switch (modality) {
+      case 'daily': return 'Daily'
+      case 'biweekly': return '2-Week'
+      case 'monthly': return 'Monthly'
+      default: return modality
     }
   }
 
   return (
     <div className="p-[2%] space-y-[3%]">
+      {/* Benefit conflict warning */}
+      {glassesItemsExist && hasInsurance && (
+        <div className="flex items-center gap-2 p-3 bg-amber-500/20 border border-amber-500/30 rounded-lg">
+          <AlertTriangle className="h-5 w-5 text-amber-400 flex-shrink-0" />
+          <span className="text-sm text-amber-300">
+            <strong>Benefit Conflict:</strong> Glasses items are in this order. Most vision plans do not cover both contacts and glasses in the same benefit period.
+          </span>
+        </div>
+      )}
+
       {/* Contact allowance banner */}
       {hasInsurance && contactAllowance > 0 && (
-        <div className="flex items-center gap-2 p-3 bg-emerald-500/20 border border-emerald-500/30 rounded-lg">
-          <Package className="h-5 w-5 text-emerald-400" />
-          <span className="text-sm text-emerald-300">
-            Contact Lens Allowance: <strong>${contactAllowance.toFixed(2)}</strong>
-          </span>
+        <div className="flex items-center justify-between p-3 bg-emerald-500/20 border border-emerald-500/30 rounded-lg">
+          <div className="flex items-center gap-2">
+            <Package className="h-5 w-5 text-emerald-400" />
+            <span className="text-sm text-emerald-300">
+              Contact Lens Allowance: <strong>${contactAllowance.toFixed(2)}</strong>
+            </span>
+          </div>
+          {usedAllowance > 0 && (
+            <span className="text-sm text-emerald-300">
+              Remaining: <strong>${remainingAllowance.toFixed(2)}</strong>
+            </span>
+          )}
+        </div>
+      )}
+
+      {/* Selected Lens Configuration Panel */}
+      {selectedLens && (
+        <div className="p-4 bg-blue-500/10 border border-blue-500/30 rounded-lg space-y-4">
+          <div className="flex items-start justify-between">
+            <div>
+              <h4 className="font-semibold text-white">{selectedLens.lens.manufacturer}</h4>
+              <p className="text-sm text-white/70">{selectedLens.lens.lensName}</p>
+              <p className="text-xs text-white/50">
+                {selectedLens.lens.boxSize}-pack • {getModalityLabel(selectedLens.lens.modality)} • ${selectedLens.lens.retailPrice}/box
+              </p>
+            </div>
+            <button
+              onClick={() => setSelectedLens(null)}
+              className="p-1 hover:bg-white/10 rounded"
+            >
+              <X className="h-4 w-4 text-white/40" />
+            </button>
+          </div>
+
+          {/* Box Count Controls */}
+          <div className="grid grid-cols-2 gap-4">
+            {/* Right Eye */}
+            <div className="space-y-2">
+              <label className="text-xs text-white/60 uppercase">Right Eye (OD)</label>
+              <div className="flex items-center gap-2">
+                <Button
+                  variant="outline"
+                  size="sm"
+                  onClick={() => updateBoxCount('OD', -1)}
+                  disabled={selectedLens.boxesOD === 0}
+                  className="h-10 w-10 p-0"
+                >
+                  <Minus className="h-4 w-4" />
+                </Button>
+                <div className="flex-1 text-center">
+                  <div className="text-2xl font-bold text-white">{selectedLens.boxesOD}</div>
+                  <div className="text-xs text-white/50">boxes</div>
+                </div>
+                <Button
+                  variant="outline"
+                  size="sm"
+                  onClick={() => updateBoxCount('OD', 1)}
+                  className="h-10 w-10 p-0"
+                >
+                  <Plus className="h-4 w-4" />
+                </Button>
+              </div>
+            </div>
+
+            {/* Left Eye */}
+            <div className="space-y-2">
+              <label className="text-xs text-white/60 uppercase">Left Eye (OS)</label>
+              <div className="flex items-center gap-2">
+                <Button
+                  variant="outline"
+                  size="sm"
+                  onClick={() => updateBoxCount('OS', -1)}
+                  disabled={selectedLens.boxesOS === 0}
+                  className="h-10 w-10 p-0"
+                >
+                  <Minus className="h-4 w-4" />
+                </Button>
+                <div className="flex-1 text-center">
+                  <div className="text-2xl font-bold text-white">{selectedLens.boxesOS}</div>
+                  <div className="text-xs text-white/50">boxes</div>
+                </div>
+                <Button
+                  variant="outline"
+                  size="sm"
+                  onClick={() => updateBoxCount('OS', 1)}
+                  className="h-10 w-10 p-0"
+                >
+                  <Plus className="h-4 w-4" />
+                </Button>
+              </div>
+            </div>
+          </div>
+
+          {/* Rebate Input */}
+          <div className="space-y-2">
+            <label className="text-xs text-white/60 uppercase">Manufacturer Rebate</label>
+            <Input
+              type="number"
+              min="0"
+              step="1"
+              value={selectedLens.rebate || ''}
+              onChange={(e) => updateRebate(Number(e.target.value) || 0)}
+              placeholder="0"
+              className="h-10"
+            />
+          </div>
+
+          {/* Pricing Summary */}
+          {(selectedLens.boxesOD + selectedLens.boxesOS) > 0 && (
+            <div className="pt-3 border-t border-white/10 space-y-2">
+              {(() => {
+                const totalBoxes = selectedLens.boxesOD + selectedLens.boxesOS
+                const retailTotal = totalBoxes * selectedLens.lens.retailPrice
+                const annualDiscount = getAnnualSupplyDiscount(selectedLens.lens, totalBoxes)
+                const subtotal = retailTotal - annualDiscount
+                const insuranceApplied = hasInsurance ? Math.min(remainingAllowance, subtotal) : 0
+                const inOfficeTotal = subtotal - insuranceApplied
+                const afterRebate = inOfficeTotal - selectedLens.rebate
+                const perBox = totalBoxes > 0 ? afterRebate / totalBoxes : 0
+                const threshold = selectedLens.lens.annualSupplyBothEyes || 8
+
+                return (
+                  <>
+                    {/* Base cost */}
+                    <div className="flex justify-between text-sm">
+                      <span className="text-white/60">{totalBoxes} boxes × ${selectedLens.lens.retailPrice}</span>
+                      <span className="text-white">${retailTotal.toFixed(2)}</span>
+                    </div>
+
+                    {/* Annual supply discount */}
+                    {annualDiscount > 0 && (
+                      <div className="flex justify-between text-sm">
+                        <span className="text-emerald-400 flex items-center gap-1">
+                          <Check className="h-3 w-3" /> Annual supply discount
+                        </span>
+                        <span className="text-emerald-400">-${annualDiscount.toFixed(2)}</span>
+                      </div>
+                    )}
+                    {annualDiscount === 0 && totalBoxes > 0 && (
+                      <div className="text-xs text-amber-400/70">
+                        Add {threshold - totalBoxes} more box{threshold - totalBoxes !== 1 ? 'es' : ''} for ${ANNUAL_SUPPLY_DISCOUNT[selectedLens.lens.modality || 'daily']} annual discount
+                      </div>
+                    )}
+
+                    {/* Subtotal */}
+                    {annualDiscount > 0 && (
+                      <div className="flex justify-between text-sm pt-1 border-t border-white/5">
+                        <span className="text-white/60">Subtotal</span>
+                        <span className="text-white">${subtotal.toFixed(2)}</span>
+                      </div>
+                    )}
+
+                    {/* Insurance allowance */}
+                    {insuranceApplied > 0 && (
+                      <div className="flex justify-between text-sm">
+                        <span className="text-emerald-400">Insurance allowance</span>
+                        <span className="text-emerald-400">-${insuranceApplied.toFixed(2)}</span>
+                      </div>
+                    )}
+
+                    {/* In-Office Total */}
+                    <div className="flex justify-between text-base font-semibold pt-2 border-t border-white/10">
+                      <span className="text-white">In-Office Total</span>
+                      <span className="text-white">${inOfficeTotal.toFixed(2)}</span>
+                    </div>
+
+                    {/* Rebate (if any) */}
+                    {selectedLens.rebate > 0 && (
+                      <>
+                        <div className="flex justify-between text-sm">
+                          <span className="text-blue-400">Manufacturer rebate (mail-in)</span>
+                          <span className="text-blue-400">-${selectedLens.rebate.toFixed(2)}</span>
+                        </div>
+                        <div className="flex justify-between text-lg font-bold pt-2 border-t border-white/10 bg-gradient-to-r from-blue-500/10 to-emerald-500/10 -mx-4 px-4 py-2 rounded">
+                          <span className="text-white">Final Cost</span>
+                          <span className="text-white">${afterRebate.toFixed(2)}</span>
+                        </div>
+                        <div className="text-center text-sm text-white/60">
+                          ${perBox.toFixed(2)} per box
+                        </div>
+                      </>
+                    )}
+                  </>
+                )
+              })()}
+
+              <Button
+                onClick={addLensToOrder}
+                className="w-full mt-3 bg-blue-600 hover:bg-blue-700"
+              >
+                <Plus className="h-4 w-4 mr-2" />
+                Add to Order
+              </Button>
+            </div>
+          )}
         </div>
       )}
 
@@ -391,7 +527,7 @@ export default function ContactsMenu() {
                   : 'hover:bg-white/10 text-white/70'
               )}
             >
-              {mod === 'all' ? 'All' : mod.charAt(0).toUpperCase() + mod.slice(1)}
+              {mod === 'all' ? 'All' : mod === 'biweekly' ? '2-Week' : mod.charAt(0).toUpperCase() + mod.slice(1)}
             </button>
           ))}
         </div>
@@ -404,18 +540,60 @@ export default function ContactsMenu() {
         </div>
       )}
 
-      {/* Lenses grid */}
+      {/* Lenses grid - simplified cards for selection */}
       {!loading && lenses.length > 0 && (
-        <div className="grid grid-cols-4 gap-[2%]">
-          {lenses.map((lens) => (
-            <ContactLensCard
-              key={lens.id}
-              lens={lens}
-              isSelected={selectedContactItems.some((item) => item.productId === lens.id)}
-              selectedEye={getSelectedEye(lens.id)}
-              onSelect={(eye) => handleSelectLens(lens, eye)}
-            />
-          ))}
+        <div className="grid grid-cols-4 gap-3">
+          {lenses.map((lens) => {
+            const isInOrder = existingCLItems.some(
+              item => item.productId === lens.id && item.category === 'contact_lens'
+            )
+            const isCurrentSelection = selectedLens?.lens.id === lens.id
+
+            return (
+              <button
+                key={lens.id}
+                onClick={() => handleSelectLens(lens)}
+                className={cn(
+                  'relative p-3 rounded-xl border-2 transition-all text-left',
+                  isCurrentSelection
+                    ? 'border-blue-500 bg-blue-500/20'
+                    : isInOrder
+                    ? 'border-emerald-500 bg-emerald-500/10'
+                    : 'border-white/10 hover:border-white/30 bg-white/5'
+                )}
+              >
+                {isInOrder && (
+                  <div className="absolute top-2 right-2 w-5 h-5 rounded-full bg-emerald-500 flex items-center justify-center">
+                    <Check className="h-3 w-3 text-white" />
+                  </div>
+                )}
+
+                {/* Modality badge */}
+                <div className={cn(
+                  'text-[10px] font-bold mb-1',
+                  lens.modality === 'daily' ? 'text-emerald-400' :
+                  lens.modality === 'biweekly' ? 'text-blue-400' : 'text-purple-400'
+                )}>
+                  {getModalityLabel(lens.modality)}
+                </div>
+
+                <h3 className="font-semibold text-sm text-white truncate">{lens.manufacturer}</h3>
+                <p className="text-xs text-white/70 truncate">{lens.lensName}</p>
+
+                <div className="mt-2 pt-2 border-t border-white/10">
+                  <div className="flex justify-between items-center">
+                    <span className="text-xs text-white/50">{lens.boxSize}-pack</span>
+                    <span className="text-sm font-semibold text-white">${lens.retailPrice}</span>
+                  </div>
+                  {lens.annualSupplyBothEyes && (
+                    <div className="text-[10px] text-emerald-400/70 mt-1">
+                      {lens.annualSupplyBothEyes}+ boxes = ${ANNUAL_SUPPLY_DISCOUNT[lens.modality || 'daily']} off
+                    </div>
+                  )}
+                </div>
+              </button>
+            )
+          })}
         </div>
       )}
 

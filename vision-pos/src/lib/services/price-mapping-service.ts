@@ -39,25 +39,12 @@ interface CarrierTierLookup {
 
 /**
  * Build a carrier tier lookup map from the unified carrier_tiers table
- * Key format: "productType:productId" -> tier info
+ * Returns empty map since carrier_tiers table doesn't exist in current schema
  */
 async function buildCarrierTierMap(carrier: string): Promise<Map<string, CarrierTierLookup>> {
-  const tiers = await prisma.carrierTier.findMany({
-    where: { carrier: carrier.toUpperCase() }
-  })
-
-  const map = new Map<string, CarrierTierLookup>()
-  for (const tier of tiers) {
-    // Key by productType:productId for exact lookup
-    const key = `${tier.productType}:${tier.productId}`
-    map.set(key, {
-      tierCode: tier.tierCode,
-      tierLabel: tier.tierLabel,
-      pricingRule: tier.pricingRule
-    })
-  }
-
-  return map
+  // carrierTier table doesn't exist in current schema
+  // Tier mappings are stored in product objects instead
+  return new Map<string, CarrierTierLookup>()
 }
 
 /**
@@ -190,7 +177,7 @@ export async function generatePriceMapping(
         authorizationId: null,
         totalProducts: 0,
         mappedProducts: 0,
-        missingPrices: 0,
+        fallbackProducts: 0,
         missingKeyProducts: [],
         error: 'Customer not found'
       }
@@ -199,8 +186,25 @@ export async function generatePriceMapping(
     // Get active authorization with copays
     const authResult = await getActiveAuthorizationForCustomer(customerId)
 
+    // BLOCK: Do not generate prices without an active insurance authorization
+    // This prevents creating null-carrier "cash-pay" price lists that are incorrect
+    if (!authResult) {
+      console.warn(`[PriceMapping] No active insurance authorization for customer ${customerId}`)
+      return {
+        success: false,
+        customerId,
+        carrier: null,
+        authorizationId: null,
+        totalProducts: 0,
+        mappedProducts: 0,
+        fallbackProducts: 0,
+        missingKeyProducts: [],
+        error: 'No active insurance authorization found. Please scan and verify an insurance document first.'
+      }
+    }
+
     // If forCarrier specified, check if it matches
-    if (forCarrier && authResult?.carrier.toLowerCase() !== forCarrier.toLowerCase()) {
+    if (forCarrier && authResult.carrier.toLowerCase() !== forCarrier.toLowerCase()) {
       return {
         success: false,
         customerId,
@@ -208,16 +212,16 @@ export async function generatePriceMapping(
         authorizationId: null,
         totalProducts: 0,
         mappedProducts: 0,
-        missingPrices: 0,
+        fallbackProducts: 0,
         missingKeyProducts: [],
         error: `No active ${forCarrier} authorization found`
       }
     }
 
-    const insuranceCarrier = authResult?.carrier.toUpperCase() || null
-    const authorizationId = authResult?.authorizationId || null
+    const insuranceCarrier = authResult.carrier.toUpperCase()
+    const authorizationId = authResult.authorizationId
 
-    // Get carrier-specific copays from authorization tables
+    // Extract copays from the BenefitAuthorization object
     let vspCopays: Map<string, { sv: number | null, mf: number | null }> = new Map()
     let eyemedCopays: Record<string, number | null> = {}
     let specteraCopays: Record<string, number | null> = {}
@@ -232,117 +236,86 @@ export async function generatePriceMapping(
     let contactFittingCovered: boolean = false
     let contactLensExamCopay: number | null = null
 
-    if (authResult?.carrier === 'vsp') {
-      const vspAuth = await prisma.vspAuthorization.findFirst({
-        where: { id: authResult.authorizationId },
-        include: { lensEnhancementCopays: true }
-      })
-      if (vspAuth) {
-        examCopay = vspAuth.examCopay
-        materialsCopay = vspAuth.materialsCopay
-        frameAllowance = vspAuth.frameAllowanceRetail
-        frameAllowanceFeatured = vspAuth.frameAllowanceMarchon
-        frameOverageDiscount = vspAuth.frameOverageDiscount ? vspAuth.frameOverageDiscount / 100 : null
-        contactAllowance = vspAuth.contactAllowance
-        contactFittingCovered = vspAuth.contactFittingCovered
+    if (authResult && authResult.authorization) {
+      const auth = authResult.authorization
 
-        // Extract CL fitting copay from rawPatientReport JSON (not the null column)
-        // The copay is in rawPatientReport.contacts.clExamCopay.value
-        contactLensExamCopay = extractClFittingCopay(vspAuth.rawPatientReport as Record<string, unknown> | null)
-        console.log(`[PriceMapping] CL Fitting Copay extracted from rawPatientReport: ${contactLensExamCopay}`)
+      if (authResult.carrier === 'vsp' && 'planTier' in auth) {
+        // VSP authorization
+        const vspAuth = auth as any
+        examCopay = vspAuth.copays.examWellvision
+        materialsCopay = vspAuth.copays.materials
+        frameAllowance = vspAuth.copays.frameAllowanceFeatured
+        frameAllowanceFeatured = vspAuth.copays.frameAllowanceFeatured
+        frameOverageDiscount = vspAuth.copays.frameOverageDiscount
+        contactAllowance = vspAuth.copays.contactLensAllowance || null
+        contactFittingCovered = vspAuth.copays.contactFittingCovered || false
+        contactLensExamCopay = vspAuth.copays.contactLensExamCopay || null
 
-        // Build copay map from lens enhancements
-        if (vspAuth.lensEnhancementCopays) {
-          for (const copay of vspAuth.lensEnhancementCopays) {
-            vspCopays.set(copay.code, {
-              sv: copay.copaySingleVision,
-              mf: copay.copayMultifocal
-            })
+        // Build copay map from planTier
+        if (vspAuth.planTier?.progressiveCopays) {
+          for (const [code, copay] of Object.entries(vspAuth.planTier.progressiveCopays)) {
+            vspCopays.set(code, { sv: copay as number, mf: copay as number })
           }
         }
-      }
-    } else if (authResult?.carrier === 'eyemed') {
-      const eyemedAuth = await prisma.eyemedAuthorization.findFirst({
-        where: { id: authResult.authorizationId },
-        include: { arCoatingCopays: true }
-      })
-      if (eyemedAuth) {
-        examCopay = eyemedAuth.examCopay
-        frameAllowance = eyemedAuth.frameAllowance
-        frameOverageDiscount = eyemedAuth.frameOverageDiscount ? eyemedAuth.frameOverageDiscount / 100 : null
-        contactAllowance = eyemedAuth.contactAllowance
+      } else if (authResult.carrier === 'eyemed') {
+        // EyeMed authorization
+        const eyemedAuth = auth as any
+        examCopay = eyemedAuth.copays.exam
+        materialsCopay = eyemedAuth.copays.materials
+        frameAllowance = eyemedAuth.copays.frameAllowance
+        frameOverageDiscount = eyemedAuth.copays.frameOverageDiscount
+        contactAllowance = eyemedAuth.copays.contactsConventional || null
 
         // Progressive copays
-        eyemedCopays['standard'] = eyemedAuth.progressiveStandardCopay
-        eyemedCopays['tier_1'] = eyemedAuth.progressiveTier1Copay
-        eyemedCopays['tier_2'] = eyemedAuth.progressiveTier2Copay
-        eyemedCopays['tier_3'] = eyemedAuth.progressiveTier3Copay
-        eyemedCopays['tier_4'] = eyemedAuth.progressiveTier4Copay
-        eyemedCopays['tier_5'] = eyemedAuth.progressiveTier5Copay
+        eyemedCopays['standard'] = eyemedAuth.copays.progressiveStandard
+        eyemedCopays['tier_1'] = eyemedAuth.copays.progressivePremiumTier1
+        eyemedCopays['tier_2'] = eyemedAuth.copays.progressivePremiumTier2
+        eyemedCopays['tier_3'] = eyemedAuth.copays.progressivePremiumTier3
+        eyemedCopays['tier_4'] = eyemedAuth.copays.progressivePremiumTier4
+        eyemedCopays['tier_5'] = eyemedAuth.copays.progressivePremiumTier5
 
         // Material copays
-        eyemedCopays['polycarbonate'] = eyemedAuth.polycarbonateAdultCopay
-        eyemedCopays['photochromic'] = eyemedAuth.photochromicCopay
-        eyemedCopays['high_index_167'] = eyemedAuth.highIndex167Copay
-        eyemedCopays['high_index_174'] = eyemedAuth.highIndex174Copay
-        eyemedCopays['trivex'] = eyemedAuth.trivexCopay
-        eyemedCopays['polarized'] = eyemedAuth.polarizedCopay
-        eyemedCopays['tint'] = eyemedAuth.tintCopay
-
-        // AR copays
-        if (eyemedAuth.arCoatingCopays) {
-          for (const ar of eyemedAuth.arCoatingCopays) {
-            eyemedCopays[`ar_${ar.tier}`] = ar.copay ? parseFloat(ar.copay) : null
-          }
-        }
-      }
-    } else if (authResult?.carrier === 'spectera') {
-      const specteraAuth = await prisma.specteraAuthorization.findFirst({
-        where: { id: authResult.authorizationId },
-        include: { arCoatingCopays: true }
-      })
-      if (specteraAuth) {
-        examCopay = specteraAuth.examCopay
-        frameAllowance = specteraAuth.frameAllowance
-        frameOverageDiscount = specteraAuth.frameOveragePercent ? 1 - (specteraAuth.frameOveragePercent / 100) : null
-        contactAllowance = specteraAuth.nonSelectionClAllowance
+        eyemedCopays['polycarbonate'] = eyemedAuth.copays.materialPolycarbonate
+        eyemedCopays['photochromic'] = eyemedAuth.copays.photochromic
+        eyemedCopays['high_index_167'] = eyemedAuth.copays.materialHighIndex167
+        eyemedCopays['high_index_174'] = eyemedAuth.copays.materialHighIndex174
+        eyemedCopays['trivex'] = eyemedAuth.copays.materialTrivex
+        eyemedCopays['polarized'] = eyemedAuth.copays.polarized
+        eyemedCopays['tint'] = eyemedAuth.copays.tint
+      } else if (authResult.carrier === 'spectera') {
+        // Spectera authorization
+        const specteraAuth = auth as any
+        examCopay = specteraAuth.copays.examAdult
+        frameAllowance = specteraAuth.copays.frameAllowance
+        frameOverageDiscount = 1 - (specteraAuth.copays.frameOveragePercent || 0.70)
+        contactAllowance = specteraAuth.copays.contactsNonSelectionAllowance || null
 
         // Progressive copays (Roman numerals)
-        specteraCopays['I'] = specteraAuth.progressiveTier1Copay
-        specteraCopays['II'] = specteraAuth.progressiveTier2Copay
-        specteraCopays['III'] = specteraAuth.progressiveTier3Copay
-        specteraCopays['IV'] = specteraAuth.progressiveTier4Copay
-        specteraCopays['V'] = specteraAuth.progressiveTier5Copay
+        specteraCopays['I'] = specteraAuth.copays.progressiveTierI
+        specteraCopays['II'] = specteraAuth.copays.progressiveTierII
+        specteraCopays['III'] = specteraAuth.copays.progressiveTierIII
+        specteraCopays['IV'] = specteraAuth.copays.progressiveTierIV
+        specteraCopays['V'] = specteraAuth.copays.progressiveTierV
 
         // Material copays
-        specteraCopays['polycarbonate'] = specteraAuth.polycarbonateAdultCopay
-        specteraCopays['photochromic'] = specteraAuth.photochromicCopay
-        specteraCopays['high_index_166'] = specteraAuth.highIndex166
-        specteraCopays['high_index_167'] = specteraAuth.highIndex167to173
-        specteraCopays['high_index_174'] = specteraAuth.highIndex174Copay
-        specteraCopays['trivex'] = specteraAuth.trivexCopay
-        specteraCopays['polarized'] = specteraAuth.polarizedCopay
-        specteraCopays['tint'] = specteraAuth.tintCopay
-
-        // AR copays
-        if (specteraAuth.arCoatingCopays) {
-          for (const ar of specteraAuth.arCoatingCopays) {
-            specteraCopays[`ar_${ar.tier}`] = ar.copay ? parseFloat(ar.copay) : null
-          }
-        }
+        specteraCopays['polycarbonate'] = specteraAuth.copays.materialPolycarbonateAdult
+        specteraCopays['photochromic'] = specteraAuth.copays.photochromic
+        specteraCopays['high_index_166'] = specteraAuth.copays.materialHighIndex160166
+        specteraCopays['high_index_167'] = specteraAuth.copays.materialHighIndex166173
+        specteraCopays['high_index_174'] = specteraAuth.copays.materialHighIndex174Plus
+        specteraCopays['trivex'] = specteraAuth.copays.materialTrivex
+        specteraCopays['polarized'] = specteraAuth.copays.polarized
+        specteraCopays['tint'] = specteraAuth.copays.tint
       }
     }
 
-    // Get all active products with categories (lens products, frames, etc.)
-    const products = await prisma.product.findMany({
-      where: { active: true },
-      include: { category: true }
+    // Get all active lens products
+    const products = await prisma.lensProduct.findMany({
+      where: { active: true }
     })
 
-    // Get all active services (exams, CL fittings, procedures)
-    const services = await prisma.servicePrice.findMany({
-      where: { isActive: true }
-    })
+    // Services table doesn't exist in current schema, using empty array
+    const services: any[] = []
 
     // Build carrier tier lookup map from unified carrier_tiers table
     // This replaces the old product.tierVsp/tierEyemed/tierSpectera column reads
@@ -356,7 +329,6 @@ export async function generatePriceMapping(
       customerId: string
       productId: string
       authorizationId?: string
-      authorizationType?: string
       finalPrice: number  // Always set - no undefined/null
       retailPrice: number
       savings: number
@@ -378,7 +350,7 @@ export async function generatePriceMapping(
     }
 
     for (const product of products) {
-      const categoryCode = product.category?.code
+      const categoryCode = product.category?.toUpperCase() || ''
       let tier: string | null = null
       let customerPrice: number | null = null // NULL means needs manual entry
 
@@ -450,11 +422,22 @@ export async function generatePriceMapping(
         else if (categoryCode === 'LENS_MATERIALS') {
           // Handle "standard" tier (CR-39) - covered with materials copay
           if (tierCode === 'standard' || tierCode === 'covered' || pricingRule === 'INCLUDED') {
-            customerPrice = 0 // Covered - part of base lens benefit
+            customerPrice = materialsCopay // Covered - part of base lens benefit, uses materials copay
             tier = 'covered'
           } else if (tierCode) {
+            // Parse _SV suffix to determine if this is for single vision lenses
+            // VSP material copays differ based on lens style (SV vs MF/Progressive)
+            // e.g., "AD_SV" = polycarbonate for single vision, "AD" = polycarbonate for multifocal
+            let baseTierCode = tierCode
+            let isForSingleVision = false
+            if (tierCode.endsWith('_SV')) {
+              isForSingleVision = true
+              baseTierCode = tierCode.slice(0, -3) // Strip _SV suffix for lookup
+            }
+
             if (insuranceCarrier === 'VSP') {
-              customerPrice = getVspCopay(tierCode, vspCopays, true)
+              // Use SV copay for single vision materials, MF copay for progressive/bifocal
+              customerPrice = getVspCopay(baseTierCode, vspCopays, !isForSingleVision)
             } else if (insuranceCarrier === 'EYEMED') {
               customerPrice = eyemedCopays[tierCode] ?? null
             } else if (insuranceCarrier === 'SPECTERA') {
@@ -521,9 +504,9 @@ export async function generatePriceMapping(
         }
         // === SINGLE VISION ===
         else if (categoryCode === 'SINGLE_VISION_LENSES') {
-          if (tierCode === 'standard' || tierCode === 'covered' || tierCode === 'COVERED' || pricingRule === 'INCLUDED') {
-            customerPrice = 0 // Covered after materials copay
-            tier = 'covered'
+          if (tierCode === 'standard' || pricingRule === 'INCLUDED') {
+            customerPrice = materialsCopay // Standard lens - uses materials copay
+            tier = 'standard'
           } else if (tierCode) {
             if (insuranceCarrier === 'VSP') {
               // Digital SV (Eyezen, etc.) with tier code BA or other
@@ -538,9 +521,9 @@ export async function generatePriceMapping(
         }
         // === LINED MULTIFOCAL ===
         else if (categoryCode === 'LINED_MULTIFOCAL') {
-          if (tierCode === 'standard' || tierCode === 'covered' || tierCode === 'COVERED' || tierCode === 'AA' || pricingRule === 'INCLUDED') {
-            customerPrice = 0 // Covered after materials copay
-            tier = 'covered'
+          if (tierCode === 'standard' || tierCode === 'AA' || pricingRule === 'INCLUDED') {
+            customerPrice = materialsCopay // Standard lens - uses materials copay
+            tier = 'standard'
           } else if (tierCode) {
             if (insuranceCarrier === 'VSP') {
               customerPrice = getVspCopay(tierCode, vspCopays, true)
@@ -584,22 +567,25 @@ export async function generatePriceMapping(
       let needsTierAssignment = false
       let finalPrice: number
 
-      // Check if product is cash pay only - no tier mapping in carrier_tiers for ANY carrier
-      // A product is cash-pay if it has no tier mapping for the current carrier
-      const isCashPayOnly = !productTier || pricingRule === 'CASH_ONLY'
+      // Check if product is cash pay only - explicitly marked in carrier_tiers
+      const isExplicitlyCashOnly = pricingRule === 'CASH_ONLY'
+
+      // Check if product has no tier mapping at all (needs to be assigned)
+      const hasNoTierMapping = !productTier
 
       if (customerPrice !== null) {
-        // Has tier-based pricing from authorization
+        // Has tier-based pricing from authorization - use the copay
         finalPrice = customerPrice
         mappedCount++
-      } else if (isCashPayOnly) {
-        // Cash pay only product - full retail, no insurance discount
+      } else if (isExplicitlyCashOnly) {
+        // Explicitly marked as cash pay only - full retail
         finalPrice = product.basePrice
-        tier = 'cash-pay'  // Mark as intentionally cash pay
-        needsTierAssignment = false  // Not missing a tier, intentionally cash pay
-        mappedCount++  // Count as mapped since it's correctly priced
-      } else {
-        // Has tier codes but no mapping found - use 80% of retail (20% off) as fallback
+        tier = 'cash-pay'
+        needsTierAssignment = false
+        mappedCount++
+      } else if (hasNoTierMapping) {
+        // No tier mapping exists - needs manual tier assignment
+        // Use 80% of retail as temporary fallback until tier is assigned
         finalPrice = Math.round(product.basePrice * (1 - FALLBACK_DISCOUNT) * 100) / 100
         needsTierAssignment = true
         fallbackCount++
@@ -608,6 +594,14 @@ export async function generatePriceMapping(
         if (categoryCode && KEY_CATEGORIES.includes(categoryCode)) {
           missingKeyProducts.push(`${product.name} (${categoryCode})`)
         }
+      } else {
+        // Has tier mapping but copay lookup returned null
+        // This means the product is NOT COVERED by this insurance plan
+        // Patient pays FULL RETAIL - no discount
+        finalPrice = product.basePrice
+        tier = 'not-covered'
+        needsTierAssignment = false
+        mappedCount++  // Correctly priced as not covered
       }
 
       const savings = Math.max(0, product.basePrice - finalPrice)
@@ -616,7 +610,6 @@ export async function generatePriceMapping(
         customerId,
         productId: product.id,
         authorizationId: authorizationId ?? undefined,
-        authorizationType: authResult?.carrier ?? undefined,
         finalPrice,  // Always a number, never undefined
         retailPrice: product.basePrice,
         savings,
@@ -738,6 +731,9 @@ export async function generatePriceMapping(
       // Check if service is explicitly marked as cash-only
       const isServiceCashOnly = servicePricingRule === 'CASH_ONLY'
 
+      // Check if service has no tier mapping
+      const hasNoServiceTierMapping = !serviceTier
+
       if (customerPrice !== null) {
         finalPrice = customerPrice
         mappedCount++
@@ -747,11 +743,19 @@ export async function generatePriceMapping(
         tier = 'cash-pay'
         needsTierAssignment = false
         mappedCount++
-      } else {
-        // Use 80% of retail as fallback
+      } else if (hasNoServiceTierMapping) {
+        // No tier mapping exists - needs manual tier assignment
+        // Use 80% of retail as temporary fallback
         finalPrice = Math.round(service.retailPrice * (1 - FALLBACK_DISCOUNT) * 100) / 100
         needsTierAssignment = true
         fallbackCount++
+      } else {
+        // Has tier mapping but copay lookup returned null
+        // Service is NOT COVERED - patient pays full retail
+        finalPrice = service.retailPrice
+        tier = 'not-covered'
+        needsTierAssignment = false
+        mappedCount++
       }
 
       const savings = Math.max(0, service.retailPrice - finalPrice)
@@ -760,7 +764,6 @@ export async function generatePriceMapping(
         customerId,
         productId: service.id,  // Service ID stored as productId
         authorizationId: authorizationId ?? undefined,
-        authorizationType: authResult?.carrier ?? undefined,
         finalPrice,
         retailPrice: service.retailPrice,
         savings,
@@ -776,7 +779,7 @@ export async function generatePriceMapping(
     // Delete existing price mappings for this customer AND carrier only
     // This preserves prices from other carriers
     console.log(`[PriceMapping] Deleting existing mappings for customer ${customerId}, carrier: ${insuranceCarrier || 'all'}`)
-    const deleteResult = await prisma.customerPriceList.deleteMany({
+    const deleteResult = await prisma.patientPriceList.deleteMany({
       where: {
         customerId,
         insuranceCarrier: insuranceCarrier ?? undefined
@@ -788,13 +791,13 @@ export async function generatePriceMapping(
     console.log(`[PriceMapping] Creating ${priceMappings.length} new price mappings`)
     console.log(`[PriceMapping] Sample mapping: ${JSON.stringify(priceMappings[0])}`)
 
-    const createResult = await prisma.customerPriceList.createMany({
+    const createResult = await prisma.patientPriceList.createMany({
       data: priceMappings
     })
     console.log(`[PriceMapping] Created ${createResult.count} price mappings`)
 
     // Verify the mappings were created
-    const verifyCount = await prisma.customerPriceList.count({
+    const verifyCount = await prisma.patientPriceList.count({
       where: { customerId, active: true }
     })
     console.log(`[PriceMapping] Verification: ${verifyCount} active mappings in database for customer`)
@@ -835,7 +838,7 @@ export async function generatePriceMapping(
  * Get all carriers that have price lists for a customer
  */
 export async function getCustomerCarriers(customerId: string): Promise<string[]> {
-  const carriers = await prisma.customerPriceList.findMany({
+  const carriers = await prisma.patientPriceList.findMany({
     where: { customerId, active: true },
     select: { insuranceCarrier: true },
     distinct: ['insuranceCarrier']
@@ -857,9 +860,9 @@ export async function getPriceListStats(customerId: string, carrier?: string) {
   }
 
   const [total, withPrice, needsManual] = await Promise.all([
-    prisma.customerPriceList.count({ where }),
-    prisma.customerPriceList.count({ where: { ...where, finalPrice: { not: null } } }),
-    prisma.customerPriceList.count({ where: { ...where, finalPrice: null, customPrice: null } })
+    prisma.patientPriceList.count({ where }),
+    prisma.patientPriceList.count({ where: { ...where, finalPrice: { not: null } } }),
+    prisma.patientPriceList.count({ where: { ...where, finalPrice: null, customPrice: null } })
   ])
 
   return {
