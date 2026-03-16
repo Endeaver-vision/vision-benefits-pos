@@ -6,7 +6,7 @@ import { Prisma } from '@prisma/client';
 export async function GET(request: NextRequest) {
   try {
     const { searchParams } = new URL(request.url);
-    
+
     // Parse query parameters
     const startDate = searchParams.get('startDate');
     const endDate = searchParams.get('endDate');
@@ -16,53 +16,37 @@ export async function GET(request: NextRequest) {
     const minSpent = parseFloat(searchParams.get('minSpent') || '0');
     const limit = parseInt(searchParams.get('limit') || '100');
 
-    // Build transaction filters
-    const transactionFilters: Prisma.TransactionWhereInput = {};
+    // Build order filters (use orders instead of transactions for better data)
+    const orderFilters: Prisma.OrderWhereInput = {};
 
     // Date range filter
     if (startDate || endDate) {
-      transactionFilters.createdAt = {};
+      orderFilters.orderDate = {};
       if (startDate) {
-        transactionFilters.createdAt.gte = startOfDay(parseISO(startDate));
+        orderFilters.orderDate.gte = startOfDay(parseISO(startDate));
       }
       if (endDate) {
-        transactionFilters.createdAt.lte = endOfDay(parseISO(endDate));
+        orderFilters.orderDate.lte = endOfDay(parseISO(endDate));
       }
     }
 
     // Location filter
     if (locationId) {
-      transactionFilters.locationId = locationId;
+      orderFilters.locationId = locationId;
     }
 
     // Insurance carrier filter
     if (insuranceCarrier) {
-      transactionFilters.insuranceCarrier = insuranceCarrier;
+      orderFilters.insuranceCarrier = insuranceCarrier;
     }
 
-    // Only completed transactions
-    transactionFilters.status = 'COMPLETED';
-
-    // Get comprehensive customer analytics
+    // Get comprehensive customer analytics using Orders
     const customers = await prisma.customer.findMany({
       include: {
-        transactions: {
-          where: transactionFilters,
+        orders: {
+          where: orderFilters,
           include: {
-            items: {
-              include: {
-                product: {
-                  select: {
-                    name: true,
-                    category: {
-                      select: {
-                        name: true,
-                      },
-                    },
-                  },
-                },
-              },
-            },
+            items: true,
             location: {
               select: {
                 name: true,
@@ -74,49 +58,49 @@ export async function GET(request: NextRequest) {
       take: limit,
     });
 
-    // Process customer analytics
+    // Process customer analytics using orders
     const customerAnalytics = customers
       .map((customer) => {
-        const transactions = customer.transactions;
-        
-        if (transactions.length === 0) return null;
+        const orders = customer.orders;
+
+        if (orders.length === 0) return null;
 
         // Basic metrics
-        const totalSpent = transactions.reduce((sum, t) => sum + t.total, 0);
-        const totalTransactions = transactions.length;
+        const totalSpent = orders.reduce((sum, o) => sum + Number(o.total), 0);
+        const totalTransactions = orders.length;
         const averageTransactionValue = totalSpent / totalTransactions;
-        
+
         // Date analysis
-        const firstPurchase = new Date(Math.min(...transactions.map(t => new Date(t.createdAt).getTime())));
-        const lastPurchase = new Date(Math.max(...transactions.map(t => new Date(t.createdAt).getTime())));
+        const firstPurchase = new Date(Math.min(...orders.map(o => new Date(o.orderDate).getTime())));
+        const lastPurchase = new Date(Math.max(...orders.map(o => new Date(o.orderDate).getTime())));
         const daysSinceFirstPurchase = Math.floor((new Date().getTime() - firstPurchase.getTime()) / (1000 * 60 * 60 * 24));
         const daysSinceLastPurchase = Math.floor((new Date().getTime() - lastPurchase.getTime()) / (1000 * 60 * 60 * 24));
-        
+
         // Insurance analysis
-        const insuranceUsage = transactions.reduce((acc, t) => {
-          const carrier = t.insuranceCarrier || 'No Insurance';
+        const insuranceUsage = orders.reduce((acc, o) => {
+          const carrier = o.insuranceCarrier || 'No Insurance';
           if (!acc[carrier]) {
             acc[carrier] = { count: 0, totalSavings: 0 };
           }
           acc[carrier].count++;
-          acc[carrier].totalSavings += t.insuranceDiscount;
+          acc[carrier].totalSavings += Number(o.insuranceDiscount);
           return acc;
         }, {} as Record<string, { count: number; totalSavings: number }>);
 
-        // Product category preferences
-        const categoryPreferences = transactions.flatMap(t => t.items).reduce((acc, item) => {
-          const category = item.product.category.name;
+        // Product category preferences (using productType from order items)
+        const categoryPreferences = orders.flatMap(o => o.items).reduce((acc, item) => {
+          const category = item.productType;
           if (!acc[category]) {
             acc[category] = { count: 0, totalSpent: 0 };
           }
           acc[category].count += item.quantity;
-          acc[category].totalSpent += item.total;
+          acc[category].totalSpent += Number(item.patientCopay);
           return acc;
         }, {} as Record<string, { count: number; totalSpent: number }>);
 
         // Location preferences
-        const locationPreferences = transactions.reduce((acc, t) => {
-          const location = t.location.name;
+        const locationPreferences = orders.reduce((acc, o) => {
+          const location = o.location?.name || 'Unknown';
           if (!acc[location]) {
             acc[location] = 0;
           }
@@ -136,7 +120,7 @@ export async function GET(request: NextRequest) {
           phone: customer.phone,
           insuranceCarrier: customer.insuranceCarrier,
           createdAt: customer.createdAt,
-          
+
           // Analytics
           totalSpent,
           totalTransactions,
@@ -147,12 +131,12 @@ export async function GET(request: NextRequest) {
           daysSinceLastPurchase,
           purchaseFrequency,
           estimatedLifetimeValue,
-          
+
           // Preferences and patterns
           insuranceUsage,
           categoryPreferences,
           locationPreferences,
-          
+
           // Loyalty indicators
           isRepeatCustomer: totalTransactions > 1,
           isRecentCustomer: daysSinceLastPurchase <= 30,

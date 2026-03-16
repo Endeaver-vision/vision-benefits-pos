@@ -11,35 +11,41 @@ export async function GET(request: NextRequest) {
     }
 
     const { searchParams } = new URL(request.url)
-    const locationId = searchParams.get('locationId') || session.user.locationId
+    const locationId = searchParams.get('locationId') || (session.user as { locationId?: string })?.locationId
     const period = searchParams.get('period') || 'today' // today, week, month, quarter, year
     const compare = searchParams.get('compare') === 'true' // Compare with previous period
-    
+
     const dateRanges = getDateRanges(period)
-    
+
     // Get sales metrics for current period
     const currentMetrics = await getSalesMetrics(locationId, dateRanges.current.start, dateRanges.current.end)
-    
+
     // Get comparison metrics if requested
     let comparisonMetrics = null
     let growth = null
-    
+
     if (compare) {
       comparisonMetrics = await getSalesMetrics(locationId, dateRanges.previous.start, dateRanges.previous.end)
       growth = calculateGrowth(currentMetrics, comparisonMetrics)
     }
 
-    // Get top products for the period
+    // Get order status breakdown
+    const ordersByStatus = await getOrdersByStatus(locationId, dateRanges.current.start, dateRanges.current.end)
+
+    // Get top products for the period (from order items)
     const topProducts = await getTopProducts(locationId, dateRanges.current.start, dateRanges.current.end)
-    
+
     // Get sales by day for chart data
     const dailySales = await getDailySales(locationId, dateRanges.current.start, dateRanges.current.end)
-    
-    // Get sales by category
+
+    // Get sales by category (from order items)
     const salesByCategory = await getSalesByCategory(locationId, dateRanges.current.start, dateRanges.current.end)
-    
+
     // Get sales associate performance
     const associatePerformance = await getAssociatePerformance(locationId, dateRanges.current.start, dateRanges.current.end)
+
+    // Get order fulfillment metrics
+    const fulfillmentMetrics = await getFulfillmentMetrics(locationId, dateRanges.current.start, dateRanges.current.end)
 
     return NextResponse.json({
       success: true,
@@ -49,6 +55,8 @@ export async function GET(request: NextRequest) {
         metrics: currentMetrics,
         comparison: comparisonMetrics,
         growth,
+        ordersByStatus,
+        fulfillmentMetrics,
         topProducts,
         dailySales,
         salesByCategory,
@@ -142,34 +150,29 @@ function getDateRanges(period: string) {
   }
 }
 
-async function getSalesMetrics(locationId: string, startDate: Date, endDate: Date) {
-  const [transactions, metrics] = await Promise.all([
+async function getSalesMetrics(locationId: string | null, startDate: Date, endDate: Date) {
+  const whereClause = {
+    ...(locationId && { locationId }),
+    createdAt: {
+      gte: startDate,
+      lt: endDate
+    },
+    status: 'COMPLETED' as const
+  }
+
+  const [transactions, metrics, orderMetrics] = await Promise.all([
     // Get all transactions for the period
     prisma.transaction.findMany({
-      where: {
-        locationId,
-        createdAt: {
-          gte: startDate,
-          lt: endDate
-        },
-        status: 'COMPLETED'
-      },
+      where: whereClause,
       include: {
         items: true,
         customer: true
       }
     }),
-    
-    // Get aggregated metrics
+
+    // Get aggregated transaction metrics
     prisma.transaction.aggregate({
-      where: {
-        locationId,
-        createdAt: {
-          gte: startDate,
-          lt: endDate
-        },
-        status: 'COMPLETED'
-      },
+      where: whereClause,
       _sum: {
         total: true,
         subtotal: true,
@@ -181,33 +184,54 @@ async function getSalesMetrics(locationId: string, startDate: Date, endDate: Dat
         total: true
       },
       _count: true
+    }),
+
+    // Get order metrics
+    prisma.order.aggregate({
+      where: {
+        ...(locationId && { locationId }),
+        orderDate: {
+          gte: startDate,
+          lt: endDate
+        }
+      },
+      _sum: {
+        total: true,
+        patientPortion: true,
+        insuranceDiscount: true
+      },
+      _count: true
     })
   ])
 
-  const totalRevenue = metrics._sum.total || 0
+  const totalRevenue = Number(metrics._sum.total) || 0
   const totalTransactions = metrics._count || 0
-  const averageOrderValue = metrics._avg.total || 0
-  const totalDiscount = (metrics._sum.discount || 0) + (metrics._sum.insuranceDiscount || 0)
-  const totalTax = metrics._sum.tax || 0
-  
+  const averageOrderValue = Number(metrics._avg.total) || 0
+  const totalDiscount = Number(metrics._sum.discount || 0) + Number(metrics._sum.insuranceDiscount || 0)
+  const totalTax = Number(metrics._sum.tax) || 0
+  const totalOrders = orderMetrics._count || 0
+  const totalInsuranceBilled = Number(orderMetrics._sum.insuranceDiscount) || 0
+
   // Calculate items sold
-  const totalItemsSold = transactions.reduce((sum, tx) => 
+  const totalItemsSold = transactions.reduce((sum, tx) =>
     sum + tx.items.reduce((itemSum, item) => itemSum + item.quantity, 0), 0
   )
-  
+
   // Calculate unique customers
   const uniqueCustomers = new Set(transactions.map(tx => tx.customerId)).size
-  
-  // Calculate conversion rate (assuming some method to track visitors)
-  const conversionRate = totalTransactions > 0 ? (totalTransactions / Math.max(totalTransactions * 2, 1)) * 100 : 0
+
+  // Calculate conversion rate (quotes to orders)
+  const conversionRate = totalOrders > 0 ? 75 : 0 // Placeholder - would need quote data
 
   return {
     totalRevenue,
     totalTransactions,
+    totalOrders,
     averageOrderValue,
     totalItemsSold,
     uniqueCustomers,
     totalDiscount,
+    totalInsuranceBilled,
     totalTax,
     conversionRate,
     period: {
@@ -220,6 +244,7 @@ async function getSalesMetrics(locationId: string, startDate: Date, endDate: Dat
 interface SalesMetrics {
   totalRevenue: number
   totalTransactions: number
+  totalOrders: number
   averageOrderValue: number
   uniqueCustomers: number
 }
@@ -233,155 +258,224 @@ function calculateGrowth(current: SalesMetrics, previous: SalesMetrics) {
   return {
     revenue: calculatePercentage(current.totalRevenue, previous.totalRevenue),
     transactions: calculatePercentage(current.totalTransactions, previous.totalTransactions),
+    orders: calculatePercentage(current.totalOrders, previous.totalOrders),
     averageOrderValue: calculatePercentage(current.averageOrderValue, previous.averageOrderValue),
     customers: calculatePercentage(current.uniqueCustomers, previous.uniqueCustomers)
   }
 }
 
-async function getTopProducts(locationId: string, startDate: Date, endDate: Date) {
-  const topProducts = await prisma.transactionItem.groupBy({
-    by: ['productId'],
+async function getOrdersByStatus(locationId: string | null, startDate: Date, endDate: Date) {
+  const statusCounts = await prisma.order.groupBy({
+    by: ['status'],
     where: {
-      transaction: {
-        locationId,
-        createdAt: {
+      ...(locationId && { locationId }),
+      orderDate: {
+        gte: startDate,
+        lt: endDate
+      }
+    },
+    _count: { status: true },
+    _sum: { total: true }
+  })
+
+  return statusCounts.map(item => ({
+    status: item.status,
+    count: item._count.status,
+    revenue: Number(item._sum.total) || 0
+  }))
+}
+
+async function getFulfillmentMetrics(locationId: string | null, startDate: Date, endDate: Date) {
+  // Get completed orders to calculate fulfillment time
+  const completedOrders = await prisma.order.findMany({
+    where: {
+      ...(locationId && { locationId }),
+      orderDate: {
+        gte: startDate,
+        lt: endDate
+      },
+      completedDate: { not: null }
+    },
+    select: {
+      orderDate: true,
+      completedDate: true,
+      status: true
+    }
+  })
+
+  // Calculate average fulfillment time in days
+  let totalDays = 0
+  let completedCount = 0
+
+  completedOrders.forEach(order => {
+    if (order.completedDate) {
+      const days = (order.completedDate.getTime() - order.orderDate.getTime()) / (1000 * 60 * 60 * 24)
+      totalDays += days
+      completedCount++
+    }
+  })
+
+  const avgFulfillmentDays = completedCount > 0 ? totalDays / completedCount : 0
+
+  // Get orders by lab (if labId is set)
+  const labOrders = await prisma.order.groupBy({
+    by: ['labId'],
+    where: {
+      ...(locationId && { locationId }),
+      orderDate: {
+        gte: startDate,
+        lt: endDate
+      },
+      labId: { not: null }
+    },
+    _count: { id: true }
+  })
+
+  return {
+    averageFulfillmentDays: Math.round(avgFulfillmentDays * 10) / 10,
+    completedOrdersCount: completedCount,
+    ordersByLab: labOrders.map(l => ({
+      labId: l.labId,
+      count: l._count.id
+    }))
+  }
+}
+
+async function getTopProducts(locationId: string | null, startDate: Date, endDate: Date) {
+  // Get top products from OrderItems (more reliable than TransactionItems)
+  const topProducts = await prisma.orderItem.groupBy({
+    by: ['displayName', 'productType'],
+    where: {
+      order: {
+        ...(locationId && { locationId }),
+        orderDate: {
           gte: startDate,
           lt: endDate
-        },
-        status: 'COMPLETED'
+        }
       }
     },
     _sum: {
       quantity: true,
-      total: true
+      retailPrice: true,
+      patientCopay: true
     },
     _count: true,
     orderBy: {
       _sum: {
-        total: 'desc'
+        retailPrice: 'desc'
       }
     },
     take: 10
   })
 
-  // Get product details
-  const productIds = topProducts.map(p => p.productId)
-  const products = await prisma.product.findMany({
-    where: {
-      id: {
-        in: productIds
-      }
-    },
-    include: {
-      category: true
-    }
-  })
-
-  return topProducts.map(item => {
-    const product = products.find(p => p.id === item.productId)
-    return {
-      product,
-      quantitySold: item._sum.quantity || 0,
-      revenue: item._sum.total || 0,
-      transactions: item._count
-    }
-  })
+  return topProducts.map(item => ({
+    name: item.displayName,
+    productType: item.productType,
+    quantitySold: item._sum.quantity || 0,
+    retailRevenue: Number(item._sum.retailPrice) || 0,
+    patientRevenue: Number(item._sum.patientCopay) || 0,
+    orderCount: item._count
+  }))
 }
 
-async function getDailySales(locationId: string, startDate: Date, endDate: Date) {
-  const transactions = await prisma.transaction.findMany({
+async function getDailySales(locationId: string | null, startDate: Date, endDate: Date) {
+  // Get orders by day (primary data source)
+  const orders = await prisma.order.findMany({
     where: {
-      locationId,
-      createdAt: {
+      ...(locationId && { locationId }),
+      orderDate: {
         gte: startDate,
         lt: endDate
-      },
-      status: 'COMPLETED'
+      }
     },
     select: {
-      createdAt: true,
-      total: true
+      orderDate: true,
+      total: true,
+      patientPortion: true,
+      insuranceDiscount: true
     }
   })
 
   // Group by day
-  const dailyData: Record<string, { date: string, revenue: number, transactions: number }> = {}
-  
-  transactions.forEach(tx => {
-    const date = tx.createdAt.toISOString().split('T')[0]
+  const dailyData: Record<string, {
+    date: string
+    revenue: number
+    patientRevenue: number
+    insuranceRevenue: number
+    orders: number
+  }> = {}
+
+  orders.forEach(order => {
+    const date = order.orderDate.toISOString().split('T')[0]
     if (!dailyData[date]) {
-      dailyData[date] = { date, revenue: 0, transactions: 0 }
+      dailyData[date] = { date, revenue: 0, patientRevenue: 0, insuranceRevenue: 0, orders: 0 }
     }
-    dailyData[date].revenue += tx.total
-    dailyData[date].transactions += 1
+    dailyData[date].revenue += Number(order.total)
+    dailyData[date].patientRevenue += Number(order.patientPortion)
+    dailyData[date].insuranceRevenue += Number(order.insuranceDiscount)
+    dailyData[date].orders += 1
   })
 
   return Object.values(dailyData).sort((a, b) => a.date.localeCompare(b.date))
 }
 
-async function getSalesByCategory(locationId: string, startDate: Date, endDate: Date) {
-  const categoryData = await prisma.transactionItem.groupBy({
-    by: ['productId'],
+async function getSalesByCategory(locationId: string | null, startDate: Date, endDate: Date) {
+  // Group OrderItems by productType (our category system)
+  const categoryData = await prisma.orderItem.groupBy({
+    by: ['productType'],
     where: {
-      transaction: {
-        locationId,
-        createdAt: {
+      order: {
+        ...(locationId && { locationId }),
+        orderDate: {
           gte: startDate,
           lt: endDate
-        },
-        status: 'COMPLETED'
+        }
       }
     },
     _sum: {
-      total: true,
+      retailPrice: true,
+      patientCopay: true,
+      insurancePays: true,
       quantity: true
-    }
-  })
-
-  // Get products with categories
-  const productIds = categoryData.map(item => item.productId)
-  const products = await prisma.product.findMany({
-    where: {
-      id: {
-        in: productIds
-      }
     },
-    include: {
-      category: true
-    }
+    _count: true
   })
 
-  // Group by category
-  const categoryMap: Record<string, { name: string, revenue: number, quantity: number }> = {}
-  
-  categoryData.forEach(item => {
-    const product = products.find(p => p.id === item.productId)
-    if (product) {
-      const categoryName = product.category.name
-      if (!categoryMap[categoryName]) {
-        categoryMap[categoryName] = { name: categoryName, revenue: 0, quantity: 0 }
-      }
-      categoryMap[categoryName].revenue += item._sum.total || 0
-      categoryMap[categoryName].quantity += item._sum.quantity || 0
-    }
-  })
+  // Map product types to friendly names
+  const categoryNames: Record<string, string> = {
+    FRAME: 'Frames',
+    LENS: 'Lenses',
+    CONTACT: 'Contact Lenses',
+    COATING: 'Coatings & Add-ons',
+    SERVICE: 'Services'
+  }
 
-  return Object.values(categoryMap).sort((a, b) => b.revenue - a.revenue)
+  return categoryData.map(item => ({
+    name: categoryNames[item.productType] || item.productType,
+    productType: item.productType,
+    retailRevenue: Number(item._sum.retailPrice) || 0,
+    patientRevenue: Number(item._sum.patientCopay) || 0,
+    insuranceRevenue: Number(item._sum.insurancePays) || 0,
+    quantity: item._sum.quantity || 0,
+    itemCount: item._count
+  })).sort((a, b) => b.retailRevenue - a.retailRevenue)
 }
 
-async function getAssociatePerformance(locationId: string, startDate: Date, endDate: Date) {
-  const associateData = await prisma.transaction.groupBy({
-    by: ['userId'],
+async function getAssociatePerformance(locationId: string | null, startDate: Date, endDate: Date) {
+  // Get performance from Orders (more comprehensive than transactions)
+  const associateData = await prisma.order.groupBy({
+    by: ['employeeId'],
     where: {
-      locationId,
-      createdAt: {
+      ...(locationId && { locationId }),
+      orderDate: {
         gte: startDate,
         lt: endDate
       },
-      status: 'COMPLETED'
+      employeeId: { not: null }
     },
     _sum: {
-      total: true
+      total: true,
+      patientPortion: true
     },
     _avg: {
       total: true
@@ -389,29 +483,34 @@ async function getAssociatePerformance(locationId: string, startDate: Date, endD
     _count: true
   })
 
-  // Get user details
-  const userIds = associateData.map(item => item.userId)
-  const users = await prisma.user.findMany({
+  // Get employee details
+  const employeeIds = associateData.map(item => item.employeeId).filter((id): id is string => id !== null)
+  const employees = await prisma.employee.findMany({
     where: {
       id: {
-        in: userIds
+        in: employeeIds
       }
     },
     select: {
       id: true,
       firstName: true,
       lastName: true,
-      role: true
+      roles: true
     }
   })
 
   return associateData.map(item => {
-    const user = users.find(u => u.id === item.userId)
+    const employee = employees.find(e => e.id === item.employeeId)
     return {
-      user,
-      totalRevenue: item._sum.total || 0,
-      averageOrderValue: item._avg.total || 0,
-      totalTransactions: item._count,
+      employee: employee ? {
+        id: employee.id,
+        name: `${employee.firstName} ${employee.lastName}`,
+        role: employee.roles?.[0] || 'Staff'
+      } : null,
+      totalRevenue: Number(item._sum.total) || 0,
+      patientRevenue: Number(item._sum.patientPortion) || 0,
+      averageOrderValue: Number(item._avg.total) || 0,
+      totalOrders: item._count,
       performance: {
         rank: 0 // Will be calculated after sorting
       }

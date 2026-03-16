@@ -1,543 +1,478 @@
+/**
+ * Orders API
+ * GET /api/orders - List orders with filtering, pagination, and stats
+ * POST /api/orders - Create a new order
+ *
+ * This API uses the real database (Supabase via Prisma) instead of mock data.
+ */
+
 import { NextRequest, NextResponse } from 'next/server'
-import { PrescriptionOrder, OrderFilters } from '@/types/prescription'
+import { prisma } from '@/lib/prisma'
+import { getServerSession } from 'next-auth'
+import { authOptions } from '@/app/api/auth/[...nextauth]/route'
+import { OrderStatus, Prisma } from '@prisma/client'
 
-// Mock order data
-const mockOrders: PrescriptionOrder[] = [
-  {
-    id: '1',
-    orderNumber: 'ORD-2024-001',
-    customerId: '1',
-    customerInfo: {
-      name: 'John Smith',
-      email: 'john.smith@email.com',
-      phone: '(555) 123-4567',
-      address: {
-        street: '123 Main St',
-        city: 'Anytown',
-        state: 'CA',
-        zipCode: '12345'
-      }
-    },
-    prescriptionId: '1',
-    prescriptionDetails: {
-      id: '1',
-      customerId: '1',
-      customerName: 'John Smith',
-      prescribingDoctor: {
-        id: 'dr_001',
-        name: 'Dr. Sarah Johnson',
-        licenseNumber: 'MD123456',
-        practice: 'Vision Care Associates',
-        phone: '(555) 123-4567'
-      },
-      rightEye: { sphere: -2.25, cylinder: -0.75, axis: 90 },
-      leftEye: { sphere: -2.50, cylinder: -0.50, axis: 85 },
-      pd: { total: 62 },
-      measurements: {},
-      prescriptionDate: '2024-10-15',
-      expirationDate: '2026-10-15',
-      prescriptionType: 'progressive',
-      isValid: true,
-      createdAt: '2024-10-15T10:30:00Z',
-      updatedAt: '2024-10-15T10:30:00Z',
-      createdBy: 'dr_001'
-    },
-    items: [
-      {
-        id: 'item_1',
-        type: 'frame',
-        productId: 'frame_001',
-        productName: 'Ray-Ban RB5154 Clubmaster',
-        sku: 'RB5154-2000-49',
-        description: 'Classic clubmaster style frame in black',
-        frameColor: 'Black',
-        frameSize: '49-21-140',
-        unitPrice: 199.00,
-        finalPrice: 199.00,
-        quantity: 1,
-        isCustom: false,
-        status: 'completed',
-        estimatedDelivery: '2024-11-01'
-      },
-      {
-        id: 'item_2',
-        type: 'lens',
-        productId: 'lens_001',
-        productName: 'Progressive High-Index Lenses',
-        sku: 'PROG-HI-AR',
-        description: 'High-index progressive lenses with anti-reflective coating',
-        lensType: 'progressive',
-        lensCoatings: ['anti-reflective', 'scratch-resistant', 'uv-protection'],
-        prescriptionId: '1',
-        unitPrice: 299.00,
-        finalPrice: 299.00,
-        quantity: 1,
-        isCustom: true,
-        status: 'in_production',
-        estimatedDelivery: '2024-11-05'
-      }
-    ],
-    pricing: {
-      subtotal: 498.00,
-      taxAmount: 39.84,
-      discountAmount: 0,
-      insuranceAmount: 200.00,
-      shippingAmount: 0,
-      totalAmount: 537.84,
-      amountPaid: 337.84,
-      balanceDue: 0
-    },
-    payment: {
-      method: 'insurance',
-      status: 'paid',
-      transactions: [
-        {
-          id: 'txn_1',
-          amount: 200.00,
-          method: 'insurance',
-          timestamp: '2024-10-20T10:00:00Z',
-          referenceNumber: 'INS-REF-12345'
-        },
-        {
-          id: 'txn_2',
-          amount: 137.84,
-          method: 'card',
-          timestamp: '2024-10-20T10:05:00Z',
-          referenceNumber: 'CARD-4567'
-        }
-      ],
-      insuranceInfo: {
-        carrierId: 'ins_001',
-        carrierName: 'Vision Benefits Plus',
-        policyNumber: 'VBP123456789',
-        groupNumber: 'GRP001',
-        copay: 25.00,
-        allowance: 200.00,
-        deductible: 0
-      }
-    },
-    status: 'in_production',
-    orderDate: '2024-10-20',
-    estimatedCompletionDate: '2024-11-05',
-    deliveryMethod: 'pickup',
-    lab: {
-      id: 'lab_001',
-      name: 'Precision Optical Lab',
-      contactInfo: 'lab@precisionoptical.com',
-      orderNumber: 'POL-2024-789',
-      estimatedDelivery: '2024-11-05',
-      trackingNumber: 'POL789456123'
-    },
-    qualityCheck: {},
-    notes: ['Customer prefers progressive lenses', 'Rush order for business travel'],
-    internalNotes: ['Lab confirmed rush processing'],
-    statusHistory: [
-      {
-        status: 'draft',
-        timestamp: '2024-10-20T09:00:00Z',
-        updatedBy: 'staff_001',
-        notes: 'Order created'
-      },
-      {
-        status: 'submitted',
-        timestamp: '2024-10-20T10:00:00Z',
-        updatedBy: 'staff_001',
-        notes: 'Payment processed'
-      },
-      {
-        status: 'confirmed',
-        timestamp: '2024-10-20T10:30:00Z',
-        updatedBy: 'system',
-        notes: 'Order confirmed and sent to lab'
-      },
-      {
-        status: 'in_production',
-        timestamp: '2024-10-21T08:00:00Z',
-        updatedBy: 'lab_001',
-        notes: 'Production started at lab'
-      }
-    ],
-    createdAt: '2024-10-20T09:00:00Z',
-    updatedAt: '2024-10-21T08:00:00Z',
-    createdBy: 'staff_001'
-  },
-  {
-    id: '2',
-    orderNumber: 'ORD-2024-002',
-    customerId: '2',
-    customerInfo: {
-      name: 'Emily Davis',
-      email: 'emily.davis@email.com',
-      phone: '(555) 987-6543',
-      address: {
-        street: '456 Oak Ave',
-        city: 'Springfield',
-        state: 'IL',
-        zipCode: '62701'
-      }
-    },
-    prescriptionId: '2',
-    prescriptionDetails: {
-      id: '2',
-      customerId: '2',
-      customerName: 'Emily Davis',
-      prescribingDoctor: {
-        id: 'dr_002',
-        name: 'Dr. Michael Chen',
-        licenseNumber: 'OD789012',
-        practice: 'Clear Vision Clinic',
-        phone: '(555) 987-6543'
-      },
-      rightEye: { sphere: -1.75, cylinder: -0.25, axis: 180 },
-      leftEye: { sphere: -1.50, cylinder: -0.50, axis: 175 },
-      pd: { total: 58 },
-      measurements: {},
-      prescriptionDate: '2024-09-20',
-      expirationDate: '2026-09-20',
-      prescriptionType: 'distance',
-      isValid: true,
-      createdAt: '2024-09-20T14:15:00Z',
-      updatedAt: '2024-09-20T14:15:00Z',
-      createdBy: 'dr_002'
-    },
-    items: [
-      {
-        id: 'item_3',
-        type: 'frame',
-        productId: 'frame_002',
-        productName: 'Oakley OX8156 Holbrook',
-        sku: 'OX8156-0354',
-        description: 'Modern rectangular frame in matte black',
-        frameColor: 'Matte Black',
-        frameSize: '54-18-137',
-        unitPrice: 159.00,
-        finalPrice: 159.00,
-        quantity: 1,
-        isCustom: false,
-        status: 'ready_for_pickup',
-        estimatedDelivery: '2024-10-25',
-        actualDelivery: '2024-10-25'
-      },
-      {
-        id: 'item_4',
-        type: 'lens',
-        productId: 'lens_002',
-        productName: 'Single Vision Polycarbonate',
-        sku: 'SV-PC-AR',
-        description: 'Single vision polycarbonate lenses with anti-reflective coating',
-        lensType: 'single_vision',
-        lensCoatings: ['anti-reflective', 'scratch-resistant'],
-        prescriptionId: '2',
-        unitPrice: 149.00,
-        finalPrice: 149.00,
-        quantity: 1,
-        isCustom: true,
-        status: 'ready_for_pickup',
-        estimatedDelivery: '2024-10-25',
-        actualDelivery: '2024-10-25'
-      }
-    ],
-    pricing: {
-      subtotal: 308.00,
-      taxAmount: 24.64,
-      discountAmount: 20.00,
-      insuranceAmount: 150.00,
-      shippingAmount: 0,
-      totalAmount: 332.64,
-      amountPaid: 332.64,
-      balanceDue: 0
-    },
-    payment: {
-      method: 'insurance',
-      status: 'paid',
-      transactions: [
-        {
-          id: 'txn_3',
-          amount: 150.00,
-          method: 'insurance',
-          timestamp: '2024-10-15T14:00:00Z',
-          referenceNumber: 'INS-REF-67890'
-        },
-        {
-          id: 'txn_4',
-          amount: 182.64,
-          method: 'card',
-          timestamp: '2024-10-15T14:05:00Z',
-          referenceNumber: 'CARD-8901'
-        }
-      ],
-      insuranceInfo: {
-        carrierId: 'ins_002',
-        carrierName: 'EyeCare Insurance',
-        policyNumber: 'ECI987654321',
-        copay: 20.00,
-        allowance: 150.00
-      }
-    },
-    status: 'ready_for_pickup',
-    orderDate: '2024-10-15',
-    estimatedCompletionDate: '2024-10-25',
-    actualCompletionDate: '2024-10-25',
-    deliveryMethod: 'pickup',
-    lab: {
-      id: 'lab_002',
-      name: 'Quick Vision Lab',
-      contactInfo: 'orders@quickvision.com',
-      orderNumber: 'QVL-2024-456',
-      estimatedDelivery: '2024-10-25',
-      trackingNumber: 'QVL456789012'
-    },
-    qualityCheck: {
-      performedBy: 'qc_001',
-      performedAt: '2024-10-25T09:00:00Z',
-      passed: true,
-      notes: 'Perfect quality, ready for customer pickup'
-    },
-    notes: ['Student discount applied'],
-    internalNotes: ['Customer called to confirm pickup time'],
-    statusHistory: [
-      {
-        status: 'draft',
-        timestamp: '2024-10-15T13:00:00Z',
-        updatedBy: 'staff_002',
-        notes: 'Order created'
-      },
-      {
-        status: 'submitted',
-        timestamp: '2024-10-15T14:00:00Z',
-        updatedBy: 'staff_002',
-        notes: 'Payment processed'
-      },
-      {
-        status: 'confirmed',
-        timestamp: '2024-10-15T14:30:00Z',
-        updatedBy: 'system',
-        notes: 'Order sent to lab'
-      },
-      {
-        status: 'in_production',
-        timestamp: '2024-10-16T08:00:00Z',
-        updatedBy: 'lab_002',
-        notes: 'Production started'
-      },
-      {
-        status: 'quality_check',
-        timestamp: '2024-10-24T16:00:00Z',
-        updatedBy: 'lab_002',
-        notes: 'Completed production, quality check in progress'
-      },
-      {
-        status: 'ready_for_pickup',
-        timestamp: '2024-10-25T09:00:00Z',
-        updatedBy: 'qc_001',
-        notes: 'Quality check passed, ready for pickup'
-      }
-    ],
-    createdAt: '2024-10-15T13:00:00Z',
-    updatedAt: '2024-10-25T09:00:00Z',
-    createdBy: 'staff_002'
-  }
-]
+interface OrderFilters {
+  status?: string[]
+  customerId?: string
+  orderNumber?: string
+  labId?: string
+  dateRange?: { start: string; end: string }
+  sortBy?: 'orderDate' | 'completionDate' | 'totalAmount' | 'customerName'
+  sortOrder?: 'asc' | 'desc'
+  page?: number
+  limit?: number
+}
 
+/**
+ * GET - List orders with filtering, pagination, and stats
+ */
 export async function GET(request: NextRequest) {
   try {
     const { searchParams } = new URL(request.url)
-    
+
     // Parse filters
     const filters: OrderFilters = {
       status: searchParams.get('status')?.split(',') || undefined,
       customerId: searchParams.get('customerId') || undefined,
       orderNumber: searchParams.get('orderNumber') || undefined,
-      prescriptionId: searchParams.get('prescriptionId') || undefined,
       labId: searchParams.get('labId') || undefined,
-      paymentStatus: searchParams.get('paymentStatus')?.split(',') || undefined,
-      deliveryMethod: searchParams.get('deliveryMethod')?.split(',') || undefined,
-      sortBy: (searchParams.get('sortBy') as 'orderDate' | 'completionDate' | 'totalAmount' | 'customerName') || 'orderDate',
+      sortBy:
+        (searchParams.get('sortBy') as
+          | 'orderDate'
+          | 'completionDate'
+          | 'totalAmount'
+          | 'customerName') || 'orderDate',
       sortOrder: (searchParams.get('sortOrder') as 'asc' | 'desc') || 'desc',
       page: parseInt(searchParams.get('page') || '1'),
-      limit: parseInt(searchParams.get('limit') || '20')
+      limit: parseInt(searchParams.get('limit') || '20'),
     }
-    
+
     if (searchParams.get('startDate') && searchParams.get('endDate')) {
       filters.dateRange = {
         start: searchParams.get('startDate')!,
-        end: searchParams.get('endDate')!
+        end: searchParams.get('endDate')!,
       }
     }
-    
-    let filteredOrders = [...mockOrders]
-    
-    // Apply filters
+
+    // Build where clause
+    const where: Prisma.OrderWhereInput = {}
+
     if (filters.status && filters.status.length > 0) {
-      filteredOrders = filteredOrders.filter(order => 
-        filters.status!.includes(order.status)
-      )
+      where.status = { in: filters.status as OrderStatus[] }
     }
-    
+
     if (filters.customerId) {
-      filteredOrders = filteredOrders.filter(order => order.customerId === filters.customerId)
+      where.customerId = filters.customerId
     }
-    
+
     if (filters.orderNumber) {
-      filteredOrders = filteredOrders.filter(order => 
-        order.orderNumber.toLowerCase().includes(filters.orderNumber!.toLowerCase())
-      )
+      where.orderNumber = { contains: filters.orderNumber, mode: 'insensitive' }
     }
-    
-    if (filters.prescriptionId) {
-      filteredOrders = filteredOrders.filter(order => order.prescriptionId === filters.prescriptionId)
-    }
-    
+
     if (filters.labId) {
-      filteredOrders = filteredOrders.filter(order => order.lab.id === filters.labId)
+      where.labId = filters.labId
     }
-    
-    if (filters.paymentStatus && filters.paymentStatus.length > 0) {
-      filteredOrders = filteredOrders.filter(order => 
-        filters.paymentStatus!.includes(order.payment.status)
-      )
-    }
-    
-    if (filters.deliveryMethod && filters.deliveryMethod.length > 0) {
-      filteredOrders = filteredOrders.filter(order => 
-        filters.deliveryMethod!.includes(order.deliveryMethod)
-      )
-    }
-    
+
     if (filters.dateRange) {
-      const { start, end } = filters.dateRange
-      filteredOrders = filteredOrders.filter(order => {
-        const orderDate = new Date(order.orderDate)
-        return orderDate >= new Date(start) && orderDate <= new Date(end)
-      })
-    }
-    
-    // Sort orders
-    filteredOrders.sort((a, b) => {
-      let comparison = 0
-      
-      switch (filters.sortBy) {
-        case 'orderDate':
-          comparison = new Date(a.orderDate).getTime() - new Date(b.orderDate).getTime()
-          break
-        case 'completionDate':
-          const aCompletion = a.actualCompletionDate || a.estimatedCompletionDate
-          const bCompletion = b.actualCompletionDate || b.estimatedCompletionDate
-          comparison = new Date(aCompletion).getTime() - new Date(bCompletion).getTime()
-          break
-        case 'totalAmount':
-          comparison = a.pricing.totalAmount - b.pricing.totalAmount
-          break
-        case 'customerName':
-          comparison = a.customerInfo.name.localeCompare(b.customerInfo.name)
-          break
-        default:
-          comparison = new Date(a.orderDate).getTime() - new Date(b.orderDate).getTime()
+      where.orderDate = {
+        gte: new Date(filters.dateRange.start),
+        lte: new Date(filters.dateRange.end),
       }
-      
-      return filters.sortOrder === 'desc' ? -comparison : comparison
-    })
-    
-    // Apply pagination
+    }
+
+    // Build orderBy clause
+    let orderBy: Prisma.OrderOrderByWithRelationInput = {}
+    switch (filters.sortBy) {
+      case 'orderDate':
+        orderBy = { orderDate: filters.sortOrder || 'desc' }
+        break
+      case 'completionDate':
+        orderBy = { completedDate: filters.sortOrder || 'desc' }
+        break
+      case 'totalAmount':
+        orderBy = { total: filters.sortOrder || 'desc' }
+        break
+      case 'customerName':
+        orderBy = { customer: { lastName: filters.sortOrder || 'asc' } }
+        break
+      default:
+        orderBy = { orderDate: 'desc' }
+    }
+
+    // Pagination
     const page = Math.max(1, filters.page || 1)
     const limit = Math.max(1, Math.min(filters.limit || 20, 100))
     const skip = (page - 1) * limit
-    const paginatedOrders = filteredOrders.slice(skip, skip + limit)
-    
+
+    // Fetch orders with relations
+    const [orders, totalCount] = await Promise.all([
+      prisma.order.findMany({
+        where,
+        include: {
+          customer: {
+            select: {
+              id: true,
+              firstName: true,
+              lastName: true,
+              email: true,
+              phone: true,
+              address: true,
+              city: true,
+              state: true,
+              zipCode: true,
+            },
+          },
+          quote: {
+            select: {
+              id: true,
+              quoteNumber: true,
+            },
+          },
+          location: {
+            select: {
+              id: true,
+              name: true,
+            },
+          },
+          employee: {
+            select: {
+              id: true,
+              firstName: true,
+              lastName: true,
+            },
+          },
+          items: true,
+          transactions: {
+            select: {
+              id: true,
+              transactionNumber: true,
+              paymentMethod: true,
+              total: true,
+              status: true,
+              createdAt: true,
+            },
+          },
+          statusHistory: {
+            orderBy: { createdAt: 'desc' },
+            take: 5,
+          },
+        },
+        orderBy,
+        skip,
+        take: limit,
+      }),
+      prisma.order.count({ where }),
+    ])
+
     // Calculate stats
-    const totalPages = Math.ceil(filteredOrders.length / limit)
-    const stats = {
-      total: filteredOrders.length,
-      totalValue: filteredOrders.reduce((sum, order) => sum + order.pricing.totalAmount, 0),
-      averageOrderValue: filteredOrders.length > 0 
-        ? filteredOrders.reduce((sum, order) => sum + order.pricing.totalAmount, 0) / filteredOrders.length 
-        : 0,
-      ordersByStatus: filteredOrders.reduce((acc, order) => {
-        acc[order.status] = (acc[order.status] || 0) + 1
+    const statsAggregation = await prisma.order.aggregate({
+      where,
+      _sum: { total: true },
+      _avg: { total: true },
+      _count: true,
+    })
+
+    // Get orders by status count
+    const statusCounts = await prisma.order.groupBy({
+      by: ['status'],
+      where,
+      _count: { status: true },
+    })
+
+    const ordersByStatus = statusCounts.reduce(
+      (acc, item) => {
+        acc[item.status] = item._count.status
         return acc
-      }, {} as Record<string, number>),
-      ordersByPaymentStatus: filteredOrders.reduce((acc, order) => {
-        acc[order.payment.status] = (acc[order.payment.status] || 0) + 1
-        return acc
-      }, {} as Record<string, number>),
-      ordersByDeliveryMethod: filteredOrders.reduce((acc, order) => {
-        acc[order.deliveryMethod] = (acc[order.deliveryMethod] || 0) + 1
-        return acc
-      }, {} as Record<string, number>)
-    }
-    
+      },
+      {} as Record<string, number>
+    )
+
+    // Format response
+    const formattedOrders = orders.map((order) => ({
+      id: order.id,
+      orderNumber: order.orderNumber,
+      customerId: order.customerId,
+      customerInfo: {
+        name: `${order.customer.firstName} ${order.customer.lastName}`,
+        email: order.customer.email,
+        phone: order.customer.phone,
+        address: order.customer.address
+          ? {
+              street: order.customer.address,
+              city: order.customer.city,
+              state: order.customer.state,
+              zipCode: order.customer.zipCode,
+            }
+          : null,
+      },
+      quoteId: order.quoteId,
+      quoteNumber: order.quote?.quoteNumber,
+      status: order.status,
+      orderDate: order.orderDate,
+      estimatedCompletionDate: order.estimatedCompletionDate,
+      completedDate: order.completedDate,
+      lab: order.labId
+        ? {
+            id: order.labId,
+            orderNumber: order.labOrderNumber,
+            trackingNumber: order.labTrackingNumber,
+          }
+        : null,
+      location: order.location,
+      employee: order.employee
+        ? {
+            id: order.employee.id,
+            name: `${order.employee.firstName} ${order.employee.lastName}`,
+          }
+        : null,
+      items: order.items.map((item) => ({
+        id: item.id,
+        type: item.productType,
+        productId: item.productId,
+        productName: item.displayName,
+        sku: item.sku,
+        quantity: item.quantity,
+        retailPrice: Number(item.retailPrice),
+        insurancePays: Number(item.insurancePays),
+        patientCopay: Number(item.patientCopay),
+        insuranceTier: item.insuranceTier,
+      })),
+      pricing: {
+        subtotal: Number(order.subtotal),
+        taxAmount: Number(order.tax),
+        discountAmount: Number(order.discount),
+        insuranceAmount: Number(order.insuranceDiscount),
+        totalAmount: Number(order.total),
+        patientPortion: Number(order.patientPortion),
+      },
+      payment: {
+        status:
+          order.transactions.length > 0 &&
+          order.transactions.every((t) => t.status === 'COMPLETED')
+            ? 'paid'
+            : order.transactions.length > 0
+              ? 'partial'
+              : 'pending',
+        transactions: order.transactions.map((t) => ({
+          id: t.id,
+          transactionNumber: t.transactionNumber,
+          method: t.paymentMethod,
+          amount: Number(t.total),
+          status: t.status,
+          timestamp: t.createdAt,
+        })),
+      },
+      insuranceCarrier: order.insuranceCarrier,
+      notes: order.notes,
+      statusHistory: order.statusHistory.map((h) => ({
+        status: h.status,
+        timestamp: h.createdAt,
+        changedBy: h.changedBy,
+        notes: h.notes,
+      })),
+      createdAt: order.createdAt,
+      updatedAt: order.updatedAt,
+    }))
+
+    const totalPages = Math.ceil(totalCount / limit)
+
     return NextResponse.json({
       success: true,
-      data: paginatedOrders,
+      data: formattedOrders,
       pagination: {
         page,
         limit,
-        total: filteredOrders.length,
+        total: totalCount,
         totalPages,
         hasNextPage: page < totalPages,
-        hasPreviousPage: page > 1
+        hasPreviousPage: page > 1,
       },
-      stats
+      stats: {
+        total: totalCount,
+        totalValue: Number(statsAggregation._sum.total) || 0,
+        averageOrderValue: Number(statsAggregation._avg.total) || 0,
+        ordersByStatus,
+      },
     })
   } catch (error) {
     console.error('Orders API error:', error)
-    return NextResponse.json({
-      success: false,
-      error: error instanceof Error ? error.message : 'Unknown error occurred'
-    }, { status: 500 })
+    return NextResponse.json(
+      {
+        success: false,
+        error: error instanceof Error ? error.message : 'Unknown error occurred',
+      },
+      { status: 500 }
+    )
   }
 }
 
+/**
+ * POST - Create a new order
+ */
 export async function POST(request: NextRequest) {
   try {
+    const session = await getServerSession(authOptions)
+    if (!session) {
+      return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
+    }
+
     const orderData = await request.json()
-    
+
     // Validate required fields
-    const requiredFields = ['customerId', 'customerInfo', 'prescriptionId', 'items']
-    const missingFields = requiredFields.filter(field => !orderData[field])
-    
+    const requiredFields = ['customerId', 'items']
+    const missingFields = requiredFields.filter((field) => !orderData[field])
+
     if (missingFields.length > 0) {
-      return NextResponse.json({
-        success: false,
-        error: `Missing required fields: ${missingFields.join(', ')}`
-      }, { status: 400 })
-    }
-    
-    // Generate order number
-    const orderNumber = `ORD-${new Date().getFullYear()}-${String(mockOrders.length + 1).padStart(3, '0')}`
-    
-    // Create new order
-    const newOrder: PrescriptionOrder = {
-      id: (mockOrders.length + 1).toString(),
-      orderNumber,
-      ...orderData,
-      status: 'draft',
-      orderDate: new Date().toISOString().split('T')[0],
-      statusHistory: [
+      return NextResponse.json(
         {
-          status: 'draft',
-          timestamp: new Date().toISOString(),
-          updatedBy: orderData.createdBy || 'system',
-          notes: 'Order created'
-        }
-      ],
-      createdAt: new Date().toISOString(),
-      updatedAt: new Date().toISOString()
+          success: false,
+          error: `Missing required fields: ${missingFields.join(', ')}`,
+        },
+        { status: 400 }
+      )
     }
-    
-    // In a real implementation, this would save to database
-    mockOrders.push(newOrder)
-    
+
+    // Verify customer exists
+    const customer = await prisma.customer.findUnique({
+      where: { id: orderData.customerId },
+      select: { id: true, firstName: true, lastName: true },
+    })
+
+    if (!customer) {
+      return NextResponse.json(
+        { success: false, error: 'Customer not found' },
+        { status: 404 }
+      )
+    }
+
+    // Generate order number
+    const date = new Date()
+    const dateStr = date.toISOString().slice(0, 10).replace(/-/g, '')
+    const random = Math.random().toString(36).substring(2, 6).toUpperCase()
+    const orderNumber = `ORD-${dateStr}-${random}`
+
+    const employeeId = (session.user as { employeeId?: string })?.employeeId
+    const locationId =
+      orderData.locationId ||
+      (session.user as { locationId?: string })?.locationId
+
+    // Create order with items
+    const order = await prisma.$transaction(async (tx) => {
+      // Create the order
+      const newOrder = await tx.order.create({
+        data: {
+          orderNumber,
+          customerId: orderData.customerId,
+          quoteId: orderData.quoteId || null,
+          locationId: locationId || null,
+          employeeId: employeeId || null,
+          status: OrderStatus.DRAFT,
+          orderDate: new Date(),
+          estimatedCompletionDate: orderData.estimatedCompletionDate
+            ? new Date(orderData.estimatedCompletionDate)
+            : null,
+          labId: orderData.labId || null,
+          subtotal: orderData.subtotal || 0,
+          tax: orderData.tax || 0,
+          discount: orderData.discount || 0,
+          insuranceDiscount: orderData.insuranceDiscount || 0,
+          total: orderData.total || 0,
+          patientPortion: orderData.patientPortion || 0,
+          insuranceCarrier: orderData.insuranceCarrier || null,
+          insuranceAuthorizationId: orderData.authorizationId || null,
+          notes: orderData.notes || null,
+        },
+      })
+
+      // Create order items
+      if (orderData.items && orderData.items.length > 0) {
+        await tx.orderItem.createMany({
+          data: orderData.items.map(
+            (item: {
+              productType: string
+              productId?: string
+              sku?: string
+              displayName: string
+              quantity?: number
+              retailPrice?: number
+              insurancePays?: number
+              patientCopay?: number
+              insuranceTier?: string
+              notes?: string
+            }) => ({
+              orderId: newOrder.id,
+              productType: item.productType || 'LENS',
+              productId: item.productId || null,
+              sku: item.sku || null,
+              displayName: item.displayName,
+              quantity: item.quantity || 1,
+              retailPrice: item.retailPrice || 0,
+              insurancePays: item.insurancePays || 0,
+              patientCopay: item.patientCopay || 0,
+              insuranceTier: item.insuranceTier || null,
+              notes: item.notes || null,
+            })
+          ),
+        })
+      }
+
+      // Create initial status history
+      await tx.orderStatusHistory.create({
+        data: {
+          orderId: newOrder.id,
+          status: OrderStatus.DRAFT,
+          changedBy: employeeId || null,
+          notes: 'Order created',
+        },
+      })
+
+      // Fetch the complete order with relations
+      return tx.order.findUnique({
+        where: { id: newOrder.id },
+        include: {
+          customer: {
+            select: {
+              id: true,
+              firstName: true,
+              lastName: true,
+              email: true,
+              phone: true,
+            },
+          },
+          items: true,
+          statusHistory: true,
+        },
+      })
+    })
+
+    if (!order) {
+      throw new Error('Failed to create order')
+    }
+
     return NextResponse.json({
       success: true,
-      data: newOrder,
-      message: 'Order created successfully'
+      data: {
+        id: order.id,
+        orderNumber: order.orderNumber,
+        customerId: order.customerId,
+        customerName: `${order.customer.firstName} ${order.customer.lastName}`,
+        status: order.status,
+        orderDate: order.orderDate,
+        itemCount: order.items.length,
+        total: Number(order.total),
+        createdAt: order.createdAt,
+      },
+      message: 'Order created successfully',
     })
   } catch (error) {
     console.error('Error creating order:', error)
-    return NextResponse.json({
-      success: false,
-      error: 'Failed to create order'
-    }, { status: 500 })
+    return NextResponse.json(
+      {
+        success: false,
+        error: error instanceof Error ? error.message : 'Failed to create order',
+      },
+      { status: 500 }
+    )
   }
 }

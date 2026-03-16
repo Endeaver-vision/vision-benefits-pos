@@ -27,17 +27,19 @@ model Location {
   npiNumber   String?
   openingTime DateTime?  @db.Time(6)
   closingTime DateTime?  @db.Time(6)
-  workingDays String[]   @default(["Monday", "Tuesday", "Wednesday", "Thursday", "Friday"])
-  customers   Customer[]
-  employees   Employee[]
+  workingDays  String[]      @default(["Monday", "Tuesday", "Wednesday", "Thursday", "Friday"])
+  customers    Customer[]
+  employees    Employee[]
+  orders       Order[]
+  transactions Transaction[]
 
   @@map("locations")
 }
 
 model LensProduct {
-  id                            String   @id(map: "products_pkey") @default(cuid())
+  id                            String   @id(map: "lens_products_pkey") @default(cuid())
   name                          String
-  sku                           String?  @unique(map: "products_sku_key")
+  sku                           String?  @unique(map: "lens_products_sku_key")
   manufacturer                  String?
   basePrice                     Float
   tierVsp                       String?
@@ -102,6 +104,8 @@ model Customer {
   priceListVersions     PriceListVersion[]
   quotes                Quote[]
   priceListAudits       PriceListAudit[]
+  orders                Order[]
+  transactions          Transaction[]
 
   @@map("customers")
 }
@@ -128,6 +132,7 @@ model Quote {
   updatedAt            DateTime    @updatedAt
   createdBy            String?
   customer             Customer    @relation(fields: [customerId], references: [id])
+  orders               Order[]
 
   @@index([customerId])
   @@index([status])
@@ -298,6 +303,8 @@ model Employee {
   locationIds       String[]       @default([])
   roles             EmployeeRole[]
   primaryLocation   Location?      @relation(fields: [primaryLocationId], references: [id])
+  orders            Order[]
+  transactions      Transaction[]
 
   @@map("employees")
 }
@@ -909,4 +916,177 @@ enum TempPriceStatus {
   TEMPORARY
   ASSIGNED
   EXPIRED
+}
+
+// ============================================================================
+// ORDERS, TRANSACTIONS, AND PRODUCTS
+// Core POS tables for order management and sales tracking
+// ============================================================================
+
+model ProductCategory {
+  id           String            @id @default(cuid())
+  name         String
+  slug         String            @unique
+  parentId     String?           @map("parent_id")
+  displayOrder Int               @default(0) @map("display_order")
+  createdAt    DateTime          @default(now())
+  updatedAt    DateTime          @updatedAt
+  parent       ProductCategory?  @relation("CategoryHierarchy", fields: [parentId], references: [id])
+  children     ProductCategory[] @relation("CategoryHierarchy")
+  products     Product[]
+
+  @@map("product_categories")
+}
+
+model Product {
+  id           String           @id @default(cuid())
+  sku          String           @unique
+  name         String
+  categoryId   String?          @map("category_id")
+  productType  ProductType      @map("product_type")
+  retailPrice  Decimal          @default(0) @map("retail_price") @db.Decimal(10, 2)
+  active       Boolean          @default(true)
+  createdAt    DateTime         @default(now())
+  updatedAt    DateTime         @updatedAt
+  category     ProductCategory? @relation(fields: [categoryId], references: [id])
+  transactionItems TransactionItem[]
+
+  @@index([categoryId])
+  @@index([sku])
+  @@map("products")
+}
+
+model Order {
+  id                       String                  @id @default(cuid())
+  orderNumber              String                  @unique @map("order_number")
+  customerId               String                  @map("customer_id")
+  quoteId                  String?                 @map("quote_id")
+  locationId               String?                 @map("location_id")
+  employeeId               String?                 @map("employee_id")
+  status                   OrderStatus             @default(DRAFT)
+  orderDate                DateTime                @default(now()) @map("order_date")
+  estimatedCompletionDate  DateTime?               @map("estimated_completion_date")
+  completedDate            DateTime?               @map("completed_date")
+  labId                    String?                 @map("lab_id")
+  labOrderNumber           String?                 @map("lab_order_number")
+  labTrackingNumber        String?                 @map("lab_tracking_number")
+  subtotal                 Decimal                 @default(0) @db.Decimal(10, 2)
+  tax                      Decimal                 @default(0) @db.Decimal(10, 2)
+  discount                 Decimal                 @default(0) @db.Decimal(10, 2)
+  insuranceDiscount        Decimal                 @default(0) @map("insurance_discount") @db.Decimal(10, 2)
+  total                    Decimal                 @default(0) @db.Decimal(10, 2)
+  patientPortion           Decimal                 @default(0) @map("patient_portion") @db.Decimal(10, 2)
+  insuranceCarrier         String?                 @map("insurance_carrier")
+  insuranceAuthorizationId String?                 @map("insurance_authorization_id")
+  priceListVersionId       String?                 @map("price_list_version_id")
+  notes                    String?
+  createdAt                DateTime                @default(now())
+  updatedAt                DateTime                @updatedAt
+  customer                 Customer                @relation(fields: [customerId], references: [id])
+  quote                    Quote?                  @relation(fields: [quoteId], references: [id])
+  location                 Location?               @relation(fields: [locationId], references: [id])
+  employee                 Employee?               @relation(fields: [employeeId], references: [id])
+  items                    OrderItem[]
+  transactions             Transaction[]
+  statusHistory            OrderStatusHistory[]
+
+  @@index([customerId])
+  @@index([status])
+  @@index([orderDate])
+  @@index([locationId])
+  @@map("orders")
+}
+
+model OrderItem {
+  id            String      @id @default(cuid())
+  orderId       String      @map("order_id")
+  productType   ProductType @map("product_type")
+  productId     String?     @map("product_id")
+  sku           String?
+  displayName   String      @map("display_name")
+  quantity      Int         @default(1)
+  retailPrice   Decimal     @default(0) @map("retail_price") @db.Decimal(10, 2)
+  insurancePays Decimal     @default(0) @map("insurance_pays") @db.Decimal(10, 2)
+  patientCopay  Decimal     @default(0) @map("patient_copay") @db.Decimal(10, 2)
+  insuranceTier String?     @map("insurance_tier")
+  notes         String?
+  createdAt     DateTime    @default(now())
+  updatedAt     DateTime    @updatedAt
+  order         Order       @relation(fields: [orderId], references: [id], onDelete: Cascade)
+  transactionItems TransactionItem[]
+
+  @@index([orderId])
+  @@map("order_items")
+}
+
+model Transaction {
+  id                String            @id @default(cuid())
+  transactionNumber String            @unique @map("transaction_number")
+  orderId           String?           @map("order_id")
+  customerId        String            @map("customer_id")
+  locationId        String?           @map("location_id")
+  employeeId        String?           @map("employee_id")
+  paymentMethod     PaymentMethod     @map("payment_method")
+  subtotal          Decimal           @default(0) @db.Decimal(10, 2)
+  tax               Decimal           @default(0) @db.Decimal(10, 2)
+  discount          Decimal           @default(0) @db.Decimal(10, 2)
+  total             Decimal           @default(0) @db.Decimal(10, 2)
+  insuranceDiscount Decimal           @default(0) @map("insurance_discount") @db.Decimal(10, 2)
+  patientPortion    Decimal           @default(0) @map("patient_portion") @db.Decimal(10, 2)
+  cardLastFour      String?           @map("card_last_four")
+  checkNumber       String?           @map("check_number")
+  splitDetails      Json?             @map("split_details")
+  status            TransactionStatus @default(PENDING)
+  createdAt         DateTime          @default(now())
+  updatedAt         DateTime          @updatedAt
+  order             Order?            @relation(fields: [orderId], references: [id])
+  customer          Customer          @relation(fields: [customerId], references: [id])
+  location          Location?         @relation(fields: [locationId], references: [id])
+  employee          Employee?         @relation(fields: [employeeId], references: [id])
+  items             TransactionItem[]
+
+  @@index([orderId])
+  @@index([customerId])
+  @@index([status])
+  @@index([createdAt])
+  @@map("transactions")
+}
+
+model TransactionItem {
+  id            String      @id @default(cuid())
+  transactionId String      @map("transaction_id")
+  orderItemId   String?     @map("order_item_id")
+  productId     String?     @map("product_id")
+  quantity      Int         @default(1)
+  unitPrice     Decimal     @default(0) @map("unit_price") @db.Decimal(10, 2)
+  discount      Decimal     @default(0) @db.Decimal(10, 2)
+  total         Decimal     @default(0) @db.Decimal(10, 2)
+  createdAt     DateTime    @default(now())
+  transaction   Transaction @relation(fields: [transactionId], references: [id], onDelete: Cascade)
+  orderItem     OrderItem?  @relation(fields: [orderItemId], references: [id])
+  product       Product?    @relation(fields: [productId], references: [id])
+
+  @@index([transactionId])
+  @@map("transaction_items")
+}
+
+model OrderStatusHistory {
+  id        String      @id @default(cuid())
+  orderId   String      @map("order_id")
+  status    OrderStatus
+  changedBy String?     @map("changed_by")
+  notes     String?
+  createdAt DateTime    @default(now())
+  order     Order       @relation(fields: [orderId], references: [id], onDelete: Cascade)
+
+  @@index([orderId])
+  @@map("order_status_history")
+}
+
+enum PaymentMethod {
+  cash
+  card
+  check
+  insurance_only
+  split
 }

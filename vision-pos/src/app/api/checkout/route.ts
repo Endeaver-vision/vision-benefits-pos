@@ -1,15 +1,18 @@
 /**
  * Checkout API
- * POST /api/checkout - Process checkout and create transaction
+ * POST /api/checkout - Process checkout and create order + transaction
  *
- * This creates a real transaction in the database from a quote,
- * updates customer stats, and marks insurance authorization as used.
+ * Flow: Quote → Order → Transaction
+ * - Creates an Order record for fulfillment tracking
+ * - Creates a Transaction record for payment tracking
+ * - Updates customer stats and marks insurance authorization as used
  */
 
 import { NextRequest, NextResponse } from 'next/server'
 import { prisma } from '@/lib/prisma'
 import { getServerSession } from 'next-auth'
 import { authOptions } from '@/app/api/auth/[...nextauth]/route'
+import { OrderStatus, ProductType, PaymentMethod, TransactionStatus } from '@prisma/client'
 
 interface CheckoutItem {
   sku: string
@@ -25,7 +28,9 @@ interface CheckoutItem {
 
 interface CheckoutRequest {
   customerId: string
+  quoteId?: string
   authorizationId?: string
+  priceListVersionId?: string
   carrier?: string
   items: CheckoutItem[]
 
@@ -56,7 +61,40 @@ interface CheckoutRequest {
 }
 
 /**
- * POST - Process checkout and create transaction
+ * Generate order number: ORD-YYYYMMDD-XXXX
+ */
+function generateOrderNumber(): string {
+  const date = new Date()
+  const dateStr = date.toISOString().slice(0, 10).replace(/-/g, '')
+  const random = Math.random().toString(36).substring(2, 6).toUpperCase()
+  return `ORD-${dateStr}-${random}`
+}
+
+/**
+ * Generate transaction number: TXN-YYYYMMDD-XXXX
+ */
+function generateTransactionNumber(): string {
+  const date = new Date()
+  const dateStr = date.toISOString().slice(0, 10).replace(/-/g, '')
+  const random = Math.random().toString(36).substring(2, 6).toUpperCase()
+  return `TXN-${dateStr}-${random}`
+}
+
+/**
+ * Map category string to ProductType enum
+ */
+function mapCategoryToProductType(category: string): ProductType {
+  const categoryLower = category.toLowerCase()
+  if (categoryLower.includes('frame')) return ProductType.FRAME
+  if (categoryLower.includes('lens') && !categoryLower.includes('contact')) return ProductType.LENS
+  if (categoryLower.includes('contact')) return ProductType.CONTACT
+  if (categoryLower.includes('coating') || categoryLower.includes('ar') || categoryLower.includes('transition')) return ProductType.LENS
+  if (categoryLower.includes('service') || categoryLower.includes('exam') || categoryLower.includes('fit')) return ProductType.SERVICE
+  return ProductType.LENS // Default
+}
+
+/**
+ * POST - Process checkout: Create Order, then Transaction
  */
 export async function POST(request: NextRequest) {
   try {
@@ -96,8 +134,8 @@ export async function POST(request: NextRequest) {
     }
 
     // Use location from request body (selected location), fall back to session location
-    const locationId = body.locationId || session.user.locationId
-    const userId = session.user.id
+    const locationId = body.locationId || (session.user as { locationId?: string })?.locationId
+    const employeeId = (session.user as { employeeId?: string })?.employeeId
 
     // Calculate tax (assuming 8% for now - should be configurable)
     const TAX_RATE = 0.08
@@ -105,7 +143,7 @@ export async function POST(request: NextRequest) {
     const tax = Math.round(taxableAmount * TAX_RATE * 100) / 100
     const totalWithTax = body.patientTotal + tax
 
-    console.log('[Checkout] Creating transaction:', {
+    console.log('[Checkout] Creating order and transaction:', {
       customerId: body.customerId,
       items: body.items.length,
       subtotal: body.retailTotal,
@@ -115,147 +153,105 @@ export async function POST(request: NextRequest) {
       total: totalWithTax,
     })
 
-    // Create transaction with items in a single transaction
-    const transaction = await prisma.$transaction(async (tx) => {
-      // 1. Create the transaction record
-      const newTransaction = await tx.transaction.create({
+    // Create order and transaction in a single database transaction
+    const result = await prisma.$transaction(async (tx) => {
+      // 1. Create the Order record
+      const orderNumber = generateOrderNumber()
+      const order = await tx.order.create({
         data: {
+          orderNumber,
           customerId: body.customerId,
-          userId,
-          locationId,
+          quoteId: body.quoteId || null,
+          locationId: locationId || null,
+          employeeId: employeeId || null,
+          status: OrderStatus.CONFIRMED, // Order is confirmed at checkout
+          orderDate: new Date(),
           subtotal: body.retailTotal,
           tax,
-          discount: 0, // Any manual discounts would go here
-          total: totalWithTax,
-          insuranceCarrier: body.carrier || null,
+          discount: 0,
           insuranceDiscount: body.insuranceTotal,
+          total: totalWithTax,
           patientPortion: body.patientTotal + tax,
-          status: 'COMPLETED',
-          paymentMethod: body.paymentMethod,
+          insuranceCarrier: body.carrier || null,
+          insuranceAuthorizationId: body.authorizationId || null,
+          priceListVersionId: body.priceListVersionId || null,
+          notes: body.notes || null,
         },
       })
 
-      // 2. Create transaction items
-      // First, we need to look up or create products for each item
-      const transactionItems = []
-
+      // 2. Create OrderItems
+      const orderItems = []
       for (const item of body.items) {
-        // Try to find product by SKU
-        let productId = item.productId
+        const productType = mapCategoryToProductType(item.category)
 
-        if (!productId && item.sku) {
-          // Look up in various tables
-          const frame = await tx.frame.findFirst({
-            where: { sku: item.sku },
-            select: { id: true }
-          })
+        const orderItem = await tx.orderItem.create({
+          data: {
+            orderId: order.id,
+            productType,
+            productId: item.productId || null,
+            sku: item.sku || null,
+            displayName: item.displayName,
+            quantity: item.quantity || 1,
+            retailPrice: item.retailPrice,
+            insurancePays: item.insurancePays,
+            patientCopay: item.patientCopay,
+            insuranceTier: item.insuranceTier || null,
+          },
+        })
+        orderItems.push(orderItem)
+      }
 
-          if (frame) {
-            // Create or get a Product record for this frame
-            const existingProduct = await tx.product.findFirst({
-              where: { sku: item.sku }
-            })
+      // 3. Create initial status history entry
+      await tx.orderStatusHistory.create({
+        data: {
+          orderId: order.id,
+          status: OrderStatus.CONFIRMED,
+          changedBy: employeeId || null,
+          notes: 'Order created from checkout',
+        },
+      })
 
-            if (existingProduct) {
-              productId = existingProduct.id
-            } else {
-              // Get or create frames category
-              let category = await tx.productCategory.findFirst({
-                where: { code: 'frames' }
-              })
-              if (!category) {
-                category = await tx.productCategory.create({
-                  data: { name: 'Frames', code: 'frames' }
-                })
-              }
+      // 4. Create the Transaction record (payment)
+      const transactionNumber = generateTransactionNumber()
+      const transaction = await tx.transaction.create({
+        data: {
+          transactionNumber,
+          orderId: order.id,
+          customerId: body.customerId,
+          locationId: locationId || null,
+          employeeId: employeeId || null,
+          paymentMethod: body.paymentMethod as PaymentMethod,
+          subtotal: body.retailTotal,
+          tax,
+          discount: 0,
+          total: totalWithTax,
+          insuranceDiscount: body.insuranceTotal,
+          patientPortion: body.patientTotal + tax,
+          cardLastFour: body.paymentDetails?.cardLast4 || null,
+          checkNumber: body.paymentDetails?.checkNumber || null,
+          splitDetails: body.paymentDetails?.splitPayments ? JSON.parse(JSON.stringify(body.paymentDetails.splitPayments)) : null,
+          status: TransactionStatus.COMPLETED,
+        },
+      })
 
-              const newProduct = await tx.product.create({
-                data: {
-                  name: item.displayName,
-                  sku: item.sku,
-                  categoryId: category.id,
-                  basePrice: item.retailPrice,
-                }
-              })
-              productId = newProduct.id
-            }
-          } else {
-            // Check lens products
-            const lens = await tx.lensProduct.findFirst({
-              where: { sku: item.sku },
-              select: { id: true }
-            })
-
-            if (lens) {
-              const existingProduct = await tx.product.findFirst({
-                where: { sku: item.sku }
-              })
-
-              if (existingProduct) {
-                productId = existingProduct.id
-              } else {
-                let category = await tx.productCategory.findFirst({
-                  where: { code: 'lenses' }
-                })
-                if (!category) {
-                  category = await tx.productCategory.create({
-                    data: { name: 'Lenses', code: 'lenses' }
-                  })
-                }
-
-                const newProduct = await tx.product.create({
-                  data: {
-                    name: item.displayName,
-                    sku: item.sku,
-                    categoryId: category.id,
-                    basePrice: item.retailPrice,
-                  }
-                })
-                productId = newProduct.id
-              }
-            }
-          }
-        }
-
-        // If we still don't have a product, create a generic one
-        if (!productId) {
-          let category = await tx.productCategory.findFirst({
-            where: { code: 'addons' }
-          })
-          if (!category) {
-            category = await tx.productCategory.create({
-              data: { name: 'Add-ons', code: 'addons' }
-            })
-          }
-
-          const newProduct = await tx.product.create({
-            data: {
-              name: item.displayName,
-              sku: item.sku || `TEMP-${Date.now()}-${Math.random().toString(36).slice(2)}`,
-              categoryId: category.id,
-              basePrice: item.retailPrice,
-            }
-          })
-          productId = newProduct.id
-        }
-
+      // 5. Create TransactionItems linked to OrderItems
+      const transactionItems = []
+      for (const orderItem of orderItems) {
         const transactionItem = await tx.transactionItem.create({
           data: {
-            transactionId: newTransaction.id,
-            productId,
-            quantity: item.quantity || 1,
-            unitPrice: item.retailPrice,
-            discount: item.insurancePays,
-            total: item.patientCopay * (item.quantity || 1),
-            insuranceTier: item.insuranceTier || null,
-            insuranceDiscount: item.insurancePays,
-          }
+            transactionId: transaction.id,
+            orderItemId: orderItem.id,
+            productId: orderItem.productId,
+            quantity: orderItem.quantity,
+            unitPrice: Number(orderItem.retailPrice),
+            discount: Number(orderItem.insurancePays),
+            total: Number(orderItem.patientCopay) * orderItem.quantity,
+          },
         })
-
         transactionItems.push(transactionItem)
       }
 
-      // 3. Update customer stats
+      // 6. Update customer stats
       const newTotalSpent = (customer.totalSpent || 0) + totalWithTax
       await tx.customer.update({
         where: { id: body.customerId },
@@ -263,85 +259,70 @@ export async function POST(request: NextRequest) {
           totalSpent: newTotalSpent,
           lastPurchaseDate: new Date(),
           lastVisit: new Date(),
-        }
+        },
       })
 
-      // 4. Mark authorization as used (if applicable)
-      if (body.authorizationId && body.carrier) {
-        const carrier = body.carrier.toLowerCase()
-
-        if (carrier === 'vsp') {
-          await tx.vspAuthorization.update({
-            where: { id: body.authorizationId },
-            data: {
-              usedForOrder: true,
-              usedDate: new Date(),
-            }
-          })
-        } else if (carrier === 'eyemed') {
-          await tx.eyemedAuthorization.update({
-            where: { id: body.authorizationId },
-            data: {
-              usedForOrder: true,
-              usedDate: new Date(),
-            }
-          })
-        } else if (carrier === 'spectera') {
-          await tx.specteraAuthorization.update({
-            where: { id: body.authorizationId },
-            data: {
-              usedForOrder: true,
-              usedDate: new Date(),
-            }
-          })
-        }
+      // 7. Mark authorization as used (if applicable)
+      if (body.authorizationId) {
+        await tx.insuranceAuthorization.update({
+          where: { id: body.authorizationId },
+          data: {
+            usedForOrder: true,
+            usedDate: new Date(),
+          },
+        })
       }
 
-      // 5. Create customer purchase history entry
-      await tx.customerPurchaseHistory.create({
-        data: {
-          customerId: body.customerId,
-          transactionId: newTransaction.id,
-          orderDate: new Date(),
-          totalAmount: totalWithTax,
-          paymentMethod: body.paymentMethod,
-          itemsJson: JSON.stringify(body.items.map(i => ({
-            name: i.displayName,
-            sku: i.sku,
-            price: i.patientCopay,
-            quantity: i.quantity || 1,
-          }))),
-        }
-      })
+      // 8. Update quote status to CONVERTED (if applicable)
+      if (body.quoteId) {
+        await tx.quote.update({
+          where: { id: body.quoteId },
+          data: {
+            status: 'CONVERTED',
+          },
+        })
+      }
 
       return {
-        ...newTransaction,
-        items: transactionItems,
+        order,
+        orderItems,
+        transaction,
+        transactionItems,
       }
     })
 
-    console.log('[Checkout] Transaction created:', transaction.id)
+    console.log('[Checkout] Order created:', result.order.id)
+    console.log('[Checkout] Transaction created:', result.transaction.id)
 
     return NextResponse.json({
       success: true,
+      order: {
+        id: result.order.id,
+        orderNumber: result.order.orderNumber,
+        status: result.order.status,
+        itemCount: result.orderItems.length,
+        createdAt: result.order.createdAt,
+      },
       transaction: {
-        id: transaction.id,
-        customerId: transaction.customerId,
-        subtotal: transaction.subtotal,
-        tax: transaction.tax,
-        total: transaction.total,
-        insuranceDiscount: transaction.insuranceDiscount,
-        patientPortion: transaction.patientPortion,
-        status: transaction.status,
-        paymentMethod: transaction.paymentMethod,
-        itemCount: transaction.items.length,
-        createdAt: transaction.createdAt,
+        id: result.transaction.id,
+        transactionNumber: result.transaction.transactionNumber,
+        customerId: result.transaction.customerId,
+        subtotal: Number(result.transaction.subtotal),
+        tax: Number(result.transaction.tax),
+        total: Number(result.transaction.total),
+        insuranceDiscount: Number(result.transaction.insuranceDiscount),
+        patientPortion: Number(result.transaction.patientPortion),
+        status: result.transaction.status,
+        paymentMethod: result.transaction.paymentMethod,
+        itemCount: result.transactionItems.length,
+        createdAt: result.transaction.createdAt,
       },
       receipt: {
         customerName: `${customer.firstName} ${customer.lastName}`,
-        transactionId: transaction.id,
-        date: transaction.createdAt,
-        items: body.items.map(i => ({
+        orderNumber: result.order.orderNumber,
+        transactionId: result.transaction.id,
+        date: result.transaction.createdAt,
+        items: body.items.map((i) => ({
           name: i.displayName,
           retailPrice: i.retailPrice,
           insuranceDiscount: i.insurancePays,
@@ -357,7 +338,6 @@ export async function POST(request: NextRequest) {
       },
       message: 'Checkout completed successfully',
     })
-
   } catch (error) {
     console.error('[Checkout] Error:', error)
     return NextResponse.json(
@@ -392,18 +372,25 @@ export async function GET(request: NextRequest) {
               id: true,
               firstName: true,
               lastName: true,
-            }
+            },
+          },
+          order: {
+            select: {
+              id: true,
+              orderNumber: true,
+              status: true,
+            },
           },
           items: {
             include: {
-              product: {
+              orderItem: {
                 select: {
-                  name: true,
+                  displayName: true,
                   sku: true,
-                }
-              }
-            }
-          }
+                },
+              },
+            },
+          },
         },
         orderBy: { createdAt: 'desc' },
         skip: (page - 1) * limit,
@@ -427,25 +414,28 @@ export async function GET(request: NextRequest) {
 
     return NextResponse.json({
       success: true,
-      transactions: transactions.map(t => ({
+      transactions: transactions.map((t) => ({
         id: t.id,
+        transactionNumber: t.transactionNumber,
         customerName: `${t.customer.firstName} ${t.customer.lastName}`,
         customerId: t.customerId,
-        subtotal: t.subtotal,
-        tax: t.tax,
-        total: t.total,
-        insuranceCarrier: t.insuranceCarrier,
-        insuranceDiscount: t.insuranceDiscount,
-        patientPortion: t.patientPortion,
+        orderId: t.orderId,
+        orderNumber: t.order?.orderNumber,
+        orderStatus: t.order?.status,
+        subtotal: Number(t.subtotal),
+        tax: Number(t.tax),
+        total: Number(t.total),
+        insuranceDiscount: Number(t.insuranceDiscount),
+        patientPortion: Number(t.patientPortion),
         status: t.status,
         paymentMethod: t.paymentMethod,
         itemCount: t.items.length,
-        items: t.items.map(i => ({
-          name: i.product.name,
-          sku: i.product.sku,
+        items: t.items.map((i) => ({
+          name: i.orderItem?.displayName || 'Unknown',
+          sku: i.orderItem?.sku,
           quantity: i.quantity,
-          unitPrice: i.unitPrice,
-          total: i.total,
+          unitPrice: Number(i.unitPrice),
+          total: Number(i.total),
         })),
         createdAt: t.createdAt,
       })),
@@ -456,13 +446,12 @@ export async function GET(request: NextRequest) {
         totalPages: Math.ceil(total / limit),
       },
       stats: {
-        totalRevenue: stats._sum.total || 0,
-        totalInsuranceBilled: stats._sum.insuranceDiscount || 0,
-        averageTransactionValue: stats._avg.total || 0,
+        totalRevenue: Number(stats._sum.total) || 0,
+        totalInsuranceBilled: Number(stats._sum.insuranceDiscount) || 0,
+        averageTransactionValue: Number(stats._avg.total) || 0,
         transactionCount: stats._count,
       },
     })
-
   } catch (error) {
     console.error('[Checkout GET] Error:', error)
     return NextResponse.json(
