@@ -133,6 +133,12 @@ export default function LensesMenu() {
     (item) => item.pairId === quote.activePairId && item.productId?.startsWith('tech_addon_')
   )
 
+  // Get existing UV treatment for current pair
+  const selectedUV = (quote.lineItems ?? []).find(
+    (item) => item.pairId === quote.activePairId &&
+      (item.productId === 'uv' || item.productId === 'uv_backside')
+  )
+
   const handleSelectLensType = (product: Product) => {
     const isSelected = selectedLensType?.productId === product.id
 
@@ -140,12 +146,16 @@ export default function LensesMenu() {
       if (selectedLensType) removeLineItem(selectedLensType.id)
       // Remove tech addon when lens type is deselected
       if (selectedTechAddon) removeLineItem(selectedTechAddon.id)
+      // Remove UV when lens type is deselected
+      if (selectedUV) removeLineItem(selectedUV.id)
       setCurrentTier('')
       setIsSingleVision(true) // Reset to SV on deselect
     } else {
       if (selectedLensType) removeLineItem(selectedLensType.id)
       // Remove old tech addon before adding new one
       if (selectedTechAddon) removeLineItem(selectedTechAddon.id)
+      // Remove old UV before adding new one
+      if (selectedUV) removeLineItem(selectedUV.id)
 
       const price = getPrice(product)
       const insurancePays = quote.insurance.hasActiveAuth
@@ -184,6 +194,20 @@ export default function LensesMenu() {
           pairId: quote.activePairId,
         })
       }
+
+      // Auto-add Standard UV for all glasses orders (VSP, EyeMed, Cash)
+      // UV will be swapped to Backside UV if AR coating is added later
+      const uvPrice = 16
+      addLineItem({
+        productId: 'uv',
+        name: 'UV Treatment',
+        category: 'add_on',
+        quantity: 1,
+        retailPrice: uvPrice,
+        patientPays: uvPrice,
+        insurancePays: 0,
+        pairId: quote.activePairId,
+      })
 
       // Set tier for VSP pricing
       if (product.vspTier && product.vspTier !== 'Standard' && product.vspTier !== 'N/A') {
