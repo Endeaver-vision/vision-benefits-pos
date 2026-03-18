@@ -151,6 +151,10 @@ export const ADD_ON_TO_VSP: Record<string, AddOnMapping> = {
     svField: 'LF_light_filter',
     multiField: 'LF_light_filter',
   },
+  'light_filter': {
+    svField: 'LF_light_filter',
+    multiField: 'LF_light_filter',
+  },
   'rollPolish': {
     svField: 'SP_edge_polish',
     multiField: 'SP_edge_polish',

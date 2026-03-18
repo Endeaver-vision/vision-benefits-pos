@@ -475,6 +475,18 @@ export const ADD_ONS: Product[] = [
     note: "Essential Blue Series",
   },
   {
+    id: "light_filter",
+    name: "Light Filter",
+    category: "add_on",
+    wholesale: 5.0,
+    retail: 15.0,
+    vspTier: "LF Code",
+    eyemedTier: "N/A",
+    specteraTier: "N/A",
+    cashOnly: false,
+    note: "VSP Light Filter (LF code)",
+  },
+  {
     id: "oversize",
     name: "Oversize Lenses",
     category: "add_on",
