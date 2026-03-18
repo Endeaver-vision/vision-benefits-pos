@@ -521,6 +521,8 @@ export interface VspMergedAuthorization {
     QR: number  // Ski Type
     SV: number  // UV Protection
     RM: number  // Oversize Plastic
+    AA: number  // Aspheric
+    BA: number  // Digital Aspheric (Eyezen)
   }
 
   // === POLARIZED PROGRESSIVE ADD-ONS ===

@@ -222,6 +222,8 @@ export function mergeVspExtractions(
       QR: (enhancementForm as any).mirror?.QR_ski_type ?? 0,
       SV: (enhancementForm as any).uv_protection?.SV_uv ?? 0,
       RM: (enhancementForm as any).oversize?.RM_oversize_plastic ?? 0,
+      AA: enhancementForm.misc?.AA_aspheric ?? 0,
+      BA: enhancementForm.misc?.BA_digital_aspheric ?? 0,
     },
 
     // === POLARIZED PROGRESSIVE ADD-ONS ===

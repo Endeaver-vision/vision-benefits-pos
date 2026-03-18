@@ -14,14 +14,16 @@ import { LENS_TYPES, LENS_MATERIALS, AR_COATINGS, PHOTOCHROMICS, ADD_ONS, MOUNT_
 // LENS TYPE → VSP PROGRESSIVE TIER MAPPING
 // =============================================================================
 
-export type VspProgressiveField = 'K_standard' | 'J_premium' | 'F_premium_adv' | 'O_custom' | 'N_custom' | 'SV'
+export type VspProgressiveField = 'K_standard' | 'J_premium' | 'F_premium_adv' | 'O_custom' | 'N_custom' | 'SV' | 'BA_digital'
 
 export const LENS_TYPE_TO_VSP_PROGRESSIVE: Record<string, VspProgressiveField> = {
   // Single Vision - no progressive copay
   'sv': 'SV',
 
+  // Digital Aspheric SV (Eyezen) - uses BA code from enhancement form
+  'eyezen': 'BA_digital',
+
   // Standard Progressive (K tier)
-  'eyezen': 'K_standard',
   'bifocal': 'K_standard',
   'trifocal': 'K_standard',
 
@@ -238,27 +240,30 @@ export function calculateVspPricing(
   }
 
   // Determine if this is SV or multifocal
-  const isSingleVision = input.lensTypeId === 'sv' || input.lensTypeId === 'neurolens_sv'
+  // Eyezen is a Digital Aspheric SV lens - uses SV material copays
+  const isSingleVision = input.lensTypeId === 'sv' || input.lensTypeId === 'neurolens_sv' || input.lensTypeId === 'eyezen'
 
-  // ========== PROGRESSIVE COPAY ==========
+  // ========== LENS TYPE COPAY ==========
   // ALWAYS use enhancement form values - they are the source of truth
   // EasyOptions coverage is already reflected in the enhancement form copays
   let progressiveCopay = 0
-  if (!isSingleVision) {
-    const progressiveField = LENS_TYPE_TO_VSP_PROGRESSIVE[input.lensTypeId]
-    if (progressiveField && progressiveField !== 'SV') {
-      // Map progressive field to tier letter and get copay from progressives section
-      const progressiveTierMap: Record<string, 'K' | 'J' | 'F' | 'O' | 'N'> = {
-        'K_standard': 'K',
-        'J_premium': 'J',
-        'F_premium_adv': 'F',
-        'O_custom': 'O',
-        'N_custom': 'N',
-      }
-      const tier = progressiveTierMap[progressiveField]
-      if (tier) {
-        progressiveCopay = getProgressiveValue(auth, tier)
-      }
+  const progressiveField = LENS_TYPE_TO_VSP_PROGRESSIVE[input.lensTypeId]
+
+  // Digital Aspheric (Eyezen) - uses BA enhancement code, NOT progressive tier
+  if (progressiveField === 'BA_digital') {
+    progressiveCopay = auth.enhancements.BA ?? 0
+  } else if (!isSingleVision && progressiveField && progressiveField !== 'SV') {
+    // Regular progressives use progressive tier copays
+    const progressiveTierMap: Record<string, 'K' | 'J' | 'F' | 'O' | 'N'> = {
+      'K_standard': 'K',
+      'J_premium': 'J',
+      'F_premium_adv': 'F',
+      'O_custom': 'O',
+      'N_custom': 'N',
+    }
+    const tier = progressiveTierMap[progressiveField]
+    if (tier) {
+      progressiveCopay = getProgressiveValue(auth, tier)
     }
   }
 
@@ -534,7 +539,7 @@ export function generateVspPriceList(auth: VspMergedAuthorization): VspPriceList
 
     // Calculate Multi copay (use K tier as reference since material upgrades are same across tiers)
     const multiResult = calculateVspPricing({
-      lensTypeId: 'eyezen', // K tier progressive
+      lensTypeId: 'bifocal', // K tier progressive
       materialId: material.id,
       arCoatingId: 'none',
       photochromicId: 'none',
@@ -650,7 +655,7 @@ export function generateVspPriceList(auth: VspMergedAuthorization): VspPriceList
 
     if (addOnsWithVariance.includes(addOn.id)) {
       const multiResult = calculateVspPricing({
-        lensTypeId: 'eyezen', // K tier progressive
+        lensTypeId: 'bifocal', // K tier progressive
         materialId: 'cr39',
         arCoatingId: 'none',
         photochromicId: 'none',
