@@ -124,7 +124,15 @@ export function EyeglassesLayerSimple({ className, onNext, onBack, onSkipSecondP
   const [mountFee, setMountFee] = useState<string | null>(eyeglassesSelections.mountFee)
   const [addons, setAddons] = useState<string[]>(eyeglassesSelections.addons)
   const [techAddon, setTechAddon] = useState<string | null>(eyeglassesSelections.techAddon)  // VSP tech addon
+  const [uvTreatment, setUvTreatment] = useState<string | null>(null)  // VSP UV treatment (backside/front)
   const [prismDiopters, setPrismDiopters] = useState<number>(1)  // Prism amount (per diopter pricing)
+
+  // Manual item addition state
+  const [showManualItemForm, setShowManualItemForm] = useState(false)
+  const [manualItemName, setManualItemName] = useState('')
+  const [manualItemPrice, setManualItemPrice] = useState('')
+  const [manualItems, setManualItems] = useState<Array<{ id: string; name: string; price: number }>>([])
+
 
   // Track the actual SKUs added to the Map for reliable removal
   // This ensures we always remove the correct item even if product lookup fails
@@ -565,6 +573,11 @@ export function EyeglassesLayerSimple({ className, onNext, onBack, onSkipSecondP
     setMountFee(null)
     setAddons([])
     setTechAddon(null)  // Clear VSP tech addon
+    setUvTreatment(null)  // Clear VSP UV treatment
+    setManualItems([])  // Clear custom items
+    setShowManualItemForm(false)
+    setManualItemName('')
+    setManualItemPrice('')
     setAddedSkus({})  // Clear SKU tracking
     // Clear all eyeglasses items from pricing context
     clearItemsByCategory('frame')
@@ -670,17 +683,23 @@ export function EyeglassesLayerSimple({ className, onNext, onBack, onSkipSecondP
   }
 
   // Calculate patient cost for frame (simple: retail - allowance, with discount on overage)
-  // Overage discount is typically 20% (patient pays 80% of amount over allowance)
+  // VSP: 20% off overage (patient pays 80% of amount over allowance)
   const calculateFramePatientCost = (framePrice: number) => {
     if (!authorization || !authorization.frameAllowance) return framePrice
     const allowance = authorization.frameAllowance
     if (framePrice <= allowance) return 0
     const overage = framePrice - allowance
+
+    // VSP default: 20% off overage
+    const isVsp = authorization.carrier?.toUpperCase() === 'VSP'
+    const defaultDiscount = isVsp ? 0.20 : 0
+    let overageDiscount = authorization.frameOverageDiscount ?? defaultDiscount
+
     // Normalize discount to decimal (0.20 = 20%) in case stored as integer (20)
-    let overageDiscount = authorization.frameOverageDiscount ?? 0.20
     if (overageDiscount > 1) {
       overageDiscount = overageDiscount / 100
     }
+
     // Patient pays (1 - discount) of the overage (e.g., 80% if discount is 20%)
     return Math.round(overage * (1 - overageDiscount) * 100) / 100
   }
@@ -771,9 +790,43 @@ export function EyeglassesLayerSimple({ className, onNext, onBack, onSkipSecondP
       removeProductFromQuote(addedSkus.arCoating)
     }
 
+    // Remove old UV treatment if any
+    if (uvTreatment) {
+      removeProductFromQuote(uvTreatment)
+      setUvTreatment(null)
+    }
+
     setArCoating(product.id)
     setAddedSkus(prev => ({ ...prev, arCoating: newSku }))
     addProductToQuote(product, 'coating')
+
+    // VSP auto-add UV treatment based on coating selection
+    const isVsp = authorization?.carrier?.toUpperCase() === 'VSP'
+    if (isVsp && product.id !== 'opt-out') {
+      const isCrizal = product.name.toLowerCase().includes('crizal')
+
+      if (isCrizal) {
+        // Crizal coating → Backside UV
+        const uvSku = 'UV-BACKSIDE'
+        setUvTreatment(uvSku)
+        addItem({
+          sku: uvSku,
+          displayName: 'UV Backside (with Crizal)',
+          category: 'addon',
+          retailPrice: 16,
+        })
+      } else {
+        // Non-Crizal coating → Front UV
+        const uvSku = 'UV-FRONT'
+        setUvTreatment(uvSku)
+        addItem({
+          sku: uvSku,
+          displayName: 'UV Front (without Crizal)',
+          category: 'addon',
+          retailPrice: 16,
+        })
+      }
+    }
   }
 
   const handleTransitionsSelect = (product: Product) => {
@@ -889,6 +942,36 @@ export function EyeglassesLayerSimple({ className, onNext, onBack, onSkipSecondP
         quantity: newDiopters,
       })
     }
+  }
+
+  // Handle adding a manual/custom item
+  const handleAddManualItem = () => {
+    if (!manualItemName.trim() || !manualItemPrice) return
+
+    const price = parseFloat(manualItemPrice)
+    if (isNaN(price) || price < 0) return
+
+    const id = `manual-${Date.now()}`
+    const newItem = { id, name: manualItemName.trim(), price }
+
+    setManualItems(prev => [...prev, newItem])
+    addItem({
+      sku: id,
+      displayName: newItem.name,
+      category: 'addon',
+      retailPrice: price,
+    })
+
+    // Reset form
+    setManualItemName('')
+    setManualItemPrice('')
+    setShowManualItemForm(false)
+  }
+
+  // Handle removing a manual item
+  const handleRemoveManualItem = (itemId: string) => {
+    setManualItems(prev => prev.filter(i => i.id !== itemId))
+    removeProductFromQuote(itemId)
   }
 
   // Get insurance pricing for a product
@@ -1797,6 +1880,22 @@ export function EyeglassesLayerSimple({ className, onNext, onBack, onSkipSecondP
                 </div>
               </div>
             )}
+            {/* VSP UV Treatment indicator */}
+            {uvTreatment && (
+              <div className="mt-4 p-3 rounded-lg bg-blue-500/20 border border-blue-400/50">
+                <div className="flex items-center justify-between">
+                  <div className="flex items-center gap-2">
+                    <Check className="h-4 w-4 text-blue-400" />
+                    <span className="text-blue-300 font-medium">
+                      {uvTreatment === 'UV-BACKSIDE' ? 'UV Backside (Crizal)' : 'UV Front'} auto-added
+                    </span>
+                  </div>
+                  <span className="text-blue-400 font-semibold">
+                    +$16
+                  </span>
+                </div>
+              </div>
+            )}
           </CardContent>
         </Card>
 
@@ -2102,6 +2201,97 @@ export function EyeglassesLayerSimple({ className, onNext, onBack, onSkipSecondP
                   </div>
                 )
               })}
+            </div>
+
+            {/* Manual Item Section */}
+            <div className="mt-6 pt-4 border-t border-white/20">
+              <div className="flex items-center justify-between mb-3">
+                <div className="flex items-center gap-2">
+                  <div className="h-5 w-1 bg-orange-500 rounded-full"></div>
+                  <span className="text-sm font-semibold text-orange-300">Custom Items</span>
+                </div>
+                {!showManualItemForm && (
+                  <button
+                    onClick={() => setShowManualItemForm(true)}
+                    className="px-3 py-1 text-sm bg-orange-500/20 border border-orange-400/50 rounded-lg text-orange-300 hover:bg-orange-500/30 transition-colors"
+                  >
+                    + Add Custom Item
+                  </button>
+                )}
+              </div>
+
+              {/* Manual Item Form */}
+              {showManualItemForm && (
+                <div className="p-4 rounded-lg bg-orange-500/10 border border-orange-400/30 mb-4">
+                  <div className="flex gap-3 items-end">
+                    <div className="flex-1">
+                      <label className="text-xs text-white/70 block mb-1">Item Name</label>
+                      <input
+                        type="text"
+                        value={manualItemName}
+                        onChange={(e) => setManualItemName(e.target.value)}
+                        placeholder="e.g., Special Coating"
+                        className="w-full px-3 py-2 rounded bg-white/10 border border-white/20 text-white placeholder-white/40 focus:outline-none focus:border-orange-400"
+                      />
+                    </div>
+                    <div className="w-32">
+                      <label className="text-xs text-white/70 block mb-1">Price</label>
+                      <input
+                        type="number"
+                        value={manualItemPrice}
+                        onChange={(e) => setManualItemPrice(e.target.value)}
+                        placeholder="0.00"
+                        min="0"
+                        step="0.01"
+                        className="w-full px-3 py-2 rounded bg-white/10 border border-white/20 text-white placeholder-white/40 focus:outline-none focus:border-orange-400"
+                      />
+                    </div>
+                    <button
+                      onClick={handleAddManualItem}
+                      disabled={!manualItemName.trim() || !manualItemPrice}
+                      className="px-4 py-2 bg-orange-500 text-white rounded-lg hover:bg-orange-600 disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
+                    >
+                      Add
+                    </button>
+                    <button
+                      onClick={() => {
+                        setShowManualItemForm(false)
+                        setManualItemName('')
+                        setManualItemPrice('')
+                      }}
+                      className="px-3 py-2 text-white/60 hover:text-white transition-colors"
+                    >
+                      Cancel
+                    </button>
+                  </div>
+                </div>
+              )}
+
+              {/* List of added manual items */}
+              {manualItems.length > 0 && (
+                <div className="space-y-2">
+                  {manualItems.map((item) => (
+                    <div
+                      key={item.id}
+                      className="flex items-center justify-between p-3 rounded-lg bg-orange-500/20 border border-orange-400/50"
+                    >
+                      <div className="flex items-center gap-3">
+                        <Check className="h-4 w-4 text-orange-400" />
+                        <span className="text-white font-medium">{item.name}</span>
+                      </div>
+                      <div className="flex items-center gap-4">
+                        <span className="text-orange-400 font-semibold">{formatPrice(item.price)}</span>
+                        <button
+                          onClick={() => handleRemoveManualItem(item.id)}
+                          className="text-xs text-red-400 hover:text-red-300"
+                        >
+                          Remove
+                        </button>
+                      </div>
+                    </div>
+                  ))}
+                </div>
+              )}
             </div>
           </CardContent>
         </Card>

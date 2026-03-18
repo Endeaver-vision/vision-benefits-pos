@@ -24,6 +24,22 @@ import { getLocationSettings, mergeVisibilitySettings } from '@/lib/services/pro
 
 type ProductCategory = 'frames' | 'lenses' | 'contacts' | 'all'
 
+// Map lens category to pricingCategory format expected by tech addon logic
+function mapToPricingCategory(category: string): string {
+  const mapping: Record<string, string> = {
+    'single_vision': 'SINGLE_VISION',
+    'progressive': 'PROGRESSIVE',
+    'bifocal': 'BIFOCAL',
+    'trifocal': 'TRIFOCAL',
+    'material': 'MATERIAL',
+    'ar_coating': 'AR_COATING',
+    'photochromic': 'PHOTOCHROMIC',
+    'addon': 'ADDON',
+    'mount_fee': 'MOUNT_FEE',
+  }
+  return mapping[category.toLowerCase()] || category.toUpperCase()
+}
+
 // Type for the copays JSON structure in unified authorization table
 interface CopaysJson {
   examCopay?: number
@@ -241,7 +257,7 @@ export async function GET(request: NextRequest) {
           description: lens.description || lens.category,
           category: 'lenses',
           subcategory: lens.category.toLowerCase(),
-          pricingCategory: lens.pricingCategory,
+          pricingCategory: mapToPricingCategory(lens.category),
           retailPrice: lens.retailPrice,
           patientPays,
           insurancePays,

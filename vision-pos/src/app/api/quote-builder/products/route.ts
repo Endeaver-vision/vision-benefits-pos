@@ -37,7 +37,24 @@ interface QuoteBuilderProduct {
   isFeatured?: boolean
   notes?: string
   category?: string          // Product category
+  pricingCategory?: string   // Uppercase category for tech addon logic (SINGLE_VISION, PROGRESSIVE, etc.)
   displayOrder?: number | null
+}
+
+// Map lens category to pricingCategory format expected by tech addon logic
+function mapToPricingCategory(category: string): string {
+  const mapping: Record<string, string> = {
+    'single_vision': 'SINGLE_VISION',
+    'progressive': 'PROGRESSIVE',
+    'bifocal': 'BIFOCAL',
+    'trifocal': 'TRIFOCAL',
+    'material': 'MATERIAL',
+    'ar_coating': 'AR_COATING',
+    'photochromic': 'PHOTOCHROMIC',
+    'addon': 'ADDON',
+    'mount_fee': 'MOUNT_FEE',
+  }
+  return mapping[category.toLowerCase()] || category.toUpperCase()
 }
 
 interface PriceListEntry {
@@ -181,6 +198,7 @@ export async function GET(request: NextRequest) {
         sku: product.sku,
         manufacturer: product.manufacturer,
         category: product.category,
+        pricingCategory: mapToPricingCategory(product.category),
         displayOrder: product.displayOrder,
         notes: !hasTierMapping ? 'Cash pay only' : undefined
       }

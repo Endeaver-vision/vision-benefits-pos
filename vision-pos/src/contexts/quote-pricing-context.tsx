@@ -1122,7 +1122,18 @@ export function useAuthorizationPricing() {
       : authorization.frameAllowance ?? 0
 
     const overage = Math.max(0, retailPrice - allowance)
-    const discountRate = authorization.frameOverageDiscount ?? 0
+
+    // VSP default: 20% off overage (patient pays 80%)
+    // Other carriers: use stored discount or default to 0
+    const isVsp = authorization.carrier?.toUpperCase() === 'VSP'
+    const defaultDiscount = isVsp ? 0.20 : 0
+    let discountRate = authorization.frameOverageDiscount ?? defaultDiscount
+
+    // Normalize if stored as percentage (e.g., 20 instead of 0.20)
+    if (discountRate > 1) {
+      discountRate = discountRate / 100
+    }
+
     const overageDiscount = overage * discountRate
     const patientPays = overage - overageDiscount
 
