@@ -1,0 +1,121 @@
+{
+  "comment": "Custom product catalog template - copy and edit for your practice",
+  
+  "PROGRESSIVE_LENSES": {
+    "Your Premium Progressive 1": {
+      "retail_price": 450,
+      "benefit_category": "progressive_tier_4",
+      "product_type": "lens",
+      "notes": "Top tier progressive"
+    },
+    "Your Mid-Tier Progressive": {
+      "retail_price": 310,
+      "benefit_category": "progressive_tier_3",
+      "product_type": "lens"
+    },
+    "Your Standard Progressive": {
+      "retail_price": 179,
+      "benefit_category": "progressive_standard",
+      "product_type": "lens"
+    }
+  },
+  
+  "SINGLE_VISION": {
+    "SV Poly": {
+      "retail_price": 89,
+      "benefit_category": "single_vision",
+      "product_type": "lens"
+    },
+    "SV High Index": {
+      "retail_price": 149,
+      "benefit_category": "single_vision",
+      "product_type": "lens"
+    }
+  },
+  
+  "COATINGS": {
+    "Your Premium AR": {
+      "retail_price": 175,
+      "benefit_category": "ar_tier_3",
+      "product_type": "coating"
+    },
+    "Your Mid AR": {
+      "retail_price": 125,
+      "benefit_category": "ar_tier_1",
+      "product_type": "coating"
+    },
+    "Your Basic AR": {
+      "retail_price": 75,
+      "benefit_category": "ar_standard",
+      "product_type": "coating"
+    }
+  },
+  
+  "FRAMES": {
+    "Budget Frame Line": {
+      "retail_price": 150,
+      "benefit_category": "frame",
+      "product_type": "frame"
+    },
+    "Mid Frame Line": {
+      "retail_price": 250,
+      "benefit_category": "frame",
+      "product_type": "frame"
+    },
+    "Premium Frame Line": {
+      "retail_price": 350,
+      "benefit_category": "frame",
+      "product_type": "frame"
+    }
+  },
+  
+  "OPTIONS": {
+    "Transitions": {
+      "retail_price": 125,
+      "benefit_category": "photochromic",
+      "product_type": "option"
+    },
+    "Polycarbonate": {
+      "retail_price": 60,
+      "benefit_category": "polycarbonate",
+      "product_type": "option"
+    }
+  },
+  
+  "benefit_category_guide": {
+    "LENSES": [
+      "single_vision",
+      "bifocal",
+      "trifocal",
+      "lenticular",
+      "progressive_standard",
+      "progressive_tier_1",
+      "progressive_tier_2",
+      "progressive_tier_3",
+      "progressive_tier_4"
+    ],
+    "COATINGS": [
+      "ar_standard",
+      "ar_tier_1",
+      "ar_tier_2",
+      "ar_tier_3"
+    ],
+    "OPTIONS": [
+      "photochromic",
+      "polycarbonate",
+      "scratch",
+      "tint",
+      "uv",
+      "polarized"
+    ],
+    "FRAMES": [
+      "frame"
+    ],
+    "CONTACTS": [
+      "contacts_conventional",
+      "contacts_disposable",
+      "contact_lens_fit_standard",
+      "contact_lens_fit_premium"
+    ]
+  }
+}

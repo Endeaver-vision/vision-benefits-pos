@@ -6,6 +6,7 @@ import {
   AR_COATINGS,
   PHOTOCHROMICS,
   LENS_MATERIALS,
+  ADD_ONS,
   Product,
 } from '@/lib/pricing/product-catalog'
 import {
@@ -197,17 +198,23 @@ export default function LensesMenu() {
 
       // Auto-add Standard UV for all glasses orders (VSP, EyeMed, Cash)
       // UV will be swapped to Backside UV if AR coating is added later
-      const uvPrice = 16
-      addLineItem({
-        productId: 'uv',
-        name: 'UV Treatment',
-        category: 'add_on',
-        quantity: 1,
-        retailPrice: uvPrice,
-        patientPays: uvPrice,
-        insurancePays: 0,
-        pairId: quote.activePairId,
-      })
+      const uvProduct = ADD_ONS.find((p) => p.id === 'uv')
+      if (uvProduct) {
+        const uvPatientPays = getPrice(uvProduct)
+        const uvInsurancePays = quote.insurance.hasActiveAuth
+          ? Math.max(0, uvProduct.retail - uvPatientPays)
+          : 0
+        addLineItem({
+          productId: 'uv',
+          name: 'UV Treatment',
+          category: 'add_on',
+          quantity: 1,
+          retailPrice: uvProduct.retail,
+          patientPays: uvPatientPays,
+          insurancePays: uvInsurancePays,
+          pairId: quote.activePairId,
+        })
+      }
 
       // Set tier for VSP pricing
       if (product.vspTier && product.vspTier !== 'Standard' && product.vspTier !== 'N/A') {

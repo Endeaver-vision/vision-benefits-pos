@@ -1,0 +1,19 @@
+# EyeMed Parser Requirements
+# Install with: pip install -r requirements.txt
+
+# Anthropic API for Haiku
+anthropic>=0.39.0
+
+# PDF processing
+PyPDF2>=3.0.0
+
+# Excel/data handling
+pandas>=2.0.0
+openpyxl>=3.1.0
+
+# Optional: Progress bars and better CLI
+tqdm>=4.65.0
+rich>=13.0.0
+
+# Type checking (optional, for development)
+mypy>=1.0.0

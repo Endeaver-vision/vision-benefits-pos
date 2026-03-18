@@ -1,0 +1,363 @@
+system:
+  name: Vision POS
+  version: 8-stage system
+  last_updated: 2026-01-28
+  current_stage: "5.5"
+  overall_progress: "67% complete"
+
+stages:
+  stage_1:
+    number: 1
+    name: Products & Inventory
+    status: COMPLETE
+    description: "Build complete product catalog with cash prices"
+    completed_date: 2025-12-20
+    key_files:
+      - "/src/app/products/page.tsx"
+      - "/src/lib/services/pricing-engine-vsp.ts"
+      - "Prisma schema: Product, Material, LensType, Treatment"
+    accomplishments:
+      - "Product catalog with all lens types and materials"
+      - "Material-centric pricing formula: BASE + MATERIAL_SURCHARGE + TREATMENT"
+      - "Universal pricing engine supporting all materials"
+
+  stage_2:
+    number: 2
+    name: Insurance Mapping (TypeScript)
+    status: COMPLETE
+    description: "Create TypeScript tier mappings for EyeMed and VSP"
+    completed_date: 2025-12-25
+    key_files:
+      - "/src/lib/data/insurance-tier-mappings.ts"
+      - "PRODUCT_TIERS: Maps product names to tier codes"
+      - "EYEMED_TIER_TO_COPAY: Maps tiers to copay field names"
+    accomplishments:
+      - "Tier mappings for EyeMed and VSP"
+      - "Reverse lookup: product_name → tier_code → copay_field"
+      - "Supports both EyeMed and VSP tier systems"
+
+  stage_3:
+    number: 3
+    name: Insurance Scanner + Price List Generation
+    status: COMPLETE
+    description: "Extract insurance benefits from PDFs, create price lists"
+    completed_date: 2026-01-26
+    key_files:
+      - "/src/lib/services/ocr/haiku-extraction.ts"
+      - "/src/lib/services/price-list-precompute.ts"
+      - "/src/app/api/documents/[id]/process/route.ts"
+      - "/src/app/api/documents/[id]/verify/route.ts"
+    current_implementation: "Haiku 3.5 single-prompt extraction"
+    accomplishments:
+      - "PDF → InsuranceAuthorization workflow"
+      - "Extracts member info, benefits, copays"
+      - "Generates 480-item price lists automatically"
+      - "Detects carriers: EyeMed, VSP, Spectera"
+    known_issues:
+      - "Haiku extraction uses field-specific JSON path matching (fragile)"
+      - "Struggles with non-standard benefit text formats"
+      - "Formula parsing not robust"
+
+  stage_3_1:
+    number: 3.1
+    name: VSP Two-Document Handling
+    status: COMPLETE
+    description: "Handle VSP Authorization + Lens Enhancement documents"
+    completed_date: 2026-01-26
+    key_files:
+      - "/src/lib/services/ocr/haiku-extraction.ts (lines 150-180)"
+      - "/scripts/test-vsp-validation.ts"
+    accomplishments:
+      - "VSP exports two documents: Auth (exam, frames) + Lens Enhancements"
+      - "Post-processing extracts two-letter codes (K, J, F, N, O)"
+      - "Falls back to uc_discount when codes not found"
+    current_behavior:
+      - "Post-processing handles ~80% of two-letter codes"
+      - "Remaining 20% requires manual lookup"
+
+  stage_3_7:
+    number: 3.7
+    name: Extraction Overhaul (PROPOSED IMPROVEMENT)
+    status: IN_PROGRESS
+    description: "Two-part extraction to replace field-specific JSON matching"
+    rationale: "Current extraction is fragile; new approach will be more robust"
+    proposed_implementation:
+      - "Part 1: Haiku reads document in open-ended way (no field hints)"
+      - "Part 2: Haiku assigns extracted data to catalog structure"
+      - "Part 3: Verification route validates and creates InsuranceAuthorization"
+    blocked_by: []
+    notes: "This is a proposed IMPROVEMENT, not blocking current work"
+
+  stage_3_8:
+    number: 3.8
+    name: EyeMed Pricing Patterns Reference
+    status: COMPLETE
+    description: "Document 15 EyeMed value format patterns"
+    completed_date: 2026-01-30
+    key_patterns:
+      - "$10 copay"
+      - "$20 copay; 20% off less $120"
+      - "20% off retail"
+      - "85% of retail"
+      - "100% of amount over balance"
+    pattern_sources:
+      - "Exam: mostly copay only"
+      - "Progressive Tier 4: formula-based (copay + discount + allowance)"
+      - "Frames: copay + discount over allowance"
+      - "Contacts: various allowance structures"
+    current_extraction_coverage: "Handles most patterns, but not all edge cases"
+
+  stage_4:
+    number: 4
+    name: Patient Profile
+    status: COMPLETE
+    description: "Link InsuranceAuthorization to Customer"
+    completed_date: 2026-01-15
+    key_files:
+      - "/src/app/api/customers/[id]/authorization/route.ts"
+      - "/src/app/api/customers/[id]/benefits/route.ts"
+    accomplishments:
+      - "API returns customer's active insurance authorizations"
+      - "Links price lists to customer"
+      - "UI shows customer's benefits"
+
+  stage_5:
+    number: 5
+    name: Patient Price List Display & Access
+    status: COMPLETE
+    description: "Display price lists in UI, customer access"
+    completed_date: 2026-01-20
+    key_files:
+      - "/src/app/quote-builder/page.tsx"
+      - "/src/components/quote-builder/insurance-summary.tsx"
+      - "/src/app/api/customers/[id]/price-plan/route.ts"
+    accomplishments:
+      - "Insurance summary banner shows all benefits"
+      - "Price lists fully functional in quote builder"
+      - "Customer sees covered prices vs cash prices"
+
+  stage_5_5:
+    number: 5.5
+    name: Insurance Verification Gate
+    status: IN_PROGRESS
+    description: "Verify extracted insurance data before creating authorization"
+    started_date: 2026-01-28
+    current_focus: "Build verification workflow and three-layer validation"
+    what_needs_to_happen:
+      - "Three-layer validation system (PDF → DB → API → UI)"
+      - "Manual verification UI for admin approval"
+      - "Confidence scoring on extractions"
+      - "Flagging of questionable benefits"
+    blocking_issue: "No validation before InsuranceAuthorization creation"
+    key_files:
+      - "/src/app/api/documents/[id]/verify/route.ts (needs update)"
+      - "New route: /api/admin/verify-insurance (TBD)"
+    validation_layers:
+      - layer_1: "PDF extraction → Database (extraction validation)"
+      - layer_2: "Database → API response (response validation)"
+      - layer_3: "API → UI display (render validation - MOST IMPORTANT)"
+    notes:
+      - "Only Layer 3 matters - users see the browser display"
+      - "Must validate actual UI rendering, not just API responses"
+
+  stage_6:
+    number: 6
+    name: Quote Generation (THE GOSPEL)
+    status: PENDING
+    description: "Generate accurate insurance quotes"
+    criticality: "HIGHEST - This is where pricing accuracy is critical"
+    dependencies:
+      - "Stage 5.5 must be complete (verified insurance data)"
+      - "Price lists must be 100% accurate"
+      - "Formula handling must work for all patterns"
+    key_concerns:
+      - "Tier 4 formulas with complex pricing"
+      - "Age-dependent benefits"
+      - "Material surcharges"
+      - "Multiple pricing models (copay vs discount)"
+
+  stage_7:
+    number: 7
+    name: Order Tracking
+    status: PENDING
+    description: "8-day order timeline with automated status updates"
+    dependencies:
+      - "Quote generation working"
+      - "Orders created in system"
+    timeline_stages:
+      - "Day 0: Order placed"
+      - "Day 1: Lab receives order"
+      - "Day 3: Lenses cut and processed"
+      - "Day 5: Quality check"
+      - "Day 7: Ready for delivery"
+      - "Day 8: Delivered to customer"
+
+  stage_8:
+    number: 8
+    name: Analytics
+    status: PENDING
+    description: "Track sales, insurance usage, pricing accuracy"
+    future_focus: "Reporting and insights"
+
+three_pricing_categories:
+  category_1:
+    name: Insurance Benefit
+    definition: "Price defined by member's insurance plan"
+    when_used: "When customer has covered insurance"
+    example: "$75 copay for Tier 1 progressive"
+    source: "InsuranceAuthorization"
+
+  category_2:
+    name: Provider Contract Discount
+    definition: "20% off when bundled with covered Rx"
+    when_used: "When customer has insurance AND product is in network"
+    example: "Frame marked as provider contract item"
+    source: "Insurance tier mappings"
+
+  category_3:
+    name: Cash Only
+    definition: "Never covered, always full retail price"
+    when_used: "When customer has no insurance or item not covered"
+    example: "Premium lens treatments with copay above insurance limit"
+    source: "Product pricing + insurance limits"
+
+critical_concepts:
+  material_centric_pricing:
+    formula: "TOTAL_PRICE = BASE_PRICE + MATERIAL_SURCHARGE + TREATMENT_PRICE"
+    applies_to: "VSP pricing model"
+    example: "Progressive Tier F + High Index 1.66 = $105 + $78 = $183"
+
+  tier_system:
+    eyemed: "Tier names: Standard, Tier 1, Tier 2, Tier 3, Tier 4"
+    vsp: "Tier codes: K, J, F, N, O (two-letter system)"
+    mapping: "Stored in insurance-tier-mappings.ts PRODUCT_TIERS"
+
+  formula_benefits:
+    pattern: "$X copay; Y% off retail less $Z allowance"
+    example: "$20 copay; 20% off retail less $120 allowance (EyeMed Tier 4)"
+    challenge: "Extraction must parse and store all components"
+
+  age_dependent_benefits:
+    polycarbonate: "Under 19: $0, Age 19+: $20-$40"
+    photochromic: "Under 19: $0, Age 19+: $75"
+    handling: "Must extract both values and apply age logic"
+
+known_issues:
+  issue_1:
+    id: "EXTRACTION_FRAGILITY"
+    description: "Haiku extraction uses field-specific JSON path matching"
+    impact: "Breaks on non-standard benefit text formats"
+    status: "Known issue, proposed fix in Stage 3.7"
+    severity: MEDIUM
+
+  issue_2:
+    id: "NO_VALIDATION_GATE"
+    description: "No verification before InsuranceAuthorization creation"
+    impact: "Bad data can make it into system without review"
+    status: "Being addressed in Stage 5.5"
+    severity: HIGH
+
+  issue_3:
+    id: "ROSETTA_STONE_CONTAMINATION"
+    description: "Min/max ranges in rosetta stone act as validation constraints"
+    impact: "Valid plans outside observed ranges get rejected"
+    example: "New Tier 1 at $20 rejected because observed range is $30-$110"
+    status: "Identified, needs cleanup"
+    severity: HIGH
+    fix: "Separate rosetta stone (terminology) from business rules (validation)"
+
+  issue_4:
+    id: "VSP_TWO_LETTER_CODES"
+    description: "20% of VSP two-letter codes not extracted correctly"
+    impact: "Falls back to uc_discount for those plans"
+    status: "Known limitation"
+    severity: LOW
+
+rosetta_stones:
+  eyemed:
+    file: "/src/lib/data/rosetta-eyemed.json"
+    size: "750 lines, 23KB"
+    status: "CONTAMINATED - needs cleanup (Stage 5.5)"
+    coverage: "11 benefit categories, 100+ terminology variations"
+    contamination:
+      - "copayRange fields throughout (validation constraint)"
+      - "min/max ranges (validation constraint)"
+      - "allowanceRange fields (validation constraint)"
+    cleanup_needed: "Remove all constraint fields, keep only terminology mapping"
+
+  vsp:
+    file: "/src/lib/data/rosetta-vsp.json"
+    size: "500+ lines, 13KB"
+    status: "Similar contamination as EyeMed"
+    coverage: "5 plan types, 80+ product codes"
+
+  business_rules:
+    file: "/src/lib/data/business-rules.json"
+    size: "944 lines, 29KB"
+    status: "Separated from rosetta stones (good)"
+    content:
+      - "VSP pricing rules and tiers"
+      - "EyeMed age-dependent rules"
+      - "Material surcharge definitions"
+      - "Tier validation ranges"
+
+next_immediate_steps:
+  priority_1:
+    task: "Clean rosetta stones (remove validation constraints)"
+    why: "Bad data rejection is breaking valid plans"
+    files:
+      - "rosetta-eyemed.json"
+      - "rosetta-vsp.json"
+    approach: "Remove copayRange, min/max, range, allowanceRange fields"
+
+  priority_2:
+    task: "Implement Stage 5.5 (verification gate)"
+    why: "No validation before bad data enters system"
+    components:
+      - "Three-layer validation system"
+      - "Admin verification UI"
+      - "Confidence scoring"
+
+  priority_3:
+    task: "Test Stage 3.7 (extraction overhaul) design"
+    why: "Current extraction is fragile"
+    approach: "Build and validate new two-part extraction"
+
+files_to_know:
+  extraction:
+    - "/src/lib/services/ocr/haiku-extraction.ts (310 lines) - Current extraction"
+    - "/src/lib/services/ocr/prompt-1-raw-extraction.ts - Proposed extraction Part 1"
+    - "/src/lib/services/ocr/prompt-2-normalization.ts - Proposed extraction Part 2"
+
+  apis:
+    - "/src/app/api/documents/[id]/process/route.ts - Extract benefits"
+    - "/src/app/api/documents/[id]/verify/route.ts - Create authorization"
+    - "/src/app/api/customers/[id]/authorization/route.ts - Get customer benefits"
+
+  data:
+    - "/src/lib/data/rosetta-eyemed.json - EyeMed terminology"
+    - "/src/lib/data/rosetta-vsp.json - VSP terminology"
+    - "/src/lib/data/business-rules.json - Pricing rules"
+    - "/src/lib/data/insurance-tier-mappings.ts - Tier to copay mapping"
+
+  ui:
+    - "/src/components/quote-builder/insurance-summary.tsx - Benefit display"
+    - "/src/app/quote-builder/page.tsx - Quote builder interface"
+
+  tests:
+    - "/e2e/validate-insurance-display.spec.ts - UI validation (MOST IMPORTANT)"
+    - "/scripts/validate-ui-display.ts - API validation"
+    - "/scripts/test-vsp-validation.ts - PDF extraction validation"
+
+design_principles:
+  principle_1: "Separation of Concerns - Extraction, Normalization, Pricing are separate tasks"
+  principle_2: "Data-Driven - Rosetta stones and rules as JSON, not hardcoded"
+  principle_3: "Material-Centric - Once material selected, pricing is automatic"
+  principle_4: "Debuggable - Both raw and normalized data visible in database"
+  principle_5: "Carrier Flexible - Add new carrier by adding rosetta stone (no code changes)"
+
+three_layer_validation:
+  layer_1: "PDF → Database (extraction validation)"
+  layer_2: "Database → API (response validation)"
+  layer_3: "API → UI Display (render validation - MOST IMPORTANT)"
+  note: "Only Layer 3 matters because users see the browser display"

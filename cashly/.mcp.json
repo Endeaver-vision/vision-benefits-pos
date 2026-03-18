@@ -1,0 +1,72 @@
+{
+  "mcpServers": {
+    "postgres": {
+      "type": "stdio",
+      "command": "npx",
+      "args": [
+        "-y",
+        "@modelcontextprotocol/server-postgres",
+        "postgres://postgres.arflfrnwnbpnhpghwilk:l2PowWijursgfuSD@aws-1-us-east-1.pooler.supabase.com:6543/postgres?sslmode=require"
+      ]
+    },
+    "supabase": {
+      "type": "http",
+      "url": "https://mcp.supabase.com/mcp",
+      "headers": {
+        "Authorization": "Bearer ${SUPABASE_MCP_TOKEN}"
+      }
+    },
+    "memory": {
+      "type": "stdio",
+      "command": "npx",
+      "args": [
+        "-y",
+        "@modelcontextprotocol/server-memory"
+      ],
+      "env": {
+        "MEMORY_FILE_PATH": ".mcp/memory.jsonl"
+      }
+    },
+    "sequential-thinking": {
+      "type": "stdio",
+      "command": "npx",
+      "args": [
+        "-y",
+        "@modelcontextprotocol/server-sequential-thinking"
+      ]
+    },
+    "playwright": {
+      "type": "stdio",
+      "command": "npx",
+      "args": [
+        "-y",
+        "@playwright/mcp@latest"
+      ]
+    },
+    "brave-search": {
+      "type": "stdio",
+      "command": "npx",
+      "args": [
+        "-y",
+        "@modelcontextprotocol/server-brave-search"
+      ]
+    },
+    "github": {
+      "type": "stdio",
+      "command": "npx",
+      "args": [
+        "-y",
+        "@modelcontextprotocol/server-github"
+      ]
+    },
+    "filesystem": {
+      "type": "stdio",
+      "command": "npx",
+      "args": [
+        "-y",
+        "@modelcontextprotocol/server-filesystem",
+        "/Users/cmac/let/cashly"
+      ]
+    }
+  }
+}

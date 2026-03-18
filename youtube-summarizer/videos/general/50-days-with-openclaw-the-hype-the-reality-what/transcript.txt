@@ -1,0 +1,1245 @@
+Title: 50 days with OpenClaw: The hype, the reality & what actually broke
+Video ID: NZ1mKAWJPr4
+YouTube URL: https://www.youtube.com/watch?v=NZ1mKAWJPr4
+Timestamped link format: https://youtu.be/NZ1mKAWJPr4?t=SECONDS
+---
+
+[0:00](https://youtu.be/NZ1mKAWJPr4?t=0) Most OpenClaw videos right now
+are either first-week impressions,
+[0:05](https://youtu.be/NZ1mKAWJPr4?t=5) or set up tutorials, or showing use
+cases after three days of usage.
+[0:10](https://youtu.be/NZ1mKAWJPr4?t=10) Nobody can tell you what happens
+after the first month, because
+[0:15](https://youtu.be/NZ1mKAWJPr4?t=15) they haven't been there yet.
+[0:17](https://youtu.be/NZ1mKAWJPr4?t=17) I have.
+[0:18](https://youtu.be/NZ1mKAWJPr4?t=18) Every single day. For over
+50 days. Through every single
+[0:22](https://youtu.be/NZ1mKAWJPr4?t=22) iteration of this tool:
+[0:23](https://youtu.be/NZ1mKAWJPr4?t=23) when it was ClawdBot, when it
+was MoltBot (which I refused
+[0:28](https://youtu.be/NZ1mKAWJPr4?t=28) to call it that) and when it
+is now OpenClaw. I made the
+[0:32](https://youtu.be/NZ1mKAWJPr4?t=32) setup video that ended up in the
+official OpenClaw documentation.
+[0:37](https://youtu.be/NZ1mKAWJPr4?t=37) I built Clawdiverse, the community
+directory of use cases, and the
+[0:42](https://youtu.be/NZ1mKAWJPr4?t=42) most common post on Reddit is still:
+[0:44](https://youtu.be/NZ1mKAWJPr4?t=44) "I set up OpenClaw, but I
+don't know what to use it for."
+[0:48](https://youtu.be/NZ1mKAWJPr4?t=48) This video is the answer: 20 real use
+cases from my daily life, plus the
+[0:55](https://youtu.be/NZ1mKAWJPr4?t=55) honest truth about what breaks, how
+it breaks, and how to deal with it.
+[1:00](https://youtu.be/NZ1mKAWJPr4?t=60) Quick context for anyone new.
+[1:02](https://youtu.be/NZ1mKAWJPr4?t=62) OpenClaw is an always-on AI agent
+that runs on your server, your VPS, a
+[1:09](https://youtu.be/NZ1mKAWJPr4?t=69) Mac Mini or even a Raspberry Pi, 24/7.
+[1:13](https://youtu.be/NZ1mKAWJPr4?t=73) It connects to your messaging
+apps that you already have
+[1:16](https://youtu.be/NZ1mKAWJPr4?t=76) on your phone, like Telegram,
+WhatsApp, Discord, iMessage.
+[1:21](https://youtu.be/NZ1mKAWJPr4?t=81) If you need the full setup,
+I have a video for that
+[1:23](https://youtu.be/NZ1mKAWJPr4?t=83) (link in the description)
+[1:25](https://youtu.be/NZ1mKAWJPr4?t=85) This video is about what you
+*do* with it once it's running.
+[1:29](https://youtu.be/NZ1mKAWJPr4?t=89) And a super important thing:
+[1:31](https://youtu.be/NZ1mKAWJPr4?t=91) Every single prompt for every
+use case I'm about to show
+[1:35](https://youtu.be/NZ1mKAWJPr4?t=95) you is in this document
+[1:37](https://youtu.be/NZ1mKAWJPr4?t=97) (also link in the description)
+[1:39](https://youtu.be/NZ1mKAWJPr4?t=99) It's ready for copy-pasting
+and using with your own agent.
+[1:44](https://youtu.be/NZ1mKAWJPr4?t=104) Let's go see how it all works.
+[1:46](https://youtu.be/NZ1mKAWJPr4?t=106) Before the use cases, let
+me walk you through what
+[1:49](https://youtu.be/NZ1mKAWJPr4?t=109) 50 days actually look like.
+[1:51](https://youtu.be/NZ1mKAWJPr4?t=111) Because the way you use
+this thing in week one is
+[1:55](https://youtu.be/NZ1mKAWJPr4?t=115) nothing like in week seven.
+[1:56](https://youtu.be/NZ1mKAWJPr4?t=116) Week one is novelty.
+[1:58](https://youtu.be/NZ1mKAWJPr4?t=118) You're asking it random questions,
+testing what it can do, kind
+[2:02](https://youtu.be/NZ1mKAWJPr4?t=122) of using it like a ChatGPT.
+[2:04](https://youtu.be/NZ1mKAWJPr4?t=124) But one decision I made from day
+one saved me over and over in
+[2:09](https://youtu.be/NZ1mKAWJPr4?t=129) coming weeks markdown-first.
+[2:12](https://youtu.be/NZ1mKAWJPr4?t=132) A lot of people build their workflows
+around SQLite, databases,
+[2:17](https://youtu.be/NZ1mKAWJPr4?t=137) vector stores, custom schemas.
+[2:21](https://youtu.be/NZ1mKAWJPr4?t=141) I put everything in Obsidian from
+the start in plain text files.
+[2:27](https://youtu.be/NZ1mKAWJPr4?t=147) Any person can read
+them, I can read them.
+[2:30](https://youtu.be/NZ1mKAWJPr4?t=150) Any program can work with them.
+[2:33](https://youtu.be/NZ1mKAWJPr4?t=153) It's just plain text when the next
+thing after OpenClaw or the next
+[2:38](https://youtu.be/NZ1mKAWJPr4?t=158) iteration of OpenClaw comes along.
+[2:40](https://youtu.be/NZ1mKAWJPr4?t=160) My data moves with me in five seconds.
+[2:44](https://youtu.be/NZ1mKAWJPr4?t=164) No lock-in, just files.
+[2:46](https://youtu.be/NZ1mKAWJPr4?t=166) I can do anything with them.
+[2:48](https://youtu.be/NZ1mKAWJPr4?t=168) By week three, you start
+building automations, warning
+[2:51](https://youtu.be/NZ1mKAWJPr4?t=171) briefings, background checks.
+[2:53](https://youtu.be/NZ1mKAWJPr4?t=173) It starts being more useful and
+you can feel it in week five when
+[2:57](https://youtu.be/NZ1mKAWJPr4?t=177) you start using it more and more.
+[2:59](https://youtu.be/NZ1mKAWJPr4?t=179) You hit a wall, everything
+is in one conversation and
+[3:04](https://youtu.be/NZ1mKAWJPr4?t=184) everything is mixed together.
+[3:05](https://youtu.be/NZ1mKAWJPr4?t=185) Research, bookmarks, analytics,
+daily tasks, and there's more and
+[3:11](https://youtu.be/NZ1mKAWJPr4?t=191) more context pollution, and that's
+when I learned to separate contexts.
+[3:18](https://youtu.be/NZ1mKAWJPr4?t=198) I now have one Discord
+channel per workflow.
+[3:22](https://youtu.be/NZ1mKAWJPr4?t=202) This way, research doesn't
+bleed into analytics.
+[3:26](https://youtu.be/NZ1mKAWJPr4?t=206) Bookmarks don't pollute daily
+assistant tasks, and I'll show you the
+[3:31](https://youtu.be/NZ1mKAWJPr4?t=211) full architecture later in week seven.
+[3:33](https://youtu.be/NZ1mKAWJPr4?t=213) Another lesson.
+[3:35](https://youtu.be/NZ1mKAWJPr4?t=215) Not every channel
+needs the same brain.
+[3:38](https://youtu.be/NZ1mKAWJPr4?t=218) You need to match the
+model to the task.
+[3:41](https://youtu.be/NZ1mKAWJPr4?t=221) So Opus is for deep thinking and
+cheap models are good enough for
+[3:47](https://youtu.be/NZ1mKAWJPr4?t=227) routine work, and that's when
+costs stop being scary and crazy.
+[3:53](https://youtu.be/NZ1mKAWJPr4?t=233) And by week eight and onwards, it
+stops being a chatbot and becomes
+[3:57](https://youtu.be/NZ1mKAWJPr4?t=237) a system and lesson from this.
+[3:59](https://youtu.be/NZ1mKAWJPr4?t=239) Is three important principles after 50
+days that I would recommend everyone
+[4:05](https://youtu.be/NZ1mKAWJPr4?t=245) is to have everything in markdown
+from the beginning to separate context
+[4:11](https://youtu.be/NZ1mKAWJPr4?t=251) and to match the model to the task.
+[4:15](https://youtu.be/NZ1mKAWJPr4?t=255) Here's what we are covering, 20
+use cases across six categories,
+[4:20](https://youtu.be/NZ1mKAWJPr4?t=260) and I'm going to move fast, real
+screenshots, real conversations,
+[4:24](https://youtu.be/NZ1mKAWJPr4?t=264) real results, and if you only steal
+three ideas from this entire video.
+[4:28](https://youtu.be/NZ1mKAWJPr4?t=268) I'll tell you exactly which
+three closer to the end of
+[4:31](https://youtu.be/NZ1mKAWJPr4?t=271) the video, so stick around.
+[4:34](https://youtu.be/NZ1mKAWJPr4?t=274) It's gonna be worth it.
+[4:35](https://youtu.be/NZ1mKAWJPr4?t=275) Most of my setup runs in Discord
+now, which wasn't the case from
+[4:38](https://youtu.be/NZ1mKAWJPr4?t=278) the beginning, and I'll show the
+channel architecture and model
+[4:42](https://youtu.be/NZ1mKAWJPr4?t=282) routing later for now, starting with
+the things that run every single
+[4:47](https://youtu.be/NZ1mKAWJPr4?t=287) day without me touching anything.
+[4:49](https://youtu.be/NZ1mKAWJPr4?t=289) Every morning at 7:00 AM my
+agent scans a bunch of tweets
+[4:53](https://youtu.be/NZ1mKAWJPr4?t=293) from accounts they follow.
+[4:55](https://youtu.be/NZ1mKAWJPr4?t=295) Picks the top 10, writes
+them to my Obsidian notes.
+[4:59](https://youtu.be/NZ1mKAWJPr4?t=299) Appends any video ideas to my shipping
+backlog and sends me a summary.
+[5:05](https://youtu.be/NZ1mKAWJPr4?t=305) I wake up and I don't need
+to scroll through the feed
+[5:08](https://youtu.be/NZ1mKAWJPr4?t=308) to know what happened.
+[5:09](https://youtu.be/NZ1mKAWJPr4?t=309) The most important and interesting
+part is already waiting for me
+[5:13](https://youtu.be/NZ1mKAWJPr4?t=313) and it's tailored to my interests
+or what I'm currently working on.
+[5:18](https://youtu.be/NZ1mKAWJPr4?t=318) So today's stories are about
+Anthropic and OpenClaw,
+[5:23](https://youtu.be/NZ1mKAWJPr4?t=323) new Gemini model dropping.
+[5:25](https://youtu.be/NZ1mKAWJPr4?t=325) And this is already saved in
+Obsidian, and a couple video
+[5:30](https://youtu.be/NZ1mKAWJPr4?t=330) ideas are also added to a note in
+Obsidian, and the value compounds
+[5:34](https://youtu.be/NZ1mKAWJPr4?t=334) with time because it doesn't just
+summarize, it connects the dots.
+[5:39](https://youtu.be/NZ1mKAWJPr4?t=339) Like, Hey, this tweet about
+model pricing connects to
+[5:43](https://youtu.be/NZ1mKAWJPr4?t=343) your video idea about cost
+optimization, that kind of thing.
+[5:46](https://youtu.be/NZ1mKAWJPr4?t=346) But briefings are the gateway drug.
+[5:49](https://youtu.be/NZ1mKAWJPr4?t=349) Everyone starts there.
+[5:51](https://youtu.be/NZ1mKAWJPr4?t=351) Let me show you what comes after.
+[5:52](https://youtu.be/NZ1mKAWJPr4?t=352) This is my favorite use case.
+[5:55](https://youtu.be/NZ1mKAWJPr4?t=355) Every morning my agent fetches
+Wikipedia's 'On This Day' events,
+[6:00](https://youtu.be/NZ1mKAWJPr4?t=360) picks the most impactful historical
+event and then generates a woodcut
+[6:05](https://youtu.be/NZ1mKAWJPr4?t=365) style image showing 10 seconds
+before that event happened, like the
+[6:11](https://youtu.be/NZ1mKAWJPr4?t=371) iceberg approaching the Titanic or
+the apple, about to fall on Newton's
+[6:15](https://youtu.be/NZ1mKAWJPr4?t=375) head, this kind of stuff, and then it
+pushes to my TRMNL e-ink display.
+[6:21](https://youtu.be/NZ1mKAWJPr4?t=381) In a mystery mode, it only
+shows the date and location,
+[6:26](https://youtu.be/NZ1mKAWJPr4?t=386) and I need to guess the event.
+[6:29](https://youtu.be/NZ1mKAWJPr4?t=389) Sometimes it's obvious,
+sometimes it's a lesson for me.
+[6:33](https://youtu.be/NZ1mKAWJPr4?t=393) So for example, this is
+February 1st, 2003 over Texas.
+[6:40](https://youtu.be/NZ1mKAWJPr4?t=400) This is seconds before
+shuttle Columbia Disaster.
+[6:44](https://youtu.be/NZ1mKAWJPr4?t=404) Where it blew up, and these are the
+kind of images that it produces.
+[6:49](https://youtu.be/NZ1mKAWJPr4?t=409) For example, this is just before
+the last public appearance of
+[6:55](https://youtu.be/NZ1mKAWJPr4?t=415) the Beatles on the rooftop.
+[6:57](https://youtu.be/NZ1mKAWJPr4?t=417) And this is the beheading of Mary
+Queen of Scots, which changed
+[7:02](https://youtu.be/NZ1mKAWJPr4?t=422) the course of Europe's history.
+[7:04](https://youtu.be/NZ1mKAWJPr4?t=424) And this is part of my daily ritual.
+[7:06](https://youtu.be/NZ1mKAWJPr4?t=426) Now I walk past the display, look at
+the new picture, try to guess what it
+[7:11](https://youtu.be/NZ1mKAWJPr4?t=431) is, learn something new about history.
+[7:14](https://youtu.be/NZ1mKAWJPr4?t=434) Every single day a new
+one is waiting for me.
+[7:17](https://youtu.be/NZ1mKAWJPr4?t=437) This is maybe less of a use case and
+more like part of my daily routine and
+[7:23](https://youtu.be/NZ1mKAWJPr4?t=443) also an important part of the routine.
+[7:25](https://youtu.be/NZ1mKAWJPr4?t=445) So I have two cron jobs that I now
+never think about every day at 4:00
+[7:30](https://youtu.be/NZ1mKAWJPr4?t=450) AM when I'm sleeping, my agent updates
+its own skills from ClawHub updates.
+[7:36](https://youtu.be/NZ1mKAWJPr4?t=456) The OpenClaw package itself
+restarts the gateway, and
+[7:40](https://youtu.be/NZ1mKAWJPr4?t=460) then reports the results.
+[7:42](https://youtu.be/NZ1mKAWJPr4?t=462) When something breaks during an
+update, it tells me and every day,
+[7:46](https://youtu.be/NZ1mKAWJPr4?t=466) half an hour later, a separate
+cron job backs up everything
+[7:50](https://youtu.be/NZ1mKAWJPr4?t=470) important, all configuration
+files, workflow directory, crown
+[7:56](https://youtu.be/NZ1mKAWJPr4?t=476) schedules, SOUL file, MEMORY files,
+skills, everything that defines how
+[8:03](https://youtu.be/NZ1mKAWJPr4?t=483) my agent works or who he even is.
+[8:06](https://youtu.be/NZ1mKAWJPr4?t=486) So if my server dies tomorrow,
+I'm back up in half an hour, not
+[8:11](https://youtu.be/NZ1mKAWJPr4?t=491) rebuilding from scratch, not trying
+to remember how I configured things.
+[8:16](https://youtu.be/NZ1mKAWJPr4?t=496) Just restore and go, and
+that's the whole point.
+[8:19](https://youtu.be/NZ1mKAWJPr4?t=499) It just runs.
+[8:20](https://youtu.be/NZ1mKAWJPr4?t=500) And if something goes
+wrong, I can recover easily.
+[8:23](https://youtu.be/NZ1mKAWJPr4?t=503) And just as a reminder, all of
+the prompts to achieve all these
+[8:27](https://youtu.be/NZ1mKAWJPr4?t=507) tasks and use cases are in this.
+[8:31](https://youtu.be/NZ1mKAWJPr4?t=511) Just on GitHub, so you can
+just go there, copy paste to
+[8:35](https://youtu.be/NZ1mKAWJPr4?t=515) your agent, and be good to go.
+[8:37](https://youtu.be/NZ1mKAWJPr4?t=517) Always on checks, like for
+example, background health checks.
+[8:42](https://youtu.be/NZ1mKAWJPr4?t=522) This used to feel like the headline
+feature, but now I think of it as
+[8:47](https://youtu.be/NZ1mKAWJPr4?t=527) background guardrails useful, but
+it's only one piece of the system.
+[8:53](https://youtu.be/NZ1mKAWJPr4?t=533) My agent runs routine heartbeat
+checks every 30 minutes.
+[8:57](https://youtu.be/NZ1mKAWJPr4?t=537) And I can define what it
+does every 30 minutes.
+[9:01](https://youtu.be/NZ1mKAWJPr4?t=541) For example, it scans my emails,
+checks my calendar, monitors
+[9:05](https://youtu.be/NZ1mKAWJPr4?t=545) my services, and it catches
+things I would have missed.
+[9:09](https://youtu.be/NZ1mKAWJPr4?t=549) For example, one time it just sent
+me this message out of the blue
+[9:13](https://youtu.be/NZ1mKAWJPr4?t=553) about a Netflix payment failure,
+and I had no idea about it.
+[9:17](https://youtu.be/NZ1mKAWJPr4?t=557) It found it during a
+routine email scan.
+[9:21](https://youtu.be/NZ1mKAWJPr4?t=561) I paid it five minutes later so I
+could safely watch more TV shows.
+[9:27](https://youtu.be/NZ1mKAWJPr4?t=567) Or rather, I don't
+really watch TV shows.
+[9:30](https://youtu.be/NZ1mKAWJPr4?t=570) I don't have time.
+[9:31](https://youtu.be/NZ1mKAWJPr4?t=571) Rather, my kids could safely watch
+more hunters and catches a lot of
+[9:35](https://youtu.be/NZ1mKAWJPr4?t=575) other things like domain renewal
+coming up, or a meeting I was about
+[9:40](https://youtu.be/NZ1mKAWJPr4?t=580) to miss, or a relevant newsletter
+article that it found during a Sunday
+[9:46](https://youtu.be/NZ1mKAWJPr4?t=586) heartbeat scan that connected to a
+video that I was currently working on.
+[9:51](https://youtu.be/NZ1mKAWJPr4?t=591) And none of these were
+tasks that I assigned.
+[9:55](https://youtu.be/NZ1mKAWJPr4?t=595) My agent just found them.
+[9:57](https://youtu.be/NZ1mKAWJPr4?t=597) It knew what I'm working on and
+the things that would normally
+[10:02](https://youtu.be/NZ1mKAWJPr4?t=602) fall through the cracks.
+[10:03](https://youtu.be/NZ1mKAWJPr4?t=603) That's exactly what gets
+caught by the agent.
+[10:07](https://youtu.be/NZ1mKAWJPr4?t=607) And an important piece of setup
+here is that the agent is in
+[10:12](https://youtu.be/NZ1mKAWJPr4?t=612) a draft only mode for email.
+[10:14](https://youtu.be/NZ1mKAWJPr4?t=614) It can read my inbox.
+[10:16](https://youtu.be/NZ1mKAWJPr4?t=616) It can flag what's important.
+[10:17](https://youtu.be/NZ1mKAWJPr4?t=617) It can even draft responses,
+but it cannot send it.
+[10:21](https://youtu.be/NZ1mKAWJPr4?t=621) I need to review and send the email.
+[10:24](https://youtu.be/NZ1mKAWJPr4?t=624) And, and it doesn't happen
+without my approval.
+[10:27](https://youtu.be/NZ1mKAWJPr4?t=627) For now, there's no robust
+general solution yet for
+[10:32](https://youtu.be/NZ1mKAWJPr4?t=632) prompt injection via email.
+[10:34](https://youtu.be/NZ1mKAWJPr4?t=634) So I treat inbox content as
+potentially hostile research
+[10:39](https://youtu.be/NZ1mKAWJPr4?t=639) and content creation.
+[10:40](https://youtu.be/NZ1mKAWJPr4?t=640) And I love the research part
+of working with OpenClaw.
+[10:45](https://youtu.be/NZ1mKAWJPr4?t=645) It just appeals to me to do
+it on the go when I have ideas
+[10:49](https://youtu.be/NZ1mKAWJPr4?t=649) and I want to discuss it.
+[10:51](https://youtu.be/NZ1mKAWJPr4?t=651) For example, for this video, I told
+my agents to research what people
+[10:56](https://youtu.be/NZ1mKAWJPr4?t=656) are doing with OpenClaw, and then
+it spawned five parallel sub-agents.
+[11:01](https://youtu.be/NZ1mKAWJPr4?t=661) One Search Twitter, one crawled
+Reddit, one hit Hacker News.
+[11:06](https://youtu.be/NZ1mKAWJPr4?t=666) One analyzed YouTube competition and
+one scraped multiple different forums.
+[11:11](https://youtu.be/NZ1mKAWJPr4?t=671) They all ran simultaneously
+and produced massive
+[11:14](https://youtu.be/NZ1mKAWJPr4?t=674) structured research files.
+[11:16](https://youtu.be/NZ1mKAWJPr4?t=676) Each one of them with competitive
+analysis ranked video ideas, full
+[11:21](https://youtu.be/NZ1mKAWJPr4?t=681) outlines, with source links, and
+it took them minutes, not hours.
+[11:26](https://youtu.be/NZ1mKAWJPr4?t=686) The research files for this
+video alone produced by these
+[11:29](https://youtu.be/NZ1mKAWJPr4?t=689) agents are over 50 pages.
+[11:33](https://youtu.be/NZ1mKAWJPr4?t=693) And it gave me a clear understanding
+of what people are doing.
+[11:36](https://youtu.be/NZ1mKAWJPr4?t=696) And more importantly, not yet doing
+with OpenClaw and what I need to
+[11:42](https://youtu.be/NZ1mKAWJPr4?t=702) focus on to give the most value.
+[11:45](https://youtu.be/NZ1mKAWJPr4?t=705) And it's not just for video research,
+it's for any kind of research.
+[11:49](https://youtu.be/NZ1mKAWJPr4?t=709) You can define how broad it should go.
+[11:52](https://youtu.be/NZ1mKAWJPr4?t=712) How fresh the data needs to be.
+[11:53](https://youtu.be/NZ1mKAWJPr4?t=713) Is it the last seven days?
+[11:55](https://youtu.be/NZ1mKAWJPr4?t=715) Is it the last three months?
+[11:57](https://youtu.be/NZ1mKAWJPr4?t=717) And then let it run and come
+back with results so you don't
+[12:00](https://youtu.be/NZ1mKAWJPr4?t=720) start from scratch and you have
+a solid base to start with.
+[12:04](https://youtu.be/NZ1mKAWJPr4?t=724) And speaking about YouTube, I have
+two dedicated Discord channels
+[12:09](https://youtu.be/NZ1mKAWJPr4?t=729) related to YouTube creation.
+[12:12](https://youtu.be/NZ1mKAWJPr4?t=732) The first is my YouTube
+analytics channel.
+[12:14](https://youtu.be/NZ1mKAWJPr4?t=734) It has access to all my stats via
+the API, and I can query anything in.
+[12:20](https://youtu.be/NZ1mKAWJPr4?t=740) Natural language, like how did my last
+five videos compare on retention or
+[12:26](https://youtu.be/NZ1mKAWJPr4?t=746) which topics get the most engagement?
+[12:29](https://youtu.be/NZ1mKAWJPr4?t=749) Or compare my OpenClaw videos
+to my Claude Code videos, and
+[12:34](https://youtu.be/NZ1mKAWJPr4?t=754) then it slices and dices the
+data anyway I want on demand.
+[12:38](https://youtu.be/NZ1mKAWJPr4?t=758) It's like much more flexible than
+YouTube studios built in dashboards,
+[12:43](https://youtu.be/NZ1mKAWJPr4?t=763) and it also synthesizes the numbers.
+[12:45](https://youtu.be/NZ1mKAWJPr4?t=765) And gives ideas and
+advice based on that.
+[12:48](https://youtu.be/NZ1mKAWJPr4?t=768) You're not getting this
+from any kind of analytics.
+[12:51](https://youtu.be/NZ1mKAWJPr4?t=771) For example, this was just a random
+question how my last two weeks went,
+[12:55](https://youtu.be/NZ1mKAWJPr4?t=775) and then it gave me the view numbers.
+[12:59](https://youtu.be/NZ1mKAWJPr4?t=779) It showed me when I published the
+videos to understand where was the
+[13:04](https://youtu.be/NZ1mKAWJPr4?t=784) spike, how it goes down, where is the
+uptick, what were the key insights?
+[13:10](https://youtu.be/NZ1mKAWJPr4?t=790) What was the watch time, which
+I didn't even ask about, and
+[13:14](https://youtu.be/NZ1mKAWJPr4?t=794) what was the bottom line?
+[13:16](https://youtu.be/NZ1mKAWJPr4?t=796) So everything related to what I
+care about, which I didn't even ask.
+[13:22](https://youtu.be/NZ1mKAWJPr4?t=802) It just knows and
+gives me the details.
+[13:25](https://youtu.be/NZ1mKAWJPr4?t=805) As granular as I want them to
+be, and the second channel is
+[13:29](https://youtu.be/NZ1mKAWJPr4?t=809) my video idea research channel.
+[13:31](https://youtu.be/NZ1mKAWJPr4?t=811) Throughout the week, I drop links,
+articles, tweets, half warm thoughts,
+[13:37](https://youtu.be/NZ1mKAWJPr4?t=817) what I want to include or what I don't
+want to include in the next video.
+[13:43](https://youtu.be/NZ1mKAWJPr4?t=823) And then the agent goes and
+enriches those snippets.
+[13:47](https://youtu.be/NZ1mKAWJPr4?t=827) It connects the dots across different
+sources and builds context over time.
+[13:53](https://youtu.be/NZ1mKAWJPr4?t=833) And by the time I sit down to work on
+the video, I don't start from scratch.
+[13:57](https://youtu.be/NZ1mKAWJPr4?t=837) I have weeks of accumulated
+organized research waiting for
+[14:02](https://youtu.be/NZ1mKAWJPr4?t=842) me, and this exact video is
+a great meta example of it.
+[14:06](https://youtu.be/NZ1mKAWJPr4?t=846) The research for this video
+accumulated over probably like
+[14:10](https://youtu.be/NZ1mKAWJPr4?t=850) three weeks, maybe even more.
+[14:12](https://youtu.be/NZ1mKAWJPr4?t=852) Links from Reddit, insights
+from Discord, competitive
+[14:16](https://youtu.be/NZ1mKAWJPr4?t=856) analysis, audience pay
+points, all fed over time.
+[14:21](https://youtu.be/NZ1mKAWJPr4?t=861) As ideas came to me as I got
+some data, as I got some numbers.
+[14:28](https://youtu.be/NZ1mKAWJPr4?t=868) And then everything got organized
+and connected by the agent so that I
+[14:32](https://youtu.be/NZ1mKAWJPr4?t=872) have a solid baseline to start with.
+[14:34](https://youtu.be/NZ1mKAWJPr4?t=874) And having those two different
+channels for YouTube are important
+[14:37](https://youtu.be/NZ1mKAWJPr4?t=877) because the separation matters,
+analytics context, stays isolated,
+[14:42](https://youtu.be/NZ1mKAWJPr4?t=882) and then research builds over weeks
+without polluting other conversations.
+[14:47](https://youtu.be/NZ1mKAWJPr4?t=887) Next is summarizing
+practically anything.
+[14:51](https://youtu.be/NZ1mKAWJPr4?t=891) Throw any URL at it, like an article,
+a YouTube video, a research paper,
+[14:58](https://youtu.be/NZ1mKAWJPr4?t=898) A PDF, and you get a summary back
+and I use it multiple times a day.
+[15:03](https://youtu.be/NZ1mKAWJPr4?t=903) For example, let's
+summarize my last video.
+[15:06](https://youtu.be/NZ1mKAWJPr4?t=906) /summarize and a URL and it goes
+to work, and a few seconds
+[15:11](https://youtu.be/NZ1mKAWJPr4?t=911) later I get the summary.
+[15:12](https://youtu.be/NZ1mKAWJPr4?t=912) What's the video about?
+[15:14](https://youtu.be/NZ1mKAWJPr4?t=914) What's the core message?
+[15:15](https://youtu.be/NZ1mKAWJPr4?t=915) What are the key numbers?
+[15:17](https://youtu.be/NZ1mKAWJPr4?t=917) What are the practical steps?
+[15:19](https://youtu.be/NZ1mKAWJPr4?t=919) And from there, I can tell it to
+either expand or this is good enough,
+[15:23](https://youtu.be/NZ1mKAWJPr4?t=923) or maybe save it to an Obsidian note.
+[15:26](https://youtu.be/NZ1mKAWJPr4?t=926) I can do anything.
+[15:27](https://youtu.be/NZ1mKAWJPr4?t=927) Infrastructure and DevOps.
+[15:29](https://youtu.be/NZ1mKAWJPr4?t=929) My agent migrated me from the alt
+ClawdBot package to OpenClaw.
+[15:35](https://youtu.be/NZ1mKAWJPr4?t=935) It found both packages
+running at the same time.
+[15:38](https://youtu.be/NZ1mKAWJPr4?t=938) It killed a zombie process
+running at 160% of CPU.
+[15:45](https://youtu.be/NZ1mKAWJPr4?t=945) It deleted the old system services
+fixed seven days of silently broken
+[15:50](https://youtu.be/NZ1mKAWJPr4?t=950) cron jobs that went unnoticed and all
+from one message, go fix everything.
+[15:56](https://youtu.be/NZ1mKAWJPr4?t=956) It's also connected to my VPS server
+via API, and I host everything there.
+[16:03](https://youtu.be/NZ1mKAWJPr4?t=963) And the first time I connected
+it, it reviewed more than 20 apps.
+[16:09](https://youtu.be/NZ1mKAWJPr4?t=969) Running there, flagged
+some unhealthy services.
+[16:13](https://youtu.be/NZ1mKAWJPr4?t=973) Did some fixes and right now
+I can do anything with it.
+[16:18](https://youtu.be/NZ1mKAWJPr4?t=978) I don't need to SSH to my server.
+[16:21](https://youtu.be/NZ1mKAWJPr4?t=981) I can check the health of the whole
+server or specific apps and it can
+[16:28](https://youtu.be/NZ1mKAWJPr4?t=988) fix the apps, restart the apps.
+[16:30](https://youtu.be/NZ1mKAWJPr4?t=990) I have basically like a remote
+control to my whole server just in my
+[16:37](https://youtu.be/NZ1mKAWJPr4?t=997) Discord, and again, about security.
+[16:39](https://youtu.be/NZ1mKAWJPr4?t=999) There is an allow list of commands
+that it can do, and there's
+[16:44](https://youtu.be/NZ1mKAWJPr4?t=1004) also a deny list of commands
+that it cannot do by itself.
+[16:49](https://youtu.be/NZ1mKAWJPr4?t=1009) It has to ask my permission first.
+[16:51](https://youtu.be/NZ1mKAWJPr4?t=1011) Works pretty well and I
+haven't had any issues so far.
+[16:54](https://youtu.be/NZ1mKAWJPr4?t=1014) It allows me also to
+code from my phone.
+[16:57](https://youtu.be/NZ1mKAWJPr4?t=1017) I can tell my agents to go fix a bug.
+[17:00](https://youtu.be/NZ1mKAWJPr4?t=1020) Build a feature, create a PR, all
+from my phone while I'm away from my
+[17:05](https://youtu.be/NZ1mKAWJPr4?t=1025) desk, and you don't need your laptop
+because your AI has your laptop.
+[17:10](https://youtu.be/NZ1mKAWJPr4?t=1030) But to be completely honest,
+I do not use it for production
+[17:12](https://youtu.be/NZ1mKAWJPr4?t=1032) as my main way of programming.
+[17:15](https://youtu.be/NZ1mKAWJPr4?t=1035) I only use it for some quick fixes
+or simple ideas that come to my mind,
+[17:19](https://youtu.be/NZ1mKAWJPr4?t=1039) and I wanted to test them on the go.
+[17:22](https://youtu.be/NZ1mKAWJPr4?t=1042) For my main workflow, I still
+use Claude Code and Codex on my
+[17:27](https://youtu.be/NZ1mKAWJPr4?t=1047) desktop Daily Life assistant.
+[17:30](https://youtu.be/NZ1mKAWJPr4?t=1050) And to start with, what everybody's
+doing is email, triage and draft
+[17:35](https://youtu.be/NZ1mKAWJPr4?t=1055) replies beyond the proactive
+catches that I already showed you.
+[17:40](https://youtu.be/NZ1mKAWJPr4?t=1060) The day-to-day email workflow is
+simple that it reads my inbox.
+[17:45](https://youtu.be/NZ1mKAWJPr4?t=1065) Flags what's important
+and drafts responses.
+[17:48](https://youtu.be/NZ1mKAWJPr4?t=1068) I review and send.
+[17:49](https://youtu.be/NZ1mKAWJPr4?t=1069) This way I can easily reply to
+an email the same day rather than
+[17:54](https://youtu.be/NZ1mKAWJPr4?t=1074) during the weekend when I have
+more time to go through my inbox.
+[17:57](https://youtu.be/NZ1mKAWJPr4?t=1077) This one is useful.
+[17:58](https://youtu.be/NZ1mKAWJPr4?t=1078) Calendar and family
+management, not just for
+[18:01](https://youtu.be/NZ1mKAWJPr4?t=1081) myself but for family as well.
+[18:04](https://youtu.be/NZ1mKAWJPr4?t=1084) For example, I have a group
+chat on WhatsApp this time.
+[18:08](https://youtu.be/NZ1mKAWJPr4?t=1088) Because my wife doesn't use
+Telegram or Discord, and in
+[18:12](https://youtu.be/NZ1mKAWJPr4?t=1092) WhatsApp group, I can drop
+messages like Schedule Dentist
+[18:16](https://youtu.be/NZ1mKAWJPr4?t=1096) Thursday at 3:00 PM and it's done.
+[18:19](https://youtu.be/NZ1mKAWJPr4?t=1099) And my wife can add events,
+check the schedule, get
+[18:23](https://youtu.be/NZ1mKAWJPr4?t=1103) reminders all through that same
+group chat and chat interface.
+[18:27](https://youtu.be/NZ1mKAWJPr4?t=1107) It is simple, but it
+is helpful as well.
+[18:30](https://youtu.be/NZ1mKAWJPr4?t=1110) And once it works, you start
+asking like, what else can you do?
+[18:33](https://youtu.be/NZ1mKAWJPr4?t=1113) Voice note transcription.
+[18:35](https://youtu.be/NZ1mKAWJPr4?t=1115) This is something that I always
+thought I would be using on my phone
+[18:39](https://youtu.be/NZ1mKAWJPr4?t=1119) because I can dictate stuff and it's
+there, but when I tried it, I never
+[18:45](https://youtu.be/NZ1mKAWJPr4?t=1125) went back to listen to those messages.
+[18:48](https://youtu.be/NZ1mKAWJPr4?t=1128) Now it can actually
+be done automatically.
+[18:51](https://youtu.be/NZ1mKAWJPr4?t=1131) So for example, I send a voice
+message on WhatsApp, telegram or
+[18:54](https://youtu.be/NZ1mKAWJPr4?t=1134) Discord, and it transcribes it
+with Whisper model and responds in
+[19:00](https://youtu.be/NZ1mKAWJPr4?t=1140) text, quick thoughts while driving.
+[19:02](https://youtu.be/NZ1mKAWJPr4?t=1142) Shopping lists, while walking,
+meeting notes on the go.
+[19:06](https://youtu.be/NZ1mKAWJPr4?t=1146) I just talk and then
+it handles the rest.
+[19:09](https://youtu.be/NZ1mKAWJPr4?t=1149) And if it's something important, it
+puts it in maybe a file in Obsidian.
+[19:14](https://youtu.be/NZ1mKAWJPr4?t=1154) Or sends a message or drafts
+an email so that I don't even
+[19:18](https://youtu.be/NZ1mKAWJPr4?t=1158) need to go back to those notes.
+[19:22](https://youtu.be/NZ1mKAWJPr4?t=1162) They are already taken care of
+and more small stuff from daily
+[19:25](https://youtu.be/NZ1mKAWJPr4?t=1165) life, like find me a good coffee
+shop within walking distance.
+[19:30](https://youtu.be/NZ1mKAWJPr4?t=1170) It uses Google Places API, so it
+has access to ratings reviews.
+[19:36](https://youtu.be/NZ1mKAWJPr4?t=1176) Walking distances from my home, what
+people like or dislike in that place.
+[19:41](https://youtu.be/NZ1mKAWJPr4?t=1181) What are the prices?
+[19:42](https://youtu.be/NZ1mKAWJPr4?t=1182) So it can do much more in seconds
+than I would do myself, and it's
+[19:48](https://youtu.be/NZ1mKAWJPr4?t=1188) helpful for one of searches as well.
+[19:50](https://youtu.be/NZ1mKAWJPr4?t=1190) I was searching for snowboard
+boots to go snowboarding, and
+[19:55](https://youtu.be/NZ1mKAWJPr4?t=1195) I have a large foot, so it's
+an issue to find my size.
+[20:00](https://youtu.be/NZ1mKAWJPr4?t=1200) So it serves multiple shops.
+[20:03](https://youtu.be/NZ1mKAWJPr4?t=1203) Where I could buy one, it
+checked online whether they had
+[20:07](https://youtu.be/NZ1mKAWJPr4?t=1207) my size and it gave me three
+options where I could go and buy.
+[20:12](https://youtu.be/NZ1mKAWJPr4?t=1212) So I went to the first one, bought
+one, which were not available anywhere
+[20:17](https://youtu.be/NZ1mKAWJPr4?t=1217) else in the city or almost, and.
+[20:20](https://youtu.be/NZ1mKAWJPr4?t=1220) Took me 20 minutes
+for weather forecast.
+[20:22](https://youtu.be/NZ1mKAWJPr4?t=1222) It doesn't tell me just like
+tomorrow is gonna be sunny.
+[20:25](https://youtu.be/NZ1mKAWJPr4?t=1225) I have it on my watch, but it
+did warn me once, for example,
+[20:29](https://youtu.be/NZ1mKAWJPr4?t=1229) about minus 19 degrees cold snap
+coming up, which is like minus
+[20:34](https://youtu.be/NZ1mKAWJPr4?t=1234) two, minus three Fahrenheit.
+[20:36](https://youtu.be/NZ1mKAWJPr4?t=1236) And that was quite helpful.
+[20:37](https://youtu.be/NZ1mKAWJPr4?t=1237) And then there are reminders
+about maybe rehab exercises
+[20:41](https://youtu.be/NZ1mKAWJPr4?t=1241) with snooze capability meeting
+reminders before my weekly calls.
+[20:46](https://youtu.be/NZ1mKAWJPr4?t=1246) These are all small things on their
+own, but they do add up and they are.
+[20:51](https://youtu.be/NZ1mKAWJPr4?t=1251) Genuinely helpful in everyday
+life, helping friends with their
+[20:56](https://youtu.be/NZ1mKAWJPr4?t=1256) technical issues and problems.
+[20:58](https://youtu.be/NZ1mKAWJPr4?t=1258) And this one is personal.
+[20:59](https://youtu.be/NZ1mKAWJPr4?t=1259) So my friend wanted to set up his own
+OpenClaw after watching my videos,
+[21:05](https://youtu.be/NZ1mKAWJPr4?t=1265) and I added him to a WhatsApp group
+with my own agent, and myself and my
+[21:11](https://youtu.be/NZ1mKAWJPr4?t=1271) agent spent three and a half hours.
+[21:13](https://youtu.be/NZ1mKAWJPr4?t=1273) Guiding him step by step through
+the entire setup in a non-English
+[21:18](https://youtu.be/NZ1mKAWJPr4?t=1278) language, NPM permissions, WhatsApp
+linking daemon configuration, cloud
+[21:25](https://youtu.be/NZ1mKAWJPr4?t=1285) authorization, debugging like the
+whole saga, and it was all done
+[21:29](https://youtu.be/NZ1mKAWJPr4?t=1289) either via asking questions or
+posting screenshots in the group chat.
+[21:35](https://youtu.be/NZ1mKAWJPr4?t=1295) And my friend would take
+a screenshot of an error.
+[21:39](https://youtu.be/NZ1mKAWJPr4?t=1299) My agent would read it and explain
+the fix, tell what the next
+[21:43](https://youtu.be/NZ1mKAWJPr4?t=1303) step is, and that's how it went.
+[21:46](https://youtu.be/NZ1mKAWJPr4?t=1306) Well, previously, I would have
+had to answer everything myself.
+[21:50](https://youtu.be/NZ1mKAWJPr4?t=1310) Now my agent answered 90% of
+the questions, and I just added
+[21:55](https://youtu.be/NZ1mKAWJPr4?t=1315) context from my own experience
+to some of the answers.
+[21:58](https://youtu.be/NZ1mKAWJPr4?t=1318) After a few days when my friend
+installed his own instance, the
+[22:02](https://youtu.be/NZ1mKAWJPr4?t=1322) questions become more rare, and
+then they stopped because he
+[22:06](https://youtu.be/NZ1mKAWJPr4?t=1326) switched to asking his own agent,
+and I didn't have any technical
+[22:12](https://youtu.be/NZ1mKAWJPr4?t=1332) questions from him in weeks.
+[22:14](https://youtu.be/NZ1mKAWJPr4?t=1334) And I only hear updates from
+time to time as to what kind
+[22:17](https://youtu.be/NZ1mKAWJPr4?t=1337) of automations he's able to do.
+[22:20](https://youtu.be/NZ1mKAWJPr4?t=1340) And for a non-technical user
+who runs an accounting company,
+[22:25](https://youtu.be/NZ1mKAWJPr4?t=1345) I'm genuinely amazed how quickly
+and how far he has gone already.
+[22:31](https://youtu.be/NZ1mKAWJPr4?t=1351) I also have a group chat
+with my wife and my agent.
+[22:35](https://youtu.be/NZ1mKAWJPr4?t=1355) And it adds fun to our conversation,
+some jokes or second opinion on
+[22:41](https://youtu.be/NZ1mKAWJPr4?t=1361) things that we are discussing.
+[22:43](https://youtu.be/NZ1mKAWJPr4?t=1363) And once my wife texted in
+that channel to tell Rad to
+[22:47](https://youtu.be/NZ1mKAWJPr4?t=1367) play with me when I was too
+busy talking to my agent and.
+[22:51](https://youtu.be/NZ1mKAWJPr4?t=1371) I left what I was doing and we played.
+[22:55](https://youtu.be/NZ1mKAWJPr4?t=1375) And the last part is about
+my evolution of how I am
+[22:58](https://youtu.be/NZ1mKAWJPr4?t=1378) using OpenClaw today.
+[23:00](https://youtu.be/NZ1mKAWJPr4?t=1380) So migrating to Discord, building the
+knowledge base and some fun projects.
+[23:06](https://youtu.be/NZ1mKAWJPr4?t=1386) Migrating to Discord is one of
+the biggest changes in my setup
+[23:10](https://youtu.be/NZ1mKAWJPr4?t=1390) over the last 50 days, and I
+think it's the most important
+[23:14](https://youtu.be/NZ1mKAWJPr4?t=1394) thing that I can share with you.
+[23:16](https://youtu.be/NZ1mKAWJPr4?t=1396) So first I started on WhatsApp
+and then quickly moved to
+[23:20](https://youtu.be/NZ1mKAWJPr4?t=1400) Telegram because it just had more
+features and was just better.
+[23:26](https://youtu.be/NZ1mKAWJPr4?t=1406) And most people started
+on Telegram too.
+[23:28](https://youtu.be/NZ1mKAWJPr4?t=1408) But around week five, I
+started hitting a wall.
+[23:31](https://youtu.be/NZ1mKAWJPr4?t=1411) Everything was in one conversation.
+[23:34](https://youtu.be/NZ1mKAWJPr4?t=1414) My YouTube stats were
+mixed with my bookmarks.
+[23:37](https://youtu.be/NZ1mKAWJPr4?t=1417) My research was mixed with
+my daily assistant tasks.
+[23:42](https://youtu.be/NZ1mKAWJPr4?t=1422) And context was getting polluted
+and it was hard to start finding
+[23:48](https://youtu.be/NZ1mKAWJPr4?t=1428) things or getting back to
+something that I saw previously.
+[23:51](https://youtu.be/NZ1mKAWJPr4?t=1431) So I migrated to Discord and now
+it's night and day difference.
+[23:57](https://youtu.be/NZ1mKAWJPr4?t=1437) Instead of one conversation or
+multiple separate agents like I had
+[24:03](https://youtu.be/NZ1mKAWJPr4?t=1443) before, I now have channels and each
+channel is a dedicated workspace.
+[24:10](https://youtu.be/NZ1mKAWJPr4?t=1450) With its own context, there's a
+channel for YouTube analytics, a
+[24:15](https://youtu.be/NZ1mKAWJPr4?t=1455) channel for video idea research, and
+inbox channel for bookmarks, a general
+[24:22](https://youtu.be/NZ1mKAWJPr4?t=1462) channel for daily assistant stuff.
+[24:25](https://youtu.be/NZ1mKAWJPr4?t=1465) And each one stays focused on
+just that one task and area.
+[24:30](https://youtu.be/NZ1mKAWJPr4?t=1470) And the important part is that I can
+set different models per channel.
+[24:35](https://youtu.be/NZ1mKAWJPr4?t=1475) For example, my YouTube stats
+channel can use a cheaper model
+[24:40](https://youtu.be/NZ1mKAWJPr4?t=1480) because it's mostly data retrieval.
+[24:43](https://youtu.be/NZ1mKAWJPr4?t=1483) My research channel uses Opus because
+I need deep thinking during research.
+[24:48](https://youtu.be/NZ1mKAWJPr4?t=1488) My inbox channel uses a fast
+cheap model because it's just.
+[24:52](https://youtu.be/NZ1mKAWJPr4?t=1492) Processing links, summarizing
+and categorizing, and that's
+[24:57](https://youtu.be/NZ1mKAWJPr4?t=1497) how we keep costs down.
+[24:59](https://youtu.be/NZ1mKAWJPr4?t=1499) Matching the model to the task,
+not the other way around, and not
+[25:05](https://youtu.be/NZ1mKAWJPr4?t=1505) overpaying for expensive models
+for tasks that can very well be
+[25:10](https://youtu.be/NZ1mKAWJPr4?t=1510) done by a cheaper, smaller model.
+[25:12](https://youtu.be/NZ1mKAWJPr4?t=1512) And switching to Discord
+wasn't about the app itself.
+[25:16](https://youtu.be/NZ1mKAWJPr4?t=1516) It was about the architecture.
+[25:17](https://youtu.be/NZ1mKAWJPr4?t=1517) I would prefer staying on Telegram
+or WhatsApp, but this works better.
+[25:23](https://youtu.be/NZ1mKAWJPr4?t=1523) It separates contexts.
+[25:25](https://youtu.be/NZ1mKAWJPr4?t=1525) It has cleaner conversations, it
+has better formatting, and you
+[25:31](https://youtu.be/NZ1mKAWJPr4?t=1531) have per channel models, and you
+have lower costs because of that,
+[25:36](https://youtu.be/NZ1mKAWJPr4?t=1536) and with this setup of channels, I
+always know where to go for what.
+[25:41](https://youtu.be/NZ1mKAWJPr4?t=1541) And I'm careful about
+adding more channels.
+[25:43](https://youtu.be/NZ1mKAWJPr4?t=1543) I'll probably have more with time,
+but I only add a new one as and
+[25:49](https://youtu.be/NZ1mKAWJPr4?t=1549) when I really, really need it.
+[25:51](https://youtu.be/NZ1mKAWJPr4?t=1551) And that's what 50 days looks like.
+[25:53](https://youtu.be/NZ1mKAWJPr4?t=1553) You stop using the tool and start
+designing how you interact with it and
+[25:58](https://youtu.be/NZ1mKAWJPr4?t=1558) start getting more value out of it.
+[26:00](https://youtu.be/NZ1mKAWJPr4?t=1560) Bookmarks, bookmark is a fun.
+[26:02](https://youtu.be/NZ1mKAWJPr4?t=1562) I used to use Raindrop for bookmarks.
+[26:04](https://youtu.be/NZ1mKAWJPr4?t=1564) I had a paid subscription.
+[26:07](https://youtu.be/NZ1mKAWJPr4?t=1567) A separate app, manual tagging,
+putting everything into folders.
+[26:12](https://youtu.be/NZ1mKAWJPr4?t=1572) And as I was using that, I
+even built a system that was
+[26:17](https://youtu.be/NZ1mKAWJPr4?t=1577) regularly pulling the bookmarks
+from Raindrop using the API
+[26:22](https://youtu.be/NZ1mKAWJPr4?t=1582) and putting them in my Obsidian.
+[26:24](https://youtu.be/NZ1mKAWJPr4?t=1584) What's more, I even built a
+skill for OpenClaw to manage.
+[26:30](https://youtu.be/NZ1mKAWJPr4?t=1590) Bookmarks from Raindrop and to
+enrich them and to create tags
+[26:36](https://youtu.be/NZ1mKAWJPr4?t=1596) automatically and to pull to
+Obsidian, just the whole thing.
+[26:41](https://youtu.be/NZ1mKAWJPr4?t=1601) But at some point I realized
+that I don't need an
+[26:45](https://youtu.be/NZ1mKAWJPr4?t=1605) intermediary, which is Raindrop.
+[26:47](https://youtu.be/NZ1mKAWJPr4?t=1607) I can do it myself directly.
+[26:49](https://youtu.be/NZ1mKAWJPr4?t=1609) So now I just drop any link into
+my Discord inbox channel, uh,
+[26:54](https://youtu.be/NZ1mKAWJPr4?t=1614) and the agent does the rest.
+[26:56](https://youtu.be/NZ1mKAWJPr4?t=1616) It summarizes the content.
+[26:58](https://youtu.be/NZ1mKAWJPr4?t=1618) It extracts key information.
+[27:00](https://youtu.be/NZ1mKAWJPr4?t=1620) It creates text for every bookmark,
+and over time builds a knowledge
+[27:06](https://youtu.be/NZ1mKAWJPr4?t=1626) graph, connecting related links,
+all in markdown, all searchable,
+[27:10](https://youtu.be/NZ1mKAWJPr4?t=1630) all building context over time,
+all in Obsidian, and it runs on a
+[27:15](https://youtu.be/NZ1mKAWJPr4?t=1635) cheaper model because link processing
+doesn't need Opus and I canceled
+[27:20](https://youtu.be/NZ1mKAWJPr4?t=1640) Raindrop and I don't miss it.
+[27:22](https://youtu.be/NZ1mKAWJPr4?t=1642) Obsidian and knowledge base.
+[27:25](https://youtu.be/NZ1mKAWJPr4?t=1645) As you might have noticed already,
+most of the things that I do with
+[27:29](https://youtu.be/NZ1mKAWJPr4?t=1649) my agent in some way or in another
+end up in Obsidian, and here's where
+[27:34](https://youtu.be/NZ1mKAWJPr4?t=1654) the markdown first thing pays off.
+[27:37](https://youtu.be/NZ1mKAWJPr4?t=1657) I have almost 3000 notes in Obsidian,
+and my agent indexes all of them every
+[27:44](https://youtu.be/NZ1mKAWJPr4?t=1664) night using QMD for semantic search.
+[27:48](https://youtu.be/NZ1mKAWJPr4?t=1668) Semantic search means that
+I can ask questions like,
+[27:51](https://youtu.be/NZ1mKAWJPr4?t=1671) what did I decide about?
+[27:54](https://youtu.be/NZ1mKAWJPr4?t=1674) Thumbnail design last month, and
+then it finds the exact note.
+[27:58](https://youtu.be/NZ1mKAWJPr4?t=1678) It's not keyword matching,
+it's semantic understanding
+[28:02](https://youtu.be/NZ1mKAWJPr4?t=1682) what I'm asking about.
+[28:04](https://youtu.be/NZ1mKAWJPr4?t=1684) So for example, what's the overarching
+theme in my last five videos?
+[28:08](https://youtu.be/NZ1mKAWJPr4?t=1688) It lists the five videos and
+says that the overarching
+[28:13](https://youtu.be/NZ1mKAWJPr4?t=1693) theme is making AI coding tools
+actually useful in practice.
+[28:17](https://youtu.be/NZ1mKAWJPr4?t=1697) It's not something that can be
+found by searching for keywords.
+[28:22](https://youtu.be/NZ1mKAWJPr4?t=1702) And as I work more and more with
+my agent, as I forward random
+[28:28](https://youtu.be/NZ1mKAWJPr4?t=1708) things, random thoughts, random
+links, ideas throughout the day,
+[28:33](https://youtu.be/NZ1mKAWJPr4?t=1713) they go into Obsidian as markdown
+files and the agent organizes them,
+[28:38](https://youtu.be/NZ1mKAWJPr4?t=1718) and then every night at 3:00 AM.
+[28:42](https://youtu.be/NZ1mKAWJPr4?t=1722) The entire index rebuilds,
+and then I have this nice
+[28:46](https://youtu.be/NZ1mKAWJPr4?t=1726) semantic search available to me.
+[28:49](https://youtu.be/NZ1mKAWJPr4?t=1729) When I first set this up, it
+took a few minutes to build the
+[28:52](https://youtu.be/NZ1mKAWJPr4?t=1732) initial embedding index because
+it was about 3000 or then two and
+[28:57](https://youtu.be/NZ1mKAWJPr4?t=1737) a half thousand nodes, and now it
+updates automatically every night,
+[29:01](https://youtu.be/NZ1mKAWJPr4?t=1741) and it takes about 10 seconds.
+[29:03](https://youtu.be/NZ1mKAWJPr4?t=1743) People call this second brain stuff.
+[29:06](https://youtu.be/NZ1mKAWJPr4?t=1746) Mine is always on, does all the
+organizing for me and everything is in
+[29:11](https://youtu.be/NZ1mKAWJPr4?t=1751) plain text files that I own forever.
+[29:14](https://youtu.be/NZ1mKAWJPr4?t=1754) No database, just markdown files
+and semantic search on top of it.
+[29:20](https://youtu.be/NZ1mKAWJPr4?t=1760) This one is funny.
+[29:21](https://youtu.be/NZ1mKAWJPr4?t=1761) Like one day I was checking out
+my analytics on my website, velvet
+[29:28](https://youtu.be/NZ1mKAWJPr4?t=1768) shark.com, and I noticed that
+there were many hits to a WordPress
+[29:34](https://youtu.be/NZ1mKAWJPr4?t=1774) logging page, but my website is not
+on WordPress, so I asked my agent
+[29:42](https://youtu.be/NZ1mKAWJPr4?t=1782) to set up a honeypot on my website,
+like a fake WordPress logging page.
+[29:48](https://youtu.be/NZ1mKAWJPr4?t=1788) That re rolls anyone who tries to log
+in and it built the page, created a
+[29:54](https://youtu.be/NZ1mKAWJPr4?t=1794) full pull request and deployed it.
+[29:57](https://youtu.be/NZ1mKAWJPr4?t=1797) And when I went to this page, it's
+not a WordPress page, it's a fake
+[30:04](https://youtu.be/NZ1mKAWJPr4?t=1804) page that you can enter anything
+you want in here and try to log in.
+[30:12](https://youtu.be/NZ1mKAWJPr4?t=1812) Yeah, you get the idea.
+[30:13](https://youtu.be/NZ1mKAWJPr4?t=1813) To be clear, this is purely on
+my own domain, catching bots that
+[30:18](https://youtu.be/NZ1mKAWJPr4?t=1818) scan for WordPress admin pages and
+try to hack into WordPress, uh,
+[30:24](https://youtu.be/NZ1mKAWJPr4?t=1824) websites Don't use this pattern
+to impersonate any real services.
+[30:28](https://youtu.be/NZ1mKAWJPr4?t=1828) I'll probably have it for a few days
+or a couple weeks, and then I'll
+[30:33](https://youtu.be/NZ1mKAWJPr4?t=1833) get bored of it and I'll remove it.
+[30:35](https://youtu.be/NZ1mKAWJPr4?t=1835) But it was fun to just think
+of something like type a few
+[30:40](https://youtu.be/NZ1mKAWJPr4?t=1840) sentences on my phone and have
+this fun, just like party trick.
+[30:45](https://youtu.be/NZ1mKAWJPr4?t=1845) Live on my website, so one
+minute the agent is managing your
+[30:50](https://youtu.be/NZ1mKAWJPr4?t=1850) infrastructure and the next, it's
+setting up some like fun pranks,
+[30:55](https://youtu.be/NZ1mKAWJPr4?t=1855) and that's the fun part of it.
+[30:58](https://youtu.be/NZ1mKAWJPr4?t=1858) My agent also can create diagrams
+and graphs automatically through
+[31:02](https://youtu.be/NZ1mKAWJPr4?t=1862) the Excalidraw MCP integration,
+like architecture diagrams,
+[31:07](https://youtu.be/NZ1mKAWJPr4?t=1867) flow charts, concept maps,
+it generates them on the fly.
+[31:13](https://youtu.be/NZ1mKAWJPr4?t=1873) During conversations, and then
+I only need to change a few
+[31:17](https://youtu.be/NZ1mKAWJPr4?t=1877) things, maybe move stuff around
+and maybe add a few words.
+[31:20](https://youtu.be/NZ1mKAWJPr4?t=1880) Like for example, this chart
+that was presented earlier, it
+[31:25](https://youtu.be/NZ1mKAWJPr4?t=1885) was done completely by my open
+cloud instance for this one.
+[31:31](https://youtu.be/NZ1mKAWJPr4?t=1891) I didn't have to
+change anything at all.
+[31:34](https://youtu.be/NZ1mKAWJPr4?t=1894) Oh, maybe I changed the
+colors of the models here.
+[31:37](https://youtu.be/NZ1mKAWJPr4?t=1897) Nothing else.
+[31:38](https://youtu.be/NZ1mKAWJPr4?t=1898) So if you need more than just
+creating text or some copy and you
+[31:42](https://youtu.be/NZ1mKAWJPr4?t=1902) need to visualize a workflow, you
+just ask and it draws for you home
+[31:48](https://youtu.be/NZ1mKAWJPr4?t=1908) automation, this one is in progress
+for me currently and I'm showing
+[31:53](https://youtu.be/NZ1mKAWJPr4?t=1913) it because it's where my setup is
+heading next as I'm setting up home
+[31:57](https://youtu.be/NZ1mKAWJPr4?t=1917) assistance for smart home control.
+[32:00](https://youtu.be/NZ1mKAWJPr4?t=1920) I have two home assistant
+voice preview edition
+[32:03](https://youtu.be/NZ1mKAWJPr4?t=1923) devices for voice control.
+[32:06](https://youtu.be/NZ1mKAWJPr4?t=1926) So full home automation can be
+managed through OpenClaw, like
+[32:11](https://youtu.be/NZ1mKAWJPr4?t=1931) light control climates, routines,
+all through chat or voice, not even
+[32:17](https://youtu.be/NZ1mKAWJPr4?t=1937) having to write anything, and it's
+closer to what Siri should have been.
+[32:23](https://youtu.be/NZ1mKAWJPr4?t=1943) Than anything that Apple
+has shipped so far.
+[32:26](https://youtu.be/NZ1mKAWJPr4?t=1946) So that's 20 use cases from my daily
+life, but I'm not the only one.
+[32:31](https://youtu.be/NZ1mKAWJPr4?t=1951) The community is doing
+like incredible things.
+[32:35](https://youtu.be/NZ1mKAWJPr4?t=1955) People are running like actual
+businesses through their agents.
+[32:39](https://youtu.be/NZ1mKAWJPr4?t=1959) Customer quoting, invoicing, lead
+generation deal, closing, SEO, and
+[32:46](https://youtu.be/NZ1mKAWJPr4?t=1966) people are managing smart homes with
+home assistant controlling 3D printers
+[32:51](https://youtu.be/NZ1mKAWJPr4?t=1971) connecting their cars even like their
+Teslas, and they're making phone
+[32:55](https://youtu.be/NZ1mKAWJPr4?t=1975) calls through their voice agents.
+[32:58](https://youtu.be/NZ1mKAWJPr4?t=1978) Connecting robots with cameras,
+fact checking conference speakers
+[33:03](https://youtu.be/NZ1mKAWJPr4?t=1983) in real time, and even deploying
+code from the Apple Watch.
+[33:09](https://youtu.be/NZ1mKAWJPr4?t=1989) I haven't done that yet,
+but sounds interesting.
+[33:12](https://youtu.be/NZ1mKAWJPr4?t=1992) And I built Clawdiverse.com.
+[33:15](https://youtu.be/NZ1mKAWJPr4?t=1995) To catalog all of it, link in
+the description and the range
+[33:20](https://youtu.be/NZ1mKAWJPr4?t=2000) is wider than I expected.
+[33:22](https://youtu.be/NZ1mKAWJPr4?t=2002) And if 20 use cases that you
+already saw is not enough, you can
+[33:27](https://youtu.be/NZ1mKAWJPr4?t=2007) find many more on Clawdiverse.com.
+[33:30](https://youtu.be/NZ1mKAWJPr4?t=2010) But this video is about
+my own experience.
+[33:33](https://youtu.be/NZ1mKAWJPr4?t=2013) So let me tell you
+what nobody else will.
+[33:36](https://youtu.be/NZ1mKAWJPr4?t=2016) But before going to the honest part.
+[33:40](https://youtu.be/NZ1mKAWJPr4?t=2020) If you installed OpenClaw today
+and you are overwhelmed, start with
+[33:47](https://youtu.be/NZ1mKAWJPr4?t=2027) these three things, one draft only.
+[33:50](https://youtu.be/NZ1mKAWJPr4?t=2030) Email triage With urgent alerts,
+it catches things that you miss.
+[33:55](https://youtu.be/NZ1mKAWJPr4?t=2035) Two, a daily briefing that
+writes to a markdown file.
+[34:00](https://youtu.be/NZ1mKAWJPr4?t=2040) Morning context, organized
+automatically for you
+[34:03](https://youtu.be/NZ1mKAWJPr4?t=2043) as you start the day.
+[34:04](https://youtu.be/NZ1mKAWJPr4?t=2044) And three one Discord inbox.
+[34:07](https://youtu.be/NZ1mKAWJPr4?t=2047) Channel four bookmarks.
+[34:09](https://youtu.be/NZ1mKAWJPr4?t=2049) Drop links.
+[34:10](https://youtu.be/NZ1mKAWJPr4?t=2050) Agent enriches them, replaces a
+paid app immediately and builds
+[34:16](https://youtu.be/NZ1mKAWJPr4?t=2056) your knowledge base over time,
+which is more and more valuable as
+[34:20](https://youtu.be/NZ1mKAWJPr4?t=2060) you go do these three things for a
+week and you'll start getting it.
+[34:24](https://youtu.be/NZ1mKAWJPr4?t=2064) Everything else grows from there.
+[34:26](https://youtu.be/NZ1mKAWJPr4?t=2066) Okay.
+[34:27](https://youtu.be/NZ1mKAWJPr4?t=2067) What doesn't work well?
+[34:29](https://youtu.be/NZ1mKAWJPr4?t=2069) No sugar coating.
+[34:30](https://youtu.be/NZ1mKAWJPr4?t=2070) Number one, memory loss and context.
+[34:34](https://youtu.be/NZ1mKAWJPr4?t=2074) Compaction, my agent forgets
+things sometimes mid conversation.
+[34:39](https://youtu.be/NZ1mKAWJPr4?t=2079) No warning, like it just
+drifts away for a second.
+[34:44](https://youtu.be/NZ1mKAWJPr4?t=2084) It's not there for a while.
+[34:46](https://youtu.be/NZ1mKAWJPr4?t=2086) Then replies to something
+from three sentences back and
+[34:50](https://youtu.be/NZ1mKAWJPr4?t=2090) then says it's still there.
+[34:52](https://youtu.be/NZ1mKAWJPr4?t=2092) Everything is fine.
+[34:53](https://youtu.be/NZ1mKAWJPr4?t=2093) And this is the number one
+technical frustration that
+[34:56](https://youtu.be/NZ1mKAWJPr4?t=2096) people mention everywhere.
+[34:58](https://youtu.be/NZ1mKAWJPr4?t=2098) Silent compaction.
+[35:00](https://youtu.be/NZ1mKAWJPr4?t=2100) The context window fills up.
+[35:02](https://youtu.be/NZ1mKAWJPr4?t=2102) The agent compresses the conversation
+and important details disappear.
+[35:07](https://youtu.be/NZ1mKAWJPr4?t=2107) The mitigation is to
+write everything to files.
+[35:10](https://youtu.be/NZ1mKAWJPr4?t=2110) Use QMD for semantic search.
+[35:13](https://youtu.be/NZ1mKAWJPr4?t=2113) Use compact manually before the
+system does it automatically.
+[35:18](https://youtu.be/NZ1mKAWJPr4?t=2118) But it's still rough chat.
+[35:20](https://youtu.be/NZ1mKAWJPr4?t=2120) GPT at least warns you.
+[35:21](https://youtu.be/NZ1mKAWJPr4?t=2121) When context is getting long
+OpenClaw just silently
+[35:24](https://youtu.be/NZ1mKAWJPr4?t=2124) compresses and moves on.
+[35:26](https://youtu.be/NZ1mKAWJPr4?t=2126) You can at least type a status
+command to see how much context
+[35:31](https://youtu.be/NZ1mKAWJPr4?t=2131) is left, but that's not ideal.
+[35:33](https://youtu.be/NZ1mKAWJPr4?t=2133) For example, here it
+shows that I have.
+[35:37](https://youtu.be/NZ1mKAWJPr4?t=2137) 35% of context used up and no
+compactions yet in this session.
+[35:42](https://youtu.be/NZ1mKAWJPr4?t=2142) If I see that context is filling up
+and it's more than 50%, I can start
+[35:47](https://youtu.be/NZ1mKAWJPr4?t=2147) a new session and then it starts
+with a fresh context from zero.
+[35:53](https://youtu.be/NZ1mKAWJPr4?t=2153) Next, the cost reality, I covered
+this in depth in my cost optimization
+[35:59](https://youtu.be/NZ1mKAWJPr4?t=2159) video linking the description.
+[36:01](https://youtu.be/NZ1mKAWJPr4?t=2161) The quick summary is that Opus
+is amazing, but expensive, and
+[36:07](https://youtu.be/NZ1mKAWJPr4?t=2167) the answer is multi-model routing.
+[36:10](https://youtu.be/NZ1mKAWJPr4?t=2170) Use opus for the real thinking
+and cheaper models for
+[36:14](https://youtu.be/NZ1mKAWJPr4?t=2174) heartbeats or sub agents.
+[36:16](https://youtu.be/NZ1mKAWJPr4?t=2176) And my Discord channel setup
+is built around this.
+[36:20](https://youtu.be/NZ1mKAWJPr4?t=2180) Each channel uses the model that.
+[36:22](https://youtu.be/NZ1mKAWJPr4?t=2182) Matches its task.
+[36:24](https://youtu.be/NZ1mKAWJPr4?t=2184) And you can also set different models
+for heartbeats or other simple tasks.
+[36:30](https://youtu.be/NZ1mKAWJPr4?t=2190) And my cost calculator, where
+you choose different models for
+[36:34](https://youtu.be/NZ1mKAWJPr4?t=2194) different primary model or heartbeat
+model or sub-agent model shows how
+[36:41](https://youtu.be/NZ1mKAWJPr4?t=2201) much you can save and it's real
+money and you need to plan for it.
+[36:45](https://youtu.be/NZ1mKAWJPr4?t=2205) Another problem is,
+what do I use it for?
+[36:47](https://youtu.be/NZ1mKAWJPr4?t=2207) Problem.
+[36:48](https://youtu.be/NZ1mKAWJPr4?t=2208) This is the most common
+post on subreddit.
+[36:52](https://youtu.be/NZ1mKAWJPr4?t=2212) It's what people ask in Discord.
+[36:55](https://youtu.be/NZ1mKAWJPr4?t=2215) It's what people post on Twitter.
+[36:58](https://youtu.be/NZ1mKAWJPr4?t=2218) And the harsh truth is that
+you need to realize one thing.
+[37:02](https://youtu.be/NZ1mKAWJPr4?t=2222) If you don't have workflows
+to automate, OpenClaw won't
+[37:07](https://youtu.be/NZ1mKAWJPr4?t=2227) invent them for you if you
+don't manage your calendar.
+[37:11](https://youtu.be/NZ1mKAWJPr4?t=2231) And AI calendar manager won't
+help if you don't check email ai.
+[37:15](https://youtu.be/NZ1mKAWJPr4?t=2235) Email triage is pointless.
+[37:17](https://youtu.be/NZ1mKAWJPr4?t=2237) So.
+[37:18](https://youtu.be/NZ1mKAWJPr4?t=2238) It can help you if you have what to
+help with, and the people getting
+[37:22](https://youtu.be/NZ1mKAWJPr4?t=2242) the most value already had systems
+OpenClaw made their systems
+[37:28](https://youtu.be/NZ1mKAWJPr4?t=2248) easier, faster, and automatic.
+[37:30](https://youtu.be/NZ1mKAWJPr4?t=2250) But the systems were there
+that said, this video is the
+[37:34](https://youtu.be/NZ1mKAWJPr4?t=2254) answer to, what do I use it for?
+[37:37](https://youtu.be/NZ1mKAWJPr4?t=2257) I just showed you 20
+ideas plus a starter pack.
+[37:41](https://youtu.be/NZ1mKAWJPr4?t=2261) Pick three, start
+there, grow from there.
+[37:44](https://youtu.be/NZ1mKAWJPr4?t=2264) Next is tasks that need babysitting,
+like complex, multi-step tasks,
+[37:49](https://youtu.be/NZ1mKAWJPr4?t=2269) still fail or need pushing.
+[37:52](https://youtu.be/NZ1mKAWJPr4?t=2272) Browser automation is still flaky.
+[37:54](https://youtu.be/NZ1mKAWJPr4?t=2274) Sessions, extensions drop.
+[37:58](https://youtu.be/NZ1mKAWJPr4?t=2278) The agents sometimes go silent
+mid-task, and you have to
+[38:02](https://youtu.be/NZ1mKAWJPr4?t=2282) ask like, Hey, how's it going?
+[38:05](https://youtu.be/NZ1mKAWJPr4?t=2285) It works better as an assistant than
+an autonomous agent, at least for now.
+[38:10](https://youtu.be/NZ1mKAWJPr4?t=2290) The simpler the task, the more
+reliable it is, and the more complex,
+[38:15](https://youtu.be/NZ1mKAWJPr4?t=2295) the more you need to check in and
+to give more detailed instructions
+[38:20](https://youtu.be/NZ1mKAWJPr4?t=2300) for losing context and for
+compactions, it helps when you
+[38:25](https://youtu.be/NZ1mKAWJPr4?t=2305) explicitly tell to launch subagent.
+[38:28](https://youtu.be/NZ1mKAWJPr4?t=2308) This tweet from Matt shows it nicely.
+[38:31](https://youtu.be/NZ1mKAWJPr4?t=2311) So this is the main agent, the
+orchestrator, and it is launching
+[38:35](https://youtu.be/NZ1mKAWJPr4?t=2315) subagent, and each subagent
+gets its own context window.
+[38:41](https://youtu.be/NZ1mKAWJPr4?t=2321) So while doing research
+or performing tasks.
+[38:45](https://youtu.be/NZ1mKAWJPr4?t=2325) Those sub-agents do not into your
+main context window, and your
+[38:51](https://youtu.be/NZ1mKAWJPr4?t=2331) main agent only does coordination
+instead of all the work.
+[38:56](https://youtu.be/NZ1mKAWJPr4?t=2336) And this works wonderfully.
+[38:58](https://youtu.be/NZ1mKAWJPr4?t=2338) And this is also how I do all,
+almost all my research where the
+[39:03](https://youtu.be/NZ1mKAWJPr4?t=2343) orchestrator launches subagents
+and then just like gathers.
+[39:07](https://youtu.be/NZ1mKAWJPr4?t=2347) All the content, all the research,
+and then synthesizes the results
+[39:12](https://youtu.be/NZ1mKAWJPr4?t=2352) and gives the final output.
+[39:14](https://youtu.be/NZ1mKAWJPr4?t=2354) Next, and I will never
+stop highlighting this.
+[39:18](https://youtu.be/NZ1mKAWJPr4?t=2358) Security is real.
+[39:20](https://youtu.be/NZ1mKAWJPr4?t=2360) There is no full proof general
+solution for prompting injection yet.
+[39:25](https://youtu.be/NZ1mKAWJPr4?t=2365) So I treat inbox content as
+hostile or potentially hostile.
+[39:30](https://youtu.be/NZ1mKAWJPr4?t=2370) And if your agent
+reads untrusted emails.
+[39:33](https://youtu.be/NZ1mKAWJPr4?t=2373) Someone could craft a message
+that makes your agent do
+[39:37](https://youtu.be/NZ1mKAWJPr4?t=2377) something that you didn't want to.
+[39:40](https://youtu.be/NZ1mKAWJPr4?t=2380) The way I solve it is not exposing
+anything to the outside world in
+[39:45](https://youtu.be/NZ1mKAWJPr4?t=2385) terms of connectivity and having
+all my machines on Tailscale.
+[39:50](https://youtu.be/NZ1mKAWJPr4?t=2390) Then draft only email mode approval
+needed for destructive actions.
+[39:56](https://youtu.be/NZ1mKAWJPr4?t=2396) And running security audit
+regularly for security audit.
+[40:00](https://youtu.be/NZ1mKAWJPr4?t=2400) Either use this from ClawHub, ClawdBot security check, or just point
+[40:06](https://youtu.be/NZ1mKAWJPr4?t=2406) your agent to this security page
+in OpenClaw documentation and.
+[40:11](https://youtu.be/NZ1mKAWJPr4?t=2411) Tell it to implement and verify
+everything on this page and if
+[40:17](https://youtu.be/NZ1mKAWJPr4?t=2417) something is not done on your end to
+implement these security measures.
+[40:22](https://youtu.be/NZ1mKAWJPr4?t=2422) And lastly, my own failures.
+[40:24](https://youtu.be/NZ1mKAWJPr4?t=2424) I want to be specific about
+things that went wrong for me.
+[40:29](https://youtu.be/NZ1mKAWJPr4?t=2429) And to be honest, most of these were
+closer to week one than week seven.
+[40:32](https://youtu.be/NZ1mKAWJPr4?t=2432) Because the whole system is
+evolving and improving rapidly.
+[40:36](https://youtu.be/NZ1mKAWJPr4?t=2436) But for example, daily update.
+[40:39](https://youtu.be/NZ1mKAWJPr4?t=2439) CR job was using the old ClawdBot
+commands after the migration to
+[40:44](https://youtu.be/NZ1mKAWJPr4?t=2444) OpenClaw failed silently for days.
+[40:47](https://youtu.be/NZ1mKAWJPr4?t=2447) I didn't notice and missed
+a few updates because of
+[40:51](https://youtu.be/NZ1mKAWJPr4?t=2451) just a simple package.
+[40:53](https://youtu.be/NZ1mKAWJPr4?t=2453) rename. Authentication,
+debugging with my friend.
+[40:56](https://youtu.be/NZ1mKAWJPr4?t=2456) Three plus hours of false
+starts, credential comparisons,
+[41:01](https://youtu.be/NZ1mKAWJPr4?t=2461) complete reinstalls.
+[41:03](https://youtu.be/NZ1mKAWJPr4?t=2463) The setup is sometimes genuinely
+hard, but luckily, my own agent
+[41:09](https://youtu.be/NZ1mKAWJPr4?t=2469) was doing 90% of debugging,
+so at least that helped.
+[41:12](https://youtu.be/NZ1mKAWJPr4?t=2472) Context.
+[41:13](https://youtu.be/NZ1mKAWJPr4?t=2473) Compaction hit me a few times in the
+middle of a complex research task.
+[41:18](https://youtu.be/NZ1mKAWJPr4?t=2478) Now I'm more aware of that.
+[41:20](https://youtu.be/NZ1mKAWJPr4?t=2480) I'm mitigating that, so I'm
+getting it less and less.
+[41:24](https://youtu.be/NZ1mKAWJPr4?t=2484) The Discord migration itself took
+also some iteration, getting the
+[41:28](https://youtu.be/NZ1mKAWJPr4?t=2488) right channel structure, figuring
+out which models work best,
+[41:33](https://youtu.be/NZ1mKAWJPr4?t=2493) where, how to set up different
+models to different channels.
+[41:37](https://youtu.be/NZ1mKAWJPr4?t=2497) Migrating context from
+Telegram conversations.
+[41:41](https://youtu.be/NZ1mKAWJPr4?t=2501) All of that wasn't like
+super easy or instant.
+[41:44](https://youtu.be/NZ1mKAWJPr4?t=2504) It took about a week of tweaking
+to get everything right and none of
+[41:48](https://youtu.be/NZ1mKAWJPr4?t=2508) this made me stop using OpenClaw.
+[41:51](https://youtu.be/NZ1mKAWJPr4?t=2511) But nobody else is telling
+you about this stuff.
+[41:54](https://youtu.be/NZ1mKAWJPr4?t=2514) Everything seems rosy, which
+is not always the case.
+[41:58](https://youtu.be/NZ1mKAWJPr4?t=2518) Okay, so let's do some scoring.
+[42:00](https://youtu.be/NZ1mKAWJPr4?t=2520) Let me put a number of it from
+a few different perspectives.
+[42:04](https://youtu.be/NZ1mKAWJPr4?t=2524) In terms of setup difficulty, it's
+about seven out of 10, which is
+[42:09](https://youtu.be/NZ1mKAWJPr4?t=2529) intentional because it's still a work
+in progress and it might be dangerous
+[42:16](https://youtu.be/NZ1mKAWJPr4?t=2536) if someone doesn't know what to do.
+[42:18](https://youtu.be/NZ1mKAWJPr4?t=2538) So it's intentionally
+not being done easier.
+[42:22](https://youtu.be/NZ1mKAWJPr4?t=2542) So if you know how to go
+through, set a process, you are
+[42:25](https://youtu.be/NZ1mKAWJPr4?t=2545) at least somewhat technical and
+you are aware of the dangers.
+[42:29](https://youtu.be/NZ1mKAWJPr4?t=2549) Daily value once running and once
+you have your own setup tailored to
+[42:36](https://youtu.be/NZ1mKAWJPr4?t=2556) your needs, easily nine out of 10.
+[42:39](https://youtu.be/NZ1mKAWJPr4?t=2559) Reliability for simple workflows.
+[42:42](https://youtu.be/NZ1mKAWJPr4?t=2562) Eight out of 10.
+[42:43](https://youtu.be/NZ1mKAWJPr4?t=2563) Very good.
+[42:44](https://youtu.be/NZ1mKAWJPr4?t=2564) Four complex, especially
+browser tasks.
+[42:47](https://youtu.be/NZ1mKAWJPr4?t=2567) Still hit or miss five out of 10, and
+there is a lot still to improve there.
+[42:53](https://youtu.be/NZ1mKAWJPr4?t=2573) Best feature, at least for today for
+me, is Discord channel architecture.
+[42:58](https://youtu.be/NZ1mKAWJPr4?t=2578) With per channel models, the biggest
+unlock is file-based memory with
+[43:05](https://youtu.be/NZ1mKAWJPr4?t=2585) markdown-first files with nightly
+semantic indexing and retrieval.
+[43:11](https://youtu.be/NZ1mKAWJPr4?t=2591) And I'm building up my knowledge
+base day after day, and it's more
+[43:17](https://youtu.be/NZ1mKAWJPr4?t=2597) and more useful for me with time
+and it's only getting better.
+[43:21](https://youtu.be/NZ1mKAWJPr4?t=2601) Most quietly useful is
+background, heartbeat checks.
+[43:25](https://youtu.be/NZ1mKAWJPr4?t=2605) You can start simple and as you think
+what else you might be checking.
+[43:30](https://youtu.be/NZ1mKAWJPr4?t=2610) Every once in a while you can
+add more to your heartbeat.
+[43:34](https://youtu.be/NZ1mKAWJPr4?t=2614) And the biggest pain for now is
+still memory and context compaction.
+[43:39](https://youtu.be/NZ1mKAWJPr4?t=2619) What surprised me is first
+that it gets better over time.
+[43:43](https://youtu.be/NZ1mKAWJPr4?t=2623) The more context it has in its cell
+file and in its memory file and
+[43:50](https://youtu.be/NZ1mKAWJPr4?t=2630) folder, the better it understands you.
+[43:52](https://youtu.be/NZ1mKAWJPr4?t=2632) And after 50 days it anticipates what
+I need, but even internalized like
+[43:58](https://youtu.be/NZ1mKAWJPr4?t=2638) tiny style preferences over time.
+[44:02](https://youtu.be/NZ1mKAWJPr4?t=2642) The shark emoji, the language
+switching between dms and groups, it
+[44:06](https://youtu.be/NZ1mKAWJPr4?t=2646) learns you over time and it can easily
+surprise you how well it learns you.
+[44:12](https://youtu.be/NZ1mKAWJPr4?t=2652) So when you start in week one with
+what seems like a simple tool,
+[44:16](https://youtu.be/NZ1mKAWJPr4?t=2656) by week three, it feels almost
+like an infrastructure already.
+[44:20](https://youtu.be/NZ1mKAWJPr4?t=2660) And by week seven, you reorganize
+your workflow around it.
+[44:25](https://youtu.be/NZ1mKAWJPr4?t=2665) And that's when it stopped being a
+chatbot for me and became a system.
+[44:30](https://youtu.be/NZ1mKAWJPr4?t=2670) Another surprise for me was that
+it replaced more than expected.
+[44:34](https://youtu.be/NZ1mKAWJPr4?t=2674) I expected it to replace ChatGPT,
+but it also replaced parts of Zapier,
+[44:40](https://youtu.be/NZ1mKAWJPr4?t=2680) raindrop parts of YouTube, studio
+analytics, parts of web analytics,
+[44:47](https://youtu.be/NZ1mKAWJPr4?t=2687) and half of my Apple shortcuts.
+[44:50](https://youtu.be/NZ1mKAWJPr4?t=2690) And for personal use, I'm not
+paying for Zapier anymore.
+[44:53](https://youtu.be/NZ1mKAWJPr4?t=2693) I'm not paying for Raindrop anymore,
+and I don't miss either of them.
+[44:58](https://youtu.be/NZ1mKAWJPr4?t=2698) And the ecosystem is not
+just growing, it's exploding.
+[45:03](https://youtu.be/NZ1mKAWJPr4?t=2703) There are thousands
+of skills on ClawHub.
+[45:07](https://youtu.be/NZ1mKAWJPr4?t=2707) There are hosted services launching
+for non-technical users, which
+[45:11](https://youtu.be/NZ1mKAWJPr4?t=2711) still might not be the best idea,
+but it's there and the tooling and
+[45:16](https://youtu.be/NZ1mKAWJPr4?t=2716) security is maturing very fast.
+[45:18](https://youtu.be/NZ1mKAWJPr4?t=2718) And when the security will be much
+harder and when the setup gets
+[45:24](https://youtu.be/NZ1mKAWJPr4?t=2724) eventually easier, everyone will
+be running some version of this and
+[45:30](https://youtu.be/NZ1mKAWJPr4?t=2730) the capability is already there.
+[45:32](https://youtu.be/NZ1mKAWJPr4?t=2732) The onboarding isn't
+by design for now.
+[45:35](https://youtu.be/NZ1mKAWJPr4?t=2735) So would I recommend OpenClaw?
+[45:38](https://youtu.be/NZ1mKAWJPr4?t=2738) Yes.
+[45:40](https://youtu.be/NZ1mKAWJPr4?t=2740) But with some conditions, yes.
+[45:42](https://youtu.be/NZ1mKAWJPr4?t=2742) If you have workflows to automate.
+[45:45](https://youtu.be/NZ1mKAWJPr4?t=2745) And you are comfortable with
+a terminal and you understand
+[45:49](https://youtu.be/NZ1mKAWJPr4?t=2749) the cost implications not yet.
+[45:52](https://youtu.be/NZ1mKAWJPr4?t=2752) If you want something that just works
+out of the box, you are not technical
+[45:56](https://youtu.be/NZ1mKAWJPr4?t=2756) or you expect fully autonomous AI
+that never needs babysitting and
+[46:01](https://youtu.be/NZ1mKAWJPr4?t=2761) does stuff for you start to finish.
+[46:04](https://youtu.be/NZ1mKAWJPr4?t=2764) I feel like we are currently using
+maybe 5% of what this can do.
+[46:09](https://youtu.be/NZ1mKAWJPr4?t=2769) And the ceiling is like
+absurdly high, but the floor
+[46:12](https://youtu.be/NZ1mKAWJPr4?t=2772) still has some holes in it.
+[46:14](https://youtu.be/NZ1mKAWJPr4?t=2774) And if you are okay with
+this trade off, if you like
+[46:19](https://youtu.be/NZ1mKAWJPr4?t=2779) building towards something.
+[46:21](https://youtu.be/NZ1mKAWJPr4?t=2781) Then this is the most fun like I've
+had with technology in years, and I,
+[46:26](https://youtu.be/NZ1mKAWJPr4?t=2786) I keep having fun every day with it.
+[46:28](https://youtu.be/NZ1mKAWJPr4?t=2788) So that's my journey.
+[46:30](https://youtu.be/NZ1mKAWJPr4?t=2790) 50 plus days every day through
+ClawdBot to MoltBot, to
+[46:36](https://youtu.be/NZ1mKAWJPr4?t=2796) OpenClaw, rebrand saga.
+[46:39](https://youtu.be/NZ1mKAWJPr4?t=2799) Now OpenAI and Foundation Shift.
+[46:42](https://youtu.be/NZ1mKAWJPr4?t=2802) I've seen the community grow from
+a few hundred to tens of thousands.
+[46:46](https://youtu.be/NZ1mKAWJPr4?t=2806) And I've seen my bot fail.
+[46:48](https://youtu.be/NZ1mKAWJPr4?t=2808) I've seen my bot kill itself.
+[46:51](https://youtu.be/NZ1mKAWJPr4?t=2811) I've seen it forget what
+it was doing, but I've also
+[46:55](https://youtu.be/NZ1mKAWJPr4?t=2815) seen it migrate my server.
+[46:58](https://youtu.be/NZ1mKAWJPr4?t=2818) Research the entire video with
+parallel agents, help my friends set
+[47:03](https://youtu.be/NZ1mKAWJPr4?t=2823) up for three hours, or generate art
+that makes me smile every morning.
+[47:09](https://youtu.be/NZ1mKAWJPr4?t=2829) So for me, I'm not going
+back and that's the strongest
+[47:13](https://youtu.be/NZ1mKAWJPr4?t=2833) endorsement I can give.
+[47:14](https://youtu.be/NZ1mKAWJPr4?t=2834) As always, all links
+are in the description.
+[47:18](https://youtu.be/NZ1mKAWJPr4?t=2838) There are always all the
+prompts for all the use cases,
+[47:23](https://youtu.be/NZ1mKAWJPr4?t=2843) some bonus security tips, cost
+optimization tips, my setup video.
+[47:28](https://youtu.be/NZ1mKAWJPr4?t=2848) If you want to get started, the
+cost calculator, the official
+[47:33](https://youtu.be/NZ1mKAWJPr4?t=2853) documentation, and once you
+watch it and start doing and
+[47:38](https://youtu.be/NZ1mKAWJPr4?t=2858) using those prompts, drop your
+favorite use cases in the comments.
+[47:43](https://youtu.be/NZ1mKAWJPr4?t=2863) I want to hear what you're
+building, what you are trying
+[47:47](https://youtu.be/NZ1mKAWJPr4?t=2867) or maybe failing, and subscribe.
+[47:50](https://youtu.be/NZ1mKAWJPr4?t=2870) If you want more practical ways to
+use AI and now go build yourself
+[47:55](https://youtu.be/NZ1mKAWJPr4?t=2875) a system and have fun doing it.

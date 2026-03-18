@@ -77,7 +77,46 @@ export default function TreatmentsMenu() {
   // ===== SELECTION HANDLERS =====
 
   const handleSelectAR = (product: Product) => {
-    const uvPrice = 16
+    const uvProduct = ADD_ONS.find((p) => p.id === 'uv')
+    const uvBacksideProduct = ADD_ONS.find((p) => p.id === 'uv_backside')
+
+    // Helper to add Standard UV with price list lookup
+    const addStandardUV = () => {
+      if (!uvProduct) return
+      const uvPatientPays = getPrice(uvProduct)
+      const uvInsurancePays = quote.insurance.hasActiveAuth
+        ? Math.max(0, uvProduct.retail - uvPatientPays)
+        : 0
+      addLineItem({
+        productId: 'uv',
+        name: 'UV Treatment',
+        category: 'add_on',
+        quantity: 1,
+        retailPrice: uvProduct.retail,
+        patientPays: uvPatientPays,
+        insurancePays: uvInsurancePays,
+        pairId: quote.activePairId,
+      })
+    }
+
+    // Helper to add Backside UV with price list lookup
+    const addBacksideUV = () => {
+      if (!uvBacksideProduct) return
+      const uvPatientPays = getPrice(uvBacksideProduct)
+      const uvInsurancePays = quote.insurance.hasActiveAuth
+        ? Math.max(0, uvBacksideProduct.retail - uvPatientPays)
+        : 0
+      addLineItem({
+        productId: 'uv_backside',
+        name: 'UV Backside',
+        category: 'add_on',
+        quantity: 1,
+        retailPrice: uvBacksideProduct.retail,
+        patientPays: uvPatientPays,
+        insurancePays: uvInsurancePays,
+        pairId: quote.activePairId,
+      })
+    }
 
     // "None" removes AR coating and swaps Backside UV back to Standard UV
     if (product.id === 'none') {
@@ -85,16 +124,7 @@ export default function TreatmentsMenu() {
       // If we have Backside UV, swap it back to Standard UV
       if (selectedUvTreatment && selectedUvTreatment.productId === 'uv_backside') {
         removeLineItem(selectedUvTreatment.id)
-        addLineItem({
-          productId: 'uv',
-          name: 'UV Treatment',
-          category: 'add_on',
-          quantity: 1,
-          retailPrice: uvPrice,
-          patientPays: uvPrice,
-          insurancePays: 0,
-          pairId: quote.activePairId,
-        })
+        addStandardUV()
       }
       return
     }
@@ -106,16 +136,7 @@ export default function TreatmentsMenu() {
       if (selectedAR) removeLineItem(selectedAR.id)
       if (selectedUvTreatment && selectedUvTreatment.productId === 'uv_backside') {
         removeLineItem(selectedUvTreatment.id)
-        addLineItem({
-          productId: 'uv',
-          name: 'UV Treatment',
-          category: 'add_on',
-          quantity: 1,
-          retailPrice: uvPrice,
-          patientPays: uvPrice,
-          insurancePays: 0,
-          pairId: quote.activePairId,
-        })
+        addStandardUV()
       }
     } else {
       // Selecting AR coating - swap Standard UV to Backside UV
@@ -142,16 +163,7 @@ export default function TreatmentsMenu() {
       // This applies to ALL carriers (VSP, EyeMed, Cash)
       if (selectedUvTreatment && selectedUvTreatment.productId === 'uv') {
         removeLineItem(selectedUvTreatment.id)
-        addLineItem({
-          productId: 'uv_backside',
-          name: 'UV Backside',
-          category: 'add_on',
-          quantity: 1,
-          retailPrice: uvPrice,
-          patientPays: uvPrice,
-          insurancePays: 0,
-          pairId: quote.activePairId,
-        })
+        addBacksideUV()
       }
     }
   }
