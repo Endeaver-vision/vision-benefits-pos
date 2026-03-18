@@ -248,12 +248,15 @@ export function mergeVspExtractions(
     materials: {
       polycarbonate_sv: enhancementForm.materials?.polycarbonate_sv ?? 0,
       polycarbonate_multi: enhancementForm.materials?.polycarbonate_multi ?? 0,
+      polycarbonate_digital: enhancementForm.materials?.polycarbonate_digital ?? 0,
       trivex_sv: enhancementForm.materials?.trivex_sv ?? 0,
       trivex_multi: enhancementForm.materials?.trivex_multi ?? 0,
       hi_index_167_sv: enhancementForm.materials?.hi_index_167_sv ?? 0,
       hi_index_167_multi: enhancementForm.materials?.hi_index_167_multi ?? 0,
+      hi_index_167_digital: enhancementForm.materials?.hi_index_167_digital ?? 0,
       hi_index_174_sv: enhancementForm.materials?.hi_index_174_sv ?? 0,
       hi_index_174_multi: enhancementForm.materials?.hi_index_174_multi ?? 0,
+      hi_index_174_digital: enhancementForm.materials?.hi_index_174_digital ?? 0,
     },
 
     // === COVERAGE STATUS ===

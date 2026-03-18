@@ -152,12 +152,15 @@ Extract copay amounts using VSP's two-letter code system.
   "materials": {
     "polycarbonate_sv": number,
     "polycarbonate_multi": number,
+    "polycarbonate_digital": number,
     "trivex_sv": number,
     "trivex_multi": number,
     "hi_index_167_sv": number,
     "hi_index_167_multi": number,
+    "hi_index_167_digital": number,
     "hi_index_174_sv": number,
-    "hi_index_174_multi": number
+    "hi_index_174_multi": number,
+    "hi_index_174_digital": number
   },
 
   "lens_matrix": {

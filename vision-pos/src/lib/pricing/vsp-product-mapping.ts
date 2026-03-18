@@ -46,37 +46,43 @@ export const LENS_TYPE_TO_VSP_PROGRESSIVE: Record<string, VspProgressiveField> =
 // =============================================================================
 
 export type VspMaterialField =
-  | 'polycarbonate_sv' | 'polycarbonate_multi'
+  | 'polycarbonate_sv' | 'polycarbonate_multi' | 'polycarbonate_digital'
   | 'trivex_sv' | 'trivex_multi'
-  | 'hi_index_167_sv' | 'hi_index_167_multi'
-  | 'hi_index_174_sv' | 'hi_index_174_multi'
+  | 'hi_index_167_sv' | 'hi_index_167_multi' | 'hi_index_167_digital'
+  | 'hi_index_174_sv' | 'hi_index_174_multi' | 'hi_index_174_digital'
   | 'base' // CR-39, no upgrade cost
 
 export interface MaterialMapping {
   svField: VspMaterialField
   multiField: VspMaterialField
+  digitalField?: VspMaterialField  // For Eyezen/digital lenses
 }
 
 export const LENS_MATERIAL_TO_VSP: Record<string, MaterialMapping> = {
   'cr39': {
     svField: 'base',
     multiField: 'base',
+    digitalField: 'base',
   },
   'poly': {
     svField: 'polycarbonate_sv',
     multiField: 'polycarbonate_multi',
+    digitalField: 'polycarbonate_digital',
   },
   'trivex': {
     svField: 'trivex_sv',
     multiField: 'trivex_multi',
+    // No digital trivex - falls back to SV
   },
   'hiIndex167': {
     svField: 'hi_index_167_sv',
     multiField: 'hi_index_167_multi',
+    digitalField: 'hi_index_167_digital',
   },
   'ultraHi172': {
     svField: 'hi_index_174_sv',  // Map 1.72 to 1.74 field
     multiField: 'hi_index_174_multi',
+    digitalField: 'hi_index_174_digital',
   },
 }
 
@@ -270,8 +276,17 @@ export function calculateVspPricing(
   // ========== MATERIAL COPAY ==========
   let materialCopay = 0
   const materialMapping = LENS_MATERIAL_TO_VSP[input.materialId]
+  const isDigitalLens = input.lensTypeId === 'eyezen'
   if (materialMapping && materialMapping.svField !== 'base') {
-    const fieldKey = isSingleVision ? materialMapping.svField : materialMapping.multiField
+    // Digital lenses (Eyezen) use digital material copays if available
+    let fieldKey: VspMaterialField
+    if (isDigitalLens && materialMapping.digitalField) {
+      fieldKey = materialMapping.digitalField
+    } else if (isSingleVision) {
+      fieldKey = materialMapping.svField
+    } else {
+      fieldKey = materialMapping.multiField
+    }
     materialCopay = getMaterialValue(auth, fieldKey) ?? 0
   }
 
@@ -402,7 +417,7 @@ function getProgressiveValue(auth: VspMergedAuthorization, tier: 'K' | 'J' | 'F'
 function getMaterialValue(auth: VspMergedAuthorization, field: VspMaterialField): number {
   if (field === 'base') return 0
 
-  // Map material fields to lens_matrix keys
+  // Map material fields to lens_matrix keys or materials section
   const materialMap: Record<VspMaterialField, number> = {
     'base': 0,
     // Single Vision - use SV_* values from lens_matrix
@@ -415,6 +430,10 @@ function getMaterialValue(auth: VspMergedAuthorization, field: VspMaterialField)
     'trivex_multi': auth.lensMatrix.KB ?? 0,
     'hi_index_167_multi': auth.lensMatrix.KH ?? 0,
     'hi_index_174_multi': auth.lensMatrix.KJ ?? 0,
+    // Digital (Eyezen) - use dedicated digital material copays
+    'polycarbonate_digital': auth.materials.polycarbonate_digital ?? 0,
+    'hi_index_167_digital': auth.materials.hi_index_167_digital ?? 0,
+    'hi_index_174_digital': auth.materials.hi_index_174_digital ?? 0,
   }
 
   return materialMap[field] ?? 0

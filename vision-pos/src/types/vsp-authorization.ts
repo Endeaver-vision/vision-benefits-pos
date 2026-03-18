@@ -222,12 +222,15 @@ export interface VspEnhancementFormExtraction {
   materials: {
     polycarbonate_sv: number | null
     polycarbonate_multi: number | null
+    polycarbonate_digital: number | null
     trivex_sv: number | null
     trivex_multi: number | null
     hi_index_167_sv: number | null
     hi_index_167_multi: number | null
+    hi_index_167_digital: number | null
     hi_index_174_sv: number | null
     hi_index_174_multi: number | null
+    hi_index_174_digital: number | null
   }
 
   // === FULL MATRIX (Two-Letter Codes) ===
@@ -477,12 +480,15 @@ export interface VspMergedAuthorization {
   materials: {
     polycarbonate_sv: number
     polycarbonate_multi: number
+    polycarbonate_digital: number
     trivex_sv: number
     trivex_multi: number
     hi_index_167_sv: number
     hi_index_167_multi: number
+    hi_index_167_digital: number
     hi_index_174_sv: number
     hi_index_174_multi: number
+    hi_index_174_digital: number
   }
 
   // === LENS MATRIX (from Enhancement Form) ===
