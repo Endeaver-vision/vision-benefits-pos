@@ -179,21 +179,24 @@ export default function LensesMenu() {
       const isSV = ['sv', 'neurolens_sv'].includes(product.id)
       setIsSingleVision(isSV)
 
-      // VSP: Auto-add Tech Addon - SV ($10) or M/F ($40)
+      // VSP: Auto-add Tech Addon - SV or M/F (prices from price list)
       const isVsp = quote.insurance.carrier === 'VSP'
       if (isVsp && quote.insurance.hasActiveAuth) {
-        const techAddonPrice = isSV ? 10 : 40
-        const techAddonName = isSV ? 'Tech Addon (SV)' : 'Tech Addon (M/F)'
-        addLineItem({
-          productId: isSV ? 'tech_addon_sv' : 'tech_addon_mf',
-          name: techAddonName,
-          category: 'add_on',
-          quantity: 1,
-          retailPrice: techAddonPrice,
-          patientPays: techAddonPrice,
-          insurancePays: 0,
-          pairId: quote.activePairId,
-        })
+        const techAddonProduct = ADD_ONS.find((p) => p.id === (isSV ? 'tech_addon_sv' : 'tech_addon_mf'))
+        if (techAddonProduct) {
+          const techPatientPays = getPrice(techAddonProduct)
+          const techInsurancePays = Math.max(0, techAddonProduct.retail - techPatientPays)
+          addLineItem({
+            productId: techAddonProduct.id,
+            name: techAddonProduct.name,
+            category: 'add_on',
+            quantity: 1,
+            retailPrice: techAddonProduct.retail,
+            patientPays: techPatientPays,
+            insurancePays: techInsurancePays,
+            pairId: quote.activePairId,
+          })
+        }
       }
 
       // Auto-add Standard UV for all glasses orders (VSP, EyeMed, Cash)

@@ -5,6 +5,7 @@ import {
   LENS_MATERIALS,
   AR_COATINGS,
   PHOTOCHROMICS,
+  ADD_ONS,
   Product,
 } from '@/lib/pricing/product-catalog'
 import {
@@ -128,11 +129,14 @@ export default function MaterialsMenu() {
 
       let price = getPrice(product)
 
-      // EyeMed backside UV surcharge: $15 extra for AR coatings with backsideUV
+      // EyeMed backside UV surcharge for AR coatings with backsideUV
       const isEyeMed = quote.insurance.carrier === 'EYEMED'
       const hasBacksideUV = product.backsideUV === true
       if (isEyeMed && hasBacksideUV && quote.insurance.hasActiveAuth) {
-        price += 15
+        const surchargeProduct = ADD_ONS.find((p) => p.id === 'eyemed_backside_uv_surcharge')
+        if (surchargeProduct) {
+          price += getPrice(surchargeProduct)
+        }
       }
 
       const insurancePays = quote.insurance.hasActiveAuth
