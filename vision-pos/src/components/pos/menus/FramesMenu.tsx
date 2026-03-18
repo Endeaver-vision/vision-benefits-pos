@@ -197,7 +197,16 @@ export default function FramesMenu() {
       const featuredBonus = frame.isFeaturedBrand && hasInsurance ? frameAllowance * 0.2 : 0
       const totalAllowance = frameAllowance + featuredBonus
       const allowanceUsed = hasInsurance ? Math.min(frame.price, totalAllowance) : 0
-      const patientPays = Math.max(0, frame.price - allowanceUsed)
+      const overage = Math.max(0, frame.price - totalAllowance)
+
+      // VSP: 20% off overage (patient pays 80% of amount over allowance)
+      const isVsp = quote.insurance.carrier === 'VSP'
+      const overageDiscount = isVsp ? 0.20 : 0
+      const patientPays = overage * (1 - overageDiscount)
+
+      // Insurance pays: allowance + overage discount
+      const overageDiscountAmount = overage * overageDiscount
+      const insurancePays = allowanceUsed + overageDiscountAmount
 
       addLineItem({
         productId: frame.id,
@@ -207,7 +216,7 @@ export default function FramesMenu() {
         quantity: 1,
         retailPrice: frame.price,
         patientPays,
-        insurancePays: allowanceUsed,
+        insurancePays,
         note: frame.color,
         pairId: quote.activePairId,
       })

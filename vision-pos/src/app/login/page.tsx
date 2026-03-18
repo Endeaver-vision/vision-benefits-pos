@@ -23,7 +23,7 @@ export default function LoginPage() {
     const checkAuth = async () => {
       const session = await getSession()
       if (session) {
-        router.push('/quote-builder')
+        router.push('/pos')
       }
     }
 
@@ -52,7 +52,7 @@ export default function LoginPage() {
         setError('Invalid credentials. Please check your username and password.')
       } else if (result?.ok) {
         // Successful login - redirect to quote builder (POS)
-        router.push('/quote-builder')
+        router.push('/pos')
       }
     } catch (err) {
       console.error('Login error:', err)

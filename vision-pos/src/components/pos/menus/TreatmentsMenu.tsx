@@ -41,6 +41,12 @@ export default function TreatmentsMenu() {
     .filter((item) => item.pairId === quote.activePairId && item.category === 'add_on')
     .map((item) => item.productId)
 
+  // VSP UV treatment (auto-added based on AR coating)
+  const selectedUvTreatment = (quote.lineItems ?? []).find(
+    (item) => item.pairId === quote.activePairId &&
+      (item.productId === 'uv_backside' || item.productId === 'uv_front')
+  )
+
   // Mount Fee (single select)
   const selectedMount = (quote.lineItems ?? []).find(
     (item) => item.pairId === quote.activePairId && item.category === 'mount_fee'
@@ -70,9 +76,10 @@ export default function TreatmentsMenu() {
   // ===== SELECTION HANDLERS =====
 
   const handleSelectAR = (product: Product) => {
-    // "None" removes any AR coating
+    // "None" removes any AR coating and UV treatment
     if (product.id === 'none') {
       if (selectedAR) removeLineItem(selectedAR.id)
+      if (selectedUvTreatment) removeLineItem(selectedUvTreatment.id)
       return
     }
 
@@ -80,8 +87,12 @@ export default function TreatmentsMenu() {
 
     if (isSelected) {
       if (selectedAR) removeLineItem(selectedAR.id)
+      // Also remove UV treatment when deselecting AR
+      if (selectedUvTreatment) removeLineItem(selectedUvTreatment.id)
     } else {
       if (selectedAR) removeLineItem(selectedAR.id)
+      // Remove old UV treatment before potentially adding new one
+      if (selectedUvTreatment) removeLineItem(selectedUvTreatment.id)
 
       const price = getPrice(product)
       const insurancePays = quote.insurance.hasActiveAuth
@@ -99,6 +110,38 @@ export default function TreatmentsMenu() {
         tier: product.vspTier,
         pairId: quote.activePairId,
       })
+
+      // VSP: Auto-add UV treatment based on coating selection
+      const isVsp = quote.insurance.carrier === 'VSP'
+      if (isVsp && quote.insurance.hasActiveAuth) {
+        // Crizal coatings have backsideUV: true in product catalog
+        const isCrizal = product.backsideUV === true
+        const uvPrice = 16
+
+        if (isCrizal) {
+          addLineItem({
+            productId: 'uv_backside',
+            name: 'UV Backside (Crizal)',
+            category: 'add_on',
+            quantity: 1,
+            retailPrice: uvPrice,
+            patientPays: uvPrice,
+            insurancePays: 0,
+            pairId: quote.activePairId,
+          })
+        } else {
+          addLineItem({
+            productId: 'uv_front',
+            name: 'UV Front',
+            category: 'add_on',
+            quantity: 1,
+            retailPrice: uvPrice,
+            patientPays: uvPrice,
+            insurancePays: 0,
+            pairId: quote.activePairId,
+          })
+        }
+      }
     }
   }
 

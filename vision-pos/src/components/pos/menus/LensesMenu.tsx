@@ -128,15 +128,24 @@ export default function LensesMenu() {
 
   // ===== SELECTION HANDLERS =====
 
+  // Get existing tech addon for current pair
+  const selectedTechAddon = (quote.lineItems ?? []).find(
+    (item) => item.pairId === quote.activePairId && item.productId?.startsWith('tech_addon_')
+  )
+
   const handleSelectLensType = (product: Product) => {
     const isSelected = selectedLensType?.productId === product.id
 
     if (isSelected) {
       if (selectedLensType) removeLineItem(selectedLensType.id)
+      // Remove tech addon when lens type is deselected
+      if (selectedTechAddon) removeLineItem(selectedTechAddon.id)
       setCurrentTier('')
       setIsSingleVision(true) // Reset to SV on deselect
     } else {
       if (selectedLensType) removeLineItem(selectedLensType.id)
+      // Remove old tech addon before adding new one
+      if (selectedTechAddon) removeLineItem(selectedTechAddon.id)
 
       const price = getPrice(product)
       const insurancePays = quote.insurance.hasActiveAuth
@@ -158,6 +167,23 @@ export default function LensesMenu() {
       // Set single vision flag for material pricing
       const isSV = ['sv', 'neurolens_sv'].includes(product.id)
       setIsSingleVision(isSV)
+
+      // VSP: Auto-add Tech Addon - SV ($10) or M/F ($40)
+      const isVsp = quote.insurance.carrier === 'VSP'
+      if (isVsp && quote.insurance.hasActiveAuth) {
+        const techAddonPrice = isSV ? 10 : 40
+        const techAddonName = isSV ? 'Tech Addon (SV)' : 'Tech Addon (M/F)'
+        addLineItem({
+          productId: isSV ? 'tech_addon_sv' : 'tech_addon_mf',
+          name: techAddonName,
+          category: 'add_on',
+          quantity: 1,
+          retailPrice: techAddonPrice,
+          patientPays: techAddonPrice,
+          insurancePays: 0,
+          pairId: quote.activePairId,
+        })
+      }
 
       // Set tier for VSP pricing
       if (product.vspTier && product.vspTier !== 'Standard' && product.vspTier !== 'N/A') {
