@@ -103,14 +103,14 @@ export async function GET(request: NextRequest) {
 
       totalCount = count
 
-      // Frames don't track stock - we only keep 1 of each as samples
+      // Map frames to inventory format
       inventory = frames.map(frame => ({
         id: frame.id,
-        currentStock: 1, // Always 1 - sample only
+        currentStock: frame.stockQuantity,
         reservedStock: 0,
-        availableStock: 1,
-        reorderPoint: 0, // No reorder for frames
-        reorderQuantity: 0,
+        availableStock: frame.stockQuantity,
+        reorderPoint: DEFAULT_REORDER_POINT,
+        reorderQuantity: 10,
         maxStock: null,
         costPrice: frame.wholesaleCost,
         lastRestocked: null,
@@ -208,22 +208,22 @@ export async function GET(request: NextRequest) {
       }))
     }
 
-    // Filter for low stock if requested (not applicable to frames)
-    if (lowStock && productType !== 'frames') {
+    // Filter for low stock if requested
+    if (lowStock) {
       inventory = inventory.filter(item =>
         item.currentStock <= item.reorderPoint || item.availableStock <= 0
       )
     }
 
-    // Calculate low stock items (not applicable to frames - they're samples only)
-    const lowStockCount = productType === 'frames' ? 0 : inventory.filter(item =>
+    // Calculate low stock items
+    const lowStockCount = inventory.filter(item =>
       item.currentStock <= item.reorderPoint || item.availableStock <= 0
     ).length
 
-    // Calculate total value (cost price * stock) - for frames just count wholesale cost
-    const totalValue = productType === 'frames'
-      ? inventory.reduce((sum, item) => sum + (item.costPrice || 0), 0)
-      : inventory.reduce((sum, item) => sum + (item.currentStock * (item.costPrice || 0)), 0)
+    // Calculate total wholesale value (cost price * stock)
+    const totalValue = inventory.reduce((sum, item) =>
+      sum + (item.currentStock * (item.costPrice || 0)), 0
+    )
 
     return NextResponse.json({
       success: true,

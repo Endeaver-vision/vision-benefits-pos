@@ -20,7 +20,6 @@ import {
   Package,
   AlertTriangle,
   TrendingUp,
-  Eye,
   BarChart3,
   ChevronLeft,
   ChevronRight,
@@ -29,7 +28,9 @@ import {
   ArrowUp,
   Glasses,
   Pill,
-  Droplets
+  Droplets,
+  Plus,
+  Minus
 } from 'lucide-react'
 import PageLayout from '@/components/layout/page-layout'
 
@@ -237,6 +238,32 @@ export default function InventoryPage() {
     scrollToTop()
   }
 
+  // Adjust stock quantity
+  const adjustStock = async (itemId: string, delta: number) => {
+    try {
+      const response = await fetch(`/api/inventory/${itemId}/adjust`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          quantity: delta,
+          productType,
+          reason: delta > 0 ? 'Manual stock addition' : 'Manual stock removal'
+        })
+      })
+
+      if (!response.ok) {
+        const error = await response.json()
+        console.error('Stock adjustment failed:', error)
+        return
+      }
+
+      // Reload inventory to reflect changes
+      loadInventory()
+    } catch (error) {
+      console.error('Stock adjustment error:', error)
+    }
+  }
+
   if (loading) {
     return (
       <div className="min-h-screen flex items-center justify-center">
@@ -404,21 +431,17 @@ export default function InventoryPage() {
                   <thead>
                     <tr className="border-b border-white/20">
                       <th className="text-left p-4 font-medium text-white">Product</th>
-                      {productType !== 'frames' && (
-                        <th className="text-right p-4 font-medium text-white">Stock</th>
-                      )}
-                      <th className="text-right p-4 font-medium text-white">Retail Price</th>
-                      {productType !== 'frames' && (
-                        <th className="text-center p-4 font-medium text-white">Status</th>
-                      )}
-                      {productType === 'frames' && (
-                        <th className="text-center p-4 font-medium text-white">Actions</th>
-                      )}
+                      <th className="text-right p-4 font-medium text-white">Stock</th>
+                      <th className="text-right p-4 font-medium text-white">Wholesale</th>
+                      <th className="text-right p-4 font-medium text-white">Retail</th>
+                      <th className="text-center p-4 font-medium text-white">Status</th>
+                      <th className="text-center p-4 font-medium text-white">Actions</th>
                     </tr>
                   </thead>
                   <tbody>
                     {inventory.map((item) => {
                       const stockStatus = getStockStatus(item)
+                      const wholesaleValue = (item.costPrice || 0) * item.currentStock
 
                       return (
                         <tr key={item.id} className="border-b border-white/10 hover:bg-white/5">
@@ -428,36 +451,46 @@ export default function InventoryPage() {
                               <div className="text-sm text-white/70">
                                 {item.product.color && <span className="mr-2">{item.product.color}</span>}
                                 {item.product.sku && <span>SKU: {item.product.sku}</span>}
-                                {item.product.manufacturer && productType !== 'frames' && (
-                                  <span>{item.product.manufacturer}</span>
-                                )}
                               </div>
                             </div>
                           </td>
-                          {productType !== 'frames' && (
-                            <td className="p-4 text-right font-bold text-lg">
-                              {item.currentStock}
-                            </td>
-                          )}
+                          <td className="p-4 text-right font-bold text-lg">
+                            {item.currentStock}
+                          </td>
+                          <td className="p-4 text-right text-white/70">
+                            {formatCurrency(wholesaleValue)}
+                          </td>
                           <td className="p-4 text-right font-medium">
                             {formatCurrency(item.product.basePrice)}
                           </td>
-                          {productType !== 'frames' && (
-                            <td className="p-4 text-center">
-                              <Badge variant={stockStatus.variant}>
-                                {stockStatus.label}
-                              </Badge>
-                            </td>
-                          )}
-                          {productType === 'frames' && (
-                            <td className="p-4">
-                              <div className="flex justify-center space-x-2">
-                                <Button size="sm" variant="outline" title="View details">
-                                  <Eye className="h-4 w-4" />
-                                </Button>
-                              </div>
-                            </td>
-                          )}
+                          <td className="p-4 text-center">
+                            <Badge variant={stockStatus.variant}>
+                              {stockStatus.label}
+                            </Badge>
+                          </td>
+                          <td className="p-4">
+                            <div className="flex justify-center items-center space-x-2">
+                              <Button
+                                size="sm"
+                                variant="outline"
+                                className="h-8 w-8 p-0"
+                                onClick={() => adjustStock(item.id, -1)}
+                                disabled={item.currentStock <= 0}
+                                title="Remove 1"
+                              >
+                                <Minus className="h-4 w-4" />
+                              </Button>
+                              <Button
+                                size="sm"
+                                variant="outline"
+                                className="h-8 w-8 p-0"
+                                onClick={() => adjustStock(item.id, 1)}
+                                title="Add 1"
+                              >
+                                <Plus className="h-4 w-4" />
+                              </Button>
+                            </div>
+                          </td>
                         </tr>
                       )
                     })}
