@@ -105,11 +105,10 @@ interface InventoryResponse {
   }
 }
 
-type ProductType = 'frames' | 'contacts' | 'supplements' | 'dryeye'
+type ProductType = 'frames' | 'supplements' | 'dryeye'
 
 const PRODUCT_TYPES: { value: ProductType; label: string; icon: React.ReactNode }[] = [
   { value: 'frames', label: 'Frames', icon: <Glasses className="h-4 w-4" /> },
-  { value: 'contacts', label: 'Contact Lenses', icon: <Eye className="h-4 w-4" /> },
   { value: 'supplements', label: 'Supplements', icon: <Pill className="h-4 w-4" /> },
   { value: 'dryeye', label: 'Dry Eye', icon: <Droplets className="h-4 w-4" /> }
 ]
@@ -363,7 +362,7 @@ export default function InventoryPage() {
 
         {/* Product Type Tabs */}
         <Tabs value={productType} onValueChange={(v) => setProductType(v as ProductType)} className="mb-6">
-          <TabsList className="grid w-full grid-cols-4 max-w-2xl">
+          <TabsList className="grid w-full grid-cols-3 max-w-xl">
             {PRODUCT_TYPES.map((type) => (
               <TabsTrigger key={type.value} value={type.value} className="flex items-center gap-2">
                 {type.icon}
@@ -403,16 +402,14 @@ export default function InventoryPage() {
                   </SelectContent>
                 </Select>
               )}
-              {productType !== 'contacts' && (
-                <Button
-                  variant={showLowStockOnly ? "default" : "outline"}
-                  onClick={() => setShowLowStockOnly(!showLowStockOnly)}
-                  className="whitespace-nowrap"
-                >
-                  <AlertTriangle className="h-4 w-4 mr-2" />
-                  Low Stock Only
-                </Button>
-              )}
+              <Button
+                variant={showLowStockOnly ? "default" : "outline"}
+                onClick={() => setShowLowStockOnly(!showLowStockOnly)}
+                className="whitespace-nowrap"
+              >
+                <AlertTriangle className="h-4 w-4 mr-2" />
+                Low Stock Only
+              </Button>
               {productType === 'frames' && (
                 <Button
                   onClick={openStockModal}
@@ -465,15 +462,11 @@ export default function InventoryPage() {
                       {productType === 'frames' && (
                         <th className="text-left p-4 font-medium text-white">Stock by Location</th>
                       )}
-                      {productType !== 'contacts' && (
-                        <th className="text-right p-4 font-medium text-white">
-                          {productType === 'frames' ? 'Total' : 'Stock'}
-                        </th>
-                      )}
+                      <th className="text-right p-4 font-medium text-white">
+                        {productType === 'frames' ? 'Total' : 'Stock'}
+                      </th>
                       <th className="text-right p-4 font-medium text-white">Retail Price</th>
-                      {productType !== 'contacts' && (
-                        <th className="text-center p-4 font-medium text-white">Status</th>
-                      )}
+                      <th className="text-center p-4 font-medium text-white">Status</th>
                       {productType === 'frames' && (
                         <th className="text-center p-4 font-medium text-white">Actions</th>
                       )}
@@ -530,21 +523,17 @@ export default function InventoryPage() {
                               </div>
                             </td>
                           )}
-                          {productType !== 'contacts' && (
-                            <td className="p-4 text-right font-bold text-lg">
-                              {item.currentStock}
-                            </td>
-                          )}
+                          <td className="p-4 text-right font-bold text-lg">
+                            {item.currentStock}
+                          </td>
                           <td className="p-4 text-right font-medium">
                             {formatCurrency(item.product.basePrice)}
                           </td>
-                          {productType !== 'contacts' && (
-                            <td className="p-4 text-center">
-                              <Badge variant={stockStatus.variant}>
-                                {stockStatus.label}
-                              </Badge>
-                            </td>
-                          )}
+                          <td className="p-4 text-center">
+                            <Badge variant={stockStatus.variant}>
+                              {stockStatus.label}
+                            </Badge>
+                          </td>
                           {productType === 'frames' && (
                             <td className="p-4">
                               <div className="flex justify-center space-x-2">

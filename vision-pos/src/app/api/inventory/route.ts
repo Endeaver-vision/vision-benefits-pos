@@ -135,44 +135,6 @@ export async function GET(request: NextRequest) {
           movements: []
         }
       })
-    } else if (productType === 'contacts') {
-      const contactWhere: Prisma.ContactLensWhereInput = {
-        isActive: true,
-        ...(search && {
-          OR: [
-            { manufacturer: { contains: search, mode: 'insensitive' } },
-            { lensName: { contains: search, mode: 'insensitive' } }
-          ]
-        })
-      }
-
-      const contacts = await prisma.contactLens.findMany({
-        where: contactWhere,
-        orderBy: [{ manufacturer: 'asc' }, { lensName: 'asc' }]
-      })
-
-      inventory = contacts.map(cl => ({
-        id: cl.id,
-        currentStock: 0, // Contact lenses don't track inventory quantity
-        reservedStock: 0,
-        availableStock: 0,
-        reorderPoint: 0,
-        reorderQuantity: 0,
-        maxStock: null,
-        costPrice: cl.wholesaleCost,
-        lastRestocked: null,
-        lastSold: null,
-        product: {
-          id: cl.id,
-          name: `${cl.manufacturer} ${cl.lensName}`,
-          sku: null,
-          manufacturer: cl.manufacturer,
-          basePrice: cl.retailPrice,
-          category: { id: 'contacts', name: 'Contact Lenses' }
-        },
-        stockByLocation: [],
-        movements: []
-      }))
     } else if (productType === 'supplements') {
       const suppWhere: Prisma.SupplementWhereInput = {
         isActive: true,
