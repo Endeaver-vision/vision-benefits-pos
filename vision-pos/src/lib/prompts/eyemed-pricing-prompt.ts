@@ -83,10 +83,10 @@ Match products to their EyeMed tier:
 
 ### Anti-Reflective Coatings (match by product name)
 - No AR Coating → AR Standard (free or $0)
-- Crizal EZ Pro → AR Premium Tier 2 (SPECIAL: Add $15 UV surcharge)
-- Crizal Rock → AR Premium Tier 3 (SPECIAL: Add $15 UV surcharge)
-- Crizal Sapphire / Sapphire HR → AR Premium Tier 3 (SPECIAL: Add $15 UV surcharge)
-- Crizal SunShield → AR Premium Tier 3 (SPECIAL: Add $15 UV surcharge)
+- Crizal EZ Pro → AR Premium Tier 2 (REQUIRES: UV Backside treatment)
+- Crizal Rock → AR Premium Tier 3 (REQUIRES: UV Backside treatment)
+- Crizal Sapphire / Sapphire HR → AR Premium Tier 3 (REQUIRES: UV Backside treatment)
+- Crizal SunShield → AR Premium Tier 3 (REQUIRES: UV Backside treatment)
 
 ### Lens Materials
 - CR-39 (Standard Plastic) → Material Standard
@@ -100,44 +100,48 @@ Match products to their EyeMed tier:
 
 ---
 
-## PART 3: BUSINESS RULES (Apply In Order)
+## PART 3: RULES (Apply In Order)
 
-### Rule 1: Tier 5 Fallback
+### EYEMED CARRIER RULES (Insurance rules - always apply for EyeMed)
+
+#### Carrier Rule 1: UV Backside Requirement
+IF product is one of: Crizal Sapphire, Crizal Rock, Crizal EZ Pro, Crizal SunShield
+  → FLAG: "requiresUVBackside": true
+  → NOTE: "Requires UV Backside treatment (priced separately)"
+  → DO NOT add price here - UV Backside is a separate line item
+
+#### Carrier Rule 2: Age-Based Material Pricing
+IF patient age < 19 AND product is Polycarbonate material:
+  → COPAY = $0 (EyeMed covers for children)
+  → NOTE: "EyeMed: Polycarbonate covered for members under 19"
+IF patient age < 19 AND product is Photochromic:
+  → COPAY = $0 (EyeMed covers for children)
+  → NOTE: "EyeMed: Photochromic covered for members under 19"
+IF patient age >= 19:
+  → USE EXTRACTED COPAY from PDF
+
+### EXTRACTION RULES (How to handle missing data)
+
+#### Rule 1: Tier 5 Fallback
 IF extracted benefits show "Progressive Tier 5" with a copay value:
   → USE THAT VALUE
 IF extracted benefits show Tier 5 is missing/null BUT Tier 4 exists:
   → USE TIER 4 COPAY for any Tier 5 products
   → NOTE: "Tier 5 not available, using Tier 4"
 
-### Rule 2: UV Surcharge ($15)
-IF product is one of: Crizal Sapphire, Crizal Rock, Crizal EZ Pro, Crizal SunShield
-  AND product has "backsideUVRequired": true
-  → ADD $15 to the copay
-  → NOTE: "Backside UV surcharge: +$15"
-
-### Rule 3: Cash-Only Products
-IF product is marked "cashOnly": true (e.g., Neurolens)
-  → IGNORE extracted copays
-  → USE FULL RETAIL PRICE from product catalog
-  → NOTE: "Cash-only product: full retail price applies"
-
-### Rule 4: Age-Based Rules
-IF patient age is provided:
-  - IF age < 19 AND product is Polycarbonate material:
-    → COPAY = $0 (free for children)
-    → NOTE: "Polycarbonate free for children under 19"
-  - IF age < 19 AND product is Photochromic:
-    → COPAY = $0 (free for children)
-    → NOTE: "Photochromic free for children under 19"
-  - IF age >= 19 AND product is Polycarbonate:
-    → USE EXTRACTED COPAY ($20-$40 range)
-    → NOTE: "Age 19+: Polycarbonate copay applies"
-
-### Rule 5: Tier Fallback (Catch-All)
+#### Rule 2: Tier Fallback (Catch-All)
 IF no matching benefit tier found in extracted data:
   → USE "All Other Lens Options" copay
   → Usually: "20% off retail price"
   → NOTE: "No specific tier match, using All Other Lens Options"
+
+### PRACTICE BUSINESS RULES (Practice decisions, not insurance)
+
+#### Business Rule 1: Cash-Only Products
+IF product is marked "cashOnly": true (e.g., Neurolens)
+  → IGNORE extracted copays
+  → USE FULL RETAIL PRICE from product catalog
+  → NOTE: "Cash-only product: full retail price applies"
 
 ---
 
@@ -210,14 +214,14 @@ SINGLE VISION & BASICS:
 
 AR COATINGS:
 - No AR Coating
-- Crizal EZ Pro (SPECIAL: +$15)
-- Crizal Rock (SPECIAL: +$15)
-- Crizal Sapphire (SPECIAL: +$15)
-- Crizal SunShield (SPECIAL: +$15)
+- Crizal EZ Pro (REQUIRES: UV Backside)
+- Crizal Rock (REQUIRES: UV Backside)
+- Crizal Sapphire (REQUIRES: UV Backside)
+- Crizal SunShield (REQUIRES: UV Backside)
 
 MATERIALS:
 - CR-39 (Standard)
-- Polycarbonate (free under 19, $20-40 for 19+)
+- Polycarbonate (EyeMed: free under 19, copay for 19+)
 - High Index 1.67
 - High Index 1.74
 
@@ -258,18 +262,19 @@ Return ONLY valid JSON:
       "productName": "Crizal EZ Pro",
       "category": "ar_coating",
       "tier": "ar_premium_tier_2",
-      "copay": 45,
-      "rulesApplied": ["uv_surcharge_15"],
-      "notes": "Backside UV surcharge: +$15"
+      "copay": 30,
+      "requiresUVBackside": true,
+      "rulesApplied": ["eyemed_uv_requirement"],
+      "notes": "Requires UV Backside treatment (priced separately)"
     },
     {
       "productName": "Polycarbonate",
       "category": "material",
       "tier": "material_polycarbonate",
-      "copayAge18": 0,
-      "copayAge19": 25,
-      "rulesApplied": ["age_based_rule"],
-      "notes": "Free under 19, $25 for age 19+"
+      "copayUnder19": 0,
+      "copay19Plus": 25,
+      "rulesApplied": ["eyemed_age_based"],
+      "notes": "EyeMed: Covered under 19, copay for 19+"
     },
     {
       "productName": "Neurolens",
@@ -292,7 +297,7 @@ Return ONLY valid JSON:
 1. **Always show your work** - Include "rulesApplied" array for audit trail
 2. **Handle missing tiers** - If Tier 5 missing, use Tier 4 with a note
 3. **Age matters** - Polycarbonate and Photochromic are age-dependent
-4. **UV surcharge is always +$15** - For Crizal Sapphire, Rock, EZ Pro, SunShield
+4. **UV Backside required** - Flag for Crizal Sapphire, Rock, EZ Pro, SunShield (price separately)
 5. **Cash-only is full price** - Neurolens ignores all copays
 6. **Fallback is All Other Lens Options** - If no tier match, use this
 7. **Terminology varies** - Use the rosetta stone mappings to normalize
