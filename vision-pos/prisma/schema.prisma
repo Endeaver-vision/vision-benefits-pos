@@ -303,6 +303,7 @@ model ServicePrice {
   name               String
   code               String?
   retailPrice        Float
+  wholesaleCost      Float?           @map("wholesale_cost")
   category           ServiceCategory?
   pricingCategory    String?
   description        String?

@@ -32,7 +32,7 @@ export async function GET() {
 export async function PATCH(request: Request) {
   try {
     const body = await request.json()
-    const { id, retailPrice, tierVsp, tierEyemed, tierSpectera, isActive, posDisplayOrder } = body
+    const { id, retailPrice, wholesaleCost, tierVsp, tierEyemed, tierSpectera, isActive, posDisplayOrder } = body
 
     if (!id) {
       return NextResponse.json({
@@ -44,6 +44,7 @@ export async function PATCH(request: Request) {
     // Build update data - only include provided fields
     const updateData: {
       retailPrice?: number
+      wholesaleCost?: number | null
       tierVsp?: string | null
       tierEyemed?: string | null
       tierSpectera?: string | null
@@ -52,6 +53,7 @@ export async function PATCH(request: Request) {
     } = {}
 
     if (retailPrice !== undefined) updateData.retailPrice = Number(retailPrice)
+    if (wholesaleCost !== undefined) updateData.wholesaleCost = wholesaleCost !== null ? Number(wholesaleCost) : null
     if (tierVsp !== undefined) updateData.tierVsp = tierVsp
     if (tierEyemed !== undefined) updateData.tierEyemed = tierEyemed
     if (tierSpectera !== undefined) updateData.tierSpectera = tierSpectera

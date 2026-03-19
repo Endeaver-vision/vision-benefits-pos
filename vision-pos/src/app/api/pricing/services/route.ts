@@ -11,10 +11,12 @@ import { NextRequest, NextResponse } from 'next/server'
 import { prisma } from '@/lib/prisma'
 
 interface PricedService {
+  id: string
   sku: string
   name: string
   category: string
   retailPrice: number
+  wholesaleCost: number | null
   patientPays: number
   insurancePays: number
   savings: number
@@ -193,10 +195,12 @@ export async function GET(request: NextRequest) {
       const serviceTiers = tierMappings.get(service.id) || { vsp: null, eyemed: null, spectera: null }
 
       const pricedService: PricedService = {
+        id: service.id,
         sku: service.sku || service.id,
         name: service.name,
         category: service.category as string,
         retailPrice: service.retailPrice,
+        wholesaleCost: service.wholesaleCost,
         patientPays,
         insurancePays,
         savings: insurancePays,

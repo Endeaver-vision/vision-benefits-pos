@@ -53,6 +53,7 @@ interface ServicePrice {
   sku: string
   name: string
   retailPrice: number
+  wholesaleCost: number | null
   category: string
   tierVsp: string | null
   tierEyemed: string | null
@@ -160,6 +161,7 @@ export default function ProductsAndServicesPage() {
     setEditingService(service)
     setEditForm({
       retailPrice: service.retailPrice,
+      wholesaleCost: service.wholesaleCost,
       tierVsp: service.tierVsp || '',
       tierEyemed: service.tierEyemed || '',
       tierSpectera: service.tierSpectera || ''
@@ -208,6 +210,7 @@ export default function ProductsAndServicesPage() {
         body: JSON.stringify({
           id: editingService.id,
           retailPrice: editForm.retailPrice,
+          wholesaleCost: editForm.wholesaleCost,
           tierVsp: editForm.tierVsp || null,
           tierEyemed: editForm.tierEyemed || null,
           tierSpectera: editForm.tierSpectera || null
@@ -557,6 +560,7 @@ export default function ProductsAndServicesPage() {
                         <thead>
                           <tr className="border-b text-left">
                             <th className="py-1 pr-4 font-medium">Service</th>
+                            <th className="py-1 px-2 text-right font-medium">Wholesale</th>
                             <th className="py-1 px-2 text-right font-medium">Price</th>
                             {showTiers && (
                               <>
@@ -572,6 +576,9 @@ export default function ProductsAndServicesPage() {
                           {filteredServices.map((service) => (
                             <tr key={service.sku || service.id} className="border-b border-border/30">
                               <td className="py-1.5 pr-4">{service.name}</td>
+                              <td className="py-1.5 px-2 text-right text-muted-foreground">
+                                {service.wholesaleCost ? formatPrice(service.wholesaleCost) : '—'}
+                              </td>
                               <td className="py-1.5 px-2 text-right text-muted-foreground">
                                 {formatPrice(service.retailPrice)}
                               </td>
@@ -714,6 +721,20 @@ export default function ProductsAndServicesPage() {
             </DialogDescription>
           </DialogHeader>
           <div className="grid gap-4 py-4">
+            <div className="grid grid-cols-4 items-center gap-4">
+              <Label htmlFor="serviceWholesaleCost" className="text-right">
+                Wholesale
+              </Label>
+              <Input
+                id="serviceWholesaleCost"
+                type="number"
+                step="0.01"
+                value={editForm.wholesaleCost ?? ''}
+                onChange={(e) => setEditForm({ ...editForm, wholesaleCost: e.target.value ? parseFloat(e.target.value) : null })}
+                className="col-span-3"
+                placeholder="Cost price"
+              />
+            </div>
             <div className="grid grid-cols-4 items-center gap-4">
               <Label htmlFor="retailPrice" className="text-right">
                 Price
