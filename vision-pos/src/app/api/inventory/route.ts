@@ -25,17 +25,10 @@ function getShortLocationName(name: string): string {
 
 export async function GET(request: NextRequest) {
   try {
-    // Auth disabled for development - re-enable in production
-    // const session = await getServerSession(authOptions)
-    // if (!session) {
-    //   return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
-    // }
-
     const { searchParams } = new URL(request.url)
+    const productType = searchParams.get('type') || 'frames'
     const lowStock = searchParams.get('lowStock') === 'true'
     const search = searchParams.get('search')
-    const category = searchParams.get('category')
-    const requestedLocationId = searchParams.get('locationId')
 
     // Fetch all active locations (excluding erroneous ones)
     const allLocations = await prisma.location.findMany({
@@ -53,84 +46,212 @@ export async function GET(request: NextRequest) {
       orderBy: { name: 'asc' }
     })
 
-    // Query frames directly from the frames table
-    const frameWhere: Prisma.FrameWhereInput = {
-      isActive: true,
-      ...(search && {
-        OR: [
-          { brand: { contains: search, mode: 'insensitive' } },
-          { model: { contains: search, mode: 'insensitive' } },
-          { manufacturer: { contains: search, mode: 'insensitive' } },
-          { sku: { contains: search, mode: 'insensitive' } },
-          { upc: { contains: search, mode: 'insensitive' } }
-        ]
-      })
-    }
-
-    // Query frames with their inventory by location
-    const frames = await prisma.frame.findMany({
-      where: frameWhere,
-      orderBy: [
-        { brand: 'asc' },
-        { model: 'asc' }
-      ],
-      include: {
-        inventory: {
-          include: {
-            location: true
-          }
-        }
+    let inventory: Array<{
+      id: string
+      currentStock: number
+      reservedStock: number
+      availableStock: number
+      reorderPoint: number
+      reorderQuantity: number
+      maxStock: number | null
+      costPrice: number | null
+      lastRestocked: string | null
+      lastSold: string | null
+      product: {
+        id: string
+        name: string
+        sku: string | null
+        manufacturer: string | null
+        basePrice: number
+        color?: string
+        colorCode?: string
+        category: { id: string; name: string }
       }
-    })
+      stockByLocation: Array<{ locationId: string; locationName: string; shortName: string; quantity: number }>
+      movements: unknown[]
+    }> = []
 
-    // Transform frames to InventoryItem format with per-location stock
-    let inventory = frames.map(frame => {
-      // Build stock by location from frame_inventory table
-      const stockByLocation: { locationId: string; locationName: string; shortName: string; quantity: number }[] = []
-
-      for (const inv of frame.inventory) {
-        stockByLocation.push({
-          locationId: inv.locationId,
-          locationName: inv.location.name,
-          shortName: getShortLocationName(inv.location.name),
-          quantity: inv.quantity
+    // Route based on product type
+    if (productType === 'frames') {
+      const frameWhere: Prisma.FrameWhereInput = {
+        isActive: true,
+        ...(search && {
+          OR: [
+            { brand: { contains: search, mode: 'insensitive' } },
+            { model: { contains: search, mode: 'insensitive' } },
+            { manufacturer: { contains: search, mode: 'insensitive' } },
+            { sku: { contains: search, mode: 'insensitive' } },
+            { upc: { contains: search, mode: 'insensitive' } }
+          ]
         })
       }
 
-      // Calculate total from inventory records, fallback to stockQuantity
-      const totalStock = stockByLocation.length > 0
-        ? stockByLocation.reduce((sum, loc) => sum + loc.quantity, 0)
-        : frame.stockQuantity
+      const frames = await prisma.frame.findMany({
+        where: frameWhere,
+        orderBy: [{ brand: 'asc' }, { model: 'asc' }],
+        include: {
+          inventory: {
+            include: { location: true }
+          }
+        }
+      })
 
-      return {
-        id: frame.id,
-        currentStock: totalStock,
+      inventory = frames.map(frame => {
+        const stockByLocation: Array<{ locationId: string; locationName: string; shortName: string; quantity: number }> = []
+        for (const inv of frame.inventory) {
+          stockByLocation.push({
+            locationId: inv.locationId,
+            locationName: inv.location.name,
+            shortName: getShortLocationName(inv.location.name),
+            quantity: inv.quantity
+          })
+        }
+        const totalStock = stockByLocation.length > 0
+          ? stockByLocation.reduce((sum, loc) => sum + loc.quantity, 0)
+          : frame.stockQuantity
+
+        return {
+          id: frame.id,
+          currentStock: totalStock,
+          reservedStock: 0,
+          availableStock: totalStock,
+          reorderPoint: DEFAULT_REORDER_POINT,
+          reorderQuantity: 20,
+          maxStock: null,
+          costPrice: frame.wholesaleCost,
+          lastRestocked: null,
+          lastSold: null,
+          product: {
+            id: frame.id,
+            name: `${frame.brand} ${frame.model}`,
+            sku: frame.sku,
+            manufacturer: frame.brand,
+            basePrice: frame.retailPrice,
+            color: frame.color,
+            colorCode: frame.colorCode || undefined,
+            category: { id: 'frames', name: 'Frames' }
+          },
+          stockByLocation,
+          movements: []
+        }
+      })
+    } else if (productType === 'contacts') {
+      const contactWhere: Prisma.ContactLensWhereInput = {
+        isActive: true,
+        ...(search && {
+          OR: [
+            { manufacturer: { contains: search, mode: 'insensitive' } },
+            { lensName: { contains: search, mode: 'insensitive' } }
+          ]
+        })
+      }
+
+      const contacts = await prisma.contactLens.findMany({
+        where: contactWhere,
+        orderBy: [{ manufacturer: 'asc' }, { lensName: 'asc' }]
+      })
+
+      inventory = contacts.map(cl => ({
+        id: cl.id,
+        currentStock: 0, // Contact lenses don't track inventory quantity
         reservedStock: 0,
-        availableStock: totalStock,
-        reorderPoint: DEFAULT_REORDER_POINT,
-        reorderQuantity: 20,
+        availableStock: 0,
+        reorderPoint: 0,
+        reorderQuantity: 0,
         maxStock: null,
-        costPrice: frame.wholesaleCost,
+        costPrice: cl.wholesaleCost,
         lastRestocked: null,
         lastSold: null,
         product: {
-          id: frame.id,
-          name: `${frame.brand} ${frame.model}`,
-          sku: frame.sku,
-          manufacturer: frame.brand, // Use brand instead of manufacturer
-          basePrice: frame.retailPrice,
-          color: frame.color,
-          colorCode: frame.colorCode,
-          category: {
-            id: 'frames',
-            name: 'Frames'
-          }
+          id: cl.id,
+          name: `${cl.manufacturer} ${cl.lensName}`,
+          sku: null,
+          manufacturer: cl.manufacturer,
+          basePrice: cl.retailPrice,
+          category: { id: 'contacts', name: 'Contact Lenses' }
         },
-        // Per-location stock breakdown
-        stockByLocation,
+        stockByLocation: [],
         movements: []
+      }))
+    } else if (productType === 'supplements') {
+      const suppWhere: Prisma.SupplementWhereInput = {
+        isActive: true,
+        ...(search && {
+          OR: [
+            { name: { contains: search, mode: 'insensitive' } },
+            { brand: { contains: search, mode: 'insensitive' } },
+            { sku: { contains: search, mode: 'insensitive' } }
+          ]
+        })
       }
-    })
+
+      const supplements = await prisma.supplement.findMany({
+        where: suppWhere,
+        orderBy: [{ brand: 'asc' }, { name: 'asc' }]
+      })
+
+      inventory = supplements.map(supp => ({
+        id: supp.id,
+        currentStock: supp.stockQuantity,
+        reservedStock: 0,
+        availableStock: supp.stockQuantity,
+        reorderPoint: supp.reorderPoint,
+        reorderQuantity: 20,
+        maxStock: null,
+        costPrice: supp.wholesaleCost,
+        lastRestocked: null,
+        lastSold: null,
+        product: {
+          id: supp.id,
+          name: supp.name,
+          sku: supp.sku,
+          manufacturer: supp.brand,
+          basePrice: supp.retailPrice,
+          category: { id: 'supplements', name: 'Supplements' }
+        },
+        stockByLocation: [],
+        movements: []
+      }))
+    } else if (productType === 'dryeye') {
+      const dryEyeWhere: Prisma.DryEyeProductWhereInput = {
+        isActive: true,
+        ...(search && {
+          OR: [
+            { name: { contains: search, mode: 'insensitive' } },
+            { brand: { contains: search, mode: 'insensitive' } },
+            { sku: { contains: search, mode: 'insensitive' } }
+          ]
+        })
+      }
+
+      const dryEyeProducts = await prisma.dryEyeProduct.findMany({
+        where: dryEyeWhere,
+        orderBy: [{ brand: 'asc' }, { name: 'asc' }]
+      })
+
+      inventory = dryEyeProducts.map(de => ({
+        id: de.id,
+        currentStock: de.stockQuantity,
+        reservedStock: 0,
+        availableStock: de.stockQuantity,
+        reorderPoint: de.reorderPoint,
+        reorderQuantity: 20,
+        maxStock: null,
+        costPrice: de.wholesaleCost,
+        lastRestocked: null,
+        lastSold: null,
+        product: {
+          id: de.id,
+          name: de.name,
+          sku: de.sku,
+          manufacturer: de.brand,
+          basePrice: de.retailPrice,
+          category: { id: 'dryeye', name: 'Dry Eye Products' }
+        },
+        stockByLocation: [],
+        movements: []
+      }))
+    }
 
     // Filter for low stock if requested
     if (lowStock) {

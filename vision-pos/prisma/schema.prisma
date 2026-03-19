@@ -247,6 +247,56 @@ model ContactLens {
   @@map("contact_lenses")
 }
 
+model Supplement {
+  id              String   @id @default(cuid())
+  name            String
+  brand           String?
+  sku             String?  @unique
+  description     String?
+  wholesaleCost   Float?
+  retailPrice     Float
+  stockQuantity   Int      @default(0)
+  reorderPoint    Int      @default(5)
+  category        String?  // e.g., "vitamins", "omega", "lutein"
+  isActive        Boolean  @default(true)
+  createdAt       DateTime @default(now())
+  updatedAt       DateTime @updatedAt
+  showInPos       Boolean  @default(true)
+  posDisplayOrder Int      @default(999)
+
+  @@index([name])
+  @@index([brand])
+  @@index([sku])
+  @@index([category])
+  @@index([isActive])
+  @@map("supplements")
+}
+
+model DryEyeProduct {
+  id              String   @id @default(cuid())
+  name            String
+  brand           String?
+  sku             String?  @unique
+  description     String?
+  wholesaleCost   Float?
+  retailPrice     Float
+  stockQuantity   Int      @default(0)
+  reorderPoint    Int      @default(5)
+  category        String?  // e.g., "drops", "gel", "ointment", "compress", "spray"
+  isActive        Boolean  @default(true)
+  createdAt       DateTime @default(now())
+  updatedAt       DateTime @updatedAt
+  showInPos       Boolean  @default(true)
+  posDisplayOrder Int      @default(999)
+
+  @@index([name])
+  @@index([brand])
+  @@index([sku])
+  @@index([category])
+  @@index([isActive])
+  @@map("dry_eye_products")
+}
+
 model ServicePrice {
   id                 String           @id @default(cuid())
   name               String

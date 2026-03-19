@@ -1,18 +1,18 @@
 'use client'
 
-// import { useSession } from 'next-auth/react'
 import { useRouter } from 'next/navigation'
 import { useEffect, useState, useCallback } from 'react'
 import { Button } from '@/components/ui/button'
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
 import { Input } from '@/components/ui/input'
 import { Badge } from '@/components/ui/badge'
-import { 
-  Select, 
-  SelectContent, 
-  SelectItem, 
-  SelectTrigger, 
-  SelectValue 
+import { Tabs, TabsList, TabsTrigger } from '@/components/ui/tabs'
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue
 } from '@/components/ui/select'
 import {
   Loader2,
@@ -28,7 +28,10 @@ import {
   ChevronsLeft,
   ChevronsRight,
   ArrowUp,
-  Plus
+  Plus,
+  Glasses,
+  Pill,
+  Droplets
 } from 'lucide-react'
 import PageLayout from '@/components/layout/page-layout'
 import { FrameLookupModal } from '@/components/inventory/FrameLookupModal'
@@ -102,10 +105,20 @@ interface InventoryResponse {
   }
 }
 
+type ProductType = 'frames' | 'contacts' | 'supplements' | 'dryeye'
+
+const PRODUCT_TYPES: { value: ProductType; label: string; icon: React.ReactNode }[] = [
+  { value: 'frames', label: 'Frames', icon: <Glasses className="h-4 w-4" /> },
+  { value: 'contacts', label: 'Contact Lenses', icon: <Eye className="h-4 w-4" /> },
+  { value: 'supplements', label: 'Supplements', icon: <Pill className="h-4 w-4" /> },
+  { value: 'dryeye', label: 'Dry Eye', icon: <Droplets className="h-4 w-4" /> }
+]
+
 export default function InventoryPage() {
   const router = useRouter()
   const [loading, setLoading] = useState(true)
   const [inventory, setInventory] = useState<InventoryItem[]>([])
+  const [productType, setProductType] = useState<ProductType>('frames')
   const [summary, setSummary] = useState({
     totalItems: 0,
     lowStockCount: 0,
@@ -172,8 +185,9 @@ export default function InventoryPage() {
     setLoading(true)
     try {
       const params = new URLSearchParams()
+      params.append('type', productType)
       if (searchTerm) params.append('search', searchTerm)
-      if (selectedCategory) params.append('category', selectedCategory)
+      if (selectedCategory && selectedCategory !== 'all') params.append('category', selectedCategory)
       if (showLowStockOnly) params.append('lowStock', 'true')
 
       const response = await fetch(`/api/inventory?${params.toString()}`)
@@ -189,7 +203,7 @@ export default function InventoryPage() {
     } finally {
       setLoading(false)
     }
-  }, [searchTerm, selectedCategory, showLowStockOnly])
+  }, [productType, searchTerm, selectedCategory, showLowStockOnly])
 
   useEffect(() => {
     loadCategories()
@@ -227,7 +241,7 @@ export default function InventoryPage() {
   // Reset to page 1 when filters change
   useEffect(() => {
     setCurrentPage(1)
-  }, [searchTerm, selectedCategory, showLowStockOnly])
+  }, [productType, searchTerm, selectedCategory, showLowStockOnly])
 
   const goToPage = (page: number) => {
     setCurrentPage(Math.max(1, Math.min(page, totalPages)))
@@ -347,6 +361,18 @@ export default function InventoryPage() {
           </Card>
         </div>
 
+        {/* Product Type Tabs */}
+        <Tabs value={productType} onValueChange={(v) => setProductType(v as ProductType)} className="mb-6">
+          <TabsList className="grid w-full grid-cols-4 max-w-2xl">
+            {PRODUCT_TYPES.map((type) => (
+              <TabsTrigger key={type.value} value={type.value} className="flex items-center gap-2">
+                {type.icon}
+                {type.label}
+              </TabsTrigger>
+            ))}
+          </TabsList>
+        </Tabs>
+
         {/* Filters and Search */}
         <Card className="mb-6">
           <CardContent className="pt-6">
@@ -355,41 +381,47 @@ export default function InventoryPage() {
                 <div className="relative">
                   <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-white/60 h-4 w-4" />
                   <Input
-                    placeholder="Search products..."
+                    placeholder={`Search ${PRODUCT_TYPES.find(t => t.value === productType)?.label || 'products'}...`}
                     value={searchTerm}
                     onChange={(e) => setSearchTerm(e.target.value)}
                     className="pl-10"
                   />
                 </div>
               </div>
-              <Select value={selectedCategory} onValueChange={setSelectedCategory}>
-                <SelectTrigger className="w-48">
-                  <SelectValue placeholder="All Categories" />
-                </SelectTrigger>
-                <SelectContent>
-                  <SelectItem value="all">All Categories</SelectItem>
-                  {categories.map((category) => (
-                    <SelectItem key={category.id} value={category.id}>
-                      {category.name}
-                    </SelectItem>
-                  ))}
-                </SelectContent>
-              </Select>
-              <Button
-                variant={showLowStockOnly ? "default" : "outline"}
-                onClick={() => setShowLowStockOnly(!showLowStockOnly)}
-                className="whitespace-nowrap"
-              >
-                <AlertTriangle className="h-4 w-4 mr-2" />
-                Low Stock Only
-              </Button>
-              <Button
-                onClick={openStockModal}
-                className="whitespace-nowrap"
-              >
-                <Plus className="h-4 w-4 mr-2" />
-                Manage Stock
-              </Button>
+              {productType === 'frames' && (
+                <Select value={selectedCategory} onValueChange={setSelectedCategory}>
+                  <SelectTrigger className="w-48">
+                    <SelectValue placeholder="All Categories" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="all">All Categories</SelectItem>
+                    {categories.map((category) => (
+                      <SelectItem key={category.id} value={category.id}>
+                        {category.name}
+                      </SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
+              )}
+              {productType !== 'contacts' && (
+                <Button
+                  variant={showLowStockOnly ? "default" : "outline"}
+                  onClick={() => setShowLowStockOnly(!showLowStockOnly)}
+                  className="whitespace-nowrap"
+                >
+                  <AlertTriangle className="h-4 w-4 mr-2" />
+                  Low Stock Only
+                </Button>
+              )}
+              {productType === 'frames' && (
+                <Button
+                  onClick={openStockModal}
+                  className="whitespace-nowrap"
+                >
+                  <Plus className="h-4 w-4 mr-2" />
+                  Manage Stock
+                </Button>
+              )}
             </div>
           </CardContent>
         </Card>
@@ -430,11 +462,21 @@ export default function InventoryPage() {
                   <thead>
                     <tr className="border-b border-white/20">
                       <th className="text-left p-4 font-medium text-white">Product</th>
-                      <th className="text-left p-4 font-medium text-white">Stock by Location</th>
-                      <th className="text-right p-4 font-medium text-white">Total</th>
+                      {productType === 'frames' && (
+                        <th className="text-left p-4 font-medium text-white">Stock by Location</th>
+                      )}
+                      {productType !== 'contacts' && (
+                        <th className="text-right p-4 font-medium text-white">
+                          {productType === 'frames' ? 'Total' : 'Stock'}
+                        </th>
+                      )}
                       <th className="text-right p-4 font-medium text-white">Retail Price</th>
-                      <th className="text-center p-4 font-medium text-white">Status</th>
-                      <th className="text-center p-4 font-medium text-white">Actions</th>
+                      {productType !== 'contacts' && (
+                        <th className="text-center p-4 font-medium text-white">Status</th>
+                      )}
+                      {productType === 'frames' && (
+                        <th className="text-center p-4 font-medium text-white">Actions</th>
+                      )}
                     </tr>
                   </thead>
                   <tbody>
@@ -456,59 +498,70 @@ export default function InventoryPage() {
                               <div className="font-medium text-white">{item.product.name}</div>
                               <div className="text-sm text-white/70">
                                 {item.product.color && <span className="mr-2">{item.product.color}</span>}
-                                SKU: {item.product.sku || 'N/A'}
+                                {item.product.sku && <span>SKU: {item.product.sku}</span>}
+                                {item.product.manufacturer && productType !== 'frames' && (
+                                  <span>{item.product.manufacturer}</span>
+                                )}
                               </div>
                             </div>
                           </td>
-                          <td className="p-4">
-                            <div className="flex flex-wrap gap-2">
-                              {stockDisplay.map((loc, idx) => (
-                                <Badge
-                                  key={idx}
-                                  variant="outline"
-                                  className={
-                                    loc.isSpectrum
-                                      ? 'border-blue-500 text-blue-400 bg-blue-500/10'
-                                      : loc.isInsight
-                                      ? 'border-purple-500 text-purple-400 bg-purple-500/10'
-                                      : 'border-gray-500 text-gray-400'
-                                  }
-                                >
-                                  <span className={loc.qty === 0 ? 'text-red-400' : ''}>
-                                    {loc.qty}
-                                  </span>
-                                  <span className="mx-1">@</span>
-                                  {loc.name}
-                                </Badge>
-                              ))}
-                            </div>
-                          </td>
-                          <td className="p-4 text-right font-bold text-lg">
-                            {item.currentStock}
-                          </td>
+                          {productType === 'frames' && (
+                            <td className="p-4">
+                              <div className="flex flex-wrap gap-2">
+                                {stockDisplay.map((loc, idx) => (
+                                  <Badge
+                                    key={idx}
+                                    variant="outline"
+                                    className={
+                                      loc.isSpectrum
+                                        ? 'border-blue-500 text-blue-400 bg-blue-500/10'
+                                        : loc.isInsight
+                                        ? 'border-purple-500 text-purple-400 bg-purple-500/10'
+                                        : 'border-gray-500 text-gray-400'
+                                    }
+                                  >
+                                    <span className={loc.qty === 0 ? 'text-red-400' : ''}>
+                                      {loc.qty}
+                                    </span>
+                                    <span className="mx-1">@</span>
+                                    {loc.name}
+                                  </Badge>
+                                ))}
+                              </div>
+                            </td>
+                          )}
+                          {productType !== 'contacts' && (
+                            <td className="p-4 text-right font-bold text-lg">
+                              {item.currentStock}
+                            </td>
+                          )}
                           <td className="p-4 text-right font-medium">
                             {formatCurrency(item.product.basePrice)}
                           </td>
-                          <td className="p-4 text-center">
-                            <Badge variant={stockStatus.variant}>
-                              {stockStatus.label}
-                            </Badge>
-                          </td>
-                          <td className="p-4">
-                            <div className="flex justify-center space-x-2">
-                              <Button size="sm" variant="outline" title="View details">
-                                <Eye className="h-4 w-4" />
-                              </Button>
-                              <Button
-                                size="sm"
-                                variant="outline"
-                                title="Edit stock"
-                                onClick={() => editFrameStock(item)}
-                              >
-                                <Edit className="h-4 w-4" />
-                              </Button>
-                            </div>
-                          </td>
+                          {productType !== 'contacts' && (
+                            <td className="p-4 text-center">
+                              <Badge variant={stockStatus.variant}>
+                                {stockStatus.label}
+                              </Badge>
+                            </td>
+                          )}
+                          {productType === 'frames' && (
+                            <td className="p-4">
+                              <div className="flex justify-center space-x-2">
+                                <Button size="sm" variant="outline" title="View details">
+                                  <Eye className="h-4 w-4" />
+                                </Button>
+                                <Button
+                                  size="sm"
+                                  variant="outline"
+                                  title="Edit stock"
+                                  onClick={() => editFrameStock(item)}
+                                >
+                                  <Edit className="h-4 w-4" />
+                                </Button>
+                              </div>
+                            </td>
+                          )}
                         </tr>
                       )
                     })}
