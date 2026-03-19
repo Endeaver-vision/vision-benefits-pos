@@ -6,6 +6,7 @@ import { Button } from '@/components/ui/button'
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
 import { Input } from '@/components/ui/input'
 import { Badge } from '@/components/ui/badge'
+import { Label } from '@/components/ui/label'
 import { Tabs, TabsList, TabsTrigger } from '@/components/ui/tabs'
 import {
   Select,
@@ -14,6 +15,13 @@ import {
   SelectTrigger,
   SelectValue
 } from '@/components/ui/select'
+import {
+  Dialog,
+  DialogContent,
+  DialogHeader,
+  DialogTitle,
+  DialogFooter
+} from '@/components/ui/dialog'
 import {
   Loader2,
   Search,
@@ -140,6 +148,18 @@ export default function InventoryPage() {
   const [totalItems, setTotalItems] = useState(0)
   const [showScrollTop, setShowScrollTop] = useState(false)
 
+  // Add product modal state
+  const [addModalOpen, setAddModalOpen] = useState(false)
+  const [addingProduct, setAddingProduct] = useState(false)
+  const [newProduct, setNewProduct] = useState({
+    name: '',
+    brand: '',
+    sku: '',
+    wholesaleCost: '',
+    retailPrice: '',
+    stockQuantity: ''
+  })
+
   // Handle scroll to show/hide scroll-to-top button
   useEffect(() => {
     const handleScroll = () => {
@@ -252,8 +272,9 @@ export default function InventoryPage() {
       })
 
       if (!response.ok) {
-        const error = await response.json()
-        console.error('Stock adjustment failed:', error)
+        const errorData = await response.json()
+        console.error('Stock adjustment failed:', errorData)
+        alert(`Stock adjustment failed: ${errorData.error || 'Unknown error'}`)
         return
       }
 
@@ -261,6 +282,60 @@ export default function InventoryPage() {
       loadInventory()
     } catch (error) {
       console.error('Stock adjustment error:', error)
+      alert('Stock adjustment failed. Check console for details.')
+    }
+  }
+
+  // Reset new product form
+  const resetNewProduct = () => {
+    setNewProduct({
+      name: '',
+      brand: '',
+      sku: '',
+      wholesaleCost: '',
+      retailPrice: '',
+      stockQuantity: ''
+    })
+  }
+
+  // Add new product
+  const addProduct = async () => {
+    if (!newProduct.name || !newProduct.retailPrice) {
+      alert('Name and retail price are required')
+      return
+    }
+
+    setAddingProduct(true)
+    try {
+      const response = await fetch('/api/inventory/add', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          productType,
+          name: newProduct.name,
+          brand: newProduct.brand || null,
+          sku: newProduct.sku || null,
+          wholesaleCost: newProduct.wholesaleCost ? parseFloat(newProduct.wholesaleCost) : null,
+          retailPrice: parseFloat(newProduct.retailPrice),
+          stockQuantity: newProduct.stockQuantity ? parseInt(newProduct.stockQuantity) : 0
+        })
+      })
+
+      if (!response.ok) {
+        const errorData = await response.json()
+        alert(`Failed to add product: ${errorData.error || 'Unknown error'}`)
+        return
+      }
+
+      // Success - close modal and reload inventory
+      setAddModalOpen(false)
+      resetNewProduct()
+      loadInventory()
+    } catch (error) {
+      console.error('Add product error:', error)
+      alert('Failed to add product. Check console for details.')
+    } finally {
+      setAddingProduct(false)
     }
   }
 
@@ -393,6 +468,13 @@ export default function InventoryPage() {
                   Low Stock Only
                 </Button>
               )}
+              <Button
+                onClick={() => setAddModalOpen(true)}
+                className="whitespace-nowrap"
+              >
+                <Plus className="h-4 w-4 mr-2" />
+                Add Product
+              </Button>
             </div>
           </CardContent>
         </Card>
@@ -585,6 +667,91 @@ export default function InventoryPage() {
           <ArrowUp className="h-5 w-5" />
         </Button>
       )}
+
+      {/* Add Product Modal */}
+      <Dialog open={addModalOpen} onOpenChange={setAddModalOpen}>
+        <DialogContent className="sm:max-w-md">
+          <DialogHeader>
+            <DialogTitle>
+              Add {productType === 'frames' ? 'Frame' : productType === 'supplements' ? 'Supplement' : 'Dry Eye Product'}
+            </DialogTitle>
+          </DialogHeader>
+          <div className="grid gap-4 py-4">
+            <div className="grid gap-2">
+              <Label htmlFor="name">Name *</Label>
+              <Input
+                id="name"
+                placeholder={productType === 'frames' ? 'Brand Model' : 'Product name'}
+                value={newProduct.name}
+                onChange={(e) => setNewProduct({ ...newProduct, name: e.target.value })}
+              />
+            </div>
+            <div className="grid grid-cols-2 gap-4">
+              <div className="grid gap-2">
+                <Label htmlFor="brand">Brand</Label>
+                <Input
+                  id="brand"
+                  placeholder="Brand name"
+                  value={newProduct.brand}
+                  onChange={(e) => setNewProduct({ ...newProduct, brand: e.target.value })}
+                />
+              </div>
+              <div className="grid gap-2">
+                <Label htmlFor="sku">SKU</Label>
+                <Input
+                  id="sku"
+                  placeholder="SKU/UPC"
+                  value={newProduct.sku}
+                  onChange={(e) => setNewProduct({ ...newProduct, sku: e.target.value })}
+                />
+              </div>
+            </div>
+            <div className="grid grid-cols-2 gap-4">
+              <div className="grid gap-2">
+                <Label htmlFor="wholesaleCost">Wholesale Cost</Label>
+                <Input
+                  id="wholesaleCost"
+                  type="number"
+                  step="0.01"
+                  placeholder="0.00"
+                  value={newProduct.wholesaleCost}
+                  onChange={(e) => setNewProduct({ ...newProduct, wholesaleCost: e.target.value })}
+                />
+              </div>
+              <div className="grid gap-2">
+                <Label htmlFor="retailPrice">Retail Price *</Label>
+                <Input
+                  id="retailPrice"
+                  type="number"
+                  step="0.01"
+                  placeholder="0.00"
+                  value={newProduct.retailPrice}
+                  onChange={(e) => setNewProduct({ ...newProduct, retailPrice: e.target.value })}
+                />
+              </div>
+            </div>
+            <div className="grid gap-2">
+              <Label htmlFor="stockQuantity">Initial Stock Quantity</Label>
+              <Input
+                id="stockQuantity"
+                type="number"
+                placeholder="0"
+                value={newProduct.stockQuantity}
+                onChange={(e) => setNewProduct({ ...newProduct, stockQuantity: e.target.value })}
+              />
+            </div>
+          </div>
+          <DialogFooter>
+            <Button variant="outline" onClick={() => { setAddModalOpen(false); resetNewProduct(); }}>
+              Cancel
+            </Button>
+            <Button onClick={addProduct} disabled={addingProduct}>
+              {addingProduct ? <Loader2 className="h-4 w-4 animate-spin mr-2" /> : <Plus className="h-4 w-4 mr-2" />}
+              Add Product
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
 
     </PageLayout>
   )
