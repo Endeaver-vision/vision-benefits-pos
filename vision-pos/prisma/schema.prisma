@@ -253,16 +253,16 @@ model Supplement {
   brand           String?
   sku             String?  @unique
   description     String?
-  wholesaleCost   Float?
-  retailPrice     Float
-  stockQuantity   Int      @default(0)
-  reorderPoint    Int      @default(5)
-  category        String?  // e.g., "vitamins", "omega", "lutein"
-  isActive        Boolean  @default(true)
-  createdAt       DateTime @default(now())
-  updatedAt       DateTime @updatedAt
-  showInPos       Boolean  @default(true)
-  posDisplayOrder Int      @default(999)
+  wholesaleCost   Float?   @map("wholesale_cost")
+  retailPrice     Float    @map("retail_price")
+  stockQuantity   Int      @default(0) @map("stock_quantity")
+  reorderPoint    Int      @default(5) @map("reorder_point")
+  category        String?
+  isActive        Boolean  @default(true) @map("is_active")
+  createdAt       DateTime @default(now()) @map("created_at")
+  updatedAt       DateTime @updatedAt @map("updated_at")
+  showInPos       Boolean  @default(true) @map("show_in_pos")
+  posDisplayOrder Int      @default(999) @map("pos_display_order")
 
   @@index([name])
   @@index([brand])
@@ -278,16 +278,16 @@ model DryEyeProduct {
   brand           String?
   sku             String?  @unique
   description     String?
-  wholesaleCost   Float?
-  retailPrice     Float
-  stockQuantity   Int      @default(0)
-  reorderPoint    Int      @default(5)
-  category        String?  // e.g., "drops", "gel", "ointment", "compress", "spray"
-  isActive        Boolean  @default(true)
-  createdAt       DateTime @default(now())
-  updatedAt       DateTime @updatedAt
-  showInPos       Boolean  @default(true)
-  posDisplayOrder Int      @default(999)
+  wholesaleCost   Float?   @map("wholesale_cost")
+  retailPrice     Float    @map("retail_price")
+  stockQuantity   Int      @default(0) @map("stock_quantity")
+  reorderPoint    Int      @default(5) @map("reorder_point")
+  category        String?
+  isActive        Boolean  @default(true) @map("is_active")
+  createdAt       DateTime @default(now()) @map("created_at")
+  updatedAt       DateTime @updatedAt @map("updated_at")
+  showInPos       Boolean  @default(true) @map("show_in_pos")
+  posDisplayOrder Int      @default(999) @map("pos_display_order")
 
   @@index([name])
   @@index([brand])
