@@ -42,6 +42,7 @@ model LensProduct {
   sku                           String?  @unique(map: "lens_products_sku_key")
   manufacturer                  String?
   basePrice                     Float
+  wholesaleCost                 Float?   @map("wholesale_cost")
   tierVsp                       String?
   tierEyemed                    String?
   tierSpectera                  String?
