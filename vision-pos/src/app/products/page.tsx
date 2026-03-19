@@ -34,6 +34,7 @@ interface Product {
   name: string
   sku: string | null
   basePrice: number
+  wholesaleCost: number | null
   displayGroup: string
   displayOrder: number
   tierVsp: string | null
@@ -104,6 +105,7 @@ export default function ProductsAndServicesPage() {
   const [editingService, setEditingService] = useState<ServicePrice | null>(null)
   const [editForm, setEditForm] = useState<{
     basePrice?: number
+    wholesaleCost?: number | null
     retailPrice?: number
     tierVsp?: string
     tierEyemed?: string
@@ -147,6 +149,7 @@ export default function ProductsAndServicesPage() {
     setEditingProduct(product)
     setEditForm({
       basePrice: product.basePrice,
+      wholesaleCost: product.wholesaleCost,
       tierVsp: product.tierVsp || '',
       tierEyemed: product.tierEyemed || '',
       tierSpectera: product.tierSpectera || ''
@@ -173,6 +176,7 @@ export default function ProductsAndServicesPage() {
         body: JSON.stringify({
           id: editingProduct.id,
           basePrice: editForm.basePrice,
+          wholesaleCost: editForm.wholesaleCost,
           tierVsp: editForm.tierVsp || null,
           tierEyemed: editForm.tierEyemed || null,
           tierSpectera: editForm.tierSpectera || null
@@ -364,6 +368,7 @@ export default function ProductsAndServicesPage() {
                             <thead>
                               <tr className="border-b text-left">
                                 <th className="py-1 pr-4 font-medium">Product</th>
+                                <th className="py-1 px-2 text-right font-medium">Wholesale</th>
                                 <th className="py-1 px-2 text-right font-medium">Price</th>
                                 {showTiers && (
                                   <>
@@ -379,6 +384,9 @@ export default function ProductsAndServicesPage() {
                               {categoryProducts.map((product) => (
                                 <tr key={product.id} className="border-b border-border/30">
                                   <td className="py-1.5 pr-4">{product.name}</td>
+                                  <td className="py-1.5 px-2 text-right text-muted-foreground">
+                                    {product.wholesaleCost ? formatPrice(product.wholesaleCost) : '—'}
+                                  </td>
                                   <td className="py-1.5 px-2 text-right text-muted-foreground">
                                     {formatPrice(product.basePrice)}
                                   </td>
@@ -458,6 +466,7 @@ export default function ProductsAndServicesPage() {
                               <thead>
                                 <tr className="border-b text-left">
                                   <th className="py-1 pr-4 font-medium">Product</th>
+                                  <th className="py-1 px-2 text-right font-medium">Wholesale</th>
                                   <th className="py-1 px-2 text-right font-medium">Price</th>
                                   {showTiers && (
                                     <>
@@ -473,6 +482,9 @@ export default function ProductsAndServicesPage() {
                                 {categoryProducts.map((product) => (
                                   <tr key={product.id} className="border-b border-border/30">
                                     <td className="py-1.5 pr-4">{product.name}</td>
+                                    <td className="py-1.5 px-2 text-right text-muted-foreground">
+                                      {product.wholesaleCost ? formatPrice(product.wholesaleCost) : '—'}
+                                    </td>
                                     <td className="py-1.5 px-2 text-right text-muted-foreground">
                                       {formatPrice(product.basePrice)}
                                     </td>
@@ -615,6 +627,20 @@ export default function ProductsAndServicesPage() {
             </DialogDescription>
           </DialogHeader>
           <div className="grid gap-4 py-4">
+            <div className="grid grid-cols-4 items-center gap-4">
+              <Label htmlFor="wholesaleCost" className="text-right">
+                Wholesale
+              </Label>
+              <Input
+                id="wholesaleCost"
+                type="number"
+                step="0.01"
+                value={editForm.wholesaleCost ?? ''}
+                onChange={(e) => setEditForm({ ...editForm, wholesaleCost: e.target.value ? parseFloat(e.target.value) : null })}
+                className="col-span-3"
+                placeholder="Cost price"
+              />
+            </div>
             <div className="grid grid-cols-4 items-center gap-4">
               <Label htmlFor="basePrice" className="text-right">
                 Price
