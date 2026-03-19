@@ -29,6 +29,9 @@ export async function GET(request: NextRequest) {
     const productType = searchParams.get('type') || 'frames'
     const lowStock = searchParams.get('lowStock') === 'true'
     const search = searchParams.get('search')
+    const page = parseInt(searchParams.get('page') || '1')
+    const limit = parseInt(searchParams.get('limit') || '50')
+    const offset = (page - 1) * limit
 
     // Fetch all active locations (excluding erroneous ones)
     const allLocations = await prisma.location.findMany({
@@ -71,6 +74,8 @@ export async function GET(request: NextRequest) {
       movements: unknown[]
     }> = []
 
+    let totalCount = 0
+
     // Route based on product type
     if (productType === 'frames') {
       const frameWhere: Prisma.FrameWhereInput = {
@@ -86,18 +91,26 @@ export async function GET(request: NextRequest) {
         })
       }
 
-      const frames = await prisma.frame.findMany({
-        where: frameWhere,
-        orderBy: [{ brand: 'asc' }, { model: 'asc' }]
-      })
+      const [frames, count] = await Promise.all([
+        prisma.frame.findMany({
+          where: frameWhere,
+          orderBy: [{ brand: 'asc' }, { model: 'asc' }],
+          skip: offset,
+          take: limit
+        }),
+        prisma.frame.count({ where: frameWhere })
+      ])
 
+      totalCount = count
+
+      // Frames don't track stock - we only keep 1 of each as samples
       inventory = frames.map(frame => ({
         id: frame.id,
-        currentStock: frame.stockQuantity,
+        currentStock: 1, // Always 1 - sample only
         reservedStock: 0,
-        availableStock: frame.stockQuantity,
-        reorderPoint: DEFAULT_REORDER_POINT,
-        reorderQuantity: 20,
+        availableStock: 1,
+        reorderPoint: 0, // No reorder for frames
+        reorderQuantity: 0,
         maxStock: null,
         costPrice: frame.wholesaleCost,
         lastRestocked: null,
@@ -195,22 +208,22 @@ export async function GET(request: NextRequest) {
       }))
     }
 
-    // Filter for low stock if requested
-    if (lowStock) {
+    // Filter for low stock if requested (not applicable to frames)
+    if (lowStock && productType !== 'frames') {
       inventory = inventory.filter(item =>
         item.currentStock <= item.reorderPoint || item.availableStock <= 0
       )
     }
 
-    // Calculate low stock items
-    const lowStockCount = inventory.filter(item =>
+    // Calculate low stock items (not applicable to frames - they're samples only)
+    const lowStockCount = productType === 'frames' ? 0 : inventory.filter(item =>
       item.currentStock <= item.reorderPoint || item.availableStock <= 0
     ).length
 
-    // Calculate total value (cost price * stock)
-    const totalValue = inventory.reduce((sum, item) =>
-      sum + (item.currentStock * (item.costPrice || 0)), 0
-    )
+    // Calculate total value (cost price * stock) - for frames just count wholesale cost
+    const totalValue = productType === 'frames'
+      ? inventory.reduce((sum, item) => sum + (item.costPrice || 0), 0)
+      : inventory.reduce((sum, item) => sum + (item.currentStock * (item.costPrice || 0)), 0)
 
     return NextResponse.json({
       success: true,
@@ -220,8 +233,14 @@ export async function GET(request: NextRequest) {
         name: loc.name,
         shortName: getShortLocationName(loc.name)
       })),
+      pagination: {
+        page,
+        limit,
+        total: totalCount || inventory.length,
+        totalPages: Math.ceil((totalCount || inventory.length) / limit)
+      },
       summary: {
-        totalItems: inventory.length,
+        totalItems: totalCount || inventory.length,
         lowStockCount,
         totalValue,
         lastUpdated: new Date().toISOString()

@@ -20,7 +20,6 @@ import {
   Package,
   AlertTriangle,
   TrendingUp,
-  Edit,
   Eye,
   BarChart3,
   ChevronLeft,
@@ -28,13 +27,11 @@ import {
   ChevronsLeft,
   ChevronsRight,
   ArrowUp,
-  Plus,
   Glasses,
   Pill,
   Droplets
 } from 'lucide-react'
 import PageLayout from '@/components/layout/page-layout'
-import { FrameLookupModal } from '@/components/inventory/FrameLookupModal'
 
 interface Product {
   id: string
@@ -97,6 +94,12 @@ interface LocationInfo {
 interface InventoryResponse {
   data: InventoryItem[]
   locations: LocationInfo[]
+  pagination: {
+    page: number
+    limit: number
+    total: number
+    totalPages: number
+  }
   summary: {
     totalItems: number
     lowStockCount: number
@@ -129,26 +132,12 @@ export default function InventoryPage() {
   const [selectedCategory, setSelectedCategory] = useState<string>('all')
   const [showLowStockOnly, setShowLowStockOnly] = useState(false)
 
-  // Pagination state
+  // Pagination state (server-side)
   const [currentPage, setCurrentPage] = useState(1)
-  const [itemsPerPage, setItemsPerPage] = useState(25)
+  const [itemsPerPage, setItemsPerPage] = useState(50)
+  const [totalPages, setTotalPages] = useState(1)
+  const [totalItems, setTotalItems] = useState(0)
   const [showScrollTop, setShowScrollTop] = useState(false)
-
-  // Stock management modal state
-  const [stockModalOpen, setStockModalOpen] = useState(false)
-  const [editingFrame, setEditingFrame] = useState<{
-    id: string
-    brand: string
-    model: string
-    color: string
-    sku: string | null
-    upc: string | null
-    locations: string[]
-    locationStock: Record<string, number>
-    stockQuantity: number
-    retailPrice: number
-    wholesaleCost: number
-  } | null>(null)
 
   // Handle scroll to show/hide scroll-to-top button
   useEffect(() => {
@@ -185,15 +174,19 @@ export default function InventoryPage() {
     try {
       const params = new URLSearchParams()
       params.append('type', productType)
+      params.append('page', currentPage.toString())
+      params.append('limit', itemsPerPage.toString())
       if (searchTerm) params.append('search', searchTerm)
       if (selectedCategory && selectedCategory !== 'all') params.append('category', selectedCategory)
-      if (showLowStockOnly) params.append('lowStock', 'true')
+      if (showLowStockOnly && productType !== 'frames') params.append('lowStock', 'true')
 
       const response = await fetch(`/api/inventory?${params.toString()}`)
       if (response.ok) {
         const data: InventoryResponse = await response.json()
         setInventory(data.data)
         setSummary(data.summary)
+        setTotalPages(data.pagination?.totalPages || 1)
+        setTotalItems(data.pagination?.total || data.data.length)
       } else {
         console.error('Failed to load inventory')
       }
@@ -202,7 +195,7 @@ export default function InventoryPage() {
     } finally {
       setLoading(false)
     }
-  }, [productType, searchTerm, selectedCategory, showLowStockOnly])
+  }, [productType, currentPage, itemsPerPage, searchTerm, selectedCategory, showLowStockOnly])
 
   useEffect(() => {
     loadCategories()
@@ -231,56 +224,17 @@ export default function InventoryPage() {
     return new Date(dateString).toLocaleDateString()
   }
 
-  // Pagination calculations
-  const totalPages = Math.ceil(inventory.length / itemsPerPage)
+  // Server-side pagination - data already paginated from API
   const startIndex = (currentPage - 1) * itemsPerPage
-  const endIndex = startIndex + itemsPerPage
-  const paginatedInventory = inventory.slice(startIndex, endIndex)
 
-  // Reset to page 1 when filters change
+  // Reset to page 1 when filters change (not when page changes)
   useEffect(() => {
     setCurrentPage(1)
-  }, [productType, searchTerm, selectedCategory, showLowStockOnly])
+  }, [productType, searchTerm, selectedCategory, showLowStockOnly, itemsPerPage])
 
   const goToPage = (page: number) => {
     setCurrentPage(Math.max(1, Math.min(page, totalPages)))
     scrollToTop()
-  }
-
-  // Open the lookup modal for new frame
-  const openStockModal = () => {
-    setEditingFrame(null)
-    setStockModalOpen(true)
-  }
-
-  // Open the editor for a specific frame
-  const editFrameStock = (item: InventoryItem) => {
-    // Extract frame data from inventory item
-    const stockByLoc: Record<string, number> = {}
-    item.stockByLocation?.forEach(loc => {
-      stockByLoc[loc.locationName] = loc.quantity
-    })
-
-    setEditingFrame({
-      id: item.id,
-      brand: item.product.name.split(' ')[0] || '',
-      model: item.product.name.split(' ').slice(1).join(' ') || '',
-      color: item.product.color || '',
-      sku: item.product.sku,
-      upc: null,
-      locations: item.stockByLocation?.map(l => l.locationName) || [],
-      locationStock: stockByLoc,
-      stockQuantity: item.currentStock,
-      retailPrice: item.product.basePrice,
-      wholesaleCost: item.costPrice || 0
-    })
-    setStockModalOpen(true)
-  }
-
-  // Handle stock update complete
-  const handleStockUpdated = () => {
-    loadInventory()
-    setEditingFrame(null)
   }
 
   if (loading) {
@@ -410,15 +364,6 @@ export default function InventoryPage() {
                 <AlertTriangle className="h-4 w-4 mr-2" />
                 Low Stock Only
               </Button>
-              {productType === 'frames' && (
-                <Button
-                  onClick={openStockModal}
-                  className="whitespace-nowrap"
-                >
-                  <Plus className="h-4 w-4 mr-2" />
-                  Manage Stock
-                </Button>
-              )}
             </div>
           </CardContent>
         </Card>
@@ -429,7 +374,7 @@ export default function InventoryPage() {
             <CardTitle>Inventory Items</CardTitle>
             <div className="flex items-center gap-4">
               <span className="text-sm text-white/70">
-                Showing {startIndex + 1}-{Math.min(endIndex, inventory.length)} of {inventory.length}
+                Showing {startIndex + 1}-{Math.min(startIndex + inventory.length, totalItems)} of {totalItems}
               </span>
               <Select value={itemsPerPage.toString()} onValueChange={(v) => { setItemsPerPage(Number(v)); setCurrentPage(1); }}>
                 <SelectTrigger className="w-24">
@@ -459,16 +404,20 @@ export default function InventoryPage() {
                   <thead>
                     <tr className="border-b border-white/20">
                       <th className="text-left p-4 font-medium text-white">Product</th>
-                      <th className="text-right p-4 font-medium text-white">Stock</th>
+                      {productType !== 'frames' && (
+                        <th className="text-right p-4 font-medium text-white">Stock</th>
+                      )}
                       <th className="text-right p-4 font-medium text-white">Retail Price</th>
-                      <th className="text-center p-4 font-medium text-white">Status</th>
+                      {productType !== 'frames' && (
+                        <th className="text-center p-4 font-medium text-white">Status</th>
+                      )}
                       {productType === 'frames' && (
                         <th className="text-center p-4 font-medium text-white">Actions</th>
                       )}
                     </tr>
                   </thead>
                   <tbody>
-                    {paginatedInventory.map((item) => {
+                    {inventory.map((item) => {
                       const stockStatus = getStockStatus(item)
 
                       return (
@@ -485,30 +434,26 @@ export default function InventoryPage() {
                               </div>
                             </div>
                           </td>
-                          <td className="p-4 text-right font-bold text-lg">
-                            {item.currentStock}
-                          </td>
+                          {productType !== 'frames' && (
+                            <td className="p-4 text-right font-bold text-lg">
+                              {item.currentStock}
+                            </td>
+                          )}
                           <td className="p-4 text-right font-medium">
                             {formatCurrency(item.product.basePrice)}
                           </td>
-                          <td className="p-4 text-center">
-                            <Badge variant={stockStatus.variant}>
-                              {stockStatus.label}
-                            </Badge>
-                          </td>
+                          {productType !== 'frames' && (
+                            <td className="p-4 text-center">
+                              <Badge variant={stockStatus.variant}>
+                                {stockStatus.label}
+                              </Badge>
+                            </td>
+                          )}
                           {productType === 'frames' && (
                             <td className="p-4">
                               <div className="flex justify-center space-x-2">
                                 <Button size="sm" variant="outline" title="View details">
                                   <Eye className="h-4 w-4" />
-                                </Button>
-                                <Button
-                                  size="sm"
-                                  variant="outline"
-                                  title="Edit stock"
-                                  onClick={() => editFrameStock(item)}
-                                >
-                                  <Edit className="h-4 w-4" />
                                 </Button>
                               </div>
                             </td>
@@ -606,13 +551,6 @@ export default function InventoryPage() {
         </Button>
       )}
 
-      {/* Stock Management Modal */}
-      <FrameLookupModal
-        open={stockModalOpen}
-        onOpenChange={setStockModalOpen}
-        onStockUpdated={handleStockUpdated}
-        initialFrame={editingFrame}
-      />
     </PageLayout>
   )
 }
