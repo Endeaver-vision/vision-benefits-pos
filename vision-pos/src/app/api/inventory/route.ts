@@ -88,53 +88,33 @@ export async function GET(request: NextRequest) {
 
       const frames = await prisma.frame.findMany({
         where: frameWhere,
-        orderBy: [{ brand: 'asc' }, { model: 'asc' }],
-        include: {
-          inventory: {
-            include: { location: true }
-          }
-        }
+        orderBy: [{ brand: 'asc' }, { model: 'asc' }]
       })
 
-      inventory = frames.map(frame => {
-        const stockByLocation: Array<{ locationId: string; locationName: string; shortName: string; quantity: number }> = []
-        for (const inv of frame.inventory) {
-          stockByLocation.push({
-            locationId: inv.locationId,
-            locationName: inv.location.name,
-            shortName: getShortLocationName(inv.location.name),
-            quantity: inv.quantity
-          })
-        }
-        const totalStock = stockByLocation.length > 0
-          ? stockByLocation.reduce((sum, loc) => sum + loc.quantity, 0)
-          : frame.stockQuantity
-
-        return {
+      inventory = frames.map(frame => ({
+        id: frame.id,
+        currentStock: frame.stockQuantity,
+        reservedStock: 0,
+        availableStock: frame.stockQuantity,
+        reorderPoint: DEFAULT_REORDER_POINT,
+        reorderQuantity: 20,
+        maxStock: null,
+        costPrice: frame.wholesaleCost,
+        lastRestocked: null,
+        lastSold: null,
+        product: {
           id: frame.id,
-          currentStock: totalStock,
-          reservedStock: 0,
-          availableStock: totalStock,
-          reorderPoint: DEFAULT_REORDER_POINT,
-          reorderQuantity: 20,
-          maxStock: null,
-          costPrice: frame.wholesaleCost,
-          lastRestocked: null,
-          lastSold: null,
-          product: {
-            id: frame.id,
-            name: `${frame.brand} ${frame.model}`,
-            sku: frame.sku,
-            manufacturer: frame.brand,
-            basePrice: frame.retailPrice,
-            color: frame.color,
-            colorCode: frame.colorCode || undefined,
-            category: { id: 'frames', name: 'Frames' }
-          },
-          stockByLocation,
-          movements: []
-        }
-      })
+          name: `${frame.brand} ${frame.model}`,
+          sku: frame.sku,
+          manufacturer: frame.brand,
+          basePrice: frame.retailPrice,
+          color: frame.color,
+          colorCode: frame.colorCode || undefined,
+          category: { id: 'frames', name: 'Frames' }
+        },
+        stockByLocation: [],
+        movements: []
+      }))
     } else if (productType === 'supplements') {
       const suppWhere: Prisma.SupplementWhereInput = {
         isActive: true,

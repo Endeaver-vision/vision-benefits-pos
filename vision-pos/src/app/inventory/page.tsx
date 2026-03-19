@@ -459,12 +459,7 @@ export default function InventoryPage() {
                   <thead>
                     <tr className="border-b border-white/20">
                       <th className="text-left p-4 font-medium text-white">Product</th>
-                      {productType === 'frames' && (
-                        <th className="text-left p-4 font-medium text-white">Stock by Location</th>
-                      )}
-                      <th className="text-right p-4 font-medium text-white">
-                        {productType === 'frames' ? 'Total' : 'Stock'}
-                      </th>
+                      <th className="text-right p-4 font-medium text-white">Stock</th>
                       <th className="text-right p-4 font-medium text-white">Retail Price</th>
                       <th className="text-center p-4 font-medium text-white">Status</th>
                       {productType === 'frames' && (
@@ -475,14 +470,6 @@ export default function InventoryPage() {
                   <tbody>
                     {paginatedInventory.map((item) => {
                       const stockStatus = getStockStatus(item)
-
-                      // Format stock by location for display
-                      const stockDisplay = item.stockByLocation?.map(loc => ({
-                        name: loc.shortName,
-                        qty: loc.quantity,
-                        isInsight: loc.shortName.toLowerCase().includes('insight'),
-                        isSpectrum: loc.shortName.toLowerCase().includes('spectrum')
-                      })) || []
 
                       return (
                         <tr key={item.id} className="border-b border-white/10 hover:bg-white/5">
@@ -498,31 +485,6 @@ export default function InventoryPage() {
                               </div>
                             </div>
                           </td>
-                          {productType === 'frames' && (
-                            <td className="p-4">
-                              <div className="flex flex-wrap gap-2">
-                                {stockDisplay.map((loc, idx) => (
-                                  <Badge
-                                    key={idx}
-                                    variant="outline"
-                                    className={
-                                      loc.isSpectrum
-                                        ? 'border-blue-500 text-blue-400 bg-blue-500/10'
-                                        : loc.isInsight
-                                        ? 'border-purple-500 text-purple-400 bg-purple-500/10'
-                                        : 'border-gray-500 text-gray-400'
-                                    }
-                                  >
-                                    <span className={loc.qty === 0 ? 'text-red-400' : ''}>
-                                      {loc.qty}
-                                    </span>
-                                    <span className="mx-1">@</span>
-                                    {loc.name}
-                                  </Badge>
-                                ))}
-                              </div>
-                            </td>
-                          )}
                           <td className="p-4 text-right font-bold text-lg">
                             {item.currentStock}
                           </td>
