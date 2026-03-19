@@ -28,7 +28,7 @@ export function RealtimeOrderTracker({ orderId }: { orderId: string }) {
   useEffect(() => {
     const fetchOrderStatus = async () => {
       try {
-        const response = await fetch(`/api/order-tracking/${orderId}`)
+        const response = await fetch(`/api/orders/${orderId}`)
         if (!response.ok) {
           throw new Error('Failed to fetch order')
         }

@@ -78,7 +78,7 @@ export function DominosTracker({ orderId, currentStatus, orderNumber, onStatusUp
 
     setIsUpdating(true)
     try {
-      const response = await fetch(`/api/order-tracking/${orderId}/status`, {
+      const response = await fetch(`/api/orders/${orderId}/status`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({

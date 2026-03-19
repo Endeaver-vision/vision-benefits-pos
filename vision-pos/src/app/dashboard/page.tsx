@@ -140,7 +140,7 @@ export default function DashboardPage() {
 
         {/* Order Tracking Section - NEW */}
         <div className="mb-8">
-          <Link href="/order-tracking" className="block">
+          <Link href="/orders" className="block">
             <Card className="glass-card border-white/20 cursor-pointer hover:shadow-lg transition-all hover:scale-[1.01] hover:bg-white/20">
               <CardContent className="py-8">
                 <div className="flex items-center gap-6">

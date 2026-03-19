@@ -150,7 +150,7 @@ export default function OrderAlertsMonitor() {
             <Button
               variant="ghost"
               size="sm"
-              onClick={() => router.push('/order-tracking')}
+              onClick={() => router.push('/orders')}
               className="text-white/90 hover:text-white hover:bg-white/10"
             >
               <Package className="h-4 w-4 mr-1" />
@@ -300,7 +300,7 @@ export default function OrderAlertsMonitor() {
             <Button
               variant="ghost"
               size="sm"
-              onClick={() => router.push('/order-tracking')}
+              onClick={() => router.push('/orders')}
               className="text-white/90 hover:text-white hover:bg-white/10"
             >
               <Package className="h-4 w-4 mr-1" />
@@ -335,7 +335,7 @@ export default function OrderAlertsMonitor() {
             <Button
               variant="ghost"
               size="sm"
-              onClick={() => router.push('/order-tracking')}
+              onClick={() => router.push('/orders')}
               className="text-white/90 hover:text-white hover:bg-white/10"
             >
               <Package className="h-4 w-4 mr-1" />

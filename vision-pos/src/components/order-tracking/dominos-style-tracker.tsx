@@ -157,7 +157,7 @@ export function DominosStyleTracker({
     setIsUpdating(true)
     setUpdatingStage(newStageIndex)
     try {
-      const response = await fetch(`/api/order-tracking/${orderId}/status`, {
+      const response = await fetch(`/api/orders/${orderId}/status`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
@@ -186,7 +186,7 @@ export function DominosStyleTracker({
   const handleDateSave = async () => {
     try {
       // Update estimated completion via API
-      const response = await fetch(`/api/order-tracking/${orderId}`, {
+      const response = await fetch(`/api/orders/${orderId}`, {
         method: 'PATCH',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
@@ -205,7 +205,7 @@ export function DominosStyleTracker({
 
   const handleAddCommunication = async () => {
     try {
-      const response = await fetch(`/api/order-tracking/${orderId}/communications`, {
+      const response = await fetch(`/api/orders/${orderId}/communications`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
@@ -228,7 +228,7 @@ export function DominosStyleTracker({
 
   const handleAddQC = async () => {
     try {
-      const response = await fetch(`/api/order-tracking/${orderId}/quality-checks`, {
+      const response = await fetch(`/api/orders/${orderId}/quality-checks`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
