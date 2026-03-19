@@ -75,6 +75,8 @@ export async function GET(request: NextRequest) {
     }> = []
 
     let totalCount = 0
+    let totalValue = 0
+    let lowStockCount = 0
 
     // Route based on product type
     if (productType === 'frames') {
@@ -91,15 +93,29 @@ export async function GET(request: NextRequest) {
         })
       }
 
-      const [frames, count] = await Promise.all([
+      // Get paginated frames, count, and total value (all frames)
+      const [frames, count, allFramesForValue] = await Promise.all([
         prisma.frame.findMany({
           where: frameWhere,
           orderBy: [{ brand: 'asc' }, { model: 'asc' }],
           skip: offset,
           take: limit
         }),
-        prisma.frame.count({ where: frameWhere })
+        prisma.frame.count({ where: frameWhere }),
+        // Get all frames to calculate total value
+        prisma.frame.findMany({
+          where: { isActive: true },
+          select: { stockQuantity: true, wholesaleCost: true }
+        })
       ])
+
+      // Calculate total value from ALL frames
+      totalValue = allFramesForValue.reduce((sum, f) =>
+        sum + (f.stockQuantity * (f.wholesaleCost || 0)), 0
+      )
+
+      // Frames don't have low stock alerts
+      lowStockCount = 0
 
       totalCount = count
 
@@ -140,10 +156,29 @@ export async function GET(request: NextRequest) {
         })
       }
 
-      const supplements = await prisma.supplement.findMany({
-        where: suppWhere,
-        orderBy: [{ brand: 'asc' }, { name: 'asc' }]
-      })
+      const [supplements, allSupplementsForValue] = await Promise.all([
+        prisma.supplement.findMany({
+          where: suppWhere,
+          orderBy: [{ brand: 'asc' }, { name: 'asc' }]
+        }),
+        // Get all supplements to calculate total value and low stock
+        prisma.supplement.findMany({
+          where: { isActive: true },
+          select: { stockQuantity: true, wholesaleCost: true, reorderPoint: true }
+        })
+      ])
+
+      // Calculate total value from ALL supplements
+      totalValue = allSupplementsForValue.reduce((sum, s) =>
+        sum + (s.stockQuantity * (s.wholesaleCost || 0)), 0
+      )
+
+      // Calculate low stock count from ALL supplements
+      lowStockCount = allSupplementsForValue.filter(s =>
+        s.stockQuantity <= s.reorderPoint || s.stockQuantity <= 0
+      ).length
+
+      totalCount = supplements.length
 
       inventory = supplements.map(supp => ({
         id: supp.id,
@@ -179,10 +214,29 @@ export async function GET(request: NextRequest) {
         })
       }
 
-      const dryEyeProducts = await prisma.dryEyeProduct.findMany({
-        where: dryEyeWhere,
-        orderBy: [{ brand: 'asc' }, { name: 'asc' }]
-      })
+      const [dryEyeProducts, allDryEyeForValue] = await Promise.all([
+        prisma.dryEyeProduct.findMany({
+          where: dryEyeWhere,
+          orderBy: [{ brand: 'asc' }, { name: 'asc' }]
+        }),
+        // Get all dry eye products to calculate total value and low stock
+        prisma.dryEyeProduct.findMany({
+          where: { isActive: true },
+          select: { stockQuantity: true, wholesaleCost: true, reorderPoint: true }
+        })
+      ])
+
+      // Calculate total value from ALL dry eye products
+      totalValue = allDryEyeForValue.reduce((sum, d) =>
+        sum + (d.stockQuantity * (d.wholesaleCost || 0)), 0
+      )
+
+      // Calculate low stock count from ALL dry eye products
+      lowStockCount = allDryEyeForValue.filter(d =>
+        d.stockQuantity <= d.reorderPoint || d.stockQuantity <= 0
+      ).length
+
+      totalCount = dryEyeProducts.length
 
       inventory = dryEyeProducts.map(de => ({
         id: de.id,
@@ -208,22 +262,15 @@ export async function GET(request: NextRequest) {
       }))
     }
 
-    // Filter for low stock if requested
-    if (lowStock) {
+    // Filter for low stock if requested (only for supplements and dry eye, not frames)
+    if (lowStock && productType !== 'frames') {
       inventory = inventory.filter(item =>
         item.currentStock <= item.reorderPoint || item.availableStock <= 0
       )
     }
 
-    // Calculate low stock items
-    const lowStockCount = inventory.filter(item =>
-      item.currentStock <= item.reorderPoint || item.availableStock <= 0
-    ).length
-
-    // Calculate total wholesale value (cost price * stock)
-    const totalValue = inventory.reduce((sum, item) =>
-      sum + (item.currentStock * (item.costPrice || 0)), 0
-    )
+    // lowStockCount and totalValue are already calculated per product type above
+    // (frames have lowStockCount = 0 since they don't track low stock)
 
     return NextResponse.json({
       success: true,

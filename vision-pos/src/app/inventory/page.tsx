@@ -383,14 +383,16 @@ export default function InventoryPage() {
                   </SelectContent>
                 </Select>
               )}
-              <Button
-                variant={showLowStockOnly ? "default" : "outline"}
-                onClick={() => setShowLowStockOnly(!showLowStockOnly)}
-                className="whitespace-nowrap"
-              >
-                <AlertTriangle className="h-4 w-4 mr-2" />
-                Low Stock Only
-              </Button>
+              {productType !== 'frames' && (
+                <Button
+                  variant={showLowStockOnly ? "default" : "outline"}
+                  onClick={() => setShowLowStockOnly(!showLowStockOnly)}
+                  className="whitespace-nowrap"
+                >
+                  <AlertTriangle className="h-4 w-4 mr-2" />
+                  Low Stock Only
+                </Button>
+              )}
             </div>
           </CardContent>
         </Card>
