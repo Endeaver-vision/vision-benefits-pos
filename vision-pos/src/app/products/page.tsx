@@ -5,6 +5,15 @@ import { Button } from '@/components/ui/button'
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
 import { Input } from '@/components/ui/input'
 import { Badge } from '@/components/ui/badge'
+import { Label } from '@/components/ui/label'
+import {
+  Dialog,
+  DialogContent,
+  DialogDescription,
+  DialogFooter,
+  DialogHeader,
+  DialogTitle,
+} from '@/components/ui/dialog'
 import {
   Loader2,
   Search,
@@ -13,7 +22,10 @@ import {
   ChevronDown,
   ChevronRight,
   Stethoscope,
-  Shield
+  Shield,
+  Pencil,
+  Save,
+  X
 } from 'lucide-react'
 import PageLayout from '@/components/layout/page-layout'
 
@@ -36,6 +48,7 @@ interface Product {
 }
 
 interface ServicePrice {
+  id: string
   sku: string
   name: string
   retailPrice: number
@@ -86,6 +99,18 @@ export default function ProductsAndServicesPage() {
   const [showTiers, setShowTiers] = useState(false)
   const [activeTab, setActiveTab] = useState<'products' | 'services'>('products')
 
+  // Edit state
+  const [editingProduct, setEditingProduct] = useState<Product | null>(null)
+  const [editingService, setEditingService] = useState<ServicePrice | null>(null)
+  const [editForm, setEditForm] = useState<{
+    basePrice?: number
+    retailPrice?: number
+    tierVsp?: string
+    tierEyemed?: string
+    tierSpectera?: string
+  }>({})
+  const [saving, setSaving] = useState(false)
+
   useEffect(() => {
     fetchProducts()
     fetchServices()
@@ -115,6 +140,88 @@ export default function ProductsAndServicesPage() {
       }
     } catch (error) {
       console.error('Failed to fetch services:', error)
+    }
+  }
+
+  const handleEditProduct = (product: Product) => {
+    setEditingProduct(product)
+    setEditForm({
+      basePrice: product.basePrice,
+      tierVsp: product.tierVsp || '',
+      tierEyemed: product.tierEyemed || '',
+      tierSpectera: product.tierSpectera || ''
+    })
+  }
+
+  const handleEditService = (service: ServicePrice) => {
+    setEditingService(service)
+    setEditForm({
+      retailPrice: service.retailPrice,
+      tierVsp: service.tierVsp || '',
+      tierEyemed: service.tierEyemed || '',
+      tierSpectera: service.tierSpectera || ''
+    })
+  }
+
+  const handleSaveProduct = async () => {
+    if (!editingProduct) return
+    setSaving(true)
+    try {
+      const response = await fetch('/api/products', {
+        method: 'PATCH',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          id: editingProduct.id,
+          basePrice: editForm.basePrice,
+          tierVsp: editForm.tierVsp || null,
+          tierEyemed: editForm.tierEyemed || null,
+          tierSpectera: editForm.tierSpectera || null
+        })
+      })
+
+      if (response.ok) {
+        await fetchProducts()
+        setEditingProduct(null)
+        setEditForm({})
+      } else {
+        alert('Failed to save product')
+      }
+    } catch (error) {
+      console.error('Error saving product:', error)
+      alert('Error saving product')
+    } finally {
+      setSaving(false)
+    }
+  }
+
+  const handleSaveService = async () => {
+    if (!editingService) return
+    setSaving(true)
+    try {
+      const response = await fetch('/api/services', {
+        method: 'PATCH',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          id: editingService.id,
+          retailPrice: editForm.retailPrice,
+          tierVsp: editForm.tierVsp || null,
+          tierEyemed: editForm.tierEyemed || null,
+          tierSpectera: editForm.tierSpectera || null
+        })
+      })
+
+      if (response.ok) {
+        await fetchServices()
+        setEditingService(null)
+        setEditForm({})
+      } else {
+        alert('Failed to save service')
+      }
+    } catch (error) {
+      console.error('Error saving service:', error)
+      alert('Error saving service')
+    } finally {
+      setSaving(false)
     }
   }
 
@@ -177,7 +284,7 @@ export default function ProductsAndServicesPage() {
   return (
     <PageLayout
       title="Products & Services"
-      subtitle="Quick reference for all products and services"
+      subtitle="Manage lens products and service pricing"
       actions={
         <div className="flex items-center gap-2">
           <Badge variant="outline" className="text-sm">
@@ -252,62 +359,63 @@ export default function ProductsAndServicesPage() {
                         <h3 className="text-xs font-semibold text-muted-foreground uppercase tracking-wide mb-2">
                           {category}
                         </h3>
-                        {showTiers ? (
-                          // Table view with tiers
-                          <div className="overflow-x-auto">
-                            <table className="w-full text-sm">
-                              <thead>
-                                <tr className="border-b text-left">
-                                  <th className="py-1 pr-4 font-medium">Product</th>
-                                  <th className="py-1 px-2 text-right font-medium">Price</th>
-                                  <th className="py-1 px-2 text-center font-medium text-blue-500">VSP</th>
-                                  <th className="py-1 px-2 text-center font-medium text-green-500">EyeMed</th>
-                                  <th className="py-1 px-2 text-center font-medium text-purple-500">Spectera</th>
+                        <div className="overflow-x-auto">
+                          <table className="w-full text-sm">
+                            <thead>
+                              <tr className="border-b text-left">
+                                <th className="py-1 pr-4 font-medium">Product</th>
+                                <th className="py-1 px-2 text-right font-medium">Price</th>
+                                {showTiers && (
+                                  <>
+                                    <th className="py-1 px-2 text-center font-medium text-blue-500">VSP</th>
+                                    <th className="py-1 px-2 text-center font-medium text-green-500">EyeMed</th>
+                                    <th className="py-1 px-2 text-center font-medium text-purple-500">Spectera</th>
+                                  </>
+                                )}
+                                <th className="py-1 px-2 text-center font-medium w-16">Edit</th>
+                              </tr>
+                            </thead>
+                            <tbody>
+                              {categoryProducts.map((product) => (
+                                <tr key={product.id} className="border-b border-border/30">
+                                  <td className="py-1.5 pr-4">{product.name}</td>
+                                  <td className="py-1.5 px-2 text-right text-muted-foreground">
+                                    {formatPrice(product.basePrice)}
+                                  </td>
+                                  {showTiers && (
+                                    <>
+                                      <td className="py-1.5 px-2 text-center">
+                                        <span className="text-xs text-muted-foreground">
+                                          {getTierDisplay(product.tierVsp)}
+                                        </span>
+                                      </td>
+                                      <td className="py-1.5 px-2 text-center">
+                                        <span className="text-xs text-muted-foreground">
+                                          {getTierDisplay(product.tierEyemed)}
+                                        </span>
+                                      </td>
+                                      <td className="py-1.5 px-2 text-center">
+                                        <span className="text-xs text-muted-foreground">
+                                          {getTierDisplay(product.tierSpectera)}
+                                        </span>
+                                      </td>
+                                    </>
+                                  )}
+                                  <td className="py-1.5 px-2 text-center">
+                                    <Button
+                                      variant="ghost"
+                                      size="sm"
+                                      className="h-7 w-7 p-0"
+                                      onClick={() => handleEditProduct(product)}
+                                    >
+                                      <Pencil className="h-3.5 w-3.5" />
+                                    </Button>
+                                  </td>
                                 </tr>
-                              </thead>
-                              <tbody>
-                                {categoryProducts.map((product) => (
-                                  <tr key={product.id} className="border-b border-border/30">
-                                    <td className="py-1.5 pr-4">{product.name}</td>
-                                    <td className="py-1.5 px-2 text-right text-muted-foreground">
-                                      {formatPrice(product.basePrice)}
-                                    </td>
-                                    <td className="py-1.5 px-2 text-center">
-                                      <span className="text-xs text-muted-foreground">
-                                        {getTierDisplay(product.tierVsp)}
-                                      </span>
-                                    </td>
-                                    <td className="py-1.5 px-2 text-center">
-                                      <span className="text-xs text-muted-foreground">
-                                        {getTierDisplay(product.tierEyemed)}
-                                      </span>
-                                    </td>
-                                    <td className="py-1.5 px-2 text-center">
-                                      <span className="text-xs text-muted-foreground">
-                                        {getTierDisplay(product.tierSpectera)}
-                                      </span>
-                                    </td>
-                                  </tr>
-                                ))}
-                              </tbody>
-                            </table>
-                          </div>
-                        ) : (
-                          // Compact grid view
-                          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-x-8 gap-y-1">
-                            {categoryProducts.map((product) => (
-                              <div
-                                key={product.id}
-                                className="flex justify-between items-center py-1 border-b border-border/50 last:border-0"
-                              >
-                                <span className="text-sm truncate pr-2">{product.name}</span>
-                                <span className="text-sm text-muted-foreground whitespace-nowrap">
-                                  {formatPrice(product.basePrice)}
-                                </span>
-                              </div>
-                            ))}
-                          </div>
-                        )}
+                              ))}
+                            </tbody>
+                          </table>
+                        </div>
                       </div>
                     ))}
                   </div>
@@ -345,62 +453,63 @@ export default function ProductsAndServicesPage() {
                           <h3 className="text-xs font-semibold text-muted-foreground uppercase tracking-wide mb-2">
                             {category}
                           </h3>
-                          {showTiers ? (
-                            // Table view with tiers
-                            <div className="overflow-x-auto">
-                              <table className="w-full text-sm">
-                                <thead>
-                                  <tr className="border-b text-left">
-                                    <th className="py-1 pr-4 font-medium">Product</th>
-                                    <th className="py-1 px-2 text-right font-medium">Price</th>
-                                    <th className="py-1 px-2 text-center font-medium text-blue-500">VSP</th>
-                                    <th className="py-1 px-2 text-center font-medium text-green-500">EyeMed</th>
-                                    <th className="py-1 px-2 text-center font-medium text-purple-500">Spectera</th>
+                          <div className="overflow-x-auto">
+                            <table className="w-full text-sm">
+                              <thead>
+                                <tr className="border-b text-left">
+                                  <th className="py-1 pr-4 font-medium">Product</th>
+                                  <th className="py-1 px-2 text-right font-medium">Price</th>
+                                  {showTiers && (
+                                    <>
+                                      <th className="py-1 px-2 text-center font-medium text-blue-500">VSP</th>
+                                      <th className="py-1 px-2 text-center font-medium text-green-500">EyeMed</th>
+                                      <th className="py-1 px-2 text-center font-medium text-purple-500">Spectera</th>
+                                    </>
+                                  )}
+                                  <th className="py-1 px-2 text-center font-medium w-16">Edit</th>
+                                </tr>
+                              </thead>
+                              <tbody>
+                                {categoryProducts.map((product) => (
+                                  <tr key={product.id} className="border-b border-border/30">
+                                    <td className="py-1.5 pr-4">{product.name}</td>
+                                    <td className="py-1.5 px-2 text-right text-muted-foreground">
+                                      {formatPrice(product.basePrice)}
+                                    </td>
+                                    {showTiers && (
+                                      <>
+                                        <td className="py-1.5 px-2 text-center">
+                                          <span className="text-xs text-muted-foreground">
+                                            {getTierDisplay(product.tierVsp)}
+                                          </span>
+                                        </td>
+                                        <td className="py-1.5 px-2 text-center">
+                                          <span className="text-xs text-muted-foreground">
+                                            {getTierDisplay(product.tierEyemed)}
+                                          </span>
+                                        </td>
+                                        <td className="py-1.5 px-2 text-center">
+                                          <span className="text-xs text-muted-foreground">
+                                            {getTierDisplay(product.tierSpectera)}
+                                          </span>
+                                        </td>
+                                      </>
+                                    )}
+                                    <td className="py-1.5 px-2 text-center">
+                                      <Button
+                                        variant="ghost"
+                                        size="sm"
+                                        className="h-7 w-7 p-0"
+                                        onClick={() => handleEditProduct(product)}
+                                      >
+                                        <Pencil className="h-3.5 w-3.5" />
+                                      </Button>
+                                    </td>
                                   </tr>
-                                </thead>
-                                <tbody>
-                                  {categoryProducts.map((product) => (
-                                    <tr key={product.id} className="border-b border-border/30">
-                                      <td className="py-1.5 pr-4">{product.name}</td>
-                                      <td className="py-1.5 px-2 text-right text-muted-foreground">
-                                        {formatPrice(product.basePrice)}
-                                      </td>
-                                      <td className="py-1.5 px-2 text-center">
-                                        <span className="text-xs text-muted-foreground">
-                                          {getTierDisplay(product.tierVsp)}
-                                        </span>
-                                      </td>
-                                      <td className="py-1.5 px-2 text-center">
-                                        <span className="text-xs text-muted-foreground">
-                                          {getTierDisplay(product.tierEyemed)}
-                                        </span>
-                                      </td>
-                                      <td className="py-1.5 px-2 text-center">
-                                        <span className="text-xs text-muted-foreground">
-                                          {getTierDisplay(product.tierSpectera)}
-                                        </span>
-                                      </td>
-                                    </tr>
-                                  ))}
-                                </tbody>
-                              </table>
-                            </div>
-                          ) : (
-                            // Compact grid view
-                            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-x-8 gap-y-1">
-                              {categoryProducts.map((product) => (
-                                <div
-                                  key={product.id}
-                                  className="flex justify-between items-center py-1 border-b border-border/50 last:border-0"
-                                >
-                                  <span className="text-sm truncate pr-2">{product.name}</span>
-                                  <span className="text-sm text-muted-foreground whitespace-nowrap">
-                                    {formatPrice(product.basePrice)}
-                                  </span>
-                                </div>
-                              ))}
-                            </div>
-                          )}
+                                ))}
+                              </tbody>
+                            </table>
+                          </div>
                         </div>
                       ))}
                     </div>
@@ -431,62 +540,63 @@ export default function ProductsAndServicesPage() {
                     </CardTitle>
                   </CardHeader>
                   <CardContent className="pt-0">
-                    {showTiers ? (
-                      // Table view with tiers
-                      <div className="overflow-x-auto">
-                        <table className="w-full text-sm">
-                          <thead>
-                            <tr className="border-b text-left">
-                              <th className="py-1 pr-4 font-medium">Service</th>
-                              <th className="py-1 px-2 text-right font-medium">Price</th>
-                              <th className="py-1 px-2 text-center font-medium text-blue-500">VSP</th>
-                              <th className="py-1 px-2 text-center font-medium text-green-500">EyeMed</th>
-                              <th className="py-1 px-2 text-center font-medium text-purple-500">Spectera</th>
+                    <div className="overflow-x-auto">
+                      <table className="w-full text-sm">
+                        <thead>
+                          <tr className="border-b text-left">
+                            <th className="py-1 pr-4 font-medium">Service</th>
+                            <th className="py-1 px-2 text-right font-medium">Price</th>
+                            {showTiers && (
+                              <>
+                                <th className="py-1 px-2 text-center font-medium text-blue-500">VSP</th>
+                                <th className="py-1 px-2 text-center font-medium text-green-500">EyeMed</th>
+                                <th className="py-1 px-2 text-center font-medium text-purple-500">Spectera</th>
+                              </>
+                            )}
+                            <th className="py-1 px-2 text-center font-medium w-16">Edit</th>
+                          </tr>
+                        </thead>
+                        <tbody>
+                          {filteredServices.map((service) => (
+                            <tr key={service.sku || service.id} className="border-b border-border/30">
+                              <td className="py-1.5 pr-4">{service.name}</td>
+                              <td className="py-1.5 px-2 text-right text-muted-foreground">
+                                {formatPrice(service.retailPrice)}
+                              </td>
+                              {showTiers && (
+                                <>
+                                  <td className="py-1.5 px-2 text-center">
+                                    <span className="text-xs text-muted-foreground">
+                                      {getTierDisplay(service.tierVsp)}
+                                    </span>
+                                  </td>
+                                  <td className="py-1.5 px-2 text-center">
+                                    <span className="text-xs text-muted-foreground">
+                                      {getTierDisplay(service.tierEyemed)}
+                                    </span>
+                                  </td>
+                                  <td className="py-1.5 px-2 text-center">
+                                    <span className="text-xs text-muted-foreground">
+                                      {getTierDisplay(service.tierSpectera)}
+                                    </span>
+                                  </td>
+                                </>
+                              )}
+                              <td className="py-1.5 px-2 text-center">
+                                <Button
+                                  variant="ghost"
+                                  size="sm"
+                                  className="h-7 w-7 p-0"
+                                  onClick={() => handleEditService(service)}
+                                >
+                                  <Pencil className="h-3.5 w-3.5" />
+                                </Button>
+                              </td>
                             </tr>
-                          </thead>
-                          <tbody>
-                            {filteredServices.map((service) => (
-                              <tr key={service.sku} className="border-b border-border/30">
-                                <td className="py-1.5 pr-4">{service.name}</td>
-                                <td className="py-1.5 px-2 text-right text-muted-foreground">
-                                  {formatPrice(service.retailPrice)}
-                                </td>
-                                <td className="py-1.5 px-2 text-center">
-                                  <span className="text-xs text-muted-foreground">
-                                    {getTierDisplay(service.tierVsp)}
-                                  </span>
-                                </td>
-                                <td className="py-1.5 px-2 text-center">
-                                  <span className="text-xs text-muted-foreground">
-                                    {getTierDisplay(service.tierEyemed)}
-                                  </span>
-                                </td>
-                                <td className="py-1.5 px-2 text-center">
-                                  <span className="text-xs text-muted-foreground">
-                                    {getTierDisplay(service.tierSpectera)}
-                                  </span>
-                                </td>
-                              </tr>
-                            ))}
-                          </tbody>
-                        </table>
-                      </div>
-                    ) : (
-                      // Compact grid view
-                      <div className="grid grid-cols-1 sm:grid-cols-2 gap-x-8 gap-y-1">
-                        {filteredServices.map((service) => (
-                          <div
-                            key={service.sku}
-                            className="flex justify-between items-center py-1.5 border-b border-border/50 last:border-0"
-                          >
-                            <span className="text-sm">{service.name}</span>
-                            <span className="text-sm font-medium">
-                              {formatPrice(service.retailPrice)}
-                            </span>
-                          </div>
-                        ))}
-                      </div>
-                    )}
+                          ))}
+                        </tbody>
+                      </table>
+                    </div>
                   </CardContent>
                 </Card>
               )
@@ -494,6 +604,152 @@ export default function ProductsAndServicesPage() {
           </div>
         )}
       </div>
+
+      {/* Edit Product Dialog */}
+      <Dialog open={!!editingProduct} onOpenChange={(open) => !open && setEditingProduct(null)}>
+        <DialogContent className="sm:max-w-[425px]">
+          <DialogHeader>
+            <DialogTitle>Edit Product</DialogTitle>
+            <DialogDescription>
+              {editingProduct?.name}
+            </DialogDescription>
+          </DialogHeader>
+          <div className="grid gap-4 py-4">
+            <div className="grid grid-cols-4 items-center gap-4">
+              <Label htmlFor="basePrice" className="text-right">
+                Price
+              </Label>
+              <Input
+                id="basePrice"
+                type="number"
+                step="0.01"
+                value={editForm.basePrice || ''}
+                onChange={(e) => setEditForm({ ...editForm, basePrice: parseFloat(e.target.value) })}
+                className="col-span-3"
+              />
+            </div>
+            <div className="grid grid-cols-4 items-center gap-4">
+              <Label htmlFor="tierVsp" className="text-right">
+                VSP Tier
+              </Label>
+              <Input
+                id="tierVsp"
+                value={editForm.tierVsp || ''}
+                onChange={(e) => setEditForm({ ...editForm, tierVsp: e.target.value })}
+                className="col-span-3"
+                placeholder="e.g., Standard, Premium"
+              />
+            </div>
+            <div className="grid grid-cols-4 items-center gap-4">
+              <Label htmlFor="tierEyemed" className="text-right">
+                EyeMed Tier
+              </Label>
+              <Input
+                id="tierEyemed"
+                value={editForm.tierEyemed || ''}
+                onChange={(e) => setEditForm({ ...editForm, tierEyemed: e.target.value })}
+                className="col-span-3"
+                placeholder="e.g., Standard, Premium"
+              />
+            </div>
+            <div className="grid grid-cols-4 items-center gap-4">
+              <Label htmlFor="tierSpectera" className="text-right">
+                Spectera Tier
+              </Label>
+              <Input
+                id="tierSpectera"
+                value={editForm.tierSpectera || ''}
+                onChange={(e) => setEditForm({ ...editForm, tierSpectera: e.target.value })}
+                className="col-span-3"
+                placeholder="e.g., Standard, Premium"
+              />
+            </div>
+          </div>
+          <DialogFooter>
+            <Button variant="outline" onClick={() => setEditingProduct(null)}>
+              <X className="h-4 w-4 mr-2" />
+              Cancel
+            </Button>
+            <Button onClick={handleSaveProduct} disabled={saving}>
+              {saving ? <Loader2 className="h-4 w-4 mr-2 animate-spin" /> : <Save className="h-4 w-4 mr-2" />}
+              Save
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
+
+      {/* Edit Service Dialog */}
+      <Dialog open={!!editingService} onOpenChange={(open) => !open && setEditingService(null)}>
+        <DialogContent className="sm:max-w-[425px]">
+          <DialogHeader>
+            <DialogTitle>Edit Service</DialogTitle>
+            <DialogDescription>
+              {editingService?.name}
+            </DialogDescription>
+          </DialogHeader>
+          <div className="grid gap-4 py-4">
+            <div className="grid grid-cols-4 items-center gap-4">
+              <Label htmlFor="retailPrice" className="text-right">
+                Price
+              </Label>
+              <Input
+                id="retailPrice"
+                type="number"
+                step="0.01"
+                value={editForm.retailPrice || ''}
+                onChange={(e) => setEditForm({ ...editForm, retailPrice: parseFloat(e.target.value) })}
+                className="col-span-3"
+              />
+            </div>
+            <div className="grid grid-cols-4 items-center gap-4">
+              <Label htmlFor="serviceTierVsp" className="text-right">
+                VSP Tier
+              </Label>
+              <Input
+                id="serviceTierVsp"
+                value={editForm.tierVsp || ''}
+                onChange={(e) => setEditForm({ ...editForm, tierVsp: e.target.value })}
+                className="col-span-3"
+                placeholder="e.g., Copay, Covered"
+              />
+            </div>
+            <div className="grid grid-cols-4 items-center gap-4">
+              <Label htmlFor="serviceTierEyemed" className="text-right">
+                EyeMed Tier
+              </Label>
+              <Input
+                id="serviceTierEyemed"
+                value={editForm.tierEyemed || ''}
+                onChange={(e) => setEditForm({ ...editForm, tierEyemed: e.target.value })}
+                className="col-span-3"
+                placeholder="e.g., Copay, Covered"
+              />
+            </div>
+            <div className="grid grid-cols-4 items-center gap-4">
+              <Label htmlFor="serviceTierSpectera" className="text-right">
+                Spectera Tier
+              </Label>
+              <Input
+                id="serviceTierSpectera"
+                value={editForm.tierSpectera || ''}
+                onChange={(e) => setEditForm({ ...editForm, tierSpectera: e.target.value })}
+                className="col-span-3"
+                placeholder="e.g., Copay, Covered"
+              />
+            </div>
+          </div>
+          <DialogFooter>
+            <Button variant="outline" onClick={() => setEditingService(null)}>
+              <X className="h-4 w-4 mr-2" />
+              Cancel
+            </Button>
+            <Button onClick={handleSaveService} disabled={saving}>
+              {saving ? <Loader2 className="h-4 w-4 mr-2 animate-spin" /> : <Save className="h-4 w-4 mr-2" />}
+              Save
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
     </PageLayout>
   )
 }

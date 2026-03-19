@@ -1,65 +1,114 @@
 import { NextResponse } from 'next/server'
 import { prisma } from '@/lib/prisma'
-import { Prisma } from '@prisma/client'
 
 export async function GET(request: Request) {
   try {
     const { searchParams } = new URL(request.url)
     const category = searchParams.get('category')
-    const tier = searchParams.get('tier')
-    const carrier = searchParams.get('carrier')
+    const displayGroup = searchParams.get('displayGroup')
 
-    const where: Prisma.ProductWhereInput = {
+    // Build where clause for filtering
+    const where: {
+      active?: boolean
+      category?: string
+      displayGroup?: string
+    } = {
       active: true,
     }
 
-    // Filter by category
     if (category) {
-      where.category = {
-        code: category
-      }
+      where.category = category
     }
 
-    // Filter by insurance tier - now uses carrier_tiers table
-    let productIdsWithTier: string[] | null = null
-    if (tier && carrier) {
-      const tierMappings = await prisma.carrierTier.findMany({
-        where: {
-          carrier: carrier.toUpperCase(),
-          tierCode: tier,
-          productType: 'PRODUCT'
-        },
-        select: { productId: true }
-      })
-      productIdsWithTier = tierMappings.map(t => t.productId)
-      where.id = { in: productIdsWithTier }
+    if (displayGroup) {
+      where.displayGroup = displayGroup
     }
 
-    const products = await prisma.product.findMany({
+    // Query LensProduct table (custom lab products)
+    const products = await prisma.lensProduct.findMany({
       where,
-      include: {
-        category: true,
-        locations: {
-          include: {
-            location: true
-          }
-        }
-      },
       orderBy: [
         { displayGroup: 'asc' },  // 'everyday' before 'reserve'
-        { category: { displayOrder: 'asc' } },
         { displayOrder: 'asc' },
         { name: 'asc' }
       ]
     })
 
+    // Transform to match expected interface
+    const transformedProducts = products.map(product => ({
+      id: product.id,
+      name: product.name,
+      sku: product.sku,
+      basePrice: product.basePrice,
+      displayGroup: product.displayGroup,
+      displayOrder: product.displayOrder,
+      tierVsp: product.tierVsp,
+      tierEyemed: product.tierEyemed,
+      tierSpectera: product.tierSpectera,
+      category: {
+        id: product.category,
+        name: product.category,
+        code: product.category,
+        displayOrder: 0
+      }
+    }))
+
     return NextResponse.json({
       success: true,
-      data: products,
-      count: products.length
+      data: transformedProducts,
+      count: transformedProducts.length
     })
   } catch (error) {
     console.error('Products API error:', error)
+    return NextResponse.json({
+      success: false,
+      error: error instanceof Error ? error.message : 'Unknown error'
+    }, { status: 500 })
+  }
+}
+
+export async function PATCH(request: Request) {
+  try {
+    const body = await request.json()
+    const { id, basePrice, tierVsp, tierEyemed, tierSpectera, displayGroup, displayOrder, active } = body
+
+    if (!id) {
+      return NextResponse.json({
+        success: false,
+        error: 'Product ID is required'
+      }, { status: 400 })
+    }
+
+    // Build update data - only include provided fields
+    const updateData: {
+      basePrice?: number
+      tierVsp?: string | null
+      tierEyemed?: string | null
+      tierSpectera?: string | null
+      displayGroup?: string
+      displayOrder?: number
+      active?: boolean
+    } = {}
+
+    if (basePrice !== undefined) updateData.basePrice = Number(basePrice)
+    if (tierVsp !== undefined) updateData.tierVsp = tierVsp
+    if (tierEyemed !== undefined) updateData.tierEyemed = tierEyemed
+    if (tierSpectera !== undefined) updateData.tierSpectera = tierSpectera
+    if (displayGroup !== undefined) updateData.displayGroup = displayGroup
+    if (displayOrder !== undefined) updateData.displayOrder = Number(displayOrder)
+    if (active !== undefined) updateData.active = active
+
+    const updatedProduct = await prisma.lensProduct.update({
+      where: { id },
+      data: updateData
+    })
+
+    return NextResponse.json({
+      success: true,
+      data: updatedProduct
+    })
+  } catch (error) {
+    console.error('Products PATCH error:', error)
     return NextResponse.json({
       success: false,
       error: error instanceof Error ? error.message : 'Unknown error'
